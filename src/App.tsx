@@ -5,6 +5,7 @@ import { LoginPage } from './components/Auth/LoginPage';
 import { Sidebar } from './components/Layout/Sidebar';
 import { Header } from './components/Layout/Header';
 import { hasPermission } from './services/roles';
+import { suppliersAPI } from './services/mysql-api';
 import { Sale, Customer, Product, Supplier } from './types';
 
 // Lazy loading des composants pour améliorer les performances
@@ -193,10 +194,36 @@ const AppContent: React.FC = () => {
     }
   };
 
-  const handleSaveSupplier = (supplierData: any) => {
-    console.log('Saving supplier:', supplierData);
-    setShowSupplierForm(false);
-    setEditingSupplier(null);
+  const handleSaveSupplier = async (supplierData: any) => {
+    try {
+      console.log('Saving supplier:', supplierData);
+      
+      // Si en mode édition, faire un UPDATE au lieu d'un CREATE
+      if (editingSupplier) {
+        const result = await suppliersAPI.update(editingSupplier.id, supplierData);
+        if (result && result.success) {
+          console.log('✅ Fournisseur modifié avec succès');
+          window.dispatchEvent(new Event('refreshData'));
+          setShowSupplierForm(false);
+          setEditingSupplier(null);
+        } else {
+          console.error('Erreur modification fournisseur:', result?.error || result);
+        }
+      } else {
+        // Mode création
+        const result = await suppliersAPI.create(supplierData);
+        if (result && result.success) {
+          console.log('✅ Fournisseur créé avec succès:', result.data);
+          window.dispatchEvent(new Event('refreshData'));
+          setShowSupplierForm(false);
+          setEditingSupplier(null);
+        } else {
+          console.error('Erreur création fournisseur:', result?.error || result);
+        }
+      }
+    } catch (err: any) {
+      console.error('Erreur saving supplier:', err);
+    }
   };
 
   const handleCreatePayment = () => {
@@ -208,25 +235,25 @@ const AppContent: React.FC = () => {
   const handleSavePayment = (paymentData: any) => {
     console.log('Saving payment:', paymentData);
     setShowPaymentForm(false);
+    
+    // Déclencher un rafraîchissement des données
+    window.dispatchEvent(new Event('paymentCreated'));
+    window.dispatchEvent(new Event('refreshData'));
   };
 
   const renderContent = () => {
-    const commonProps = {
-      key: activeSection // Force re-render when section changes
-    };
-
     switch (activeSection) {
       case 'dashboard':
         return (
           <Suspense fallback={<LoadingSpinner />}>
-            <Dashboard {...commonProps} />
+            <Dashboard key={activeSection} />
           </Suspense>
         );
       case 'sales':
         return (
           <Suspense fallback={<LoadingSpinner />}>
             <SalesList 
-              {...commonProps}
+              key={activeSection}
               onCreateSale={handleCreateSale} 
               onViewSale={handleViewSale} 
             />
@@ -236,7 +263,7 @@ const AppContent: React.FC = () => {
         return (
           <Suspense fallback={<LoadingSpinner />}>
             <InventoryList 
-              {...commonProps}
+              key={activeSection}
               onCreateProduct={handleCreateProduct}
               onEditProduct={handleEditProduct}
               onRestockProduct={handleRestockProduct}
@@ -247,7 +274,7 @@ const AppContent: React.FC = () => {
         return (
           <Suspense fallback={<LoadingSpinner />}>
             <CustomersList 
-              {...commonProps}
+              key={activeSection}
               onCreateCustomer={handleCreateCustomer}
               onViewCustomer={handleViewCustomer}
               onEditCustomer={handleEditCustomer}
@@ -258,7 +285,7 @@ const AppContent: React.FC = () => {
         return (
           <Suspense fallback={<LoadingSpinner />}>
             <SuppliersList 
-              {...commonProps}
+              key={activeSection}
               onCreateSupplier={handleCreateSupplier}
               onViewSupplier={handleViewSupplier}
               onEditSupplier={handleEditSupplier}
@@ -268,19 +295,19 @@ const AppContent: React.FC = () => {
       case 'payments':
         return (
           <Suspense fallback={<LoadingSpinner />}>
-            <PaymentsList {...commonProps} onCreatePayment={handleCreatePayment} />
+            <PaymentsList key={activeSection} onCreatePayment={handleCreatePayment} />
           </Suspense>
         );
       case 'reports':
         return (
           <Suspense fallback={<LoadingSpinner />}>
-            <ReportsPage {...commonProps} />
+            <ReportsPage key={activeSection} />
           </Suspense>
         );
       case 'admin':
         return userRole === 'admin' ? (
           <Suspense fallback={<LoadingSpinner />}>
-            <UserManagement {...commonProps} />
+            <UserManagement key={activeSection} />
           </Suspense>
         ) : (
           <div className="text-center py-12">
@@ -296,13 +323,13 @@ const AppContent: React.FC = () => {
       case 'settings':
         return (
           <Suspense fallback={<LoadingSpinner />}>
-            <NotificationSettings {...commonProps} />
+            <NotificationSettings key={activeSection} />
           </Suspense>
         );
       default:
         return (
           <Suspense fallback={<LoadingSpinner />}>
-            <Dashboard {...commonProps} />
+            <Dashboard key={activeSection} />
           </Suspense>
         );
     }

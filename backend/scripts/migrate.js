@@ -50,6 +50,7 @@ const migrations = [
     contact_person VARCHAR(255),
     tax_number VARCHAR(50),
     payment_terms INT DEFAULT 30,
+    rating DECIMAL(2,1) DEFAULT 5.0,
     status ENUM('active', 'inactive') DEFAULT 'active',
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -57,6 +58,17 @@ const migrations = [
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     INDEX idx_user_status (user_id, status),
     INDEX idx_name (name)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
+  // Table de liaison fournisseur-produits fournis
+  `CREATE TABLE IF NOT EXISTS supplier_products (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    supplier_id VARCHAR(36) NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE CASCADE,
+    INDEX idx_supplier (supplier_id),
+    UNIQUE KEY unique_supplier_product (supplier_id, product_name)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
   // Table des produits
@@ -167,6 +179,14 @@ const migrations = [
     INDEX idx_payment_status (payment_status)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+    // Ajout des colonnes transport/logistique aux ventes (si manquantes)
+  `ALTER TABLE sales ADD COLUMN vehicle_plate VARCHAR(50)`,
+  `ALTER TABLE sales ADD COLUMN driver_name VARCHAR(255)`,
+  `ALTER TABLE sales ADD COLUMN product_type VARCHAR(100)`,
+  `ALTER TABLE sales ADD COLUMN loading_location VARCHAR(255)`,
+  `ALTER TABLE sales ADD COLUMN destination VARCHAR(255)`,
+  `ALTER TABLE sales ADD COLUMN discharge_time TIMESTAMP NULL`,
+  `ALTER TABLE sales ADD COLUMN weight_loaded DECIMAL(12,3) DEFAULT 0`,
   // Table des articles de vente
   `CREATE TABLE IF NOT EXISTS sale_items (
     id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
@@ -294,7 +314,16 @@ async function runMigrations() {
     // Exécuter chaque migration
     for (let i = 0; i < migrations.length; i++) {
       console.log(`📝 Exécution migration ${i + 1}/${migrations.length}...`);
-      await pool.execute(migrations[i]);
+      try {
+        await pool.execute(migrations[i]);
+      } catch (err) {
+        // Ignorer les erreurs "colonne existe déjà" pour les migrations ALTER
+        if (err.sqlState === '42S21' || err.code === 'ER_DUP_FIELDNAME') {
+          console.log(`⚠️  Colonne déjà existante - migration ignorée`);
+        } else {
+          throw err;
+        }
+      }
     }
     
     console.log('✅ Toutes les migrations ont été exécutées avec succès!');

@@ -16,6 +16,7 @@ const paymentRoutes = require('./routes/payments');
 const categoryRoutes = require('./routes/categories');
 const dashboardRoutes = require('./routes/dashboard');
 const notificationsRoutes = require('./routes/notifications');
+const purchaseOrderRoutes = require('./routes/purchase_orders');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -27,10 +28,10 @@ app.use(
   })
 );
 
-// 🌐 Configuration CORS (accepte UNIQUEMENT localhost:5173)
+// 🌐 Configuration CORS (accepte UNIQUEMENT localhost:5173 et 5174)
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: ['http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -76,6 +77,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
 const pdfRoutes = require('./routes/pdf');
 app.use('/api/pdf', pdfRoutes);
 
@@ -172,7 +174,7 @@ async function startServer() {
       process.exit(1);
     }
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log('🚀 Serveur Allo Béton démarré avec succès!');
       console.log(`📍 URL: http://localhost:${PORT}`);
       console.log(`🌍 Environnement: ${process.env.NODE_ENV || 'development'}`);
@@ -191,7 +193,26 @@ async function startServer() {
       console.log('   💳 Paiements: /api/payments');
       console.log('   📊 Tableau de bord: /api/dashboard');
     });
-  } catch (error) {
+    // Gestion de l'erreur EADDRINUSE (port déjà en use)
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Le port ${PORT} est déjà en use. Tentative sur le port ${PORT + 1}...`);
+        const nextPort = parseInt(PORT) + 1;
+        const newServer = app.listen(nextPort);
+        newServer.on('error', (newErr) => {
+          if (newErr.code === 'EADDRINUSE') {
+            console.error(`❌ Le port ${nextPort} est aussi en use. Arrêt...`);
+            process.exit(1);
+          }
+        });
+        newServer.on('listening', () => {
+          console.log(`🚀 Serveur démarré sur le port alternatif: ${nextPort}`);
+        });
+      } else {
+        console.error('❌ Erreur serveur:', err);
+        process.exit(1);
+      }
+    });  } catch (error) {
     console.error('💥 Erreur démarrage serveur:', error);
     process.exit(1);
   }

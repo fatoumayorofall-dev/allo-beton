@@ -1,6 +1,11 @@
-import React from 'react';
-import { X, Truck, Mail, Phone, MapPin, Star, Calendar, Package, ShoppingCart } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Truck, Mail, Phone, MapPin, Star, Calendar, Package, ShoppingCart, Download, Printer } from 'lucide-react';
 import { Supplier } from '../../types';
+import { PurchaseOrderForm } from './PurchaseOrderForm';
+import { PurchaseOrdersList } from './PurchaseOrdersList';
+import { RatingModal } from './RatingModal';
+import { purchaseOrdersAPI } from '../../services/mysql-api';
+import { generateSupplierPDF, printSupplierPDF } from '../../services/SupplierPDF';
 
 interface SupplierDetailProps {
   supplier: Supplier;
@@ -9,6 +14,53 @@ interface SupplierDetailProps {
 }
 
 export const SupplierDetail: React.FC<SupplierDetailProps> = ({ supplier, onClose, onEdit }) => {
+  const [showPurchaseForm, setShowPurchaseForm] = useState(false);
+  const [showOrdersList, setShowOrdersList] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [currentSupplier, setCurrentSupplier] = useState(supplier);
+  const [downloadingPDF, setDownloadingPDF] = useState(false);
+  
+  const handlePurchaseOrderSaved = () => {
+    setShowPurchaseForm(false);
+    // Actualiser la liste des commandes
+    setRefreshKey(prev => prev + 1);
+    // Dispatcher l'événement pour actualiser le DataContext aussi
+    window.dispatchEvent(new Event('refreshData'));
+  };
+
+  const handleRatingUpdated = () => {
+    // Actualiser les données du fournisseur
+    window.dispatchEvent(new Event('refreshData'));
+  };
+
+  const handleDownloadPDF = async () => {
+    setDownloadingPDF(true);
+    try {
+      const result = await generateSupplierPDF(currentSupplier);
+      if (!result.success) {
+        alert('Erreur: ' + result.error);
+      }
+    } catch (error: any) {
+      console.error('Erreur PDF:', error);
+      alert('Erreur lors de la génération du PDF');
+    } finally {
+      setDownloadingPDF(false);
+    }
+  };
+
+  const handlePrintPDF = async () => {
+    try {
+      const result = await printSupplierPDF(currentSupplier);
+      if (!result.success) {
+        alert('Erreur: ' + result.error);
+      }
+    } catch (error: any) {
+      console.error('Erreur impression:', error);
+      alert('Erreur lors de l\'impression');
+    }
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, index) => (
       <Star
@@ -38,6 +90,21 @@ export const SupplierDetail: React.FC<SupplierDetailProps> = ({ supplier, onClos
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={handleDownloadPDF}
+              disabled={downloadingPDF}
+              title="Télécharger PDF"
+              className="p-2 text-gray-600 hover:bg-orange-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handlePrintPDF}
+              title="Imprimer"
+              className="p-2 text-gray-600 hover:bg-orange-100 rounded-lg transition-colors duration-200"
+            >
+              <Printer className="w-5 h-5" />
+            </button>
             <button
               onClick={onEdit}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
@@ -81,12 +148,20 @@ export const SupplierDetail: React.FC<SupplierDetailProps> = ({ supplier, onClos
               <h3 className="text-lg font-medium text-gray-900">Évaluation</h3>
               
               <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-gray-600">Note:</span>
-                  <div className="flex items-center space-x-1">
-                    {renderStars(supplier.rating)}
-                    <span className="text-sm text-gray-600 ml-2">({supplier.rating}/5)</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-600">Note:</span>
+                    <div className="flex items-center space-x-1">
+                      {renderStars(supplier.rating)}
+                      <span className="text-sm text-gray-600 ml-2">({supplier.rating}/5)</span>
+                    </div>
                   </div>
+                  <button
+                    onClick={() => setShowRatingModal(true)}
+                    className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors"
+                  >
+                    Évaluer
+                  </button>
                 </div>
                 
                 <div className="flex items-center space-x-3">
@@ -155,10 +230,16 @@ export const SupplierDetail: React.FC<SupplierDetailProps> = ({ supplier, onClos
           {/* Actions */}
           <div className="border-t border-gray-200 pt-6">
             <div className="flex space-x-4">
-              <button className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+              <button 
+                onClick={() => setShowPurchaseForm(true)}
+                className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
                 Nouvelle Commande
               </button>
-              <button className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors duration-200">
+              <button 
+                onClick={() => setShowOrdersList(true)}
+                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors duration-200"
+              >
                 Voir Historique
               </button>
               <button className="flex-1 bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors duration-200">
@@ -168,6 +249,47 @@ export const SupplierDetail: React.FC<SupplierDetailProps> = ({ supplier, onClos
           </div>
         </div>
       </div>
+
+      {/* Purchase Order Form Modal */}
+      {showPurchaseForm && (
+        <PurchaseOrderForm
+          supplier={supplier}
+          onClose={() => setShowPurchaseForm(false)}
+          onSave={async (orderData) => {
+            try {
+              console.log('Création commande:', orderData);
+              const result = await purchaseOrdersAPI.create(orderData);
+              if (result && result.success) {
+                console.log('✅ Commande créée avec succès');
+                handlePurchaseOrderSaved();
+              } else {
+                console.error('Erreur création commande:', result?.error);
+              }
+            } catch (err: any) {
+              console.error('Erreur:', err);
+            }
+          }}
+        />
+      )}
+
+      {/* Purchase Orders List Modal */}
+      {showOrdersList && (
+        <PurchaseOrdersList
+          key={refreshKey}
+          supplierId={supplier.id}
+          supplierName={supplier.name}
+          onClose={() => setShowOrdersList(false)}
+        />
+      )}
+
+      {/* Rating Modal */}
+      {showRatingModal && (
+        <RatingModal
+          supplier={supplier}
+          onClose={() => setShowRatingModal(false)}
+          onUpdate={handleRatingUpdated}
+        />
+      )}
     </div>
   );
 };

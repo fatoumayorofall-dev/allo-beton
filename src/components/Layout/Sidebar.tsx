@@ -49,6 +49,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (item.adminOnly && userRole !== 'admin') {
       return false;
     }
+    // Pour les items admin, on ne vérifie pas canAccess car 'users' n'est pas dans les permissions
+    if (item.adminOnly && userRole === 'admin') {
+      return true;
+    }
     return canAccess(userRole as any, item.resource);
   });
 

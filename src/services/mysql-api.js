@@ -153,15 +153,31 @@ export const customersAPI = {
 // API des ventes
 export const salesAPI = {
   getAll: () => apiRequest('/sales'),
-  
+
   create: (saleData) => apiRequest('/sales', {
     method: 'POST',
     body: JSON.stringify(saleData),
   }),
-  
+
   update: (id, saleData) => apiRequest(`/sales/${id}`, {
     method: 'PUT',
     body: JSON.stringify(saleData),
+  }),
+
+  importPreview: async (formData) => {
+    const url = `${API_BASE_URL}/sales/import/preview`;
+    const token = getAuthToken();
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+    const response = await fetch(url, { method: 'POST', body: formData, headers });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Erreur import preview');
+    return data;
+  },
+
+  import: (payload) => apiRequest('/sales/import', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   }),
 };
 
@@ -209,6 +225,16 @@ export const categoriesAPI = {
   }),
 };
 
+// API des commandes fournisseur
+export const purchaseOrdersAPI = {
+  create: (orderData) => apiRequest('/purchase-orders', {
+    method: 'POST',
+    body: JSON.stringify(orderData),
+  }),
+
+  getBySupplier: (supplierId) => apiRequest(`/purchase-orders/supplier/${supplierId}`),
+};
+
 // API de santé
 export const healthAPI = {
   check: () => apiRequest('/health'),
@@ -248,6 +274,7 @@ export default {
   dashboard: dashboardAPI,
   categories: categoriesAPI,
   notifications: notificationsAPI,
+  purchaseOrders: purchaseOrdersAPI,
   health: healthAPI,
   isAuthenticated,
 };

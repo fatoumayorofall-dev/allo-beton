@@ -16,10 +16,9 @@ router.get('/', authenticateToken, async (req, res) => {
       FROM payments p
       LEFT JOIN sales s ON p.sale_id = s.id
       LEFT JOIN customers c ON s.customer_id = c.id
-      WHERE p.user_id = ?
       ORDER BY p.created_at DESC
       LIMIT 100
-    `, [req.user.id]);
+    `);
 
     // Transformer les données pour correspondre au format frontend
     const transformedPayments = payments.map(payment => ({

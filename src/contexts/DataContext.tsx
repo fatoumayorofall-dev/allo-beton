@@ -90,7 +90,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     try {
       const result = await salesAPI.getAll();
       if (result.success) {
-        setSales(result.data || []);
+        // Gérer la nouvelle structure avec pagination
+        const salesData = result.data?.sales || result.data || [];
+        setSales(salesData);
       } else {
         console.error('Erreur chargement ventes:', result.error);
         setError(result.error);
@@ -175,6 +177,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       setLoading(false);
     }
   };
+
+  // Écouteur global pour forcer le rafraîchissement depuis d'autres parties de l'app
+  React.useEffect(() => {
+    const handler = async () => {
+      if (!user || authLoading) return;
+      await refreshData();
+    };
+
+    window.addEventListener('refreshData', handler);
+    return () => window.removeEventListener('refreshData', handler);
+  }, [user, authLoading, refreshData]);
 
   // Charger les données initiales
   useEffect(() => {

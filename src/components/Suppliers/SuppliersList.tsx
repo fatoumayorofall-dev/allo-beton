@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Truck, Phone, Mail, Star, Calendar, Package, Eye, Edit } from 'lucide-react';
-import { suppliers } from '../../data/mockData';
 import { Supplier } from '../../types';
+import { useDataContext } from '../../contexts/DataContext';
 
 interface SuppliersListProps {
   onCreateSupplier: () => void;
@@ -14,15 +14,16 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
   onViewSupplier, 
   onEditSupplier 
 }) => {
+  const { suppliers } = useDataContext();
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.contactPerson.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    supplier.productsSupplied.some(product => 
+    (supplier.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+    (supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false) ||
+    (supplier.productsSupplied?.some(product => 
       product.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    ) ?? false)
   );
 
   const renderStars = (rating: number) => {
@@ -90,7 +91,7 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Commandes Totales</p>
               <p className="text-2xl font-bold text-gray-900">
-                {suppliers.reduce((sum, supplier) => sum + supplier.totalOrders, 0)}
+                {suppliers.reduce((sum, supplier) => sum + (supplier.totalOrders ?? 0), 0)}
               </p>
             </div>
             <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -104,7 +105,7 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Note Moyenne</p>
               <p className="text-2xl font-bold text-gray-900">
-                {(suppliers.reduce((sum, supplier) => sum + supplier.rating, 0) / suppliers.length).toFixed(1)}
+                {(suppliers.length > 0 ? (suppliers.reduce((sum, supplier) => sum + (supplier.rating ?? 0), 0) / suppliers.length).toFixed(1) : '0.0')}
               </p>
             </div>
             <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -118,7 +119,7 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
             <div>
               <p className="text-sm font-medium text-gray-600 mb-1">Fournisseurs Actifs</p>
               <p className="text-2xl font-bold text-gray-900">
-                {suppliers.filter(s => new Date(s.lastOrderDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}
+                {suppliers.filter(s => s.lastOrderDate && new Date(s.lastOrderDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)).length}
               </p>
             </div>
             <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -140,12 +141,12 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{supplier.name}</h3>
-                    <p className="text-sm text-gray-500">{supplier.contactPerson}</p>
+                    <p className="text-sm text-gray-500">{supplier.contact_person ?? ''}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-1">
-                  {renderStars(supplier.rating)}
-                  <span className="text-sm text-gray-600 ml-1">({supplier.rating})</span>
+                  {renderStars(supplier.rating ?? 0)}
+                  <span className="text-sm text-gray-600 ml-1">({supplier.rating ?? 0})</span>
                 </div>
               </div>
               
@@ -168,7 +169,7 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
               <div className="mb-4">
                 <p className="text-sm font-medium text-gray-700 mb-2">Produits fournis:</p>
                 <div className="flex flex-wrap gap-1">
-                  {supplier.productsSupplied.slice(0, 3).map((product, index) => (
+                  {supplier.productsSupplied?.slice(0, 3).map((product, index) => (
                     <span
                       key={index}
                       className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
@@ -176,7 +177,7 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
                       {product}
                     </span>
                   ))}
-                  {supplier.productsSupplied.length > 3 && (
+                  {supplier.productsSupplied && supplier.productsSupplied.length > 3 && (
                     <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
                       +{supplier.productsSupplied.length - 3}
                     </span>
@@ -187,12 +188,12 @@ export const SuppliersList: React.FC<SuppliersListProps> = ({
               <div className="flex justify-between items-center text-sm mb-4">
                 <div>
                   <span className="text-gray-500">Commandes:</span>
-                  <span className="ml-1 font-medium">{supplier.totalOrders}</span>
+                  <span className="ml-1 font-medium">{supplier.totalOrders ?? 0}</span>
                 </div>
                 <div>
                   <span className="text-gray-500">Dernière:</span>
                   <span className="ml-1 font-medium">
-                    {new Date(supplier.lastOrderDate).toLocaleDateString('fr-FR')}
+                    {supplier.lastOrderDate ? new Date(supplier.lastOrderDate).toLocaleDateString('fr-FR') : ''}
                   </span>
                 </div>
               </div>
