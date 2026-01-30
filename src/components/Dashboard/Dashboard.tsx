@@ -1,7 +1,6 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatsCard } from './StatsCard';
-import { DashboardCharts } from './DashboardCharts';
-import { TrendingUp, ShoppingCart, AlertTriangle, DollarSign, Package, Users, Crown, Award, RefreshCw, TrendingDown, Target, Zap, BarChart3, PieChart, Activity, LineChart as LineChartIcon } from 'lucide-react';
+import { TrendingUp, ShoppingCart, AlertTriangle, DollarSign, Package, Users, Crown, Award, RefreshCw } from 'lucide-react';
 import { getDashboardStats, getSales, getProducts, getCustomers, initializeSampleData } from '../../services/supabase';
 import { useAuthContext } from '../../contexts/AuthContext';
 
@@ -134,341 +133,202 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen p-8">
-      {/* Header Premium */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-4">
-            <div className="p-4 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-lg">
-              <BarChart3 className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-black bg-gradient-to-r from-blue-600 via-blue-700 to-blue-900 bg-clip-text text-transparent">
-                Tableau de Bord Analytique
-              </h1>
-              <p className="text-gray-600 mt-2 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-green-600" />
-                <span>Aperçu en temps réel de votre activité commerciale</span>
-              </p>
-            </div>
-          </div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+            Tableau de Bord
+          </h1>
+          <p className="text-gray-600 mt-1">Vue d'ensemble de votre activité commerciale</p>
         </div>
         
-        <div className="flex gap-3">
+        {stats.totalSales === 0 && (
           <button
-            onClick={loadDashboardData}
-            className="flex items-center space-x-2 bg-white text-gray-900 px-4 py-2 rounded-lg border border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 shadow-sm hover:shadow-md font-medium"
+            onClick={handleInitializeSampleData}
+            disabled={initializing}
+            className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg"
           >
-            <RefreshCw className="w-4 h-4" />
-            <span>Actualiser</span>
+            {initializing ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Initialisation...</span>
+              </>
+            ) : (
+              <>
+                <Package className="w-4 h-4" />
+                <span>Charger les données d'exemple</span>
+              </>
+            )}
           </button>
-          
-          {stats.totalSales === 0 && (
-            <button
-              onClick={handleInitializeSampleData}
-              disabled={initializing}
-              className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium disabled:opacity-50"
-            >
-              {initializing ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Chargement...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4" />
-                  <span>Données de démo</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
-      {/* KPI Cards Premium - Ligne 1 */}
+      {/* Stats Grid avec design amélioré */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Revenue Card */}
-        <div className="group bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all duration-300 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative z-10">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-2">Revenu Total</p>
-                <h3 className="text-3xl font-black text-gray-900">
-                  {(stats.monthlyRevenue / 1000000).toFixed(1)}M FCFA
-                </h3>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-                <DollarSign className="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-1 px-3 py-1 bg-green-100 rounded-full">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-xs font-bold text-green-700">+12.5%</span>
-              </div>
-              <span className="text-xs text-gray-500">par rapport au mois dernier</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Sales Card */}
-        <div className="group bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all duration-300 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative z-10">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-2">Nombre de Ventes</p>
-                <h3 className="text-3xl font-black text-gray-900">{stats.totalSales}</h3>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg">
-                <ShoppingCart className="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-1 px-3 py-1 bg-blue-100 rounded-full">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                <span className="text-xs font-bold text-blue-700">+8.3%</span>
-              </div>
-              <span className="text-xs text-gray-500">8 nouvelles cette semaine</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Pending Orders Card */}
-        <div className="group bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all duration-300 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative z-10">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-2">Commandes en Attente</p>
-                <h3 className="text-3xl font-black text-gray-900">{stats.pendingOrders}</h3>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-orange-500 to-yellow-600 rounded-xl shadow-lg">
-                <Package className="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-1 px-3 py-1 bg-orange-100 rounded-full">
-                <Target className="w-4 h-4 text-orange-600" />
-                <span className="text-xs font-bold text-orange-700">À traiter</span>
-              </div>
-              <span className="text-xs text-gray-500">Nécessite attention</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Low Stock Card */}
-        <div className="group bg-white rounded-2xl shadow-md hover:shadow-xl border border-gray-200 p-6 transition-all duration-300 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          <div className="relative z-10">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <p className="text-gray-600 text-sm font-medium mb-2">Alertes Stock</p>
-                <h3 className="text-3xl font-black text-gray-900">{stats.lowStockItems}</h3>
-              </div>
-              <div className="p-3 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl shadow-lg">
-                <AlertTriangle className="w-6 h-6 text-white" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-1 px-3 py-1 bg-red-100 rounded-full">
-                <TrendingDown className="w-4 h-4 text-red-600" />
-                <span className="text-xs font-bold text-red-700">Critique</span>
-              </div>
-              <span className="text-xs text-gray-500">À réapprovisionner</span>
-            </div>
-          </div>
-        </div>
+        <StatsCard
+          title="Chiffre d'Affaires du Mois"
+          value={`${stats.monthlyRevenue.toLocaleString()} FCFA`}
+          change="12.5%"
+          changeType="increase"
+          icon={DollarSign}
+          color="green"
+        />
+        <StatsCard
+          title="Ventes Totales"
+          value={stats.totalSales}
+          change="8 nouvelles"
+          changeType="increase"
+          icon={ShoppingCart}
+          color="blue"
+        />
+        <StatsCard
+          title="Commandes en Attente"
+          value={stats.pendingOrders}
+          icon={Package}
+          color="orange"
+        />
+        <StatsCard
+          title="Alertes Stock"
+          value={stats.lowStockItems}
+          icon={AlertTriangle}
+          color="red"
+        />
       </div>
 
-      {/* Advanced Charts Section */}
-      {stats.totalSales > 0 && (
-        <div className="mt-8">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="p-3 bg-gradient-to-br from-indigo-600 to-indigo-800 rounded-xl shadow-lg">
-              <LineChartIcon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-3xl font-black bg-gradient-to-r from-indigo-600 to-purple-700 bg-clip-text text-transparent">
-                Analyse Détaillée
-              </h2>
-              <p className="text-gray-600 text-sm mt-1">Graphiques et tendances en temps réel</p>
+      {/* Main Content Grid avec design premium */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        {/* Recent Sales */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Ventes Récentes</h2>
+            <div className="p-2 bg-green-100 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-green-600" />
             </div>
           </div>
-          <DashboardCharts recentSales={recentSales} />
-        </div>
-      )}
-
-      {/* Detailed Analytics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Ventes Récentes - Large */}
-        <div className="lg:col-span-2 bg-white rounded-2xl shadow-md border border-gray-200 p-8 hover:shadow-lg transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-black text-gray-900">Ventes Récentes</h2>
-              <p className="text-sm text-gray-500 mt-1">Aperçu des 5 dernières transactions</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg">
-              <TrendingUp className="w-6 h-6 text-white" />
-            </div>
-          </div>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {recentSales.length > 0 ? recentSales.map((sale, idx) => (
-              <div key={sale.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-xl border border-gray-200 hover:border-green-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 transition-all duration-200 group cursor-pointer">
-                <div className="flex items-center gap-4 flex-1">
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white text-sm shadow-md ${
-                    idx === 0 ? 'bg-gradient-to-br from-green-500 to-emerald-600' :
-                    idx === 1 ? 'bg-gradient-to-br from-blue-500 to-blue-600' :
-                    'bg-gradient-to-br from-purple-500 to-purple-600'
-                  }`}>
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">{sale.customerName || sale.customer?.name || 'Client'}</p>
-                    <p className="text-xs text-gray-500">
-                      {new Date(sale.created_at || sale.createdAt).toLocaleDateString('fr-FR')} • {sale.items?.length || 0} articles
-                    </p>
-                  </div>
+          <div className="space-y-4">
+            {recentSales.length > 0 ? recentSales.map((sale) => (
+              <div key={sale.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-lg hover:from-blue-50 hover:to-blue-100 transition-all duration-200">
+                <div>
+                  <p className="font-medium text-gray-900">{sale.customerName || sale.customer?.name}</p>
+                  <p className="text-sm text-gray-500">
+                    {new Date(sale.created_at || sale.createdAt).toLocaleDateString('fr-FR')} • {sale.sellerName || 'Vendeur'}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="font-black text-gray-900">{(sale.total_amount || sale.total || 0).toLocaleString()} FCFA</p>
-                  <span className={`inline-block text-xs px-3 py-1 rounded-full font-bold mt-1 ${
+                  <p className="font-semibold text-gray-900">{(sale.total_amount || sale.total || 0).toLocaleString()} FCFA</p>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
                     sale.status === 'paid' ? 'bg-green-100 text-green-800' :
                     sale.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
                     'bg-yellow-100 text-yellow-800'
                   }`}>
-                    {sale.status === 'paid' ? '✓ Payé' :
-                     sale.status === 'confirmed' ? '⏳ Confirmé' : '📝 Brouillon'}
+                    {sale.status === 'paid' ? 'Payé' :
+                     sale.status === 'confirmed' ? 'Confirmé' : 'Brouillon'}
                   </span>
                 </div>
               </div>
             )) : (
-              <div className="text-center py-12">
-                <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 font-medium">Aucune vente récente</p>
-                <p className="text-sm text-gray-500 mt-1">Les transactions apparaîtront ici</p>
+              <div className="text-center py-8">
+                <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Aucune vente récente</p>
+                <p className="text-sm text-gray-400 mt-1">Les ventes apparaîtront ici</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Meilleurs Clients */}
-        <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-8 hover:shadow-lg transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-2xl font-black text-gray-900">Top Clients</h2>
-              <p className="text-sm text-gray-500 mt-1">Meilleurs acheteurs</p>
-            </div>
-            <div className="p-3 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg">
-              <Crown className="w-6 h-6 text-white" />
+        {/* Top Clients */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Meilleurs Clients</h2>
+            <div className="p-2 bg-yellow-100 rounded-lg">
+              <Crown className="w-5 h-5 text-yellow-600" />
             </div>
           </div>
-          
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {topClients.length > 0 ? topClients.map((client, idx) => (
-              <div key={client.id} className="relative p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200 hover:border-yellow-400 hover:shadow-md transition-all duration-200 group">
-                <div className="absolute -left-2 -top-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-sm shadow-xl" style={{
-                  background: idx === 0 ? 'linear-gradient(135deg, #FFD700 0%, #FFA500 100%)' :
-                              idx === 1 ? 'linear-gradient(135deg, #C0C0C0 0%, #A9A9A9 100%)' :
-                              'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)'
-                }}>
-                  {idx + 1}
+          <div className="space-y-4">
+            {topClients.length > 0 ? topClients.map((client, index) => (
+              <div key={client.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg hover:from-yellow-100 hover:to-orange-100 transition-all duration-200">
+                <div className="flex items-center space-x-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${
+                    index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-500' :
+                    index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-500' :
+                    index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-500' : 'bg-gradient-to-r from-blue-400 to-blue-500'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{client.name}</p>
+                    <p className="text-sm text-gray-500">{client.company}</p>
+                  </div>
                 </div>
-                <div className="ml-2">
-                  <p className="font-bold text-gray-900">{client.name}</p>
-                  <p className="text-xs text-gray-600">{client.company || 'Client'}</p>
-                </div>
-                <div className="mt-2 pt-2 border-t border-yellow-200">
-                  <p className="text-sm font-black text-gray-900">{client.totalPurchases.toLocaleString()} FCFA</p>
+                <div className="text-right">
+                  <p className="font-semibold text-gray-900">{client.totalPurchases.toLocaleString()} FCFA</p>
                   {(client.balance || client.current_balance) > 0 && (
-                    <p className="text-xs text-orange-600 font-semibold">Créance: {(client.balance || client.current_balance).toLocaleString()}</p>
+                    <p className="text-xs text-orange-600">Créance: {(client.balance || client.current_balance).toLocaleString()}</p>
                   )}
                 </div>
               </div>
             )) : (
-              <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 font-medium">Pas de clients</p>
-                <p className="text-sm text-gray-500 mt-1">Créez vos premiers clients</p>
+              <div className="text-center py-8">
+                <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Aucun client</p>
+                <p className="text-sm text-gray-400 mt-1">Ajoutez vos premiers clients</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Low Stock Alert */}
+        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-gray-900">Alertes Stock</h2>
+            <div className="p-2 bg-red-100 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+            </div>
+          </div>
+          <div className="space-y-4">
+            {lowStockProducts.length > 0 ? lowStockProducts.map((product) => (
+              <div key={product.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200 hover:from-red-100 hover:to-orange-100 transition-all duration-200">
+                <div>
+                  <p className="font-medium text-gray-900">{product.name}</p>
+                  <p className="text-sm text-gray-500">{product.category?.name || 'Produit'}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-red-600">{product.stock} {product.unit}</p>
+                  <p className="text-xs text-gray-500">Min: {product.minStock}</p>
+                </div>
+              </div>
+            )) : (
+              <div className="text-center py-8">
+                <Package className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">Aucune alerte stock</p>
+                <p className="text-sm text-gray-400 mt-1">Tous vos stocks sont OK</p>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Stock Alerts - Full Width */}
-      {lowStockProducts.length > 0 && (
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl shadow-md border-2 border-red-200 p-8 hover:shadow-lg transition-shadow duration-300">
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center gap-4">
-              <div className="p-4 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl shadow-lg">
-                <AlertTriangle className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-black text-gray-900">Alertes Stock Critiques</h2>
-                <p className="text-sm text-gray-600 mt-1">{lowStockProducts.length} produits nécessitent une action immédiate</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {lowStockProducts.map((product) => (
-              <div key={product.id} className="p-4 bg-white rounded-xl border-2 border-red-300 hover:border-red-500 hover:shadow-lg transition-all duration-200">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <p className="font-bold text-gray-900 line-clamp-2">{product.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{product.category?.name || 'Produit'}</p>
-                  </div>
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <AlertTriangle className="w-4 h-4 text-red-600" />
-                  </div>
-                </div>
-                <div className="pt-3 border-t border-red-200">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-gray-600">Stock Actuel:</span>
-                    <span className="text-lg font-black text-red-600">{product.stock}</span>
-                  </div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs font-semibold text-gray-600">Minimum:</span>
-                    <span className="text-sm font-bold text-gray-500">{product.minStock}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Welcome Message */}
+      {/* Message d'accueil si pas de données */}
       {stats.totalSales === 0 && (
-        <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 rounded-2xl shadow-xl p-12 text-center text-white border border-blue-400">
-          <div className="max-w-2xl mx-auto">
-            <div className="p-4 bg-white bg-opacity-20 rounded-2xl inline-block mb-6">
-              <Award className="w-12 h-12" />
-            </div>
-            <h3 className="text-3xl font-black mb-3">Bienvenue sur Allo Béton!</h3>
-            <p className="text-blue-100 mb-6 text-lg">
-              Votre système de gestion commerciale est prêt. Lancez-vous avec nos données de démonstration ou importez vos propres données.
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-8 text-center">
+          <div className="max-w-md mx-auto">
+            <Award className="w-16 h-16 text-blue-600 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              Bienvenue dans Allo Béton !
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Votre système de gestion est prêt. Commencez par charger des données d'exemple ou créez vos premiers produits et clients.
             </p>
-            <button
-              onClick={handleInitializeSampleData}
-              disabled={initializing}
-              className="inline-flex items-center space-x-2 bg-white text-blue-600 px-8 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all duration-200 shadow-lg disabled:opacity-50"
-            >
-              {initializing ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span>Chargement...</span>
-                </>
-              ) : (
-                <>
-                  <Zap className="w-5 h-5" />
-                  <span>Charger les données de démo</span>
-                </>
-              )}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={handleInitializeSampleData}
+                disabled={initializing}
+                className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+              >
+                <Package className="w-4 h-4" />
+                <span>Charger les données d'exemple</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
