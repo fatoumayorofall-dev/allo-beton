@@ -268,6 +268,20 @@ const migrations = [
     CONSTRAINT check_po_unit_cost_positive CHECK (unit_cost > 0)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
 
+  // Table des préférences de notifications
+  `CREATE TABLE IF NOT EXISTS notification_preferences (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36) NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    notification_type ENUM('sms', 'email') NOT NULL,
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_event_type (user_id, event_type, notification_type),
+    INDEX idx_user_enabled (user_id, enabled)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+
   // Table des notifications
   `CREATE TABLE IF NOT EXISTS notifications (
     id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),

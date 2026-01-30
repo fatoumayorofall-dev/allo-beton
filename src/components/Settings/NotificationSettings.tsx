@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, Smartphone, Mail, Save } from 'lucide-react';
+import { Bell, Smartphone, Mail, Save, CheckCircle, AlertCircle, Send } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { notificationsAPI } from '../../services/mysql-api';
 
 interface NotificationPreference {
   id?: string;
@@ -10,12 +11,17 @@ interface NotificationPreference {
   phone_number?: string;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
 export const NotificationSettings: React.FC = () => {
   const { user, profile } = useAuthContext();
   const [preferences, setPreferences] = useState<NotificationPreference[]>([]);
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone || '');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [testingSms, setTestingSms] = useState(false);
+  const [twilioStatus, setTwilioStatus] = useState<{ configured: boolean; message: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const eventTypes = [
     { key: 'low_stock', label: 'Stock faible', description: 'Alerte quand un produit atteint le stock minimum' },
@@ -28,32 +34,75 @@ export const NotificationSettings: React.FC = () => {
   useEffect(() => {
     if (user) {
       loadPreferences();
+      checkTwilioStatus();
     }
   }, [user]);
+
+  const checkTwilioStatus = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/notifications/sms/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await response.json();
+      setTwilioStatus({
+        configured: data.twilioConfigured,
+        message: data.message
+      });
+    } catch (error) {
+      console.error('Erreur vérification Twilio:', error);
+    }
+  };
 
   const loadPreferences = async () => {
     if (!user) return;
 
     try {
-      // Initialiser les préférences par défaut
-      const defaultPrefs: NotificationPreference[] = [];
-
-      eventTypes.forEach(eventType => {
-        ['sms', 'email'].forEach(notificationType => {
-          defaultPrefs.push({
-            notification_type: notificationType as 'sms' | 'email',
-            event_type: eventType.key,
-            enabled: notificationType === 'sms' ? true : false, // SMS activé par défaut
-          });
-        });
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/notifications/preferences`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      const result = await response.json();
 
-      setPreferences(defaultPrefs);
+      if (result.success && result.data) {
+        if (result.data.phoneNumber) {
+          setPhoneNumber(result.data.phoneNumber);
+        }
+        
+        if (result.data.preferences && result.data.preferences.length > 0) {
+          const prefs = result.data.preferences.map((p: any) => ({
+            notification_type: p.notification_type,
+            event_type: p.event_type,
+            enabled: p.enabled === 1 || p.enabled === true
+          }));
+          setPreferences(prefs);
+        } else {
+          // Initialiser avec des préférences par défaut
+          initDefaultPreferences();
+        }
+      } else {
+        initDefaultPreferences();
+      }
     } catch (error) {
       console.error('Erreur chargement préférences:', error);
+      initDefaultPreferences();
     } finally {
       setLoading(false);
     }
+  };
+
+  const initDefaultPreferences = () => {
+    const defaultPrefs: NotificationPreference[] = [];
+    eventTypes.forEach(eventType => {
+      ['sms', 'email'].forEach(notificationType => {
+        defaultPrefs.push({
+          notification_type: notificationType as 'sms' | 'email',
+          event_type: eventType.key,
+          enabled: notificationType === 'sms',
+        });
+      });
+    });
+    setPreferences(defaultPrefs);
   };
 
   const updatePreference = (eventType: string, notificationType: 'sms' | 'email', enabled: boolean) => {
@@ -70,18 +119,76 @@ export const NotificationSettings: React.FC = () => {
     if (!user) return;
 
     setSaving(true);
+    setMessage(null);
+    
     try {
-      // Simplement afficher un message de succès
-      // Les préférences sont stockées en local pour l'instant
-      console.log('Préférences à sauvegarder:', preferences);
-      console.log('Numéro de téléphone:', phoneNumber);
-      
-      alert('Préférences sauvegardées avec succès !');
-    } catch (error) {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/notifications/preferences`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          preferences,
+          phoneNumber
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Préférences sauvegardées avec succès !' });
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Erreur lors de la sauvegarde' });
+      }
+    } catch (error: any) {
       console.error('Erreur sauvegarde:', error);
-      alert('Erreur lors de la sauvegarde');
+      setMessage({ type: 'error', text: 'Erreur lors de la sauvegarde' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const sendTestSms = async () => {
+    if (!phoneNumber) {
+      setMessage({ type: 'error', text: 'Veuillez entrer un numéro de téléphone' });
+      return;
+    }
+
+    setTestingSms(true);
+    setMessage(null);
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/notifications/sms/test`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          phoneNumber,
+          message: '🔔 Test ALLO BÉTON - Vos notifications SMS fonctionnent correctement !'
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        if (result.simulated) {
+          setMessage({ type: 'success', text: 'SMS simulé avec succès ! (Twilio non configuré)' });
+        } else {
+          setMessage({ type: 'success', text: 'SMS de test envoyé avec succès !' });
+        }
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Erreur lors de l\'envoi du SMS' });
+      }
+    } catch (error: any) {
+      console.error('Erreur envoi SMS test:', error);
+      setMessage({ type: 'error', text: 'Erreur lors de l\'envoi du SMS' });
+    } finally {
+      setTestingSms(false);
     }
   };
 
@@ -100,6 +207,30 @@ export const NotificationSettings: React.FC = () => {
         <p className="text-gray-600">Configurez comment vous souhaitez être notifié des événements importants</p>
       </div>
 
+      {/* Message de statut */}
+      {message && (
+        <div className={`flex items-center space-x-2 p-4 rounded-lg ${
+          message.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+        }`}>
+          {message.type === 'success' ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
+          <span>{message.text}</span>
+        </div>
+      )}
+
+      {/* Statut Twilio */}
+      {twilioStatus && (
+        <div className={`flex items-center space-x-2 p-4 rounded-lg ${
+          twilioStatus.configured ? 'bg-green-50 text-green-800' : 'bg-yellow-50 text-yellow-800'
+        }`}>
+          <Smartphone className="w-5 h-5" />
+          <span>{twilioStatus.message}</span>
+        </div>
+      )}
+
       {/* Numéro de téléphone */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="flex items-center space-x-2 mb-4">
@@ -110,15 +241,25 @@ export const NotificationSettings: React.FC = () => {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Numéro pour les SMS
           </label>
-          <input
-            type="tel"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="77 123 45 67"
-          />
+          <div className="flex space-x-2">
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="77 123 45 67"
+            />
+            <button
+              onClick={sendTestSms}
+              disabled={testingSms || !phoneNumber}
+              className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors duration-200"
+            >
+              <Send className="w-4 h-4" />
+              <span>{testingSms ? 'Envoi...' : 'Tester'}</span>
+            </button>
+          </div>
           <p className="text-sm text-gray-500 mt-1">
-            Format: 77 123 45 67 (Sénégal)
+            Format: 77 123 45 67 (Sénégal) - Cliquez sur "Tester" pour recevoir un SMS de test
           </p>
         </div>
       </div>
