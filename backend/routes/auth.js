@@ -4,8 +4,40 @@ const jwt = require('jsonwebtoken');
 const { pool } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
 const { v4: uuidv4 } = require('uuid');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
+
+// Configuration Multer pour l'upload d'avatars
+const avatarStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../uploads/avatars');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, `avatar-${req.user.id}-${uniqueSuffix}${path.extname(file.originalname)}`);
+  }
+});
+
+const uploadAvatar = multer({
+  storage: avatarStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error('Seules les images sont autorisées (jpeg, jpg, png, gif, webp)'));
+  }
+});
 
 // Inscription
 router.post('/register', async (req, res) => {
@@ -172,7 +204,10 @@ router.get('/profile', authenticateToken, async (req, res) => {
         last_name: req.user.last_name,
         role: req.user.role,
         company: req.user.company,
-        phone: req.user.phone
+        phone: req.user.phone,
+        avatar_url: req.user.avatar_url,
+        position: req.user.position,
+        bio: req.user.bio
       }
     });
   } catch (error) {
@@ -187,11 +222,11 @@ router.get('/profile', authenticateToken, async (req, res) => {
 // Mettre à jour le profil
 router.put('/profile', authenticateToken, async (req, res) => {
   try {
-    const { first_name, last_name, company, phone } = req.body;
+    const { first_name, last_name, company, phone, position, bio, avatar_url } = req.body;
 
     await pool.execute(
-      'UPDATE users SET first_name = ?, last_name = ?, company = ?, phone = ?, updated_at = NOW() WHERE id = ?',
-      [first_name, last_name, company, phone, req.user.id]
+      'UPDATE users SET first_name = ?, last_name = ?, company = ?, phone = ?, position = ?, bio = ?, avatar_url = ?, updated_at = NOW() WHERE id = ?',
+      [first_name, last_name, company, phone, position || null, bio || null, avatar_url || null, req.user.id]
     );
 
     res.json({
@@ -203,7 +238,10 @@ router.put('/profile', authenticateToken, async (req, res) => {
         last_name,
         role: req.user.role,
         company,
-        phone
+        phone,
+        position,
+        bio,
+        avatar_url
       }
     });
 
@@ -272,6 +310,43 @@ router.put('/change-password', authenticateToken, async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Erreur lors du changement de mot de passe'
+    });
+  }
+});
+
+// Upload d'avatar
+router.post('/avatar', authenticateToken, uploadAvatar.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'Aucun fichier uploadé'
+      });
+    }
+
+    // Construire l'URL de l'avatar
+    const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+    // Mettre à jour l'avatar dans la base de données
+    await pool.execute(
+      'UPDATE users SET avatar_url = ?, updated_at = NOW() WHERE id = ?',
+      [avatarUrl, req.user.id]
+    );
+
+    console.log(`✅ Avatar uploadé pour l'utilisateur ${req.user.id}: ${avatarUrl}`);
+
+    res.json({
+      success: true,
+      data: {
+        avatar_url: avatarUrl
+      }
+    });
+
+  } catch (error) {
+    console.error('Erreur upload avatar:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de l\'upload de l\'avatar'
     });
   }
 });

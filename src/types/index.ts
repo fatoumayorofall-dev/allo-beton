@@ -209,6 +209,8 @@ export interface Profile {
   company?: string;
   phone?: string;
   avatar_url?: string;
+  position?: string;
+  bio?: string;
   created_at?: string;
   updated_at?: string;
 }

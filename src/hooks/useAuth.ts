@@ -170,6 +170,35 @@ export const useAuth = () => {
     }
   };
 
+  const refreshProfile = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const result = await authAPI.getProfile();
+      
+      if (result.success) {
+        const userData = result.data;
+        setUser(userData);
+        setProfile({
+          id: userData.id,
+          email: userData.email,
+          first_name: userData.first_name,
+          last_name: userData.last_name,
+          role: userData.role,
+          company: userData.company,
+          phone: userData.phone,
+          avatar_url: userData.avatar_url,
+          position: userData.position,
+          bio: userData.bio
+        });
+        setSession({ user: userData });
+      }
+    } catch (error) {
+      console.error('Erreur refresh profile:', error);
+    }
+  };
+
   return {
     user,
     profile,
@@ -178,6 +207,7 @@ export const useAuth = () => {
     login,
     register,
     logout,
-    resetPassword
+    resetPassword,
+    refreshProfile
   };
 };

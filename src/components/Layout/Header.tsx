@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Menu, Search, User, X, LogOut, Settings, HelpCircle, Bell } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { NotificationCenter } from '../Notifications/NotificationCenter';
+import { UserProfile } from './UserProfile';
 
 interface HeaderProps {
   onMenuToggle: () => void;
@@ -96,8 +97,14 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Notification Center */}
           <NotificationCenter />
           
+          {/* User Profile Card */}
+          <UserProfile 
+            onProfileClick={onProfileClick}
+            onSettingsClick={onSettingsClick}
+          />
+          
           {/* User Menu */}
-          <div className="relative">
+          <div className="relative hidden md:block">
             <button
               onClick={handleUserClick}
               className="flex items-center space-x-3 p-2 rounded-xl hover:bg-gray-100 transition-colors duration-200 group"

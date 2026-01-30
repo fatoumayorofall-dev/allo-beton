@@ -60,7 +60,11 @@ app.use('/api/auth/login', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 📜 Middleware de logging
+// � Servir les fichiers statiques (uploads)
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// �📜 Middleware de logging
 app.use((req, res, next) => {
   const timestamp = new Date().toISOString();
   console.log(`${timestamp} - ${req.method} ${req.originalUrl} - IP: ${req.ip}`);
