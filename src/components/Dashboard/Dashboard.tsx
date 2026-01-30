@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { StatsCard } from './StatsCard';
-import { TrendingUp, ShoppingCart, AlertTriangle, DollarSign, Package, Users, Crown, Award, RefreshCw } from 'lucide-react';
-import { getDashboardStats, getSales, getProducts, getCustomers, initializeSampleData } from '../../services/supabase';
+import { TrendingUp, ShoppingCart, AlertTriangle, DollarSign, Package, Users, Crown, Award, RefreshCw, Truck, CreditCard, Calendar, BarChart3 } from 'lucide-react';
+import { dashboardAPI, salesAPI, productsAPI, customersAPI, paymentsAPI } from '../../services/mysql-api';
 import { useAuthContext } from '../../contexts/AuthContext';
 
 export const Dashboard: React.FC = () => {
@@ -10,14 +10,18 @@ export const Dashboard: React.FC = () => {
     totalSales: 0,
     monthlyRevenue: 0,
     pendingOrders: 0,
-    lowStockItems: 0
+    lowStockItems: 0,
+    totalCustomers: 0,
+    totalProducts: 0,
+    totalPayments: 0,
+    unpaidAmount: 0
   });
   const [recentSales, setRecentSales] = useState<any[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
   const [topClients, setTopClients] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [initializing, setInitializing] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -30,52 +34,77 @@ export const Dashboard: React.FC = () => {
     setError(null);
     
     try {
-      // Charger les statistiques avec timeout
-      const statsPromise = getDashboardStats();
-      const salesPromise = getSales();
-      const productsPromise = getProducts();
-      const customersPromise = getCustomers();
-
-      // Attendre toutes les promesses avec un timeout global
-      const results = await Promise.allSettled([
-        statsPromise,
-        salesPromise,
-        productsPromise,
-        customersPromise
+      // Charger toutes les données en parallèle
+      const [statsResult, salesResult, productsResult, customersResult, paymentsResult] = await Promise.allSettled([
+        dashboardAPI.getStats(),
+        salesAPI.getAll(),
+        productsAPI.getAll(),
+        customersAPI.getAll(),
+        paymentsAPI.getAll()
       ]);
 
-      // Traiter les résultats
-      const [statsResult, salesResult, productsResult, customersResult] = results;
-
+      // Traiter les statistiques
       if (statsResult.status === 'fulfilled' && statsResult.value.success) {
-        setStats(statsResult.value.data);
-      }
-
-      if (salesResult.status === 'fulfilled' && salesResult.value.success) {
-        setRecentSales(salesResult.value.data.slice(0, 5));
-      }
-
-      if (productsResult.status === 'fulfilled' && productsResult.value.success) {
-        const lowStock = productsResult.value.data.filter((p: any) => 
-          (p.stock || 0) <= (p.minStock || 0) && (p.minStock || 0) > 0
-        );
-        setLowStockProducts(lowStock);
-      }
-
-      if (customersResult.status === 'fulfilled' && customersResult.value.success) {
-        // Simuler les top clients
-        const clients = customersResult.value.data.slice(0, 5).map((client: any) => ({
-          ...client,
-          totalPurchases: Math.floor(Math.random() * 10000000) + 1000000
+        const dashStats = statsResult.value.data;
+        setStats(prev => ({
+          ...prev,
+          totalSales: dashStats.totalSales || 0,
+          monthlyRevenue: dashStats.monthlyRevenue || 0,
+          pendingOrders: dashStats.pendingOrders || 0,
+          lowStockItems: dashStats.lowStockItems || 0
         }));
-        setTopClients(clients.sort((a: any, b: any) => b.totalPurchases - a.totalPurchases));
       }
 
-      // Si aucune donnée n'existe, proposer d'initialiser
-      if (statsResult.status === 'fulfilled' && 
-          statsResult.value.success && 
-          statsResult.value.data.totalSales === 0) {
-        // Pas d'initialisation automatique, laisser l'utilisateur choisir
+      // Traiter les ventes
+      let allSales: any[] = [];
+      if (salesResult.status === 'fulfilled' && salesResult.value.success) {
+        allSales = salesResult.value.data || [];
+        setRecentSales(allSales.slice(0, 5));
+        
+        // Calculer les données mensuelles pour le graphique
+        const monthly = calculateMonthlyData(allSales);
+        setMonthlyData(monthly);
+      }
+
+      // Traiter les produits
+      if (productsResult.status === 'fulfilled' && productsResult.value.success) {
+        const products = productsResult.value.data || [];
+        const lowStock = products.filter((p: any) => 
+          (p.stock || 0) <= (p.min_stock || p.minStock || 5)
+        );
+        setLowStockProducts(lowStock.slice(0, 5));
+        setStats(prev => ({ ...prev, totalProducts: products.length, lowStockItems: lowStock.length }));
+      }
+
+      // Traiter les clients et calculer leurs totaux d'achats réels
+      if (customersResult.status === 'fulfilled' && customersResult.value.success) {
+        const customers = customersResult.value.data || [];
+        
+        // Calculer le total des achats pour chaque client
+        const clientsWithTotals = customers.map((client: any) => {
+          const clientSales = allSales.filter((sale: any) => 
+            sale.customer_id === client.id || sale.customerId === client.id
+          );
+          const totalPurchases = clientSales.reduce((sum: number, sale: any) => 
+            sum + (sale.total_amount || sale.total || 0), 0
+          );
+          return { ...client, totalPurchases };
+        });
+        
+        // Trier par total d'achats et prendre les 5 meilleurs
+        const topClientsSorted = clientsWithTotals
+          .sort((a: any, b: any) => b.totalPurchases - a.totalPurchases)
+          .slice(0, 5);
+        
+        setTopClients(topClientsSorted);
+        setStats(prev => ({ ...prev, totalCustomers: customers.length }));
+      }
+
+      // Traiter les paiements
+      if (paymentsResult.status === 'fulfilled' && paymentsResult.value.success) {
+        const payments = paymentsResult.value.data || [];
+        const totalPaid = payments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+        setStats(prev => ({ ...prev, totalPayments: totalPaid }));
       }
 
     } catch (error: any) {
@@ -86,21 +115,37 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const handleInitializeSampleData = async () => {
-    setInitializing(true);
-    try {
-      const result = await initializeSampleData();
-      if (result.success) {
-        // Recharger les données après initialisation
-        await loadDashboardData();
-      } else {
-        setError(result.error || 'Erreur lors de l\'initialisation');
-      }
-    } catch (error: any) {
-      setError('Erreur lors de l\'initialisation des données');
-    } finally {
-      setInitializing(false);
+  // Calculer les données mensuelles pour les 6 derniers mois
+  const calculateMonthlyData = (sales: any[]) => {
+    const months: { [key: string]: number } = {};
+    const now = new Date();
+    
+    // Initialiser les 6 derniers mois
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      months[key] = 0;
     }
+    
+    // Ajouter les ventes
+    sales.forEach((sale: any) => {
+      const date = new Date(sale.created_at || sale.createdAt);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      if (months[key] !== undefined) {
+        months[key] += (sale.total_amount || sale.total || 0);
+      }
+    });
+    
+    // Convertir en tableau
+    const monthNames = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
+    return Object.entries(months).map(([key, value]) => {
+      const [year, month] = key.split('-');
+      return {
+        month: monthNames[parseInt(month) - 1],
+        year,
+        revenue: value
+      };
+    });
   };
 
   if (loading) {
@@ -142,50 +187,34 @@ export const Dashboard: React.FC = () => {
           <p className="text-gray-600 mt-1">Vue d'ensemble de votre activité commerciale</p>
         </div>
         
-        {stats.totalSales === 0 && (
-          <button
-            onClick={handleInitializeSampleData}
-            disabled={initializing}
-            className="flex items-center space-x-2 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-200 shadow-lg"
-          >
-            {initializing ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Initialisation...</span>
-              </>
-            ) : (
-              <>
-                <Package className="w-4 h-4" />
-                <span>Charger les données d'exemple</span>
-              </>
-            )}
-          </button>
-        )}
+        <button
+          onClick={loadDashboardData}
+          className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+        >
+          <RefreshCw className="w-4 h-4" />
+          <span>Actualiser</span>
+        </button>
       </div>
 
-      {/* Stats Grid avec design amélioré */}
+      {/* Stats Grid - Ligne 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Chiffre d'Affaires du Mois"
           value={`${stats.monthlyRevenue.toLocaleString()} FCFA`}
-          change="12.5%"
-          changeType="increase"
           icon={DollarSign}
           color="green"
         />
         <StatsCard
           title="Ventes Totales"
           value={stats.totalSales}
-          change="8 nouvelles"
-          changeType="increase"
           icon={ShoppingCart}
           color="blue"
         />
         <StatsCard
-          title="Commandes en Attente"
-          value={stats.pendingOrders}
-          icon={Package}
-          color="orange"
+          title="Clients"
+          value={stats.totalCustomers}
+          icon={Users}
+          color="purple"
         />
         <StatsCard
           title="Alertes Stock"
@@ -193,6 +222,46 @@ export const Dashboard: React.FC = () => {
           icon={AlertTriangle}
           color="red"
         />
+      </div>
+
+      {/* Graphique des revenus mensuels */}
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Évolution du Chiffre d'Affaires</h2>
+            <p className="text-sm text-gray-500">6 derniers mois</p>
+          </div>
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <BarChart3 className="w-5 h-5 text-blue-600" />
+          </div>
+        </div>
+        
+        {monthlyData.length > 0 ? (
+          <div className="flex items-end justify-between h-48 gap-2">
+            {monthlyData.map((data, index) => {
+              const maxRevenue = Math.max(...monthlyData.map(d => d.revenue), 1);
+              const heightPercent = (data.revenue / maxRevenue) * 100;
+              return (
+                <div key={index} className="flex-1 flex flex-col items-center">
+                  <div className="w-full flex flex-col items-center justify-end h-40">
+                    <span className="text-xs text-gray-600 mb-1 font-medium">
+                      {data.revenue > 0 ? `${(data.revenue / 1000000).toFixed(1)}M` : '0'}
+                    </span>
+                    <div 
+                      className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all duration-500 hover:from-blue-700 hover:to-blue-500"
+                      style={{ height: `${Math.max(heightPercent, 2)}%`, minHeight: '4px' }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 mt-2 font-medium">{data.month}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="h-48 flex items-center justify-center text-gray-400">
+            <p>Aucune donnée disponible</p>
+          </div>
+        )}
       </div>
 
       {/* Main Content Grid avec design premium */}
@@ -290,11 +359,11 @@ export const Dashboard: React.FC = () => {
               <div key={product.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-red-200 hover:from-red-100 hover:to-orange-100 transition-all duration-200">
                 <div>
                   <p className="font-medium text-gray-900">{product.name}</p>
-                  <p className="text-sm text-gray-500">{product.category?.name || 'Produit'}</p>
+                  <p className="text-sm text-gray-500">{product.category?.name || product.category_name || 'Produit'}</p>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold text-red-600">{product.stock} {product.unit}</p>
-                  <p className="text-xs text-gray-500">Min: {product.minStock}</p>
+                  <p className="text-xs text-gray-500">Min: {product.min_stock || product.minStock || 5}</p>
                 </div>
               </div>
             )) : (
@@ -317,18 +386,8 @@ export const Dashboard: React.FC = () => {
               Bienvenue dans Allo Béton !
             </h3>
             <p className="text-gray-600 mb-4">
-              Votre système de gestion est prêt. Commencez par charger des données d'exemple ou créez vos premiers produits et clients.
+              Votre système de gestion est prêt. Commencez par créer vos premiers produits, clients et ventes.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={handleInitializeSampleData}
-                disabled={initializing}
-                className="flex items-center space-x-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-              >
-                <Package className="w-4 h-4" />
-                <span>Charger les données d'exemple</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
