@@ -176,8 +176,40 @@ const sendNotification = async (eventType, data, phoneNumber) => {
   return await sendSMS(phoneNumber, message);
 };
 
+/**
+ * Envoyer un OTP via WhatsApp (Twilio WhatsApp API)
+ * Fallback SMS si WhatsApp non configuré
+ */
+const sendWhatsAppOTP = async (phone, otp) => {
+  const formattedPhone = formatPhoneNumber(phone);
+  if (!formattedPhone) return { success: false, error: 'Numéro invalide' };
+
+  const message = `🔐 *Allo Béton* — Votre code de vérification :\n\n*${otp}*\n\nCe code expire dans 10 minutes.\nNe le partagez avec personne.`;
+
+  if (!isTwilioConfigured()) {
+    console.log(`📱 [WHATSAPP OTP SIMULÉ] → ${formattedPhone} | Code: ${otp}`);
+    return { success: true, simulated: true, otp };
+  }
+
+  try {
+    const client = getTwilioClient();
+    const WHATSAPP_FROM = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
+    const result = await client.messages.create({
+      body: message,
+      from: WHATSAPP_FROM,
+      to: `whatsapp:${formattedPhone}`
+    });
+    console.log(`✅ WhatsApp OTP envoyé à ${formattedPhone} - SID: ${result.sid}`);
+    return { success: true, sid: result.sid };
+  } catch (waError) {
+    console.warn('⚠️ WhatsApp échoué, fallback SMS:', waError.message);
+    return sendSMS(formattedPhone, `Allo Béton - Code: ${otp} (valable 10 min)`);
+  }
+};
+
 module.exports = {
   sendSMS,
+  sendWhatsAppOTP,
   sendNotification,
   smsTemplates,
   formatPhoneNumber,

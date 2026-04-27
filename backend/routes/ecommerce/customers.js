@@ -15,6 +15,7 @@ const pool = require('../../db');
 const { authenticateCustomer } = require('../../middleware/ecommerceAuth');
 const { authenticateToken, requireRole } = require('../../middleware/auth');
 const { sendNotification, sendEmail } = require('../../services/emailService');
+const { sendWhatsAppOTP } = require('../../services/smsService');
 const { OAuth2Client } = require('google-auth-library');
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || process.env.GMAIL_USER || 'fatoumayorofall@gmail.com';
@@ -68,106 +69,67 @@ const resetLimiter = rateLimit({
 router.post('/register', registerLimiter, async (req, res) => {
   try {
     let {
-      email, phone, password, first_name, last_name,
-      company_name, company_ninea, company_rc,
-      customer_type = 'particulier'
+      phone, password, first_name, last_name,
+      company_name, customer_type = 'particulier'
     } = req.body;
 
-    // Mapper les valeurs anglaises vers les valeurs ENUM françaises
-    const typeMapping = { 'individual': 'particulier', 'company': 'entreprise', 'professional': 'professionnel' };
+    // Normaliser le type client
+    const typeMapping = { individual: 'particulier', company: 'entreprise', professional: 'professionnel' };
     if (typeMapping[customer_type]) customer_type = typeMapping[customer_type];
     if (!['particulier', 'professionnel', 'entreprise'].includes(customer_type)) customer_type = 'particulier';
 
-    // Normaliser le téléphone (supprimer espaces et tirets)
+    // Normaliser téléphone
     if (phone) phone = phone.replace(/[\s\-().+]/g, '');
 
-    // Validation — phone obligatoire, email optionnel
-    if (!phone || !password || !first_name || !last_name) {
-      return res.status(400).json({
-        success: false,
-        error: 'Prénom, nom, téléphone et mot de passe sont obligatoires'
-      });
-    }
-
-    // Validation email si fourni
-    if (email && !EMAIL_REGEX.test(email)) {
-      return res.status(400).json({ success: false, error: 'Format d\'email invalide' });
-    }
-
-    // Longueur mot de passe
-    if (password.length < 8) {
-      return res.status(400).json({ success: false, error: 'Le mot de passe doit contenir au moins 8 caractères' });
-    }
-
-    // Vérifier unicité email (si fourni)
-    if (email) {
-      const [existing] = await pool.query(
-        'SELECT id FROM ecom_customers WHERE email = ?',
-        [email.toLowerCase()]
-      );
-      if (existing.length > 0) {
-        return res.status(400).json({ success: false, error: 'Cette adresse email est déjà utilisée' });
-      }
-    }
+    // Validation — téléphone, prénom, nom, mot de passe obligatoires
+    if (!phone) return res.status(400).json({ success: false, error: 'Numéro de téléphone obligatoire' });
+    if (!first_name || !last_name) return res.status(400).json({ success: false, error: 'Prénom et nom obligatoires' });
+    if (!password || password.length < 6) return res.status(400).json({ success: false, error: 'Mot de passe : 6 caractères minimum' });
 
     // Vérifier unicité téléphone
     const [existingPhone] = await pool.query(
-      'SELECT id FROM ecom_customers WHERE phone = ?',
-      [phone]
+      'SELECT id, phone_verified_at FROM ecom_customers WHERE phone = ?', [phone]
     );
     if (existingPhone.length > 0) {
-      return res.status(400).json({ success: false, error: 'Ce numéro de téléphone est déjà utilisé' });
+      if (existingPhone[0].phone_verified_at) {
+        return res.status(400).json({ success: false, error: 'Ce numéro est déjà utilisé' });
+      }
+      // Compte non vérifié existant → renvoyer OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expires = new Date(Date.now() + 10 * 60 * 1000);
+      await pool.query(
+        'UPDATE ecom_customers SET phone_otp=?, phone_otp_expires_at=? WHERE id=?',
+        [otp, expires, existingPhone[0].id]
+      );
+      await sendWhatsAppOTP(phone, otp);
+      return res.json({ success: true, needs_otp: true, phone, message: 'Code renvoyé sur WhatsApp' });
     }
 
-    // Hash password
+    // Générer OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
     const passwordHash = await bcrypt.hash(password, 12);
     const customerId = uuidv4();
 
-    // Migration auto: colonnes vérification + auth sociale (compatible MySQL 5.7)
-    const [cols] = await pool.query("SHOW COLUMNS FROM ecom_customers LIKE 'email_verification_token'");
-    if (cols.length === 0) {
-      await pool.query("ALTER TABLE ecom_customers ADD COLUMN email_verification_token VARCHAR(64) DEFAULT NULL").catch(() => {});
-      await pool.query("ALTER TABLE ecom_customers ADD COLUMN email_verified_at TIMESTAMP NULL DEFAULT NULL").catch(() => {});
-      await pool.query("ALTER TABLE ecom_customers ADD COLUMN auth_provider VARCHAR(20) NOT NULL DEFAULT 'email'").catch(() => {});
-      await pool.query("ALTER TABLE ecom_customers ADD COLUMN provider_id VARCHAR(255) DEFAULT NULL").catch(() => {});
-    }
-
-    // Token de vérification email (seulement si email fourni)
-    const verifyToken = email ? crypto.randomBytes(32).toString('hex') : null;
-    const emailNorm = email ? email.toLowerCase() : null;
-
-    // Créer le client
+    // Créer le compte (non vérifié)
     await pool.query(`
-      INSERT INTO ecom_customers (
-        id, email, phone, password_hash, first_name, last_name,
-        company_name, company_ninea, company_rc, customer_type, email_verification_token
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-      customerId, emailNorm, phone, passwordHash,
-      first_name, last_name, company_name, company_ninea, company_rc, customer_type, verifyToken
-    ]);
+      INSERT INTO ecom_customers
+        (id, phone, password_hash, first_name, last_name, company_name, customer_type,
+         phone_otp, phone_otp_expires_at, is_active)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    `, [customerId, phone, passwordHash, first_name, last_name,
+        company_name || null, customer_type, otp, otpExpires]);
 
-    // Générer token JWT directement — pas de blocage sur la vérification email
-    const tokenPayload = emailNorm
-      ? { customer_id: customerId, email: emailNorm, phone: phone || null, role: 'customer' }
-      : { customer_id: customerId, phone, role: 'customer' };
-    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
+    // Envoyer OTP WhatsApp
+    const sendResult = await sendWhatsAppOTP(phone, otp);
+    console.log(`📱 OTP inscription ${phone}: ${sendResult.simulated ? `[SIMULÉ: ${otp}]` : 'envoyé'}`);
 
     res.status(201).json({
       success: true,
-      needs_verification: false,
-      message: 'Compte créé avec succès.',
-      data: { id: customerId, email: emailNorm, phone, first_name, last_name, customer_type, token }
+      needs_otp: true,
+      phone,
+      message: 'Code de vérification envoyé sur WhatsApp'
     });
-
-    // Envoi des emails en arrière-plan (non bloquant)
-    if (emailNorm && verifyToken) {
-      const verifyLink = `${FRONTEND_URL}/shop?verify_email=${verifyToken}`;
-      sendNotification('ecom_email_verification', { firstName: first_name, verifyLink }, emailNorm)
-        .catch(e => console.error('❌ Email vérification:', e.message));
-      sendNotification('ecom_welcome', { firstName: first_name, email: emailNorm, shopUrl: FRONTEND_URL }, emailNorm)
-        .catch(e => console.error('❌ Email bienvenue:', e.message));
-    }
 
   } catch (error) {
     console.error('❌ Erreur inscription — code:', error.code, '—', error.message);
@@ -186,6 +148,97 @@ router.post('/register', registerLimiter, async (req, res) => {
       success: false,
       error: `Erreur: ${error.message}`
     });
+  }
+});
+
+/**
+ * POST /api/ecommerce/customers/verify-registration-otp
+ * Vérifier l'OTP WhatsApp et activer le compte
+ */
+router.post('/verify-registration-otp', async (req, res) => {
+  try {
+    let { phone, otp } = req.body;
+    if (!phone || !otp) {
+      return res.status(400).json({ success: false, error: 'Téléphone et code OTP requis' });
+    }
+
+    phone = phone.replace(/[\s\-().+]/g, '');
+
+    const [rows] = await pool.query(
+      `SELECT * FROM ecom_customers
+       WHERE phone = ? AND phone_otp = ? AND phone_otp_expires_at > NOW() AND is_active = 1`,
+      [phone, otp.trim()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(400).json({ success: false, error: 'Code incorrect ou expiré. Réessayez.' });
+    }
+
+    const customer = rows[0];
+
+    // Activer le compte
+    await pool.query(
+      'UPDATE ecom_customers SET phone_verified_at = NOW(), phone_otp = NULL, phone_otp_expires_at = NULL, is_verified = 1 WHERE id = ?',
+      [customer.id]
+    );
+
+    // Générer JWT
+    const token = jwt.sign(
+      { customer_id: customer.id, phone, role: 'customer' },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    localStorage && localStorage.removeItem; // no-op guard
+    res.json({
+      success: true,
+      message: 'Compte vérifié avec succès !',
+      data: {
+        id: customer.id,
+        phone,
+        first_name: customer.first_name,
+        last_name: customer.last_name,
+        customer_type: customer.customer_type,
+        token
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur vérification OTP:', error.message);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+/**
+ * POST /api/ecommerce/customers/resend-registration-otp
+ * Renvoyer l'OTP WhatsApp
+ */
+router.post('/resend-registration-otp', async (req, res) => {
+  try {
+    let { phone } = req.body;
+    if (!phone) return res.status(400).json({ success: false, error: 'Téléphone requis' });
+    phone = phone.replace(/[\s\-().+]/g, '');
+
+    const [rows] = await pool.query(
+      'SELECT id FROM ecom_customers WHERE phone = ? AND phone_verified_at IS NULL AND is_active = 1',
+      [phone]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Compte non trouvé' });
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date(Date.now() + 10 * 60 * 1000);
+    await pool.query(
+      'UPDATE ecom_customers SET phone_otp=?, phone_otp_expires_at=? WHERE id=?',
+      [otp, expires, rows[0].id]
+    );
+    await sendWhatsAppOTP(phone, otp);
+    res.json({ success: true, message: 'Nouveau code envoyé sur WhatsApp' });
+
+  } catch (error) {
+    console.error('❌ Erreur renvoi OTP:', error.message);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
   }
 });
 

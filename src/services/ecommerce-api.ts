@@ -711,7 +711,7 @@ export const customersAPI = {
       body: JSON.stringify(data),
     });
     const result = await handleResponse(response);
-    if (result.success && result.data.token) {
+    if (result.success && result.data?.token) {
       localStorage.setItem('ecom_token', result.data.token);
     }
     return result;
@@ -801,6 +801,34 @@ export const customersAPI = {
       method: 'POST',
       headers: getHeaders(),
       body: JSON.stringify({ otp }),
+    });
+    return handleResponse(response);
+  },
+
+  /**
+   * Vérifier l'OTP WhatsApp reçu lors de l'inscription
+   */
+  verifyRegistrationOTP: async (phone: string, otp: string) => {
+    const response = await fetch(`${API_BASE}/customers/verify-registration-otp`, {
+      method: 'POST',
+      headers: getHeaders(false),
+      body: JSON.stringify({ phone, otp }),
+    });
+    const result = await handleResponse(response);
+    if (result.success && result.data?.token) {
+      localStorage.setItem('ecom_token', result.data.token);
+    }
+    return result;
+  },
+
+  /**
+   * Renvoyer l'OTP WhatsApp d'inscription
+   */
+  resendRegistrationOTP: async (phone: string) => {
+    const response = await fetch(`${API_BASE}/customers/resend-registration-otp`, {
+      method: 'POST',
+      headers: getHeaders(false),
+      body: JSON.stringify({ phone }),
     });
     return handleResponse(response);
   },

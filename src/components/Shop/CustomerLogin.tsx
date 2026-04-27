@@ -37,7 +37,7 @@ interface CustomerLoginProps {
   onBack: () => void;
 }
 
-type Mode = 'login' | 'register' | 'forgot' | 'reset' | 'verify_pending';
+type Mode = 'login' | 'register' | 'forgot' | 'reset' | 'verify_pending' | 'otp_verify';
 type CustomerType = 'particulier' | 'entreprise';
 
 interface LoginFormData {
@@ -186,7 +186,7 @@ const PERKS = [
    ═══════════════════════════════════════════════════════════════ */
 
 const CustomerLogin: React.FC<CustomerLoginProps> = ({ onSuccess, onBack }) => {
-  const { login, register, loginWithGoogle, loginWithFacebook, loginWithApple, forgotPassword, resetPassword } = useEcommerce();
+  const { login, register, verifyRegistrationOTP, resendRegistrationOTP, loginWithGoogle, loginWithFacebook, loginWithApple, forgotPassword, resetPassword } = useEcommerce();
 
   /* ── State ── */
   const [mode, setMode] = useState<Mode>('login');
@@ -202,6 +202,12 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onSuccess, onBack }) => {
   });
 
   const [pendingEmail, setPendingEmail] = useState('');
+
+  // OTP WhatsApp inscription
+  const [otpPhone, setOtpPhone] = useState('');
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [otpResendSeconds, setOtpResendSeconds] = useState(0);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Forgot / reset password state
   const [forgotEmail, setForgotEmail] = useState('');
@@ -269,6 +275,54 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onSuccess, onBack }) => {
         setError(err?.message || 'Connexion Apple annulée');
       }
     } finally { setLoading(false); }
+  };
+
+  /* ── OTP resend countdown ── */
+  useEffect(() => {
+    if (mode !== 'otp_verify' || otpResendSeconds <= 0) return;
+    const t = setTimeout(() => setOtpResendSeconds(s => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [mode, otpResendSeconds]);
+
+  /* ── OTP digit input ── */
+  const handleOtpDigit = (index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    const next = [...otpDigits];
+    next[index] = digit;
+    setOtpDigits(next);
+    if (digit && index < 5) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!text) return;
+    e.preventDefault();
+    const next = Array(6).fill('').map((_, i) => text[i] || '');
+    setOtpDigits(next);
+    otpRefs.current[Math.min(text.length, 5)]?.focus();
+  };
+
+  /* ── OTP verify submit ── */
+  const handleOtpVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otpDigits.join('');
+    if (code.length < 6) { setError('Entrez les 6 chiffres du code reçu'); return; }
+    try {
+      setLoading(true);
+      setError('');
+      await verifyRegistrationOTP(otpPhone, code);
+      onSuccess();
+    } catch (err: any) {
+      setError(err.message || 'Code incorrect ou expiré');
+    } finally {
+      setLoading(false);
+    }
   };
 
   /* ── Switch mode with animation trigger ── */
@@ -370,7 +424,12 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onSuccess, onBack }) => {
       setLoading(true);
       const { password_confirm, ...data } = registerForm;
       const result = await register(data);
-      if (result.needs_verification) {
+      if (result.needs_otp) {
+        setOtpPhone(result.phone || registerForm.phone);
+        setOtpDigits(['', '', '', '', '', '']);
+        setOtpResendSeconds(60);
+        switchMode('otp_verify');
+      } else if (result.needs_verification) {
         setPendingEmail(result.email || registerForm.email);
         switchMode('verify_pending');
       } else {
@@ -595,7 +654,7 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onSuccess, onBack }) => {
 
                 {/* Header */}
                 <div className="mb-5">
-                  {mode === 'verify_pending' ? null : (
+                  {(mode === 'verify_pending' || mode === 'otp_verify') ? null : (
                   <>
                   <h2 className="text-xl font-black text-gray-900 tracking-tight">
                     {mode === 'login' && 'Bon retour !'}
@@ -646,6 +705,92 @@ const CustomerLogin: React.FC<CustomerLoginProps> = ({ onSuccess, onBack }) => {
                       Recommencer l'inscription
                     </button>
                   </div>
+                )}
+
+                {/* ══ OTP VERIFY SCREEN ══ */}
+                {mode === 'otp_verify' && (
+                  <form onSubmit={handleOtpVerify} className="flex flex-col items-center text-center py-4 px-2">
+                    {/* WhatsApp icon */}
+                    <div className="w-20 h-20 rounded-full bg-green-50 flex items-center justify-center mb-4">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="#25D366">
+                        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                      </svg>
+                    </div>
+                    <h2 className="text-xl font-black text-gray-900 mb-2">Vérification WhatsApp</h2>
+                    <p className="text-sm text-gray-500 mb-1">Code à 6 chiffres envoyé sur WhatsApp au :</p>
+                    <p className="font-bold text-orange-700 text-sm mb-6">{otpPhone}</p>
+
+                    {/* 6 digit inputs */}
+                    <div className="flex gap-2.5 mb-6 w-full justify-center">
+                      {otpDigits.map((digit, i) => (
+                        <input
+                          key={i}
+                          ref={el => { otpRefs.current[i] = el; }}
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={1}
+                          value={digit}
+                          onChange={e => handleOtpDigit(i, e.target.value)}
+                          onKeyDown={e => handleOtpKeyDown(i, e)}
+                          onPaste={handleOtpPaste}
+                          className={[
+                            'w-11 h-14 text-center text-xl font-bold border-2 rounded-xl outline-none',
+                            'bg-gray-50 text-gray-900 transition-all duration-200',
+                            digit
+                              ? 'border-orange-500 bg-orange-50 text-orange-800'
+                              : 'border-gray-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20',
+                          ].join(' ')}
+                          autoFocus={i === 0}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Verify button */}
+                    <button
+                      type="submit"
+                      disabled={loading || otpDigits.join('').length < 6}
+                      className={[
+                        'w-full py-3.5 rounded-xl font-bold text-[15px] text-white',
+                        'bg-gradient-to-r from-orange-600 to-orange-700',
+                        'shadow-lg shadow-orange-600/30 hover:shadow-xl hover:-translate-y-0.5',
+                        'disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0',
+                        'transition-all duration-300 flex items-center justify-center gap-2.5',
+                      ].join(' ')}
+                    >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Vérifier mon compte'}
+                    </button>
+
+                    {/* Resend */}
+                    <div className="mt-4 text-sm text-gray-500">
+                      {otpResendSeconds > 0 ? (
+                        <span>Renvoyer dans <strong>{otpResendSeconds}s</strong></span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              setError('');
+                              await resendRegistrationOTP(otpPhone);
+                              setOtpResendSeconds(60);
+                            } catch (err: any) {
+                              setError(err.message || 'Erreur lors du renvoi');
+                            }
+                          }}
+                          className="text-orange-700 font-semibold hover:underline"
+                        >
+                          Renvoyer le code WhatsApp
+                        </button>
+                      )}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => { setOtpDigits(['','','','','','']); switchMode('register'); }}
+                      className="mt-3 text-xs text-gray-400 hover:text-gray-600 underline"
+                    >
+                      Changer de numéro
+                    </button>
+                  </form>
                 )}
 
                 {mode === 'register' && (

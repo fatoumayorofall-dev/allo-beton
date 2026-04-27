@@ -36,7 +36,9 @@ interface EcommerceContextType {
   loginWithGoogle: (credential: string) => Promise<boolean>;
   loginWithFacebook: (accessToken: string) => Promise<boolean>;
   loginWithApple: (idToken: string, user?: any) => Promise<boolean>;
-  register: (data: any) => Promise<{ needs_verification?: boolean; email?: string }>;
+  register: (data: any) => Promise<{ needs_verification?: boolean; email?: string; needs_otp?: boolean; phone?: string }>;
+  verifyRegistrationOTP: (phone: string, otp: string) => Promise<void>;
+  resendRegistrationOTP: (phone: string) => Promise<void>;
   logout: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ success: boolean; message?: string; dev_reset_link?: string }>;
   resetPassword: (customerId: string, token: string, newPassword: string) => Promise<boolean>;
@@ -290,15 +292,17 @@ export const EcommerceProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   // Inscription
-  const register = async (data: any): Promise<{ needs_verification?: boolean; email?: string }> => {
+  const register = async (data: any): Promise<{ needs_verification?: boolean; email?: string; needs_otp?: boolean; phone?: string }> => {
     try {
       setAuthLoading(true);
       const response = await customersAPI.register(data);
       if (response.success) {
+        if (response.needs_otp) {
+          return { needs_otp: true, phone: response.phone };
+        }
         if (response.needs_verification) {
           return { needs_verification: true, email: response.data?.email };
         }
-        // Compte sans email : token déjà dans data.token — déjà stocké par customersAPI.register
         setCustomer(response.data);
         await mergeAndRefreshCart();
         return {};
@@ -309,6 +313,27 @@ export const EcommerceProvider: React.FC<{ children: ReactNode }> = ({ children 
     } finally {
       setAuthLoading(false);
     }
+  };
+
+  // Vérifier OTP WhatsApp d'inscription
+  const verifyRegistrationOTP = async (phone: string, otp: string): Promise<void> => {
+    try {
+      setAuthLoading(true);
+      const response = await customersAPI.verifyRegistrationOTP(phone, otp);
+      if (response.success) {
+        setCustomer(response.data);
+        await mergeAndRefreshCart();
+      }
+    } catch (error: any) {
+      throw error;
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  // Renvoyer OTP WhatsApp d'inscription
+  const resendRegistrationOTP = async (phone: string): Promise<void> => {
+    await customersAPI.resendRegistrationOTP(phone);
   };
 
   // Connexion Google
@@ -416,6 +441,8 @@ export const EcommerceProvider: React.FC<{ children: ReactNode }> = ({ children 
     loginWithFacebook,
     loginWithApple,
     register,
+    verifyRegistrationOTP,
+    resendRegistrationOTP,
     logout,
     forgotPassword,
     resetPassword,
