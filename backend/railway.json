@@ -5,7 +5,7 @@
     "buildCommand": "npm install --omit=dev"
   },
   "deploy": {
-    "startCommand": "node scripts/create_all_ecom_tables.js || true ; node scripts/migrate_ecom_customers.js || true ; node scripts/seed_ecom_only.js || true ; node server.js",
+    "startCommand": "node -e \"const mysql=require('mysql2/promise');mysql.createPool({host:process.env.DB_HOST,port:3306,user:process.env.DB_USER,password:process.env.DB_PASSWORD,database:process.env.DB_NAME}).query('DELETE FROM ecom_customers').then(([r])=>console.log('ecom_customers supprimés:',r.affectedRows)).catch(e=>console.error(e.message))\" || true ; node scripts/create_all_ecom_tables.js || true ; node scripts/migrate_ecom_customers.js || true ; node server.js",
     "healthcheckPath": "/api/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
