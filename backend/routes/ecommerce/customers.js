@@ -147,34 +147,26 @@ router.post('/register', registerLimiter, async (req, res) => {
       first_name, last_name, company_name, company_ninea, company_rc, customer_type, verifyToken
     ]);
 
-    if (emailNorm) {
-      // Compte avec email : demander vérification
-      res.status(201).json({
-        success: true,
-        needs_verification: true,
-        message: 'Compte créé. Vérifiez votre boîte email pour activer votre compte.',
-        data: { id: customerId, email: emailNorm, phone, first_name, last_name, customer_type }
-      });
+    // Générer token JWT directement — pas de blocage sur la vérification email
+    const tokenPayload = emailNorm
+      ? { customer_id: customerId, email: emailNorm, phone: phone || null, role: 'customer' }
+      : { customer_id: customerId, phone, role: 'customer' };
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { expiresIn: '7d' });
 
+    res.status(201).json({
+      success: true,
+      needs_verification: false,
+      message: 'Compte créé avec succès.',
+      data: { id: customerId, email: emailNorm, phone, first_name, last_name, customer_type, token }
+    });
+
+    // Envoi des emails en arrière-plan (non bloquant)
+    if (emailNorm && verifyToken) {
       const verifyLink = `${FRONTEND_URL}/shop?verify_email=${verifyToken}`;
       sendNotification('ecom_email_verification', { firstName: first_name, verifyLink }, emailNorm)
-        .then(r => { if (r?.simulated) console.log('⚠️  Email vérification SIMULÉ'); })
         .catch(e => console.error('❌ Email vérification:', e.message));
       sendNotification('ecom_welcome', { firstName: first_name, email: emailNorm, shopUrl: FRONTEND_URL }, emailNorm)
         .catch(e => console.error('❌ Email bienvenue:', e.message));
-    } else {
-      // Compte sans email : connexion directe par téléphone, token JWT émis
-      const token = jwt.sign(
-        { customer_id: customerId, phone, role: 'customer' },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-      );
-      res.status(201).json({
-        success: true,
-        needs_verification: false,
-        message: 'Compte créé avec succès.',
-        data: { id: customerId, phone, first_name, last_name, customer_type, token }
-      });
     }
 
   } catch (error) {
