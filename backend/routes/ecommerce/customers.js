@@ -189,7 +189,6 @@ router.post('/verify-registration-otp', async (req, res) => {
       { expiresIn: '7d' }
     );
 
-    localStorage && localStorage.removeItem; // no-op guard
     res.json({
       success: true,
       message: 'Compte vérifié avec succès !',
