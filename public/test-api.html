@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Allo Beton</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .box { background: white; padding: 20px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success { border-left: 4px solid #22c55e; }
+        .error { border-left: 4px solid #ef4444; }
+        .pending { border-left: 4px solid #f59e0b; }
+        button { background: #3b82f6; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; margin: 5px; }
+        button:hover { background: #2563eb; }
+        pre { background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 12px; }
+        h1 { color: #1e3a5f; }
+        .test-item { margin: 10px 0; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Diagnostic API Allo Béton</h1>
+
+    <div class="box">
+        <h2>Tests de Connexion</h2>
+        <button onclick="testHealth()">1. Test Health API</button>
+        <button onclick="testLogin()">2. Test Login</button>
+        <button onclick="testAllUrls()">3. Tester Toutes les URLs</button>
+    </div>
+
+    <div id="results" class="box">
+        <h3>Résultats :</h3>
+        <div id="output">Cliquez sur un bouton pour lancer un test...</div>
+    </div>
+
+    <script>
+        const output = document.getElementById('output');
+
+        function log(msg, type = 'info') {
+            const colors = { success: '#22c55e', error: '#ef4444', info: '#3b82f6', pending: '#f59e0b' };
+            output.innerHTML += `<div style="color:${colors[type]};margin:5px 0;">● ${msg}</div>`;
+        }
+
+        function clear() {
+            output.innerHTML = '';
+        }
+
+        async function testUrl(url, label) {
+            log(`Testing ${label}: ${url}...`, 'pending');
+            const start = Date.now();
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const time = Date.now() - start;
+                const data = await response.json();
+                log(`✅ ${label} OK (${time}ms) - Status: ${response.status}`, 'success');
+                return { success: true, data, time };
+            } catch (err) {
+                const time = Date.now() - start;
+                log(`❌ ${label} ERREUR (${time}ms): ${err.message}`, 'error');
+                return { success: false, error: err.message, time };
+            }
+        }
+
+        async function testHealth() {
+            clear();
+            log('=== TEST HEALTH API ===', 'info');
+
+            // Test différentes URLs
+            await testUrl('http://127.0.0.1:3001/api/health', '127.0.0.1:3001');
+            await testUrl('http://localhost:3001/api/health', 'localhost:3001');
+        }
+
+        async function testLogin() {
+            clear();
+            log('=== TEST LOGIN ===', 'info');
+
+            const url = 'http://127.0.0.1:3001/api/auth/login';
+            log(`POST ${url}`, 'pending');
+
+            const start = Date.now();
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'admin@allobeton.sn', password: 'admin123' })
+                });
+                const time = Date.now() - start;
+                const data = await response.json();
+
+                if (data.success) {
+                    log(`✅ LOGIN RÉUSSI (${time}ms)`, 'success');
+                    log(`User: ${data.data.user.email}`, 'success');
+                    log(`Token: ${data.data.token.substring(0, 30)}...`, 'success');
+                } else {
+                    log(`❌ LOGIN ÉCHOUÉ: ${data.error}`, 'error');
+                }
+            } catch (err) {
+                const time = Date.now() - start;
+                log(`❌ ERREUR RÉSEAU (${time}ms): ${err.message}`, 'error');
+                log('Cause probable: Le backend ne répond pas ou est bloqué', 'error');
+            }
+        }
+
+        async function testAllUrls() {
+            clear();
+            log('=== TEST TOUTES LES URLs ===', 'info');
+
+            const urls = [
+                { url: 'http://127.0.0.1:3001/api/health', label: '127.0.0.1' },
+                { url: 'http://localhost:3001/api/health', label: 'localhost' },
+                { url: 'http://[::1]:3001/api/health', label: 'IPv6 ::1' },
+            ];
+
+            for (const { url, label } of urls) {
+                await testUrl(url, label);
+            }
+
+            log('=== TESTS TERMINÉS ===', 'info');
+        }
+    </script>
+</body>
+</html>

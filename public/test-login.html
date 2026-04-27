@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Login</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    .card { background: white; padding: 20px; border-radius: 8px; max-width: 400px; margin: 0 auto; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+    button { width: 100%; padding: 12px; background: #4F46E5; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #4338CA; }
+    .result { margin-top: 20px; padding: 15px; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 12px; }
+    .success { background: #D1FAE5; color: #065F46; }
+    .error { background: #FEE2E2; color: #991B1B; }
+    h2 { text-align: center; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Test Login Direct</h2>
+    <form id="loginForm">
+      <input type="email" id="email" value="admin@allobeton.sn" placeholder="Email">
+      <input type="password" id="password" value="admin123" placeholder="Mot de passe">
+      <button type="submit">Se connecter</button>
+    </form>
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const resultDiv = document.getElementById('result');
+      resultDiv.style.display = 'block';
+      resultDiv.className = 'result';
+      resultDiv.textContent = 'Connexion en cours...';
+
+      try {
+        const response = await fetch('http://localhost:3001/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value
+          })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent = '✅ CONNEXION RÉUSSIE!\n\nToken: ' + data.data.token.substring(0, 50) + '...\n\nUser: ' + JSON.stringify(data.data.user, null, 2);
+          localStorage.setItem('auth_token', data.data.token);
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent = '❌ ERREUR: ' + (data.error || 'Erreur inconnue');
+        }
+      } catch (err) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = '❌ ERREUR RÉSEAU:\n' + err.message + '\n\nVérifiez que le backend tourne sur http://localhost:3001';
+      }
+    });
+  </script>
+</body>
+</html>

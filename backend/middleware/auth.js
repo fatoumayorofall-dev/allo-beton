@@ -104,8 +104,32 @@ const validateRequest = (schema) => {
   };
 };
 
+// Raccourci : admin uniquement
+const requireAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({
+      success: false,
+      error: 'Accès réservé aux administrateurs'
+    });
+  }
+  next();
+};
+
+// Raccourci : client e-commerce (token avec customer_id)
+const requireCustomer = (req, res, next) => {
+  if (!req.user || !req.user.customer_id) {
+    return res.status(403).json({
+      success: false,
+      error: 'Accès réservé aux clients'
+    });
+  }
+  next();
+};
+
 module.exports = {
   authenticateToken,
   requireRole,
+  requireAdmin,
+  requireCustomer,
   validateRequest
 };

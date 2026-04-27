@@ -1,0 +1,47 @@
+<!-- ALLO BÉTON - LOGO PRINCIPAL -->
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icône béton (cube 3D avec texture) -->
+  <g transform="translate(0, 10)">
+    <!-- Cube en perspective isométrique -->
+    <path d="M20 5 L35 12 L35 27 L20 35 L5 27 L5 12 Z" fill="#F59E0B" opacity="0.9"/>
+    <path d="M20 5 L35 12 L35 27 L20 20 Z" fill="#D97706" opacity="0.8"/>
+    <path d="M5 12 L20 5 L20 20 L5 27 Z" fill="#B45309" opacity="0.7"/>
+
+    <!-- Détails texture béton -->
+    <circle cx="15" cy="18" r="1.5" fill="#FFFFFF" opacity="0.3"/>
+    <circle cx="22" cy="15" r="1" fill="#FFFFFF" opacity="0.3"/>
+    <circle cx="28" cy="20" r="1.2" fill="#FFFFFF" opacity="0.3"/>
+    <rect x="12" y="22" width="3" height="0.5" fill="#000000" opacity="0.15"/>
+    <rect x="24" y="17" width="4" height="0.5" fill="#000000" opacity="0.15"/>
+
+    <!-- Accent orange -->
+    <path d="M20 5 L23 7 L23 10 L20 8 Z" fill="#FBBF24" opacity="0.6"/>
+  </g>
+
+  <!-- Texte ALLO -->
+  <text x="50" y="28" font-family="'Inter', 'Arial Black', sans-serif" font-size="24" font-weight="900" fill="#1F2937" letter-spacing="-0.5">
+    ALLO
+  </text>
+
+  <!-- Texte BÉTON -->
+  <text x="50" y="48" font-family="'Inter', 'Arial Black', sans-serif" font-size="24" font-weight="900" fill="#F59E0B" letter-spacing="-0.5">
+    BÉTON
+  </text>
+
+  <!-- Tagline -->
+  <text x="50" y="56" font-family="'Inter', sans-serif" font-size="7" font-weight="600" fill="#6B7280" letter-spacing="1.5">
+    MATÉRIAUX PRO
+  </text>
+
+  <!-- Badge "NF" Certifié -->
+  <g transform="translate(165, 15)">
+    <rect width="30" height="30" rx="4" fill="#10B981" opacity="0.1"/>
+    <rect width="30" height="30" rx="4" fill="none" stroke="#10B981" stroke-width="1.5"/>
+    <text x="15" y="14" font-family="'Inter', sans-serif" font-size="10" font-weight="900" fill="#059669" text-anchor="middle">
+      NF
+    </text>
+    <text x="15" y="23" font-family="'Inter', sans-serif" font-size="5" font-weight="600" fill="#059669" text-anchor="middle">
+      CERTIFIÉ
+    </text>
+  </g>
+</svg>

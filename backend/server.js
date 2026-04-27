@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-const { testConnection } = require('./config/database');
+const { testConnection, pool } = require('./config/database');
 const { initEcommerceTables } = require('./scripts/init_ecommerce_tables');
 const { auditMiddleware } = require('./services/auditLog');
 
@@ -25,6 +25,9 @@ const invoiceRoutes = require('./routes/invoices');
 const deliveryNoteRoutes = require('./routes/delivery_notes');
 
 const app = express();
+
+// 🔒 Trust proxy — requis sur Railway/Heroku/Render (reverse proxy)
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3001;
 
 // 🛡️ Sécurité HTTP — Helmet avec CSP renforcée
@@ -58,6 +61,7 @@ app.use(
           "'self'",
           'http://localhost:*',
           'https://allobeton-backend-production-91e5.up.railway.app',
+          'https://allo-beton-backend-production.up.railway.app',
           'https://www.google-analytics.com',
           'https://*.google-analytics.com',
           'https://connect.facebook.net',
@@ -350,6 +354,57 @@ app.use('*', (req, res) => {
   });
 });
 
+// Auto-migration : s'assure que la table users existe et possède toutes les colonnes requises
+async function ensureUsersSchema() {
+  try {
+    // Création de la table si elle n'existe pas (compatible MySQL 5.7 — pas de DEFAULT UUID())
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(36) NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        first_name VARCHAR(100),
+        last_name VARCHAR(100),
+        role ENUM('admin','manager','seller','viewer') DEFAULT 'viewer',
+        company VARCHAR(255),
+        phone VARCHAR(20),
+        avatar_url TEXT,
+        position VARCHAR(255),
+        bio TEXT,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        INDEX idx_email (email),
+        INDEX idx_role (role),
+        INDEX idx_active (is_active)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Ajouter les colonnes manquantes sur une table existante (sans planter)
+    const [[{ db }]] = await pool.execute('SELECT DATABASE() AS db');
+    const colsToAdd = [
+      { name: 'avatar_url', sql: 'ALTER TABLE users ADD COLUMN avatar_url TEXT DEFAULT NULL' },
+      { name: 'position',   sql: 'ALTER TABLE users ADD COLUMN position VARCHAR(255) DEFAULT NULL' },
+      { name: 'bio',        sql: 'ALTER TABLE users ADD COLUMN bio TEXT DEFAULT NULL' },
+    ];
+    for (const col of colsToAdd) {
+      const [[{ cnt }]] = await pool.execute(
+        `SELECT COUNT(*) AS cnt FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = ?`,
+        [db, col.name]
+      );
+      if (cnt === 0) {
+        await pool.execute(col.sql);
+        console.log(`✅ Colonne users.${col.name} ajoutée`);
+      }
+    }
+    console.log('✅ Table users vérifiée');
+  } catch (err) {
+    console.error('❌ Erreur vérification table users:', err.message);
+  }
+}
+
 // 🚀 Démarrage du serveur
 async function startServer() {
   try {
@@ -360,6 +415,9 @@ async function startServer() {
       console.log('💡 Vérifie MySQL et les paramètres du fichier backend/.env');
       process.exit(1);
     }
+
+    // Auto-migration table users (colonnes position/bio manquantes en prod)
+    await ensureUsersSchema();
 
     // 🛒 Initialisation automatique des tables e-commerce
     console.log('🛒 Vérification des tables e-commerce...');

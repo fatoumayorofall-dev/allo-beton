@@ -1,0 +1,1300 @@
+import React, { useMemo, useState, useEffect } from 'react';
+import {
+  X, User, Building2, Mail, Phone, MapPin,
+  CreditCard, Wallet, FileText, CheckCircle2,
+  AlertCircle, Plus, Trash2, BarChart3, Banknote, Package
+} from 'lucide-react';
+import { Customer, ClientQuota } from '../../types';
+import { useDataContext } from '../../contexts/DataContext';
+import { customersAPI, quotasAPI, productsAPI } from '../../services/mysql-api';
+import { formatCurrency, getSettings, AppSettings } from '../../services/settings';
+
+interface CustomerFormProps {
+  onClose: () => void;
+  onSave: (customerData: any) => void;
+  customer?: Customer;
+}
+
+// Types et variantes par défaut
+const PRODUCT_TYPES = ['beton', 'carriere'];
+const DEFAULT_VARIANTS: Record<string, string[]> = {
+  beton: ['3/8', '8/16'],
+  carriere: ['Gravier 5/15', 'Gravier 15/25', 'Sable fin', 'Sable grossier', 'Tout-venant', 'Latérite', 'Basalte'],
+};
+
+export const CustomerForm: React.FC<CustomerFormProps> = ({ onClose, onSave, customer }) => {
+  const { refreshCustomers } = useDataContext();
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'info' | 'credit' | 'notes' | 'fiscal'>('info');
+  const [quotas, setQuotas] = useState<ClientQuota[]>([]);
+  const [quotaLoading, setQuotaLoading] = useState(false);
+  const [showQuotaForm, setShowQuotaForm] = useState(false);
+
+  // New quota form state
+  const [newQuotaProductType, setNewQuotaProductType] = useState<string>('beton');
+  const [newQuotaVariant, setNewQuotaVariant] = useState<string>('');
+  const [newQuotaAmount, setNewQuotaAmount] = useState<string>('');
+  const [newQuotaNotes, setNewQuotaNotes] = useState<string>('');
+  const [productVariants, setProductVariants] = useState<Record<string, string[]>>(DEFAULT_VARIANTS);
+
+  // Deposit state for quotataires
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [depositNotes, setDepositNotes] = useState('');
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [depositSuccess, setDepositSuccess] = useState<string | null>(null);
+  const [prepaidBalance, setPrepaidBalance] = useState(Number((customer as any)?.prepaidBalance ?? (customer as any)?.prepaid_balance ?? 0));
+  
+  // Solde prépayé initial pour les nouveaux clients quotataires
+  const [initialPrepaidAmount, setInitialPrepaidAmount] = useState<string>('');
+
+  const initial = useMemo(() => ({
+    name: customer?.name || '',
+    email: customer?.email || '',
+    phone: customer?.phone || '',
+    address: (customer as any)?.address || '',
+    city: (customer as any)?.city || '',
+    company: customer?.company || '',
+    creditLimit: Number((customer as any)?.creditLimit ?? (customer as any)?.credit_limit ?? 0),
+    balance: Number((customer as any)?.balance ?? (customer as any)?.current_balance ?? 0),
+    notes: (customer as any)?.notes || '',
+    tva_exempt: !!(customer as any)?.tva_exempt,
+    is_reseller: !!(customer as any)?.is_reseller,
+    wholesale_discount: Number((customer as any)?.wholesale_discount ?? 0),
+    customer_type: (customer as any)?.customerType || (customer as any)?.customer_type || 'simple',
+  }), [customer]);
+
+  const CUSTOMER_TYPE_OPTIONS = [
+    { value: 'simple', label: 'Client Simple', description: 'Client standard sans avantages particuliers', color: 'bg-gray-100 border-gray-300' },
+    { value: 'quotataire', label: 'Client Quotataire', description: 'Client avec quota sur produits défini', color: 'bg-violet-100 border-violet-300' },
+    { value: 'revendeur', label: 'Revendeur', description: 'Grossiste avec remises automatiques', color: 'bg-amber-100 border-amber-300' },
+  ];
+
+  // Load product types/variants on mount
+  useEffect(() => {
+    loadProductTypes();
+  }, []);
+
+  const loadProductTypes = async () => {
+    try {
+      const result = await productsAPI.getTypes();
+      if (result.success && result.data?.variants) {
+        setProductVariants(result.data.variants);
+      }
+    } catch (e) {
+      console.error('Erreur chargement types:', e);
+    }
+  };
+
+  const loadQuotas = async () => {
+    if (!customer?.id) return;
+    setQuotaLoading(true);
+    try {
+      const result = await quotasAPI.getAll({ customer_id: customer.id });
+      if (result.success) setQuotas(result.data || []);
+    } catch (e) { console.error('Erreur quotas:', e); }
+    finally { setQuotaLoading(false); }
+  };
+
+  const handleAddQuota = async () => {
+    // Validation
+    if (!customer?.id) {
+      setErrorMsg('Client non identifié. Veuillez d\'abord sauvegarder le client.');
+      return;
+    }
+    if (!newQuotaProductType) {
+      setErrorMsg('Veuillez sélectionner un type de produit.');
+      return;
+    }
+    if (!newQuotaVariant) {
+      setErrorMsg('Veuillez sélectionner une variante de produit.');
+      return;
+    }
+    if (!newQuotaAmount || Number(newQuotaAmount) <= 0) {
+      setErrorMsg('Veuillez entrer une quantité de quota valide (supérieure à 0).');
+      return;
+    }
+
+    setQuotaLoading(true);
+    setErrorMsg(null);
+    try {
+      const result = await quotasAPI.create({
+        customer_id: customer.id,
+        product_type: newQuotaProductType,
+        product_variant: newQuotaVariant,
+        quota_initial: Number(newQuotaAmount),
+        notes: newQuotaNotes || null,
+      });
+      if (result.success) {
+        setShowQuotaForm(false);
+        setNewQuotaProductType('beton');
+        setNewQuotaVariant('');
+        setNewQuotaAmount('');
+        setNewQuotaNotes('');
+        await loadQuotas();
+      } else {
+        setErrorMsg(result.error || 'Erreur lors de la création du quota.');
+      }
+    } catch (e: any) {
+      console.error('Erreur création quota:', e);
+      setErrorMsg(e?.message || 'Erreur lors de la création du quota.');
+    } finally {
+      setQuotaLoading(false);
+    }
+  };
+
+  const handleDeleteQuota = async (id: string) => {
+    if (!confirm('Supprimer ce quota ?')) return;
+    try {
+      await quotasAPI.delete(id);
+      await loadQuotas();
+    } catch (e) { console.error('Erreur suppression quota:', e); }
+  };
+
+  // Handle deposit for quotataire clients
+  const handleDeposit = async () => {
+    if (!customer?.id || !depositAmount || Number(depositAmount) <= 0) return;
+    setDepositLoading(true);
+    setDepositSuccess(null);
+    setErrorMsg(null);
+    try {
+      const result = await customersAPI.deposit(customer.id, Number(depositAmount), depositNotes);
+      console.log('Résultat dépôt:', result);
+      if (result.success) {
+        // Mettre à jour le solde affiché immédiatement
+        const newBalance = Number(result.data?.newBalance ?? 0);
+        setPrepaidBalance(newBalance);
+        setDepositSuccess(result.message || `Dépôt effectué. Nouveau solde: ${newBalance.toLocaleString('fr-FR')} FCFA`);
+        setDepositAmount('');
+        setDepositNotes('');
+        
+        // Rafraîchir la liste des clients
+        await refreshCustomers();
+        
+        // Fermer le modal après 2 secondes
+        setTimeout(() => {
+          setShowDepositModal(false);
+          setDepositSuccess(null);
+        }, 2000);
+      } else {
+        setErrorMsg(result.error || 'Erreur lors du dépôt');
+      }
+    } catch (e: any) {
+      console.error('Erreur dépôt:', e);
+      setErrorMsg(e?.message || 'Erreur lors du dépôt');
+    } finally {
+      setDepositLoading(false);
+    }
+  };
+
+  const [formData, setFormData] = useState(initial);
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toSafeNumber = (v: any) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  // Settings pour formatage
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
+  
+  useEffect(() => {
+    getSettings().then(setAppSettings).catch(() => {});
+  }, []);
+
+  const formatMoney = (amount: number): string => {
+    return formatCurrency(amount, appSettings || undefined);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      // Construire le payload de base
+      const payload: any = {
+        ...formData,
+        name: String(formData.name || '').trim(),
+        email: String(formData.email || '').trim(),
+        phone: String(formData.phone || '').trim(),
+        address: String(formData.address || '').trim(),
+        city: String(formData.city || '').trim(),
+        company: String(formData.company || '').trim(),
+        notes: String(formData.notes || '').trim(),
+        creditLimit: toSafeNumber(formData.creditLimit),
+        balance: toSafeNumber(formData.balance),
+        tva_exempt: formData.tva_exempt ? 1 : 0,
+        is_reseller: formData.is_reseller ? 1 : 0,
+        wholesale_discount: toSafeNumber(formData.wholesale_discount),
+        customer_type: formData.customer_type || 'simple',
+      };
+
+      // Gestion du solde prépayé
+      if (formData.customer_type === 'quotataire') {
+        if (!customer?.id) {
+          // Nouveau client: utiliser le montant initial saisi
+          payload.prepaidBalance = toSafeNumber(initialPrepaidAmount);
+        } else {
+          // Client existant: conserver le solde actuel (géré par les dépôts)
+          payload.prepaidBalance = prepaidBalance;
+        }
+      }
+
+      if (!payload.name) {
+        setErrorMsg('Le nom du client est obligatoire.');
+        setLoading(false);
+        return;
+      }
+
+      let result: any;
+      if (customer?.id) {
+        result = await customersAPI.update(customer.id, payload);
+      } else {
+        result = await customersAPI.create(payload);
+      }
+
+      if (result?.success) {
+        onSave(result.data ?? { ...payload, id: customer?.id });
+        await refreshCustomers();
+        onClose();
+      } else {
+        setErrorMsg(result?.error || 'Erreur lors de la sauvegarde.');
+      }
+    } catch (error: any) {
+      console.error('Erreur:', error);
+      setErrorMsg(error?.message || 'Erreur lors de la sauvegarde.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Seul le nom est obligatoire
+  const allValid = formData.name.trim().length > 0;
+
+  const tabs = [
+    { key: 'info', label: 'Informations', icon: User },
+    { key: 'credit', label: 'Crédit', icon: CreditCard },
+    { key: 'notes', label: 'Notes', icon: FileText },
+    { key: 'fiscal', label: 'Fiscal & Quotas', icon: BarChart3 },
+  ];
+
+  // Get variants for selected product type
+  const availableVariants = productVariants[newQuotaProductType] || [];
+
+  // Reset variant when product type changes
+  useEffect(() => {
+    setNewQuotaVariant('');
+  }, [newQuotaProductType]);
+
+  return (
+    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-200">
+              <User className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">
+                {customer ? 'Modifier le Client' : 'Nouveau Client'}
+              </h2>
+              <p className="text-sm text-gray-500">
+                {customer ? 'Mettez à jour les informations' : 'Ajoutez un nouveau client'}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Error */}
+          {errorMsg && (
+            <div className="bg-red-50 border border-red-200 text-red-800 p-3 rounded-lg flex items-center gap-3 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
+          {/* Preview Card */}
+          <div className={`p-4 border rounded-xl ${
+            formData.customer_type === 'quotataire' ? 'bg-violet-50 border-violet-100' :
+            formData.customer_type === 'revendeur' ? 'bg-amber-50 border-amber-100' :
+            'bg-blue-50 border-blue-100'
+          }`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center font-bold text-xl flex-shrink-0 ${
+                formData.customer_type === 'quotataire' ? 'bg-violet-100 text-violet-700' :
+                formData.customer_type === 'revendeur' ? 'bg-amber-100 text-amber-700' :
+                'bg-blue-100 text-blue-700'
+              }`}>
+                {formData.name?.charAt(0)?.toUpperCase() || '?'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-gray-900 text-lg truncate">{formData.name || 'Nom du client'}</p>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    formData.customer_type === 'quotataire' ? 'bg-violet-200 text-violet-700' :
+                    formData.customer_type === 'revendeur' ? 'bg-amber-200 text-amber-700' :
+                    'bg-gray-200 text-gray-600'
+                  }`}>
+                    {formData.customer_type === 'quotataire' ? 'Quotataire' :
+                     formData.customer_type === 'revendeur' ? 'Revendeur' : 'Simple'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-500 mt-0.5">
+                  {formData.company && (
+                    <span className="flex items-center gap-1 truncate">
+                      <Building2 className="w-3.5 h-3.5" />
+                      {formData.company}
+                    </span>
+                  )}
+                  {formData.city && (
+                    <span className="flex items-center gap-1 truncate">
+                      <MapPin className="w-3.5 h-3.5" />
+                      {formData.city}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="text-right flex-shrink-0">
+                {formData.customer_type === 'quotataire' ? (
+                  <>
+                    <p className="text-xs text-violet-600">Solde Prépayé</p>
+                    <p className="font-bold text-violet-700 text-sm">{formatMoney(prepaidBalance)}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-gray-500">Limite Crédit</p>
+                    <p className="font-bold text-blue-600 text-sm">{formatMoney(toSafeNumber(formData.creditLimit))}</p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => { setActiveTab(tab.key as any); if (tab.key === 'fiscal') loadQuotas(); }}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap text-sm font-medium transition-colors ${
+                  activeTab === tab.key
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab: Informations */}
+          {activeTab === 'info' && (
+            <div className="space-y-4">
+              {/* Customer Type Selection */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Type de Client *</label>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {CUSTOMER_TYPE_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        handleInputChange('customer_type', option.value);
+                        if (option.value === 'revendeur') handleInputChange('is_reseller', true);
+                        else if (option.value !== 'revendeur') handleInputChange('is_reseller', false);
+                      }}
+                      className={`p-3 rounded-lg border-2 text-left transition-all ${
+                        formData.customer_type === option.value
+                          ? `${option.color} border-blue-500 ring-2 ring-blue-200`
+                          : 'bg-white border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className={`font-semibold text-sm ${formData.customer_type === option.value ? 'text-blue-700' : 'text-gray-800'}`}>
+                        {option.label}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">{option.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+                <h3 className="text-sm font-bold text-gray-900">Informations Personnelles</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <User className="w-4 h-4 text-blue-500" />
+                    Nom complet *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => handleInputChange('name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Ex: Amadou Diallo"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <Building2 className="w-4 h-4 text-blue-500" />
+                    Entreprise
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.company}
+                    onChange={(e) => handleInputChange('company', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Nom de l'entreprise"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <Mail className="w-4 h-4 text-blue-500" />
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="client@email.com"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <Phone className="w-4 h-4 text-blue-500" />
+                    Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleInputChange('phone', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="+221 77 123 45 67"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <MapPin className="w-4 h-4 text-blue-500" />
+                    Adresse
+                  </label>
+                  <textarea
+                    value={formData.address}
+                    onChange={(e) => handleInputChange('address', e.target.value)}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                    placeholder="Adresse complète du client"
+                  />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                    <MapPin className="w-4 h-4 text-blue-500" />
+                    Ville
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    placeholder="Dakar"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Crédit */}
+          {activeTab === 'credit' && (
+            <div className="space-y-4">
+              {/* Section Quotataire - Solde Prépayé Initial (nouveau client) */}
+              {formData.customer_type === 'quotataire' && !customer && (
+                <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-xl">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
+                      <Banknote className="w-4 h-4 text-violet-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-violet-800">Solde Prépayé Initial</h3>
+                      <p className="text-xs text-violet-500">Montant initial pour ce client quotataire</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-violet-700 mb-1.5">Montant initial (FCFA)</label>
+                    <input
+                      type="number"
+                      value={initialPrepaidAmount}
+                      onChange={(e) => setInitialPrepaidAmount(e.target.value)}
+                      placeholder="Ex: 500000"
+                      min="0"
+                      step="10000"
+                      className="w-full px-3 py-2.5 border border-violet-200 rounded-lg text-lg font-bold focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    />
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {[100000, 250000, 500000, 1000000].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setInitialPrepaidAmount(val.toString())}
+                          className="px-3 py-1 bg-violet-100 border border-violet-200 rounded-lg text-xs font-medium text-violet-600 hover:bg-violet-200 transition-colors"
+                        >
+                          {formatMoney(val)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-violet-500 mt-3 italic">
+                    Ce montant sera crédité au solde prépayé du client. Vous pourrez ajouter des dépôts supplémentaires après la création.
+                  </p>
+                </div>
+              )}
+
+              {/* Section Quotataire - Solde Prépayé (client existant) */}
+              {formData.customer_type === 'quotataire' && customer && (
+                <div className="p-4 bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 rounded-xl">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-violet-100 rounded-lg flex items-center justify-center">
+                        <Banknote className="w-4 h-4 text-violet-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-violet-800">Solde Prépayé</h3>
+                        <p className="text-xs text-violet-500">Le client peut acheter jusqu'à épuisement</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDepositModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Ajouter un dépôt
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 bg-white rounded-lg border border-violet-100">
+                    <div>
+                      <p className="text-xs text-violet-500 mb-0.5">Solde disponible</p>
+                      <p className={`text-2xl font-bold ${prepaidBalance > 0 ? 'text-violet-700' : 'text-gray-400'}`}>
+                        {formatMoney(prepaidBalance)}
+                      </p>
+                    </div>
+                    {prepaidBalance <= 0 && (
+                      <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-xs font-medium">Solde épuisé</span>
+                      </div>
+                    )}
+                    {prepaidBalance > 0 && prepaidBalance < 50000 && (
+                      <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg">
+                        <AlertCircle className="w-4 h-4" />
+                        <span className="text-xs font-medium">Solde faible</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-violet-500 mt-2 italic">
+                    Le solde prépayé est déduit automatiquement lors des ventes. Pensez à le recharger régulièrement.
+                  </p>
+                </div>
+              )}
+
+              {/* Section standard - Limite de crédit (pour non-quotataires) */}
+              {formData.customer_type !== 'quotataire' && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <h3 className="text-sm font-bold text-gray-900">Gestion du Crédit</h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <CreditCard className="w-4 h-4 text-blue-500" />
+                        Limite de crédit (FCFA)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="10000"
+                        value={formData.creditLimit}
+                        onChange={(e) => handleInputChange('creditLimit', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-bold"
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-1.5">Montant maximum que le client peut devoir</p>
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {[100000, 250000, 500000, 1000000].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => handleInputChange('creditLimit', val)}
+                            className="px-3 py-1 bg-white border border-blue-200 rounded-lg text-xs font-medium text-blue-600 hover:bg-blue-100 transition-colors"
+                          >
+                            {formatMoney(val)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-lg">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-2">
+                        <Wallet className="w-4 h-4 text-amber-500" />
+                        {customer ? 'Dette actuelle (FCFA)' : 'Dette initiale (FCFA)'}
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1000"
+                        value={formData.balance}
+                        onChange={(e) => handleInputChange('balance', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all font-bold"
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-gray-500 mt-1.5">
+                        {customer ? 'Montant que le client doit actuellement' : 'Montant que le client doit dès le départ (optionnel)'}
+                      </p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {[10000, 50000, 100000, 200000].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => handleInputChange('balance', val)}
+                            className="px-3 py-1 bg-white border border-amber-200 rounded-lg text-xs font-medium text-amber-600 hover:bg-amber-100 transition-colors"
+                          >
+                            {formatMoney(val)}
+                          </button>
+                        ))}
+                      </div>
+
+                      {toSafeNumber(formData.creditLimit) > 0 && toSafeNumber(formData.balance) > 0 && (
+                        <div className="mt-3">
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-gray-500">Utilisation du crédit</span>
+                            <span className={`font-bold ${
+                              (toSafeNumber(formData.balance) / toSafeNumber(formData.creditLimit)) > 0.8
+                                ? 'text-red-600'
+                                : 'text-emerald-600'
+                            }`}>
+                              {Math.round((toSafeNumber(formData.balance) / toSafeNumber(formData.creditLimit)) * 100)}%
+                            </span>
+                          </div>
+                          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                (toSafeNumber(formData.balance) / toSafeNumber(formData.creditLimit)) > 0.8
+                                  ? 'bg-red-500'
+                                  : 'bg-emerald-500'
+                              }`}
+                              style={{ width: `${Math.min(100, (toSafeNumber(formData.balance) / toSafeNumber(formData.creditLimit)) * 100)}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Info pour nouveau quotataire */}
+              {formData.customer_type === 'quotataire' && !customer && (
+                <div className="p-4 bg-violet-50 border border-violet-200 rounded-lg">
+                  <div className="flex items-center gap-2 text-violet-700">
+                    <AlertCircle className="w-4 h-4" />
+                    <p className="text-sm font-medium">Client Quotataire</p>
+                  </div>
+                  <p className="text-xs text-violet-600 mt-1">
+                    Après la création du client, vous pourrez ajouter un solde prépayé depuis l'onglet Crédit.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Tab: Notes */}
+          {activeTab === 'notes' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 text-blue-600" />
+                </div>
+                <h3 className="text-sm font-bold text-gray-900">Notes & Remarques</h3>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-1.5">
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  Notes internes
+                </label>
+                <textarea
+                  value={formData.notes}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  placeholder="Informations complémentaires, préférences du client, historique des interactions..."
+                />
+                <p className="text-xs text-gray-500 mt-1.5">Ces notes sont privées et ne seront pas visibles par le client</p>
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Fiscal & Quotas */}
+          {activeTab === 'fiscal' && (
+            <div className="space-y-5">
+              {/* Fiscal Params */}
+              <div>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <h3 className="text-sm font-bold text-gray-900">Paramètres Fiscaux</h3>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Exonéré TVA</p>
+                      <p className="text-xs text-gray-500">TVA sera à 0% sur les ventes</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange('tva_exempt', !formData.tva_exempt)}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${formData.tva_exempt ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.tva_exempt ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Revendeur (Grossiste)</p>
+                      <p className="text-xs text-gray-500">Remise automatique sur les ventes</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange('is_reseller', !formData.is_reseller)}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${formData.is_reseller ? 'bg-blue-600' : 'bg-gray-300'}`}
+                    >
+                      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${formData.is_reseller ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
+                  </div>
+
+                  {formData.is_reseller && (
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                      <label className="block text-sm font-medium text-blue-700 mb-2">Remise Grossiste (%)</label>
+                      <input
+                        type="number"
+                        value={formData.wholesale_discount}
+                        onChange={(e) => handleInputChange('wholesale_discount', e.target.value)}
+                        min="0"
+                        max="50"
+                        step="0.5"
+                        className="w-full px-3 py-2 border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 font-semibold"
+                      />
+                      <p className="text-xs text-blue-500 mt-1">Le prix sera réduit de {formData.wholesale_discount}% automatiquement</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Quotas sur produits */}
+              {customer?.id && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <Package className="w-4 h-4 text-violet-500" />
+                      Quotas sur Produits
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => { setShowQuotaForm(true); loadQuotas(); }}
+                      className="flex items-center gap-1 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Ajouter un quota
+                    </button>
+                  </div>
+
+                  {/* Quota Form */}
+                  {showQuotaForm && (
+                    <div className="p-4 bg-violet-50 border border-violet-200 rounded-xl mb-4 space-y-3">
+                      <h4 className="text-sm font-semibold text-violet-800">Nouveau Quota</h4>
+
+                      {/* Product Type Selection */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Type de produit *</label>
+                        <div className="flex gap-2">
+                          {PRODUCT_TYPES.map((type) => (
+                            <button
+                              key={type}
+                              type="button"
+                              onClick={() => setNewQuotaProductType(type)}
+                              className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                newQuotaProductType === type
+                                  ? 'bg-violet-600 text-white'
+                                  : 'bg-white border border-gray-200 text-gray-700 hover:border-violet-300'
+                              }`}
+                            >
+                              {type === 'beton' ? 'Béton' : 'Carrière'}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Variant Selection */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Variante *</label>
+                        <select
+                          value={newQuotaVariant}
+                          onChange={(e) => setNewQuotaVariant(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                        >
+                          <option value="">-- Sélectionner --</option>
+                          {availableVariants.map((variant) => (
+                            <option key={variant} value={variant}>
+                              {newQuotaProductType === 'beton' ? `Béton ${variant}` : variant}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Quantity */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Quantité (Tonnes) *</label>
+                        <input
+                          type="number"
+                          value={newQuotaAmount}
+                          onChange={(e) => setNewQuotaAmount(e.target.value)}
+                          placeholder="Ex: 100"
+                          min="0.5"
+                          step="0.5"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Notes */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Notes (optionnel)</label>
+                        <input
+                          type="text"
+                          value={newQuotaNotes}
+                          onChange={(e) => setNewQuotaNotes(e.target.value)}
+                          placeholder="Ex: Contrat annuel"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleAddQuota}
+                          disabled={quotaLoading || !newQuotaProductType || !newQuotaVariant || !newQuotaAmount}
+                          className="flex-1 px-3 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          {quotaLoading ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Création...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-4 h-4" />
+                              Confirmer
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowQuotaForm(false)}
+                          disabled={quotaLoading}
+                          className="px-4 py-2 border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* État des Quotas - Vue Professionnelle */}
+                  {quotaLoading && !showQuotaForm ? (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <div className="w-10 h-10 border-4 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+                      <p className="text-sm text-gray-500 mt-3">Chargement des quotas...</p>
+                    </div>
+                  ) : quotas.length === 0 ? (
+                    <div className="text-center py-8 bg-gradient-to-br from-violet-50 to-purple-50 rounded-2xl border-2 border-dashed border-violet-200">
+                      <div className="w-16 h-16 bg-violet-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                        <Package className="w-8 h-8 text-violet-400" />
+                      </div>
+                      <h4 className="text-base font-bold text-gray-700">Aucun quota défini</h4>
+                      <p className="text-sm text-gray-500 mt-1">Définissez des quotas pour suivre la consommation de ce client</p>
+                      <button
+                        type="button"
+                        onClick={() => setShowQuotaForm(true)}
+                        className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Créer un premier quota
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Résumé Global des Quotas */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="p-3 bg-violet-50 border border-violet-100 rounded-xl text-center">
+                          <p className="text-2xl font-bold text-violet-700">{quotas.length}</p>
+                          <p className="text-xs text-violet-500">Quotas actifs</p>
+                        </div>
+                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-center">
+                          <p className="text-2xl font-bold text-blue-700">
+                            {quotas.reduce((sum, q) => sum + Number(q.quota_initial || 0), 0).toLocaleString('fr-FR')} T
+                          </p>
+                          <p className="text-xs text-blue-500">Total initial</p>
+                        </div>
+                        <div className="p-3 bg-orange-50 border border-orange-100 rounded-xl text-center">
+                          <p className="text-2xl font-bold text-orange-600">
+                            {quotas.reduce((sum, q) => sum + Number(q.quota_consumed || 0), 0).toLocaleString('fr-FR')} T
+                          </p>
+                          <p className="text-xs text-orange-500">Total consommé</p>
+                        </div>
+                        <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl text-center">
+                          <p className="text-2xl font-bold text-emerald-600">
+                            {quotas.reduce((sum, q) => sum + Number(q.quota_remaining || 0), 0).toLocaleString('fr-FR')} T
+                          </p>
+                          <p className="text-xs text-emerald-500">Total restant</p>
+                        </div>
+                      </div>
+
+                      {/* Liste détaillée des quotas */}
+                      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                        <div className="bg-gradient-to-r from-violet-600 to-purple-600 px-4 py-3">
+                          <h4 className="text-white font-semibold text-sm flex items-center gap-2">
+                            <Package className="w-4 h-4" />
+                            Détail des Quotas par Produit
+                          </h4>
+                        </div>
+                        <div className="divide-y divide-gray-100">
+                          {quotas.map((q) => {
+                            const progress = q.quota_initial > 0 ? (q.quota_consumed / q.quota_initial) * 100 : 0;
+                            const isCompleted = q.status === 'completed';
+                            const isLow = q.quota_remaining > 0 && q.quota_remaining < q.quota_initial * 0.2;
+                            const isCritical = q.quota_remaining > 0 && q.quota_remaining < q.quota_initial * 0.1;
+
+                            return (
+                              <div
+                                key={q.id}
+                                className={`p-4 hover:bg-gray-50 transition-colors ${isCompleted ? 'opacity-60' : ''}`}
+                              >
+                                {/* Header du quota */}
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                      q.product_type === 'beton' 
+                                        ? 'bg-blue-100 text-blue-600' 
+                                        : 'bg-amber-100 text-amber-600'
+                                    }`}>
+                                      <Package className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                      <h5 className="font-bold text-gray-900">
+                                        {q.product_type === 'beton' ? 'Béton' : 'Carrière'} {q.product_variant}
+                                      </h5>
+                                      <p className="text-xs text-gray-500">
+                                        Créé le {new Date(q.created_at || '').toLocaleDateString('fr-FR', {
+                                          day: 'numeric', month: 'short', year: 'numeric'
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {isCompleted && (
+                                      <span className="px-3 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-full flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        Épuisé
+                                      </span>
+                                    )}
+                                    {isCritical && !isCompleted && (
+                                      <span className="px-3 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded-full flex items-center gap-1 animate-pulse">
+                                        <AlertCircle className="w-3 h-3" />
+                                        Critique
+                                      </span>
+                                    )}
+                                    {isLow && !isCritical && !isCompleted && (
+                                      <span className="px-3 py-1 bg-amber-100 text-amber-600 text-xs font-semibold rounded-full flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        Bas
+                                      </span>
+                                    )}
+                                    {!isLow && !isCompleted && (
+                                      <span className="px-3 py-1 bg-emerald-100 text-emerald-600 text-xs font-semibold rounded-full">
+                                        Actif
+                                      </span>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteQuota(q.id)}
+                                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                      title="Supprimer ce quota"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Statistiques du quota */}
+                                <div className="grid grid-cols-3 gap-4 mb-4">
+                                  <div className="bg-blue-50 rounded-lg p-3 text-center">
+                                    <p className="text-xs text-blue-500 mb-1">Quota Initial</p>
+                                    <p className="text-xl font-bold text-blue-700">{Number(q.quota_initial).toLocaleString('fr-FR')}</p>
+                                    <p className="text-xs text-blue-400">Tonnes</p>
+                                  </div>
+                                  <div className="bg-orange-50 rounded-lg p-3 text-center">
+                                    <p className="text-xs text-orange-500 mb-1">Consommé</p>
+                                    <p className="text-xl font-bold text-orange-600">{Number(q.quota_consumed).toLocaleString('fr-FR')}</p>
+                                    <p className="text-xs text-orange-400">Tonnes ({Math.round(progress)}%)</p>
+                                  </div>
+                                  <div className={`rounded-lg p-3 text-center ${
+                                    isCompleted ? 'bg-gray-100' :
+                                    isCritical ? 'bg-red-50' :
+                                    isLow ? 'bg-amber-50' : 'bg-emerald-50'
+                                  }`}>
+                                    <p className={`text-xs mb-1 ${
+                                      isCompleted ? 'text-gray-500' :
+                                      isCritical ? 'text-red-500' :
+                                      isLow ? 'text-amber-500' : 'text-emerald-500'
+                                    }`}>Restant</p>
+                                    <p className={`text-xl font-bold ${
+                                      isCompleted ? 'text-gray-600' :
+                                      isCritical ? 'text-red-600' :
+                                      isLow ? 'text-amber-600' : 'text-emerald-600'
+                                    }`}>{Number(q.quota_remaining).toLocaleString('fr-FR')}</p>
+                                    <p className={`text-xs ${
+                                      isCompleted ? 'text-gray-400' :
+                                      isCritical ? 'text-red-400' :
+                                      isLow ? 'text-amber-400' : 'text-emerald-400'
+                                    }`}>Tonnes</p>
+                                  </div>
+                                </div>
+
+                                {/* Barre de progression avancée */}
+                                <div className="relative">
+                                  <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                                    <span>Progression</span>
+                                    <span className="font-semibold">{Math.round(progress)}% utilisé</span>
+                                  </div>
+                                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden shadow-inner">
+                                    <div
+                                      className={`h-full rounded-full transition-all duration-500 ${
+                                        progress >= 100 ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                                        progress >= 90 ? 'bg-gradient-to-r from-red-400 to-red-500' :
+                                        progress >= 80 ? 'bg-gradient-to-r from-amber-400 to-amber-500' :
+                                        progress >= 50 ? 'bg-gradient-to-r from-violet-400 to-violet-500' :
+                                        'bg-gradient-to-r from-violet-400 to-purple-500'
+                                      }`}
+                                      style={{ width: `${Math.min(100, progress)}%` }}
+                                    />
+                                  </div>
+                                  {/* Marqueurs */}
+                                  <div className="absolute top-6 left-0 right-0 flex justify-between px-0.5">
+                                    <span className="w-0.5 h-2 bg-gray-300" style={{ marginLeft: '0%' }} />
+                                    <span className="w-0.5 h-2 bg-gray-300" style={{ marginLeft: '25%' }} />
+                                    <span className="w-0.5 h-2 bg-gray-300" style={{ marginLeft: '50%' }} />
+                                    <span className="w-0.5 h-2 bg-amber-400" style={{ marginLeft: '80%' }} title="Seuil d'alerte" />
+                                    <span className="w-0.5 h-2 bg-gray-300" style={{ marginLeft: '100%' }} />
+                                  </div>
+                                </div>
+
+                                {/* Notes */}
+                                {q.notes && (
+                                  <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-100">
+                                    <p className="text-xs text-gray-600 italic">📝 {q.notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+          >
+            Annuler
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !allValid}
+            className="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm font-semibold"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                <span>Sauvegarde...</span>
+              </>
+            ) : (
+              <span>{customer ? 'Modifier' : 'Créer le Client'}</span>
+            )}
+          </button>
+        </div>
+      </form>
+
+      {/* Modal de dépôt pour quotataires */}
+      {showDepositModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
+                  <Banknote className="w-5 h-5 text-violet-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900">Ajouter un dépôt</h3>
+                  <p className="text-xs text-gray-500">Recharger le solde prépayé</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setShowDepositModal(false); setDepositAmount(''); setDepositNotes(''); }}
+                className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4">
+              {depositSuccess ? (
+                <div className="flex flex-col items-center py-6">
+                  <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-3">
+                    <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                  </div>
+                  <p className="text-center text-emerald-700 font-medium">{depositSuccess}</p>
+                </div>
+              ) : (
+                <>
+                  <div className="p-3 bg-violet-50 border border-violet-100 rounded-lg">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-violet-600">Solde actuel:</span>
+                      <span className="font-bold text-violet-800">{formatMoney(prepaidBalance)}</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Montant du dépôt (FCFA) *</label>
+                    <input
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => setDepositAmount(e.target.value)}
+                      placeholder="Ex: 100000"
+                      min="1000"
+                      step="1000"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-lg font-bold focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    />
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {[50000, 100000, 200000, 500000].map((val) => (
+                        <button
+                          key={val}
+                          type="button"
+                          onClick={() => setDepositAmount(val.toString())}
+                          className="px-3 py-1 bg-violet-50 border border-violet-200 rounded-lg text-xs font-medium text-violet-600 hover:bg-violet-100 transition-colors"
+                        >
+                          {formatMoney(val)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes (optionnel)</label>
+                    <input
+                      type="text"
+                      value={depositNotes}
+                      onChange={(e) => setDepositNotes(e.target.value)}
+                      placeholder="Ex: Paiement espèces, chèque n°..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  {depositAmount && Number(depositAmount) > 0 && (
+                    <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-lg">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-emerald-600">Nouveau solde après dépôt:</span>
+                        <span className="font-bold text-emerald-800">{formatMoney(prepaidBalance + Number(depositAmount))}</span>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {!depositSuccess && (
+              <div className="flex gap-3 p-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => { setShowDepositModal(false); setDepositAmount(''); setDepositNotes(''); }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-sm"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeposit}
+                  disabled={depositLoading || !depositAmount || Number(depositAmount) <= 0}
+                  className="flex-1 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium text-sm flex items-center justify-center gap-2"
+                >
+                  {depositLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Dépôt en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Banknote className="w-4 h-4" />
+                      Confirmer le dépôt
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

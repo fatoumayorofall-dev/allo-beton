@@ -1,0 +1,1221 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Building2, Plus, Edit2, Trash2, Eye, X, Save,
+  TrendingDown, TrendingUp, Calendar, AlertTriangle,
+  ChevronDown, ChevronUp, RefreshCw, DollarSign,
+  CreditCard, Clock, CheckCircle, XCircle, Landmark,
+  FileText, ArrowRight, Banknote
+} from 'lucide-react';
+import { banksAPI } from '../../services/mysql-api';
+
+// ============================================================
+// TYPES
+// ============================================================
+interface Bank {
+  id: number;
+  name: string;
+  code: string;
+  address: string;
+  phone: string;
+  email: string;
+  contact_person: string;
+  account_number: string;
+  iban: string;
+  swift_bic: string;
+  notes: string;
+  is_active: number;
+  accounts_count: number;
+  total_balance: number;
+  active_loans_count: number;
+  total_remaining_debt: number;
+}
+
+interface BankAccount {
+  id: number;
+  bank_id: number;
+  account_name: string;
+  account_number: string;
+  account_type: string;
+  currency: string;
+  current_balance: number;
+  is_active: number;
+}
+
+interface BankLoan {
+  id: number;
+  bank_id: number;
+  bank_name: string;
+  loan_type: string;
+  label: string;
+  description: string;
+  principal_amount: number;
+  interest_rate: number;
+  total_amount: number;
+  amount_paid: number;
+  remaining_amount: number;
+  start_date: string;
+  end_date: string;
+  status: string;
+  notes: string;
+}
+
+interface LoanSchedule {
+  id: number;
+  loan_id: number;
+  due_date: string;
+  amount: number;
+  principal_part: number;
+  interest_part: number;
+  status: string;
+  paid_date: string;
+  paid_amount: number;
+  notes: string;
+  loan_label?: string;
+  loan_type?: string;
+  bank_name?: string;
+}
+
+interface Summary {
+  total_balance: number;
+  total_debt: number;
+  active_loans: number;
+  month_due: number;
+  month_schedules_count: number;
+  overdue_amount: number;
+  overdue_count: number;
+  banks_count: number;
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+const formatMoney = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'decimal', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n) + ' F';
+const formatDate = (d: string) => { if (!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('fr-FR'); };
+
+const LOAN_TYPES = [
+  { value: 'pret', label: 'Prêt bancaire', color: 'blue' },
+  { value: 'dette', label: 'Dette', color: 'red' },
+  { value: 'credit', label: 'Crédit', color: 'orange' },
+  { value: 'decouvert', label: 'Découvert', color: 'purple' },
+];
+
+const LOAN_STATUSES = [
+  { value: 'en_cours', label: 'En cours', color: 'blue', icon: Clock },
+  { value: 'termine', label: 'Terminé', color: 'green', icon: CheckCircle },
+  { value: 'en_retard', label: 'En retard', color: 'red', icon: AlertTriangle },
+  { value: 'annule', label: 'Annulé', color: 'gray', icon: XCircle },
+];
+
+const SCHEDULE_STATUSES: Record<string, { label: string; color: string }> = {
+  a_payer: { label: 'À payer', color: 'yellow' },
+  paye: { label: 'Payé', color: 'green' },
+  en_retard: { label: 'En retard', color: 'red' },
+  partiel: { label: 'Partiel', color: 'orange' },
+};
+
+// ============================================================
+// COMPOSANT PRINCIPAL
+// ============================================================
+const BankManagement: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'banks' | 'loans' | 'schedules'>('overview');
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [loans, setLoans] = useState<BankLoan[]>([]);
+  const [upcomingSchedules, setUpcomingSchedules] = useState<LoanSchedule[]>([]);
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Modals
+  const [showBankForm, setShowBankForm] = useState(false);
+  const [showLoanForm, setShowLoanForm] = useState(false);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [showBankDetail, setShowBankDetail] = useState(false);
+  const [showLoanDetail, setShowLoanDetail] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+
+  const [editingBank, setEditingBank] = useState<Bank | null>(null);
+  const [editingLoan, setEditingLoan] = useState<BankLoan | null>(null);
+  const [selectedBank, setSelectedBank] = useState<(Bank & { accounts: BankAccount[]; loans: BankLoan[] }) | null>(null);
+  const [selectedLoan, setSelectedLoan] = useState<BankLoan | null>(null);
+  const [loanSchedules, setLoanSchedules] = useState<LoanSchedule[]>([]);
+  const [payingSchedule, setPayingSchedule] = useState<LoanSchedule | null>(null);
+  const [generatingForLoan, setGeneratingForLoan] = useState<BankLoan | null>(null);
+
+  // Bank form
+  const [bankForm, setBankForm] = useState({ name: '', code: '', address: '', phone: '', email: '', contact_person: '', account_number: '', iban: '', swift_bic: '', notes: '' });
+
+  // Loan form
+  const [loanForm, setLoanForm] = useState({ bank_id: '', loan_type: 'pret', label: '', description: '', principal_amount: '', interest_rate: '', total_amount: '', start_date: new Date().toISOString().split('T')[0], end_date: '', notes: '' });
+
+  // Schedule form
+  const [scheduleForm, setScheduleForm] = useState({ due_date: '', amount: '', principal_part: '', interest_part: '', notes: '' });
+
+  // Pay form
+  const [payForm, setPayForm] = useState({ paid_amount: '', paid_date: new Date().toISOString().split('T')[0] });
+
+  // Generate form
+  const [generateForm, setGenerateForm] = useState({ num_months: '12', monthly_amount: '' });
+
+  // Account form
+  const [showAccountForm, setShowAccountForm] = useState(false);
+  const [accountForm, setAccountForm] = useState({ account_name: '', account_number: '', account_type: 'courant', currency: 'XOF', current_balance: '' });
+
+  // ============================================================
+  // CHARGEMENT DES DONNÉES
+  // ============================================================
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const [banksRes, summaryRes, upcomingRes] = await Promise.all([
+        banksAPI.getAll(),
+        banksAPI.getSummary(),
+        banksAPI.getUpcomingSchedules(60),
+      ]);
+      setBanks(banksRes.data || []);
+      setSummary(summaryRes.data || null);
+      setUpcomingSchedules(upcomingRes.data || []);
+    } catch (err: any) {
+      setError(err.message || 'Erreur de chargement');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadLoans = useCallback(async () => {
+    try {
+      const res = await banksAPI.getAllLoans();
+      setLoans(res.data || []);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+    loadLoans();
+  }, [loadData, loadLoans]);
+
+  // ============================================================
+  // HANDLERS BANQUES
+  // ============================================================
+  const handleSaveBank = async () => {
+    try {
+      if (!bankForm.name.trim()) { setError('Le nom de la banque est requis'); return; }
+      if (editingBank) {
+        await banksAPI.update(editingBank.id, bankForm);
+      } else {
+        await banksAPI.create(bankForm);
+      }
+      setShowBankForm(false);
+      resetBankForm();
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleDeleteBank = async (id: number) => {
+    if (!confirm('Supprimer cette banque et tous ses comptes/prêts ?')) return;
+    try {
+      await banksAPI.delete(id);
+      loadData();
+      loadLoans();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleViewBank = async (id: number) => {
+    try {
+      const res = await banksAPI.getById(id);
+      setSelectedBank(res.data);
+      setShowBankDetail(true);
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleEditBank = (bank: Bank) => {
+    setEditingBank(bank);
+    setBankForm({ name: bank.name, code: bank.code || '', address: bank.address || '', phone: bank.phone || '', email: bank.email || '', contact_person: bank.contact_person || '', account_number: bank.account_number || '', iban: bank.iban || '', swift_bic: bank.swift_bic || '', notes: bank.notes || '' });
+    setShowBankForm(true);
+  };
+
+  const resetBankForm = () => {
+    setEditingBank(null);
+    setBankForm({ name: '', code: '', address: '', phone: '', email: '', contact_person: '', account_number: '', iban: '', swift_bic: '', notes: '' });
+  };
+
+  // ============================================================
+  // HANDLERS COMPTES
+  // ============================================================
+  const handleSaveAccount = async () => {
+    if (!selectedBank) return;
+    try {
+      await banksAPI.createAccount(selectedBank.id, { ...accountForm, current_balance: parseFloat(accountForm.current_balance) || 0 });
+      const res = await banksAPI.getById(selectedBank.id);
+      setSelectedBank(res.data);
+      setShowAccountForm(false);
+      setAccountForm({ account_name: '', account_number: '', account_type: 'courant', currency: 'XOF', current_balance: '' });
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleDeleteAccount = async (accountId: number) => {
+    if (!selectedBank || !confirm('Supprimer ce compte ?')) return;
+    try {
+      await banksAPI.deleteAccount(accountId);
+      const res = await banksAPI.getById(selectedBank.id);
+      setSelectedBank(res.data);
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  // ============================================================
+  // HANDLERS PRÊTS
+  // ============================================================
+  const handleSaveLoan = async () => {
+    try {
+      if (!loanForm.bank_id || !loanForm.label || !loanForm.principal_amount) { setError('Banque, libellé et montant principal requis'); return; }
+      const data = { ...loanForm, principal_amount: parseFloat(loanForm.principal_amount), interest_rate: parseFloat(loanForm.interest_rate) || 0, total_amount: parseFloat(loanForm.total_amount) || parseFloat(loanForm.principal_amount) };
+      if (editingLoan) {
+        await banksAPI.updateLoan(editingLoan.id, data);
+      } else {
+        await banksAPI.createLoan(data);
+      }
+      setShowLoanForm(false);
+      resetLoanForm();
+      loadLoans();
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleDeleteLoan = async (id: number) => {
+    if (!confirm('Supprimer ce prêt/dette et ses échéances ?')) return;
+    try {
+      await banksAPI.deleteLoan(id);
+      loadLoans();
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleViewLoan = async (loan: BankLoan) => {
+    setSelectedLoan(loan);
+    try {
+      const res = await banksAPI.getSchedules(loan.id);
+      setLoanSchedules(res.data || []);
+      setShowLoanDetail(true);
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleEditLoan = (loan: BankLoan) => {
+    setEditingLoan(loan);
+    setLoanForm({
+      bank_id: String(loan.bank_id),
+      loan_type: loan.loan_type,
+      label: loan.label,
+      description: loan.description || '',
+      principal_amount: String(loan.principal_amount),
+      interest_rate: String(loan.interest_rate),
+      total_amount: String(loan.total_amount),
+      start_date: loan.start_date ? loan.start_date.split('T')[0] : '',
+      end_date: loan.end_date ? loan.end_date.split('T')[0] : '',
+      notes: loan.notes || '',
+    });
+    setShowLoanForm(true);
+  };
+
+  const resetLoanForm = () => {
+    setEditingLoan(null);
+    setLoanForm({ bank_id: '', loan_type: 'pret', label: '', description: '', principal_amount: '', interest_rate: '', total_amount: '', start_date: new Date().toISOString().split('T')[0], end_date: '', notes: '' });
+  };
+
+  // ============================================================
+  // HANDLERS ÉCHÉANCES
+  // ============================================================
+  const handleSaveSchedule = async () => {
+    if (!selectedLoan) return;
+    try {
+      await banksAPI.createSchedule(selectedLoan.id, { ...scheduleForm, amount: parseFloat(scheduleForm.amount), principal_part: parseFloat(scheduleForm.principal_part) || 0, interest_part: parseFloat(scheduleForm.interest_part) || 0 });
+      const res = await banksAPI.getSchedules(selectedLoan.id);
+      setLoanSchedules(res.data || []);
+      setShowScheduleForm(false);
+      setScheduleForm({ due_date: '', amount: '', principal_part: '', interest_part: '', notes: '' });
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handlePaySchedule = async () => {
+    if (!payingSchedule) return;
+    try {
+      await banksAPI.paySchedule(payingSchedule.id, { paid_amount: parseFloat(payForm.paid_amount) || payingSchedule.amount, paid_date: payForm.paid_date });
+      if (selectedLoan) {
+        const res = await banksAPI.getSchedules(selectedLoan.id);
+        setLoanSchedules(res.data || []);
+      }
+      setShowPayModal(false);
+      setPayingSchedule(null);
+      loadLoans();
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleGenerateSchedules = async () => {
+    if (!generatingForLoan) return;
+    try {
+      await banksAPI.generateSchedules(generatingForLoan.id, { num_months: parseInt(generateForm.num_months), monthly_amount: parseFloat(generateForm.monthly_amount) || undefined });
+      if (selectedLoan && selectedLoan.id === generatingForLoan.id) {
+        const res = await banksAPI.getSchedules(selectedLoan.id);
+        setLoanSchedules(res.data || []);
+      }
+      setShowGenerateModal(false);
+      setGeneratingForLoan(null);
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  const handleDeleteSchedule = async (id: number) => {
+    if (!confirm('Supprimer cette échéance ?')) return;
+    try {
+      await banksAPI.deleteSchedule(id);
+      if (selectedLoan) {
+        const res = await banksAPI.getSchedules(selectedLoan.id);
+        setLoanSchedules(res.data || []);
+      }
+      loadData();
+    } catch (err: any) { setError(err.message); }
+  };
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  const tabs = [
+    { id: 'overview' as const, label: 'Vue d\'ensemble', icon: Building2 },
+    { id: 'banks' as const, label: 'Banques', icon: Landmark },
+    { id: 'loans' as const, label: 'Prêts & Dettes', icon: CreditCard },
+    { id: 'schedules' as const, label: 'Échéances', icon: Calendar },
+  ];
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Building2 className="w-5 h-5 text-white" />
+            </div>
+            Gestion Bancaire
+          </h1>
+          <p className="text-gray-500 mt-1">Banques, prêts, dettes et suivi des échéances</p>
+        </div>
+        <button onClick={() => { loadData(); loadLoans(); }} className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors">
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Actualiser
+        </button>
+      </div>
+
+      {/* ERREUR */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between">
+          <span>{error}</span>
+          <button onClick={() => setError('')}><X className="w-4 h-4" /></button>
+        </div>
+      )}
+
+      {/* ONGLETS */}
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === tab.id
+                ? 'bg-white text-indigo-700 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <tab.icon className="w-4 h-4" />
+            <span className="hidden sm:inline">{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* CONTENU */}
+      {activeTab === 'overview' && renderOverview()}
+      {activeTab === 'banks' && renderBanks()}
+      {activeTab === 'loans' && renderLoans()}
+      {activeTab === 'schedules' && renderSchedules()}
+
+      {/* MODALS */}
+      {showBankForm && renderBankFormModal()}
+      {showBankDetail && selectedBank && renderBankDetailModal()}
+      {showLoanForm && renderLoanFormModal()}
+      {showLoanDetail && selectedLoan && renderLoanDetailModal()}
+      {showPayModal && payingSchedule && renderPayModal()}
+      {showGenerateModal && generatingForLoan && renderGenerateModal()}
+      {showAccountForm && renderAccountFormModal()}
+      {showScheduleForm && renderScheduleFormModal()}
+    </div>
+  );
+
+  // ============================================================
+  // VUE D'ENSEMBLE
+  // ============================================================
+  function renderOverview() {
+    if (loading) return <div className="text-center py-12 text-gray-400">Chargement...</div>;
+
+    const s = summary || { total_balance: 0, total_debt: 0, active_loans: 0, month_due: 0, month_schedules_count: 0, overdue_amount: 0, overdue_count: 0, banks_count: 0 };
+
+    const cards = [
+      { label: 'Solde total en banque', value: formatMoney(s.total_balance), icon: Banknote, color: 'emerald', gradient: 'from-emerald-500 to-green-400' },
+      { label: 'Total dettes en cours', value: formatMoney(s.total_debt), icon: TrendingDown, color: 'red', gradient: 'from-red-500 to-rose-400' },
+      { label: 'Prêts actifs', value: String(s.active_loans), icon: CreditCard, color: 'blue', gradient: 'from-blue-500 to-indigo-400' },
+      { label: 'Échéances ce mois', value: formatMoney(s.month_due), icon: Calendar, color: 'amber', gradient: 'from-amber-500 to-yellow-400', sub: `${s.month_schedules_count} paiement(s)` },
+      { label: 'En retard', value: formatMoney(s.overdue_amount), icon: AlertTriangle, color: 'red', gradient: 'from-red-600 to-red-400', sub: s.overdue_count > 0 ? `${s.overdue_count} échéance(s)` : 'Aucune' },
+      { label: 'Banques partenaires', value: String(s.banks_count), icon: Landmark, color: 'indigo', gradient: 'from-indigo-500 to-purple-400' },
+    ];
+
+    return (
+      <div className="space-y-6">
+        {/* Cards résumé */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {cards.map((card, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">{card.label}</p>
+                  <p className={`text-2xl font-bold mt-1 text-${card.color}-600`}>{card.value}</p>
+                  {card.sub && <p className="text-xs text-gray-400 mt-1">{card.sub}</p>}
+                </div>
+                <div className={`w-10 h-10 bg-gradient-to-br ${card.gradient} rounded-lg flex items-center justify-center`}>
+                  <card.icon className="w-5 h-5 text-white" />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Échéances à venir */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-amber-500" />
+              Prochaines échéances (60 jours)
+            </h3>
+          </div>
+          {upcomingSchedules.length === 0 ? (
+            <div className="p-8 text-center text-gray-400">Aucune échéance à venir</div>
+          ) : (
+            <div className="divide-y divide-gray-50">
+              {upcomingSchedules.slice(0, 10).map(s => {
+                const st = SCHEDULE_STATUSES[s.status] || { label: s.status, color: 'gray' };
+                const isOverdue = s.status === 'en_retard';
+                return (
+                  <div key={s.id} className={`px-6 py-3 flex items-center justify-between hover:bg-gray-50 ${isOverdue ? 'bg-red-50/50' : ''}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full bg-${st.color}-500`} />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{s.bank_name} — {s.loan_label}</p>
+                        <p className="text-xs text-gray-500">{formatDate(s.due_date)}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-gray-900">{formatMoney(s.amount)}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full bg-${st.color}-100 text-${st.color}-700`}>{st.label}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ============================================================
+  // LISTE DES BANQUES
+  // ============================================================
+  function renderBanks() {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900">Banques partenaires</h2>
+          <button onClick={() => { resetBankForm(); setShowBankForm(true); }} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 shadow-sm text-sm">
+            <Plus className="w-4 h-4" /> Ajouter une banque
+          </button>
+        </div>
+
+        {banks.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+            <Landmark className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">Aucune banque enregistrée</p>
+            <button onClick={() => { resetBankForm(); setShowBankForm(true); }} className="mt-4 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm hover:bg-indigo-100">
+              Ajouter votre première banque
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {banks.map(bank => (
+              <div key={bank.id} className="bg-white rounded-xl border border-gray-100 p-5 shadow-sm hover:shadow-md transition-all group">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{bank.name}</h3>
+                      {bank.code && <p className="text-xs text-gray-400">{bank.code}</p>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => handleViewBank(bank.id)} className="p-1.5 hover:bg-indigo-50 rounded-lg text-indigo-500"><Eye className="w-4 h-4" /></button>
+                    <button onClick={() => handleEditBank(bank)} className="p-1.5 hover:bg-amber-50 rounded-lg text-amber-500"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteBank(bank.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Solde total</span>
+                    <span className="font-semibold text-emerald-600">{formatMoney(parseFloat(String(bank.total_balance)) || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Dettes en cours</span>
+                    <span className="font-semibold text-red-600">{formatMoney(parseFloat(String(bank.total_remaining_debt)) || 0)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Comptes / Prêts actifs</span>
+                    <span className="text-gray-700">{bank.accounts_count} / {bank.active_loans_count}</span>
+                  </div>
+                </div>
+
+                {bank.contact_person && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400">
+                    Contact: {bank.contact_person} {bank.phone && `• ${bank.phone}`}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ============================================================
+  // LISTE DES PRÊTS / DETTES
+  // ============================================================
+  function renderLoans() {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900">Prêts & Dettes</h2>
+          <button onClick={() => { resetLoanForm(); setShowLoanForm(true); }} className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 shadow-sm text-sm" disabled={banks.length === 0}>
+            <Plus className="w-4 h-4" /> Nouveau prêt / dette
+          </button>
+        </div>
+
+        {loans.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+            <CreditCard className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">Aucun prêt ou dette enregistré</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="px-4 py-3 font-medium text-gray-600">Type</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Libellé</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Banque</th>
+                    <th className="px-4 py-3 font-medium text-gray-600 text-right">Montant total</th>
+                    <th className="px-4 py-3 font-medium text-gray-600 text-right">Payé</th>
+                    <th className="px-4 py-3 font-medium text-gray-600 text-right">Reste</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Statut</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Début</th>
+                    <th className="px-4 py-3 font-medium text-gray-600 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {loans.map(loan => {
+                    const ltype = LOAN_TYPES.find(t => t.value === loan.loan_type) || { label: loan.loan_type, color: 'gray' };
+                    const lstatus = LOAN_STATUSES.find(s => s.value === loan.status) || { label: loan.status, color: 'gray', icon: Clock };
+                    const progress = loan.total_amount > 0 ? (loan.amount_paid / loan.total_amount) * 100 : 0;
+
+                    return (
+                      <tr key={loan.id} className="hover:bg-gray-50/50">
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 text-xs rounded-full bg-${ltype.color}-100 text-${ltype.color}-700 font-medium`}>{ltype.label}</span>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-gray-900">{loan.label}</td>
+                        <td className="px-4 py-3 text-gray-600">{loan.bank_name}</td>
+                        <td className="px-4 py-3 text-right font-semibold">{formatMoney(loan.total_amount)}</td>
+                        <td className="px-4 py-3 text-right text-emerald-600">{formatMoney(loan.amount_paid)}</td>
+                        <td className="px-4 py-3 text-right text-red-600 font-semibold">{formatMoney(loan.remaining_amount)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-${lstatus.color}-100 text-${lstatus.color}-700`}>
+                            <lstatus.icon className="w-3 h-3" /> {lstatus.label}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">{formatDate(loan.start_date)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <button onClick={() => handleViewLoan(loan)} className="p-1.5 hover:bg-indigo-50 rounded-lg text-indigo-500" title="Voir les échéances"><Eye className="w-4 h-4" /></button>
+                            <button onClick={() => { setGeneratingForLoan(loan); setShowGenerateModal(true); }} className="p-1.5 hover:bg-green-50 rounded-lg text-green-500" title="Générer échéances"><Calendar className="w-4 h-4" /></button>
+                            <button onClick={() => handleEditLoan(loan)} className="p-1.5 hover:bg-amber-50 rounded-lg text-amber-500" title="Modifier"><Edit2 className="w-4 h-4" /></button>
+                            <button onClick={() => handleDeleteLoan(loan.id)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Supprimer"><Trash2 className="w-4 h-4" /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ============================================================
+  // ÉCHÉANCES À VENIR
+  // ============================================================
+  function renderSchedules() {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-semibold text-gray-900">Échéances de paiement</h2>
+        </div>
+
+        {upcomingSchedules.length === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+            <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500">Aucune échéance à venir</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="px-4 py-3 font-medium text-gray-600">Date</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Banque</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Prêt</th>
+                    <th className="px-4 py-3 font-medium text-gray-600 text-right">Montant</th>
+                    <th className="px-4 py-3 font-medium text-gray-600">Statut</th>
+                    <th className="px-4 py-3 font-medium text-gray-600 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {upcomingSchedules.map(s => {
+                    const st = SCHEDULE_STATUSES[s.status] || { label: s.status, color: 'gray' };
+                    const isOverdue = s.status === 'en_retard';
+                    return (
+                      <tr key={s.id} className={`hover:bg-gray-50/50 ${isOverdue ? 'bg-red-50/30' : ''}`}>
+                        <td className={`px-4 py-3 font-medium ${isOverdue ? 'text-red-600' : 'text-gray-900'}`}>
+                          {formatDate(s.due_date)}
+                        </td>
+                        <td className="px-4 py-3 text-gray-600">{s.bank_name}</td>
+                        <td className="px-4 py-3 text-gray-900">{s.loan_label}</td>
+                        <td className="px-4 py-3 text-right font-semibold">{formatMoney(s.amount)}</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 text-xs rounded-full bg-${st.color}-100 text-${st.color}-700`}>{st.label}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => { setPayingSchedule(s); setPayForm({ paid_amount: String(s.amount), paid_date: new Date().toISOString().split('T')[0] }); setShowPayModal(true); }}
+                            className="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs hover:bg-emerald-100 font-medium"
+                          >
+                            Payer
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ============================================================
+  // MODALS
+  // ============================================================
+
+  // --- Modal formulaire banque ---
+  function renderBankFormModal() {
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowBankForm(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">{editingBank ? 'Modifier la banque' : 'Nouvelle banque'}</h3>
+            <button onClick={() => setShowBankForm(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nom de la banque *</label>
+              <input type="text" value={bankForm.name} onChange={e => setBankForm({ ...bankForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Ex: CBAO, BHS, BSIC..." />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Code</label>
+                <input type="text" value={bankForm.code} onChange={e => setBankForm({ ...bankForm, code: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <input type="text" value={bankForm.phone} onChange={e => setBankForm({ ...bankForm, phone: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input type="email" value={bankForm.email} onChange={e => setBankForm({ ...bankForm, email: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+              <input type="text" value={bankForm.address} onChange={e => setBankForm({ ...bankForm, address: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Personne de contact</label>
+              <input type="text" value={bankForm.contact_person} onChange={e => setBankForm({ ...bankForm, contact_person: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">IBAN</label>
+                <input type="text" value={bankForm.iban} onChange={e => setBankForm({ ...bankForm, iban: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">SWIFT / BIC</label>
+                <input type="text" value={bankForm.swift_bic} onChange={e => setBankForm({ ...bankForm, swift_bic: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea value={bankForm.notes} onChange={e => setBankForm({ ...bankForm, notes: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" rows={3} />
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <button onClick={() => setShowBankForm(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Annuler</button>
+            <button onClick={handleSaveBank} className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm hover:from-indigo-600 hover:to-purple-700 flex items-center gap-2">
+              <Save className="w-4 h-4" /> {editingBank ? 'Modifier' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Modal détail banque ---
+  function renderBankDetailModal() {
+    if (!selectedBank) return null;
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowBankDetail(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Building2 className="w-5 h-5 text-indigo-500" /> {selectedBank.name}
+            </h3>
+            <button onClick={() => setShowBankDetail(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="p-6 space-y-6">
+            {/* Info */}
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              {selectedBank.code && <div><span className="text-gray-500">Code:</span> <span className="font-medium">{selectedBank.code}</span></div>}
+              {selectedBank.phone && <div><span className="text-gray-500">Tél:</span> <span className="font-medium">{selectedBank.phone}</span></div>}
+              {selectedBank.email && <div><span className="text-gray-500">Email:</span> <span className="font-medium">{selectedBank.email}</span></div>}
+              {selectedBank.contact_person && <div><span className="text-gray-500">Contact:</span> <span className="font-medium">{selectedBank.contact_person}</span></div>}
+              {selectedBank.address && <div className="col-span-2"><span className="text-gray-500">Adresse:</span> <span className="font-medium">{selectedBank.address}</span></div>}
+            </div>
+
+            {/* Comptes */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900">Comptes bancaires</h4>
+                <button onClick={() => setShowAccountForm(true)} className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                  <Plus className="w-4 h-4" /> Ajouter un compte
+                </button>
+              </div>
+              {selectedBank.accounts.length === 0 ? (
+                <p className="text-sm text-gray-400">Aucun compte enregistré</p>
+              ) : (
+                <div className="space-y-2">
+                  {selectedBank.accounts.map(acc => (
+                    <div key={acc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{acc.account_name}</p>
+                        <p className="text-xs text-gray-500">N° {acc.account_number} • {acc.account_type} • {acc.currency}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold text-emerald-600">{formatMoney(parseFloat(String(acc.current_balance)) || 0)}</span>
+                        <button onClick={() => handleDeleteAccount(acc.id)} className="p-1 hover:bg-red-50 rounded text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Prêts liés */}
+            <div>
+              <h4 className="font-semibold text-gray-900 mb-3">Prêts & Dettes liés</h4>
+              {selectedBank.loans.length === 0 ? (
+                <p className="text-sm text-gray-400">Aucun prêt ou dette</p>
+              ) : (
+                <div className="space-y-2">
+                  {selectedBank.loans.map(loan => {
+                    const ltype = LOAN_TYPES.find(t => t.value === loan.loan_type);
+                    return (
+                      <div key={loan.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{loan.label}</p>
+                          <p className="text-xs text-gray-500">{ltype?.label} • {loan.status}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-red-600">{formatMoney(loan.remaining_amount)}</p>
+                          <p className="text-xs text-gray-400">/ {formatMoney(loan.total_amount)}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Modal formulaire prêt ---
+  function renderLoanFormModal() {
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowLoanForm(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">{editingLoan ? 'Modifier le prêt/dette' : 'Nouveau prêt / dette'}</h3>
+            <button onClick={() => setShowLoanForm(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Banque *</label>
+              <select value={loanForm.bank_id} onChange={e => setLoanForm({ ...loanForm, bank_id: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <option value="">Sélectionner une banque</option>
+                {banks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+              <select value={loanForm.loan_type} onChange={e => setLoanForm({ ...loanForm, loan_type: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                {LOAN_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Libellé *</label>
+              <input type="text" value={loanForm.label} onChange={e => setLoanForm({ ...loanForm, label: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Ex: Crédit équipement, Découvert autorisé..." />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea value={loanForm.description} onChange={e => setLoanForm({ ...loanForm, description: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" rows={2} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Montant principal *</label>
+                <input type="number" value={loanForm.principal_amount} onChange={e => setLoanForm({ ...loanForm, principal_amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Taux d'intérêt (%)</label>
+                <input type="number" step="0.01" value={loanForm.interest_rate} onChange={e => setLoanForm({ ...loanForm, interest_rate: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Montant total (avec intérêts)</label>
+              <input type="number" value={loanForm.total_amount} onChange={e => setLoanForm({ ...loanForm, total_amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Laissez vide = montant principal" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date de début *</label>
+                <input type="date" value={loanForm.start_date} onChange={e => setLoanForm({ ...loanForm, start_date: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date de fin</label>
+                <input type="date" value={loanForm.end_date} onChange={e => setLoanForm({ ...loanForm, end_date: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea value={loanForm.notes} onChange={e => setLoanForm({ ...loanForm, notes: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" rows={2} />
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <button onClick={() => setShowLoanForm(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Annuler</button>
+            <button onClick={handleSaveLoan} className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm hover:from-indigo-600 hover:to-purple-700 flex items-center gap-2">
+              <Save className="w-4 h-4" /> {editingLoan ? 'Modifier' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Modal détail prêt avec échéances ---
+  function renderLoanDetailModal() {
+    if (!selectedLoan) return null;
+    const progress = selectedLoan.total_amount > 0 ? (selectedLoan.amount_paid / selectedLoan.total_amount) * 100 : 0;
+
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowLoanDetail(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">{selectedLoan.label}</h3>
+            <button onClick={() => setShowLoanDetail(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="p-6 space-y-6">
+            {/* Résumé prêt */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500">Total</p>
+                <p className="text-lg font-bold text-gray-900">{formatMoney(selectedLoan.total_amount)}</p>
+              </div>
+              <div className="bg-emerald-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500">Payé</p>
+                <p className="text-lg font-bold text-emerald-600">{formatMoney(selectedLoan.amount_paid)}</p>
+              </div>
+              <div className="bg-red-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500">Reste</p>
+                <p className="text-lg font-bold text-red-600">{formatMoney(selectedLoan.remaining_amount)}</p>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-3 text-center">
+                <p className="text-xs text-gray-500">Progression</p>
+                <p className="text-lg font-bold text-blue-600">{progress.toFixed(1)}%</p>
+              </div>
+            </div>
+
+            {/* Barre de progression */}
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div className="bg-gradient-to-r from-emerald-500 to-green-400 h-3 rounded-full transition-all" style={{ width: `${Math.min(progress, 100)}%` }} />
+            </div>
+
+            {/* Échéances */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-900">Échéances</h4>
+                <div className="flex gap-2">
+                  <button onClick={() => { setGeneratingForLoan(selectedLoan); setShowGenerateModal(true); }} className="text-sm text-green-600 hover:text-green-700 flex items-center gap-1">
+                    <Calendar className="w-4 h-4" /> Générer
+                  </button>
+                  <button onClick={() => { setScheduleForm({ due_date: '', amount: '', principal_part: '', interest_part: '', notes: '' }); setShowScheduleForm(true); }} className="text-sm text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                    <Plus className="w-4 h-4" /> Ajouter
+                  </button>
+                </div>
+              </div>
+
+              {loanSchedules.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Aucune échéance. Utilisez "Générer" pour créer automatiquement les échéances.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 text-left">
+                        <th className="px-3 py-2 font-medium text-gray-600">Date</th>
+                        <th className="px-3 py-2 font-medium text-gray-600 text-right">Montant</th>
+                        <th className="px-3 py-2 font-medium text-gray-600">Statut</th>
+                        <th className="px-3 py-2 font-medium text-gray-600">Payé le</th>
+                        <th className="px-3 py-2 font-medium text-gray-600 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {loanSchedules.map(s => {
+                        const st = SCHEDULE_STATUSES[s.status] || { label: s.status, color: 'gray' };
+                        return (
+                          <tr key={s.id} className={s.status === 'en_retard' ? 'bg-red-50/30' : ''}>
+                            <td className="px-3 py-2">{formatDate(s.due_date)}</td>
+                            <td className="px-3 py-2 text-right font-semibold">{formatMoney(s.amount)}</td>
+                            <td className="px-3 py-2">
+                              <span className={`px-2 py-0.5 text-xs rounded-full bg-${st.color}-100 text-${st.color}-700`}>{st.label}</span>
+                            </td>
+                            <td className="px-3 py-2 text-gray-500">
+                              {s.paid_date ? `${formatDate(s.paid_date)} (${formatMoney(s.paid_amount)})` : '-'}
+                            </td>
+                            <td className="px-3 py-2 text-right">
+                              <div className="flex justify-end gap-1">
+                                {s.status !== 'paye' && (
+                                  <button onClick={() => { setPayingSchedule(s); setPayForm({ paid_amount: String(s.amount), paid_date: new Date().toISOString().split('T')[0] }); setShowPayModal(true); }} className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded text-xs hover:bg-emerald-100">Payer</button>
+                                )}
+                                <button onClick={() => handleDeleteSchedule(s.id)} className="p-1 hover:bg-red-50 rounded text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Modal paiement d'échéance ---
+  function renderPayModal() {
+    if (!payingSchedule) return null;
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowPayModal(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900">Payer l'échéance</h3>
+            <p className="text-sm text-gray-500 mt-1">Échéance du {formatDate(payingSchedule.due_date)} — {formatMoney(payingSchedule.amount)}</p>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Montant payé</label>
+              <input type="number" value={payForm.paid_amount} onChange={e => setPayForm({ ...payForm, paid_amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date de paiement</label>
+              <input type="date" value={payForm.paid_date} onChange={e => setPayForm({ ...payForm, paid_date: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <button onClick={() => setShowPayModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Annuler</button>
+            <button onClick={handlePaySchedule} className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" /> Confirmer le paiement
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Modal génération échéances ---
+  function renderGenerateModal() {
+    if (!generatingForLoan) return null;
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowGenerateModal(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100">
+            <h3 className="text-lg font-semibold text-gray-900">Générer les échéances</h3>
+            <p className="text-sm text-gray-500 mt-1">{generatingForLoan.label} — Reste: {formatMoney(generatingForLoan.remaining_amount)}</p>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de mois</label>
+              <input type="number" value={generateForm.num_months} onChange={e => setGenerateForm({ ...generateForm, num_months: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Montant mensuel (optionnel)</label>
+              <input type="number" value={generateForm.monthly_amount} onChange={e => setGenerateForm({ ...generateForm, monthly_amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Auto-calculé si vide" />
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <button onClick={() => setShowGenerateModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Annuler</button>
+            <button onClick={handleGenerateSchedules} className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm hover:from-indigo-600 hover:to-purple-700 flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Générer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Modal formulaire compte ---
+  function renderAccountFormModal() {
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowAccountForm(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Nouveau compte bancaire</h3>
+            <button onClick={() => setShowAccountForm(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nom du compte *</label>
+              <input type="text" value={accountForm.account_name} onChange={e => setAccountForm({ ...accountForm, account_name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Ex: Compte courant principal" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Numéro de compte *</label>
+              <input type="text" value={accountForm.account_number} onChange={e => setAccountForm({ ...accountForm, account_number: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select value={accountForm.account_type} onChange={e => setAccountForm({ ...accountForm, account_type: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                  <option value="courant">Courant</option>
+                  <option value="epargne">Épargne</option>
+                  <option value="professionnel">Professionnel</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Devise</label>
+                <select value={accountForm.currency} onChange={e => setAccountForm({ ...accountForm, currency: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                  <option value="XOF">XOF (FCFA)</option>
+                  <option value="EUR">EUR</option>
+                  <option value="USD">USD</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Solde actuel</label>
+              <input type="number" value={accountForm.current_balance} onChange={e => setAccountForm({ ...accountForm, current_balance: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="0" />
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <button onClick={() => setShowAccountForm(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Annuler</button>
+            <button onClick={handleSaveAccount} className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm hover:from-indigo-600 hover:to-purple-700 flex items-center gap-2">
+              <Save className="w-4 h-4" /> Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Modal formulaire échéance ---
+  function renderScheduleFormModal() {
+    return (
+      <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowScheduleForm(false)}>
+        <div className="bg-white rounded-2xl shadow-xl max-w-md w-full" onClick={e => e.stopPropagation()}>
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-gray-900">Nouvelle échéance</h3>
+            <button onClick={() => setShowScheduleForm(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date d'échéance *</label>
+              <input type="date" value={scheduleForm.due_date} onChange={e => setScheduleForm({ ...scheduleForm, due_date: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Montant total *</label>
+              <input type="number" value={scheduleForm.amount} onChange={e => setScheduleForm({ ...scheduleForm, amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Part capital</label>
+                <input type="number" value={scheduleForm.principal_part} onChange={e => setScheduleForm({ ...scheduleForm, principal_part: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Part intérêts</label>
+                <input type="number" value={scheduleForm.interest_part} onChange={e => setScheduleForm({ ...scheduleForm, interest_part: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea value={scheduleForm.notes} onChange={e => setScheduleForm({ ...scheduleForm, notes: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" rows={2} />
+            </div>
+          </div>
+          <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+            <button onClick={() => setShowScheduleForm(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">Annuler</button>
+            <button onClick={handleSaveSchedule} className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg text-sm hover:from-indigo-600 hover:to-purple-700 flex items-center gap-2">
+              <Save className="w-4 h-4" /> Enregistrer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+};
+
+export default BankManagement;

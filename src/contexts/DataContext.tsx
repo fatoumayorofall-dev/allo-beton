@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { Product, Customer, Sale, Payment, Supplier, DashboardStats } from '../types';
 import {
   productsAPI,
@@ -49,12 +49,12 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fonctions de rafraîchissement individuelles
-  const refreshProducts = async () => {
-    if (!user) return;
+  // Fonctions de rafraîchissement individuelles (stables avec useCallback)
+  const refreshProducts = useCallback(async () => {
     try {
       const result = await productsAPI.getAll();
       if (result.success) {
@@ -67,10 +67,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.error('Erreur produits:', err);
       setError(err.message);
     }
-  };
+  }, []);
 
-  const refreshCustomers = async () => {
-    if (!user) return;
+  const refreshCustomers = useCallback(async () => {
     try {
       const result = await customersAPI.getAll();
       if (result.success) {
@@ -83,12 +82,11 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.error('Erreur clients:', err);
       setError(err.message);
     }
-  };
+  }, []);
 
-  const refreshSales = async () => {
-    if (!user) return;
+  const refreshSales = useCallback(async () => {
     try {
-      const result = await salesAPI.getAll();
+      const result = await salesAPI.getAll({ limit: '200' });
       if (result.success) {
         // Gérer la nouvelle structure avec pagination
         const salesData = result.data?.sales || result.data || [];
@@ -101,10 +99,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.error('Erreur ventes:', err);
       setError(err.message);
     }
-  };
+  }, []);
 
-  const refreshPayments = async () => {
-    if (!user) return;
+  const refreshPayments = useCallback(async () => {
     try {
       const result = await paymentsAPI.getAll();
       if (result.success) {
@@ -117,10 +114,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.error('Erreur paiements:', err);
       setError(err.message);
     }
-  };
+  }, []);
 
-  const refreshSuppliers = async () => {
-    if (!user) return;
+  const refreshSuppliers = useCallback(async () => {
     try {
       const result = await suppliersAPI.getAll();
       if (result.success) {
@@ -133,10 +129,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.error('Erreur fournisseurs:', err);
       setError(err.message);
     }
-  };
+  }, []);
 
-  const refreshDashboardStats = async () => {
-    if (!user) return;
+  const refreshDashboardStats = useCallback(async () => {
     try {
       const result = await dashboardAPI.getStats();
       if (result.success) {
@@ -149,12 +144,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       console.error('Erreur stats:', err);
       setError(err.message);
     }
-  };
+  }, []);
 
-  // Fonction de rafraîchissement globale
-  const refreshData = async () => {
-    if (!user || authLoading) return;
-    
+  // Fonction de rafraîchissement globale (stable avec useCallback)
+  const refreshData = useCallback(async () => {
     console.log('Rafraîchissement des données...');
     setLoading(true);
     setError(null);
@@ -175,23 +168,27 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       setError(err.message);
     } finally {
       setLoading(false);
+      setInitialLoaded(true);
     }
-  };
+  }, [refreshProducts, refreshCustomers, refreshSales, refreshPayments, refreshSuppliers, refreshDashboardStats]);
 
   // Écouteur global pour forcer le rafraîchissement depuis d'autres parties de l'app
-  React.useEffect(() => {
-    const handler = async () => {
-      if (!user || authLoading) return;
-      await refreshData();
+  useEffect(() => {
+    const handler = () => {
+      refreshData();
     };
 
     window.addEventListener('refreshData', handler);
     return () => window.removeEventListener('refreshData', handler);
-  }, [user, authLoading, refreshData]);
+  }, [refreshData]);
 
   // Charger les données initiales
   useEffect(() => {
-    if (!user || authLoading) {
+    if (authLoading) {
+      return;
+    }
+
+    if (!user) {
       // Réinitialiser les données si pas d'utilisateur
       setProducts([]);
       setCustomers([]);
@@ -200,30 +197,34 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       setSuppliers([]);
       setDashboardStats(null);
       setLoading(false);
+      setInitialLoaded(false);
       return;
     }
 
     console.log('Initialisation des données pour:', user.email);
     refreshData();
-  }, [user, authLoading]);
+  }, [user, authLoading, refreshData]);
+
+  // Valeur du contexte memoizé pour éviter les re-renders inutiles
+  const contextValue = useMemo(() => ({
+    products,
+    customers,
+    sales,
+    payments,
+    suppliers,
+    dashboardStats,
+    loading,
+    error,
+    refreshData,
+    refreshProducts,
+    refreshCustomers,
+    refreshSales,
+    refreshPayments,
+    refreshSuppliers
+  }), [products, customers, sales, payments, suppliers, dashboardStats, loading, error, refreshData, refreshProducts, refreshCustomers, refreshSales, refreshPayments, refreshSuppliers]);
 
   return (
-    <DataContext.Provider value={{
-      products,
-      customers,
-      sales,
-      payments,
-      suppliers,
-      dashboardStats,
-      loading,
-      error,
-      refreshData,
-      refreshProducts,
-      refreshCustomers,
-      refreshSales,
-      refreshPayments,
-      refreshSuppliers
-    }}>
+    <DataContext.Provider value={contextValue}>
       {children}
     </DataContext.Provider>
   );

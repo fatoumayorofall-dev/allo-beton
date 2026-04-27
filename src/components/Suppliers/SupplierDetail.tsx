@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Truck, Mail, Phone, MapPin, Star, Calendar, Package, ShoppingCart, Download, Printer } from 'lucide-react';
+﻿import React, { useState } from 'react';
+import { X, Building2, Mail, Phone, MapPin, Star, Calendar, Package, ShoppingCart, Download, Printer, Award, TrendingUp, Edit3 } from 'lucide-react';
 import { Supplier } from '../../types';
 import { PurchaseOrderForm } from './PurchaseOrderForm';
 import { PurchaseOrdersList } from './PurchaseOrdersList';
@@ -65,184 +65,218 @@ export const SupplierDetail: React.FC<SupplierDetailProps> = ({ supplier, onClos
     return Array.from({ length: 5 }, (_, index) => (
       <Star
         key={index}
-        className={`w-4 h-4 ${
+        className={`w-3.5 h-3.5 ${
           index < Math.floor(rating) 
-            ? 'text-yellow-400 fill-current' 
+            ? 'text-amber-400 fill-current' 
             : index < rating 
-            ? 'text-yellow-400 fill-current opacity-50' 
+            ? 'text-amber-400 fill-current opacity-50' 
             : 'text-gray-300'
         }`}
       />
     ));
   };
 
+  const rating = Number(supplier.rating) || 0;
+  const isTop = rating >= 4;
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
-              <Truck className="w-6 h-6 text-white" />
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+        {/* Compact Header */}
+        <div className="bg-gradient-to-r from-teal-500 to-cyan-600 px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-lg ${
+                isTop ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-white/20'
+              }`}>
+                {isTop ? <Award className="w-5 h-5" /> : supplier.name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-white">{supplier.name}</h2>
+                <p className="text-[11px] text-white/80">{supplier.contactPerson || supplier.contact_person}</p>
+              </div>
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">{supplier.name}</h2>
-              <p className="text-gray-600">{supplier.contactPerson}</p>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={handleDownloadPDF}
+                disabled={downloadingPDF}
+                title="Télécharger PDF"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handlePrintPDF}
+                title="Imprimer"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              >
+                <Printer className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onEdit}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-teal-600 rounded-lg text-xs font-semibold hover:bg-teal-50 transition-all"
+              >
+                Modifier
+              </button>
+              <button
+                onClick={onClose}
+                className="p-1.5 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleDownloadPDF}
-              disabled={downloadingPDF}
-              title="Télécharger PDF"
-              className="p-2 text-gray-600 hover:bg-orange-100 rounded-lg transition-colors duration-200 disabled:opacity-50"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handlePrintPDF}
-              title="Imprimer"
-              className="p-2 text-gray-600 hover:bg-orange-100 rounded-lg transition-colors duration-200"
-            >
-              <Printer className="w-5 h-5" />
-            </button>
-            <button
-              onClick={onEdit}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              Modifier
-            </button>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-            >
-              <X className="w-6 h-6" />
-            </button>
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
-          {/* Supplier Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900">Informations de Contact</h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <Mail className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-900">{supplier.email}</span>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Phone className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-900">{supplier.phone}</span>
-                </div>
-                
-                <div className="flex items-start space-x-3">
-                  <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
-                  <span className="text-gray-900">{supplier.address}</span>
+        <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+          <div className="p-5 space-y-4">
+            {/* Contact & Evaluation Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Contact Info */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-teal-100 rounded flex items-center justify-center">
+                    <Building2 className="w-3 h-3 text-teal-600" />
+                  </div>
+                  Informations de Contact
+                </h3>
+                <div className="space-y-2">
+                  {supplier.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-[11px] text-gray-700">{supplier.email}</span>
+                    </div>
+                  )}
+                  {supplier.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-[11px] text-gray-700">{supplier.phone}</span>
+                    </div>
+                  )}
+                  {supplier.address && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                      <span className="text-[11px] text-gray-700">{supplier.address}</span>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900">Évaluation</h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-600">Note:</span>
-                    <div className="flex items-center space-x-1">
-                      {renderStars(supplier.rating)}
-                      <span className="text-sm text-gray-600 ml-2">({supplier.rating}/5)</span>
-                    </div>
+              {/* Evaluation */}
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-amber-100 rounded flex items-center justify-center">
+                    <Star className="w-3 h-3 text-amber-600" />
                   </div>
-                  <button
-                    onClick={() => setShowRatingModal(true)}
-                    className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition-colors"
-                  >
-                    Évaluer
-                  </button>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <Calendar className="w-5 h-5 text-gray-400" />
-                  <div>
-                    <span className="text-gray-600">Dernière commande:</span>
-                    <span className="ml-2 text-gray-900">
-                      {new Date(supplier.lastOrderDate).toLocaleDateString('fr-FR')}
+                  Évaluation
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] text-gray-600">Note:</span>
+                      <div className="flex items-center gap-0.5">
+                        {renderStars(rating)}
+                      </div>
+                      <span className="text-[10px] text-gray-500">({rating.toFixed(1)}/5)</span>
+                    </div>
+                    <button
+                      onClick={() => setShowRatingModal(true)}
+                      className="px-2 py-1 text-[10px] font-medium bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors"
+                    >
+                      Évaluer
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-[11px] text-gray-600">Dernière commande:</span>
+                    <span className="text-[11px] font-medium text-gray-800">
+                      {supplier.lastOrderDate ? new Date(supplier.lastOrderDate).toLocaleDateString('fr-FR') : 'Aucune'}
                     </span>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Statistics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-blue-600 mb-1">Total Commandes</p>
-                  <p className="text-2xl font-bold text-blue-900">{supplier.totalOrders}</p>
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 rounded-xl p-3 border border-orange-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-medium text-orange-600 mb-0.5">Total Commandes</p>
+                    <p className="text-xl font-bold text-orange-800">{supplier.totalOrders || 0}</p>
+                  </div>
+                  <div className="w-9 h-9 bg-orange-200/50 rounded-lg flex items-center justify-center">
+                    <ShoppingCart className="w-4 h-4 text-orange-600" />
+                  </div>
                 </div>
-                <ShoppingCart className="w-8 h-8 text-blue-600" />
+              </div>
+
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-3 border border-emerald-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-medium text-emerald-600 mb-0.5">Produits Fournis</p>
+                    <p className="text-xl font-bold text-emerald-800">{supplier.productsSupplied?.length || 0}</p>
+                  </div>
+                  <div className="w-9 h-9 bg-emerald-200/50 rounded-lg flex items-center justify-center">
+                    <Package className="w-4 h-4 text-emerald-600" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-3 border border-amber-100">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-medium text-amber-600 mb-0.5">Note Moyenne</p>
+                    <p className="text-xl font-bold text-amber-800">{rating.toFixed(1)}/5</p>
+                  </div>
+                  <div className="w-9 h-9 bg-amber-200/50 rounded-lg flex items-center justify-center">
+                    <Star className="w-4 h-4 text-amber-600" />
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div className="bg-green-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-green-600 mb-1">Produits Fournis</p>
-                  <p className="text-2xl font-bold text-green-900">{supplier.productsSupplied.length}</p>
+            {/* Products Supplied */}
+            {supplier.productsSupplied && supplier.productsSupplied.length > 0 && (
+              <div className="bg-gray-50 rounded-xl p-4">
+                <h3 className="text-xs font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <div className="w-5 h-5 bg-teal-100 rounded flex items-center justify-center">
+                    <Package className="w-3 h-3 text-teal-600" />
+                  </div>
+                  Produits Fournis
+                </h3>
+                <div className="flex flex-wrap gap-1.5">
+                  {supplier.productsSupplied.map((product, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-gray-200 rounded-lg text-[11px] text-gray-700"
+                    >
+                      <Package className="w-3 h-3 text-teal-500" />
+                      {product}
+                    </span>
+                  ))}
                 </div>
-                <Package className="w-8 h-8 text-green-600" />
               </div>
-            </div>
+            )}
 
-            <div className="bg-yellow-50 p-6 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-yellow-600 mb-1">Note Moyenne</p>
-                  <p className="text-2xl font-bold text-yellow-900">{supplier.rating}/5</p>
-                </div>
-                <Star className="w-8 h-8 text-yellow-600" />
-              </div>
-            </div>
-          </div>
-
-          {/* Products Supplied */}
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Produits Fournis</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {supplier.productsSupplied.map((product, index) => (
-                <div
-                  key={index}
-                  className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
-                >
-                  <Package className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-900">{product}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="border-t border-gray-200 pt-6">
-            <div className="flex space-x-4">
+            {/* Action Buttons */}
+            <div className="grid grid-cols-3 gap-3 pt-2">
               <button 
                 onClick={() => setShowPurchaseForm(true)}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl text-xs font-semibold hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm"
               >
+                <ShoppingCart className="w-3.5 h-3.5" />
                 Nouvelle Commande
               </button>
               <button 
                 onClick={() => setShowOrdersList(true)}
-                className="flex-1 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors duration-200"
+                className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-xl text-xs font-semibold hover:from-emerald-600 hover:to-emerald-700 transition-all shadow-sm"
               >
+                <TrendingUp className="w-3.5 h-3.5" />
                 Voir Historique
               </button>
-              <button className="flex-1 bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+              <button className="flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl text-xs font-semibold hover:from-gray-700 hover:to-gray-800 transition-all shadow-sm">
+                <Mail className="w-3.5 h-3.5" />
                 Contacter
               </button>
             </div>

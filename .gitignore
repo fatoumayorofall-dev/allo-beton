@@ -1,8 +1,10 @@
 # Dépendances
 node_modules/
 
-# Variables sensibles
+# Variables sensibles (locales et backend uniquement)
 .env
+backend/.env
+backend/.env.production
 
 # Outils locaux
 .vs/
@@ -10,6 +12,7 @@ node_modules/
 
 # Archives
 *.zip
+deploy/
 
 # Logs
 logs/
@@ -33,3 +36,10 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+# Uploads (données utilisateur)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Local Netlify folder
+.netlify

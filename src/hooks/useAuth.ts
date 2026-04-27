@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { authAPI } from '../services/mysql-api.js';
+import { authAPI } from '../services/mysql-api';
 import { Profile } from '../types';
 
 interface User {
@@ -10,6 +10,10 @@ interface User {
   role?: string;
   company?: string;
   phone?: string;
+  avatar_url?: string;
+  position?: string;
+  bio?: string;
+  permissions?: any;
 }
 
 export const useAuth = () => {
@@ -45,7 +49,11 @@ export const useAuth = () => {
             last_name: userData.last_name,
             role: userData.role,
             company: userData.company,
-            phone: userData.phone
+            phone: userData.phone,
+            avatar_url: userData.avatar_url,
+            position: userData.position,
+            bio: userData.bio,
+            permissions: userData.permissions
           });
           setSession({ user: userData });
         }
@@ -83,7 +91,11 @@ export const useAuth = () => {
           last_name: userData.last_name,
           role: userData.role,
           company: userData.company,
-          phone: userData.phone
+          phone: userData.phone,
+          avatar_url: userData.avatar_url,
+          position: userData.position,
+          bio: userData.bio,
+          permissions: userData.permissions
         });
         setSession({ user: userData });
         
@@ -190,7 +202,8 @@ export const useAuth = () => {
           phone: userData.phone,
           avatar_url: userData.avatar_url,
           position: userData.position,
-          bio: userData.bio
+          bio: userData.bio,
+          permissions: userData.permissions
         });
         setSession({ user: userData });
       }

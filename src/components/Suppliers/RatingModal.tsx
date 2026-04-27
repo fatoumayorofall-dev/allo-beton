@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, Star } from 'lucide-react';
 import { Supplier } from '../../types';
 import { suppliersAPI } from '../../services/mysql-api';
@@ -13,7 +13,7 @@ const RATING_OPTIONS = [
   { value: 1, label: 'Mauvaise', icon: '😞', color: 'from-red-500 to-red-600', bgColor: 'hover:bg-red-50' },
   { value: 2, label: 'Faible', icon: '😐', color: 'from-orange-500 to-orange-600', bgColor: 'hover:bg-orange-50' },
   { value: 3, label: 'Bonne', icon: '🙂', color: 'from-yellow-500 to-yellow-600', bgColor: 'hover:bg-yellow-50' },
-  { value: 4, label: 'Très Bonne', icon: '😊', color: 'from-blue-500 to-blue-600', bgColor: 'hover:bg-blue-50' },
+  { value: 4, label: 'Très Bonne', icon: '😊', color: 'from-orange-500 to-orange-600', bgColor: 'hover:bg-orange-50' },
   { value: 5, label: 'Excellente', icon: '🤩', color: 'from-green-500 to-green-600', bgColor: 'hover:bg-green-50' },
 ];
 

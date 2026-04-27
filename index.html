@@ -1,13 +1,91 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Allo Béton - Gestion de Ventes de Béton</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1e3a8a" />
+    <meta name="color-scheme" content="light" />
+
+    <!-- SEO : valeurs par défaut, écrasées dynamiquement par React -->
+    <title>Allô Béton — Matériaux BTP & Béton prêt à l'emploi · Sénégal</title>
+    <meta name="description" content="Fournisseur n°1 de béton, ciment, fer et matériaux BTP au Sénégal. Livraison rapide à Dakar et environs. Qualité certifiée, devis gratuit." />
+    <meta name="keywords" content="béton, ciment, fer, BTP, Dakar, Sénégal, matériaux construction, livraison chantier, allô béton" />
+    <meta name="author" content="Allô Béton" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://allobeton.sn/" />
+    <meta name="geo.region" content="SN-DK" />
+    <meta name="geo.placename" content="Dakar" />
+
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Allô Béton" />
+    <meta property="og:title" content="Allô Béton — Matériaux BTP & Béton prêt à l'emploi" />
+    <meta property="og:description" content="Fournisseur n°1 de béton, ciment, fer et matériaux BTP au Sénégal. Livraison rapide à Dakar." />
+    <meta property="og:url" content="https://allobeton.sn/" />
+    <meta property="og:image" content="https://allobeton.sn/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="fr_SN" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Allô Béton — Matériaux BTP · Sénégal" />
+    <meta name="twitter:description" content="Béton, ciment, fer et matériaux BTP. Livraison rapide Dakar." />
+    <meta name="twitter:image" content="https://allobeton.sn/og-image.jpg" />
+
+    <!-- Perf : preconnect aux CDN utilisés -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.pexels.com" />
+    <link rel="dns-prefetch" href="https://images.pexels.com" />
+
+    <!-- JSON-LD Organization (schema.org) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Allô Béton",
+      "url": "https://allobeton.sn",
+      "logo": "https://allobeton.sn/logo-allo-beton.svg",
+      "description": "Fournisseur de matériaux BTP et béton prêt à l'emploi au Sénégal.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Dakar",
+        "addressCountry": "SN"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "telephone": "+221338001234",
+        "contactType": "customer service",
+        "areaServed": "SN",
+        "availableLanguage": ["French", "Wolof"]
+      },
+      "sameAs": [
+        "https://www.facebook.com/allobeton",
+        "https://www.instagram.com/allobeton",
+        "https://www.linkedin.com/company/allobeton"
+      ]
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <div id="error-overlay" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;padding:20px;color:#dc2626;background:#fef2f2;border-bottom:2px solid #dc2626;font-family:monospace;white-space:pre-wrap;font-size:13px;max-height:40vh;overflow:auto"></div>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var el = document.getElementById('error-overlay');
+        if (el) { el.style.display = 'block'; el.innerHTML = '<strong>Runtime Error</strong>\n' + msg + '\nFile: ' + url + ' Line: ' + line + ', Col: ' + col + '\n' + (error && error.stack ? error.stack : ''); }
+        console.error('[Runtime Error]', msg, url, line, col, error);
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var el = document.getElementById('error-overlay');
+        if (el) { el.style.display = 'block'; el.innerHTML = '<strong>Promise Rejection</strong>\n' + (e.reason ? (e.reason.stack || e.reason.message || e.reason) : 'Unknown error'); }
+        console.error('[Unhandled Rejection]', e.reason);
+      });
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,0 +1,24 @@
+# Allô Béton — robots.txt
+# https://allobeton.sn
+
+User-agent: *
+Allow: /
+Allow: /shop
+Allow: /shop/*
+
+# Empêcher l'indexation des zones privées / admin
+Disallow: /admin
+Disallow: /login
+Disallow: /dashboard
+Disallow: /api/
+Disallow: /*.json$
+Disallow: /test-*.html
+
+# Bots agressifs à ralentir
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
+Sitemap: https://allobeton.sn/sitemap.xml

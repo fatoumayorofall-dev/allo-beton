@@ -6,6 +6,37 @@ export interface Permission {
   actions: string[];
 }
 
+export interface UserPermission {
+  menu_id: string;
+  can_create: boolean;
+  can_read: boolean;
+  can_update: boolean;
+  can_delete: boolean;
+}
+
+// Liste complète des menus (synchronisée avec le backend et le sidebar)
+export const MENU_RESOURCES = [
+  { id: 'dashboard', label: 'Tableau de Bord', group: 'Principal' },
+  { id: 'sales', label: 'Ventes', group: 'Commercial' },
+  { id: 'transport', label: 'Bons de Transport', group: 'Commercial' },
+  { id: 'customers', label: 'Clients', group: 'Commercial' },
+  { id: 'inventory', label: 'Stock & Inventaire', group: 'Logistique' },
+  { id: 'suppliers', label: 'Fournisseurs', group: 'Logistique' },
+  { id: 'payments', label: 'Paiements', group: 'Finance' },
+  { id: 'cash', label: 'Gestion de Caisse', group: 'Finance' },
+  { id: 'cash-report', label: 'Rapport Journalier', group: 'Finance' },
+  { id: 'banks', label: 'Gestion Bancaire', group: 'Finance' },
+  { id: 'partners', label: 'Partenaires', group: 'Finance' },
+  { id: 'comptabilite', label: 'Comptabilité OHADA', group: 'Finance' },
+  { id: 'sage-import', label: 'Import Sage', group: 'Finance' },
+  { id: 'ecommerce', label: 'E-commerce', group: 'Outils' },
+  { id: 'ai-expert', label: 'IA Expert PRO', group: 'Outils' },
+  { id: 'hr', label: 'RH & Paie', group: 'Outils' },
+  { id: 'company', label: 'Profil Entreprise', group: 'Entreprise' },
+  { id: 'admin', label: 'Administration', group: 'Systeme' },
+  { id: 'settings', label: 'Paramètres', group: 'Systeme' },
+];
+
 export const RolePermissions: Record<UserRole, Permission[]> = {
   admin: [
     // ✅ Dashboard visible
@@ -18,6 +49,8 @@ export const RolePermissions: Record<UserRole, Permission[]> = {
     { resource: 'suppliers', actions: ['create', 'read', 'update', 'delete'] },
     { resource: 'payments', actions: ['create', 'read', 'update', 'delete'] },
     { resource: 'reports', actions: ['read', 'export'] },
+    { resource: 'comptabilite', actions: ['create', 'read', 'update', 'delete'] },
+    { resource: 'sage-import', actions: ['create', 'read', 'update', 'delete'] },
     { resource: 'settings', actions: ['read', 'update'] },
     { resource: 'audit', actions: ['read'] },
   ],
@@ -54,12 +87,28 @@ export const RolePermissions: Record<UserRole, Permission[]> = {
 
 /**
  * Vérifie si un rôle a une permission spécifique sur une ressource
+ * Supporte les permissions custom par utilisateur
  */
 export const hasPermission = (
   userRole: UserRole,
   resource: string,
-  action: string
+  action: string,
+  customPermissions?: UserPermission[]
 ): boolean => {
+  // Vérifier les permissions custom en priorité
+  if (customPermissions && customPermissions.length > 0) {
+    const perm = customPermissions.find(p => p.menu_id === resource);
+    if (perm) {
+      switch (action) {
+        case 'create': return perm.can_create;
+        case 'read': return perm.can_read;
+        case 'update': return perm.can_update;
+        case 'delete': return perm.can_delete;
+        default: return false;
+      }
+    }
+  }
+  // Fallback sur les permissions du rôle
   const permissions = RolePermissions[userRole];
   if (!Array.isArray(permissions)) return false;
   const resourcePermission = permissions.find(p => p.resource === resource);
@@ -67,12 +116,22 @@ export const hasPermission = (
 };
 
 /**
- * Vérifie si un rôle a un accès quelconque à une ressource
+ * Vérifie si un utilisateur a un accès quelconque à une ressource
+ * Supporte les permissions custom par utilisateur
  */
 export const canAccess = (
   userRole: UserRole,
-  resource: string
+  resource: string,
+  customPermissions?: UserPermission[]
 ): boolean => {
+  // Vérifier les permissions custom en priorité
+  if (customPermissions && customPermissions.length > 0) {
+    const perm = customPermissions.find(p => p.menu_id === resource);
+    if (perm) {
+      return perm.can_create || perm.can_read || perm.can_update || perm.can_delete;
+    }
+  }
+  // Fallback sur les permissions du rôle
   const permissions = RolePermissions[userRole];
   if (!Array.isArray(permissions)) return false;
   return permissions.some(p => p.resource === resource);
@@ -107,23 +166,120 @@ export const withPermission = (
   };
 };
 
-// Fonctions simplifiées pour la compatibilité
-export const getUserRole = async (userId: string): Promise<UserRole | null> => {
-  // Cette fonction sera gérée côté backend
-  return null;
+// ─── API calls pour la gestion des utilisateurs ────────────────────────────
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+const getHeaders = () => {
+  const token = localStorage.getItem('auth_token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+};
+
+export const getAllUsers = async (): Promise<{ success: boolean; data: any[] }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users`, { headers: getHeaders() });
+    return await res.json();
+  } catch {
+    return { success: false, data: [] };
+  }
+};
+
+export const createUser = async (userData: {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole;
+  company?: string;
+  phone?: string;
+}): Promise<{ success: boolean; data?: any; error?: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(userData),
+    });
+    return await res.json();
+  } catch {
+    return { success: false, error: 'Erreur réseau' };
+  }
 };
 
 export const updateUserRole = async (userId: string, newRole: UserRole): Promise<boolean> => {
-  // Cette fonction sera gérée côté backend
-  return false;
-};
-
-export const getAllUsers = async () => {
-  // Cette fonction sera gérée côté backend
-  return { success: false, data: [] };
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${userId}/role`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ role: newRole }),
+    });
+    const data = await res.json();
+    return data.success;
+  } catch {
+    return false;
+  }
 };
 
 export const toggleUserStatus = async (userId: string, isActive: boolean): Promise<boolean> => {
-  // Cette fonction sera gérée côté backend
-  return false;
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${userId}/status`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ is_active: isActive }),
+    });
+    const data = await res.json();
+    return data.success;
+  } catch {
+    return false;
+  }
+};
+
+export const deleteUser = async (userId: string): Promise<{ success: boolean; error?: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${userId}`, {
+      method: 'DELETE',
+      headers: getHeaders(),
+    });
+    return await res.json();
+  } catch {
+    return { success: false, error: 'Erreur réseau' };
+  }
+};
+
+// ─── API Permissions custom par utilisateur ──────────────────────────────────
+
+export const getUserPermissionsAPI = async (userId: string): Promise<{ success: boolean; data: UserPermission[] }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${userId}/permissions`, { headers: getHeaders() });
+    return await res.json();
+  } catch {
+    return { success: false, data: [] };
+  }
+};
+
+export const saveUserPermissions = async (userId: string, permissions: UserPermission[]): Promise<{ success: boolean; data?: UserPermission[]; error?: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${userId}/permissions`, {
+      method: 'PUT',
+      headers: getHeaders(),
+      body: JSON.stringify({ permissions }),
+    });
+    return await res.json();
+  } catch {
+    return { success: false, error: 'Erreur réseau' };
+  }
+};
+
+export const resetUserPermissions = async (userId: string): Promise<{ success: boolean; data?: UserPermission[]; error?: string }> => {
+  try {
+    const res = await fetch(`${API_BASE}/auth/users/${userId}/permissions/reset`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return await res.json();
+  } catch {
+    return { success: false, error: 'Erreur réseau' };
+  }
 };

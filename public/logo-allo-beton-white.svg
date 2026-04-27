@@ -1,0 +1,45 @@
+<!-- ALLO BÉTON - LOGO VERSION BLANCHE (pour fonds sombres) -->
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icône béton (cube 3D) -->
+  <g transform="translate(0, 10)">
+    <!-- Cube en perspective isométrique -->
+    <path d="M20 5 L35 12 L35 27 L20 35 L5 27 L5 12 Z" fill="#FBBF24" opacity="0.95"/>
+    <path d="M20 5 L35 12 L35 27 L20 20 Z" fill="#F59E0B" opacity="0.85"/>
+    <path d="M5 12 L20 5 L20 20 L5 27 Z" fill="#D97706" opacity="0.75"/>
+
+    <!-- Détails texture -->
+    <circle cx="15" cy="18" r="1.5" fill="#FFFFFF" opacity="0.4"/>
+    <circle cx="22" cy="15" r="1" fill="#FFFFFF" opacity="0.4"/>
+    <circle cx="28" cy="20" r="1.2" fill="#FFFFFF" opacity="0.4"/>
+
+    <!-- Accent brillant -->
+    <path d="M20 5 L23 7 L23 10 L20 8 Z" fill="#FDE68A" opacity="0.8"/>
+  </g>
+
+  <!-- Texte ALLO (blanc) -->
+  <text x="50" y="28" font-family="'Inter', 'Arial Black', sans-serif" font-size="24" font-weight="900" fill="#FFFFFF" letter-spacing="-0.5">
+    ALLO
+  </text>
+
+  <!-- Texte BÉTON (jaune) -->
+  <text x="50" y="48" font-family="'Inter', 'Arial Black', sans-serif" font-size="24" font-weight="900" fill="#FDE68A" letter-spacing="-0.5">
+    BÉTON
+  </text>
+
+  <!-- Tagline -->
+  <text x="50" y="56" font-family="'Inter', sans-serif" font-size="7" font-weight="600" fill="#D1D5DB" letter-spacing="1.5">
+    MATÉRIAUX PRO
+  </text>
+
+  <!-- Badge "NF" -->
+  <g transform="translate(165, 15)">
+    <rect width="30" height="30" rx="4" fill="#34D399" opacity="0.2"/>
+    <rect width="30" height="30" rx="4" fill="none" stroke="#34D399" stroke-width="1.5"/>
+    <text x="15" y="14" font-family="'Inter', sans-serif" font-size="10" font-weight="900" fill="#6EE7B7" text-anchor="middle">
+      NF
+    </text>
+    <text x="15" y="23" font-family="'Inter', sans-serif" font-size="5" font-weight="600" fill="#6EE7B7" text-anchor="middle">
+      CERTIFIÉ
+    </text>
+  </g>
+</svg>

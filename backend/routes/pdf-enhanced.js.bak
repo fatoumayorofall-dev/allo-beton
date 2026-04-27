@@ -1,0 +1,441 @@
+/**
+ * ALLO BÉTON - RELEVÉ DE COMPTE PDF
+ * Design Élégant & Professionnel
+ */
+
+const express = require('express');
+const PDFDocument = require('pdfkit');
+const { pool } = require('../config/database');
+
+const router = express.Router();
+
+router.get('/customer-statement/:customerId', async (req, res) => {
+  const { customerId } = req.params;
+  const { lang = 'fr' } = req.query;
+
+  try {
+    // ══════════════════════════════════════════════════════════════════
+    // RÉCUPÉRATION DES DONNÉES
+    // ══════════════════════════════════════════════════════════════════
+
+    const [customerRows] = await pool.execute(
+      `SELECT * FROM customers WHERE id = ?`,
+      [customerId]
+    );
+
+    if (!customerRows || customerRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Client introuvable' });
+    }
+
+    const customer = customerRows[0];
+
+    const [salesRows] = await pool.execute(
+      `SELECT s.*,
+              COALESCE(s.total_amount, 0) as amount,
+              COALESCE((SELECT SUM(si.quantity) FROM sale_items si WHERE si.sale_id = s.id), 0) as qty
+       FROM sales s
+       WHERE s.customer_id = ?
+       ORDER BY s.sale_date DESC
+       LIMIT 30`,
+      [customerId]
+    );
+
+    const [monthlyStats] = await pool.execute(
+      `SELECT
+         DATE_FORMAT(s.sale_date, '%Y-%m') as month,
+         DATE_FORMAT(s.sale_date, '%b') as month_name,
+         SUM(s.total_amount) as total
+       FROM sales s
+       WHERE s.customer_id = ? AND s.sale_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+       GROUP BY month, month_name
+       ORDER BY month ASC`,
+      [customerId]
+    );
+
+    const [topProducts] = await pool.execute(
+      `SELECT p.name, SUM(si.quantity) as qty, SUM(si.quantity * si.unit_price) as value
+       FROM sale_items si
+       JOIN sales s ON s.id = si.sale_id
+       JOIN products p ON p.id = si.product_id
+       WHERE s.customer_id = ?
+       GROUP BY p.id, p.name
+       ORDER BY value DESC
+       LIMIT 5`,
+      [customerId]
+    );
+
+    // ══════════════════════════════════════════════════════════════════
+    // CONFIGURATION PDF
+    // ══════════════════════════════════════════════════════════════════
+
+    const doc = new PDFDocument({ size: 'A4', margin: 0 });
+
+    const safeName = (customer.name || 'client').replace(/[^a-zA-Z0-9]/g, '_');
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="releve_${safeName}_${new Date().toISOString().split('T')[0]}.pdf"`);
+
+    doc.pipe(res);
+
+    // Dimensions
+    const W = 595, H = 842, M = 40;
+    const CW = W - M * 2;
+
+    // Palette élégante et sobre
+    const colors = {
+      primary: '#1E3A5F',      // Bleu marine profond
+      primaryLight: '#2E5077', // Bleu marine clair
+      accent: '#C9A227',       // Or discret
+      accentLight: '#F5ECD7',  // Crème doré
+      success: '#2D6A4F',      // Vert forêt
+      successLight: '#E8F5E9',
+      dark: '#1A1A2E',         // Noir bleuté
+      text: '#2C3E50',         // Gris bleu foncé
+      gray: '#64748B',         // Gris ardoise
+      lightGray: '#F1F5F9',    // Gris très clair
+      border: '#E2E8F0',       // Bordure subtile
+      white: '#FFFFFF'
+    };
+
+    // Fonction formatage montant
+    const formatMontant = (n) => {
+      const num = Number(n) || 0;
+      return num.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    };
+
+    const formatMontantCompact = (n) => {
+      const num = Number(n) || 0;
+      if (num >= 1000000) return (num / 1000000).toFixed(1).replace('.', ',') + ' M';
+      if (num >= 1000) return (num / 1000).toFixed(0) + ' K';
+      return num.toFixed(0);
+    };
+
+    // ══════════════════════════════════════════════════════════════════
+    // EN-TÊTE ÉLÉGANT
+    // ══════════════════════════════════════════════════════════════════
+
+    // Fond header bleu marine
+    doc.rect(0, 0, W, 120).fill(colors.primary);
+
+    // Ligne accent dorée
+    doc.rect(0, 120, W, 3).fill(colors.accent);
+
+    // Logo
+    doc.fillColor(colors.white).fontSize(28).font('Helvetica-Bold');
+    doc.text('ALLO BÉTON', M, 30);
+
+    doc.fontSize(10).font('Helvetica').fillColor('#A8C5DA');
+    doc.text('Matériaux de Construction', M, 62);
+
+    doc.fontSize(9).fillColor('#7BA3BC');
+    doc.text('Dakar, Sénégal  •  +221 33 860 12 34', M, 82);
+
+    // Titre document à droite
+    doc.fillColor(colors.white).fontSize(11).font('Helvetica');
+    doc.text('RELEVÉ DE COMPTE', W - M - 160, 35, { width: 160, align: 'right' });
+
+    doc.fontSize(9).fillColor('#A8C5DA');
+    const dateStr = new Date().toLocaleDateString('fr-FR', {
+      day: '2-digit', month: 'long', year: 'numeric'
+    });
+    doc.text(dateStr, W - M - 160, 55, { width: 160, align: 'right' });
+
+    doc.fontSize(8).fillColor('#7BA3BC');
+    doc.text(`Réf: ${customer.id ? customer.id.substring(0, 8).toUpperCase() : '—'}`, W - M - 160, 75, { width: 160, align: 'right' });
+
+    let y = 140;
+
+    // ══════════════════════════════════════════════════════════════════
+    // CARTE CLIENT
+    // ══════════════════════════════════════════════════════════════════
+
+    // Cadre avec bordure subtile
+    doc.roundedRect(M, y, CW, 85, 6).fill(colors.white);
+    doc.roundedRect(M, y, CW, 85, 6).lineWidth(1).stroke(colors.border);
+
+    // Barre accent gauche
+    doc.rect(M, y, 4, 85).fill(colors.accent);
+
+    // Avatar
+    const avatarX = M + 20, avatarY = y + 17;
+    doc.circle(avatarX + 25, avatarY + 25, 25).fill(colors.primary);
+
+    const initials = customer.name
+      ? customer.name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase()
+      : '??';
+    doc.fillColor(colors.white).fontSize(18).font('Helvetica-Bold');
+    doc.text(initials, avatarX, avatarY + 16, { width: 50, align: 'center' });
+
+    // Nom client
+    const infoX = avatarX + 65;
+    doc.fillColor(colors.dark).fontSize(16).font('Helvetica-Bold');
+    doc.text(customer.name || 'Client', infoX, y + 15);
+
+    // Badge type
+    const typeLabels = {
+      simple: 'Client Standard', quotataire: 'Quotataire',
+      revendeur: 'Revendeur Pro', occasionnel: 'Occasionnel'
+    };
+    const badge = typeLabels[customer.customer_type] || 'Client';
+    doc.fillColor(colors.gray).fontSize(9).font('Helvetica');
+    doc.text(badge, infoX, y + 38);
+
+    // Infos colonnes
+    const col1 = M + 280, col2 = M + 400;
+
+    doc.fillColor(colors.gray).fontSize(8).font('Helvetica');
+    doc.text('Téléphone', col1, y + 15);
+    doc.fillColor(colors.text).fontSize(10).font('Helvetica-Bold');
+    doc.text(customer.phone || '—', col1, y + 28);
+
+    doc.fillColor(colors.gray).fontSize(8).font('Helvetica');
+    doc.text('Email', col2, y + 15);
+    doc.fillColor(colors.text).fontSize(9);
+    doc.text(customer.email || '—', col2, y + 28, { width: 110 });
+
+    doc.fillColor(colors.gray).fontSize(8).font('Helvetica');
+    doc.text('Adresse', col1, y + 50);
+    doc.fillColor(colors.text).fontSize(9);
+    const addr = `${customer.address || '—'}${customer.city ? ', ' + customer.city : ''}`;
+    doc.text(addr, col1, y + 63, { width: 220 });
+
+    y += 105;
+
+    // ══════════════════════════════════════════════════════════════════
+    // INDICATEURS (4 KPIs)
+    // ══════════════════════════════════════════════════════════════════
+
+    doc.fillColor(colors.primary).fontSize(11).font('Helvetica-Bold');
+    doc.text('SYNTHÈSE FINANCIÈRE', M, y);
+    y += 25;
+
+    const totalOrders = salesRows.length;
+    const totalRevenue = salesRows.reduce((s, r) => s + Number(r.amount || 0), 0);
+    const avgOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const totalQty = salesRows.reduce((s, r) => s + Number(r.qty || 0), 0);
+
+    const kpis = [
+      { label: 'Commandes', value: totalOrders.toString(), sub: 'transactions' },
+      { label: 'Chiffre d\'affaires', value: formatMontant(totalRevenue), sub: 'FCFA' },
+      { label: 'Panier moyen', value: formatMontant(Math.round(avgOrder)), sub: 'FCFA' },
+      { label: 'Volume total', value: totalQty.toFixed(1), sub: 'tonnes' }
+    ];
+
+    const kpiW = (CW - 30) / 4;
+
+    kpis.forEach((k, i) => {
+      const kx = M + i * (kpiW + 10);
+
+      // Fond
+      doc.roundedRect(kx, y, kpiW, 70, 6).fill(colors.lightGray);
+
+      // Ligne accent en haut
+      doc.rect(kx, y, kpiW, 3).fill(colors.primary);
+
+      // Label
+      doc.fillColor(colors.gray).fontSize(8).font('Helvetica');
+      doc.text(k.label.toUpperCase(), kx + 12, y + 15, { width: kpiW - 24 });
+
+      // Valeur
+      doc.fillColor(colors.dark).fontSize(16).font('Helvetica-Bold');
+      doc.text(k.value, kx + 12, y + 32, { width: kpiW - 24 });
+
+      // Sous-label
+      doc.fillColor(colors.gray).fontSize(8).font('Helvetica');
+      doc.text(k.sub, kx + 12, y + 52, { width: kpiW - 24 });
+    });
+
+    y += 95;
+
+    // ══════════════════════════════════════════════════════════════════
+    // GRAPHIQUE ÉVOLUTION + TOP PRODUITS
+    // ══════════════════════════════════════════════════════════════════
+
+    const halfW = (CW - 20) / 2;
+
+    // Titre graphique
+    doc.fillColor(colors.primary).fontSize(10).font('Helvetica-Bold');
+    doc.text('ÉVOLUTION (6 MOIS)', M, y);
+
+    // Titre top produits
+    doc.text('PRODUITS LES PLUS COMMANDÉS', M + halfW + 20, y);
+    y += 20;
+
+    // ─── GRAPHIQUE ───
+    doc.roundedRect(M, y, halfW, 115, 6).fill(colors.lightGray);
+    doc.roundedRect(M, y, halfW, 115, 6).lineWidth(0.5).stroke(colors.border);
+
+    if (monthlyStats && monthlyStats.length > 0) {
+      const data = monthlyStats.map(m => Number(m.total) || 0);
+      const maxVal = Math.max(...data, 1);
+      const barCount = data.length;
+      const barW = Math.min(30, (halfW - 60) / barCount - 8);
+      const chartH = 70;
+      const startX = M + 30;
+
+      data.forEach((val, i) => {
+        const barH = Math.max(3, (val / maxVal) * chartH);
+        const bx = startX + i * (barW + 8);
+        const by = y + 85 - barH;
+
+        // Barre
+        doc.roundedRect(bx, by, barW, barH, 3).fill(colors.primary);
+
+        // Valeur au-dessus
+        if (val > 0) {
+          doc.fillColor(colors.text).fontSize(7).font('Helvetica-Bold');
+          doc.text(formatMontantCompact(val), bx - 5, by - 12, { width: barW + 10, align: 'center' });
+        }
+
+        // Label mois
+        doc.fillColor(colors.gray).fontSize(7).font('Helvetica');
+        const monthLabel = monthlyStats[i].month_name || '';
+        doc.text(monthLabel.substring(0, 3), bx, y + 95, { width: barW, align: 'center' });
+      });
+    } else {
+      doc.fillColor(colors.gray).fontSize(9).font('Helvetica');
+      doc.text('Aucune donnée disponible', M + 25, y + 50);
+    }
+
+    // ─── TOP PRODUITS ───
+    const px = M + halfW + 20;
+    doc.roundedRect(px, y, halfW, 115, 6).fill(colors.lightGray);
+    doc.roundedRect(px, y, halfW, 115, 6).lineWidth(0.5).stroke(colors.border);
+
+    if (topProducts && topProducts.length > 0) {
+      let py = y + 12;
+
+      topProducts.forEach((p, i) => {
+        // Numéro
+        doc.fillColor(colors.primary).fontSize(9).font('Helvetica-Bold');
+        doc.text(`${i + 1}.`, px + 12, py + 2);
+
+        // Nom produit
+        doc.fillColor(colors.text).fontSize(9).font('Helvetica-Bold');
+        const prodName = (p.name || '—').substring(0, 25);
+        doc.text(prodName, px + 30, py + 2, { width: halfW - 120 });
+
+        // Montant à droite
+        doc.fillColor(colors.gray).fontSize(8).font('Helvetica');
+        doc.text(formatMontant(p.value) + ' F', px + halfW - 80, py + 2, { width: 65, align: 'right' });
+
+        py += 22;
+      });
+    } else {
+      doc.fillColor(colors.gray).fontSize(9).font('Helvetica');
+      doc.text('Aucun produit', px + 25, y + 50);
+    }
+
+    y += 135;
+
+    // ══════════════════════════════════════════════════════════════════
+    // TABLEAU DES TRANSACTIONS
+    // ══════════════════════════════════════════════════════════════════
+
+    doc.fillColor(colors.primary).fontSize(10).font('Helvetica-Bold');
+    doc.text('HISTORIQUE DES TRANSACTIONS', M, y);
+    y += 20;
+
+    // En-tête tableau
+    doc.roundedRect(M, y, CW, 24, 4).fill(colors.primary);
+
+    doc.fillColor(colors.white).fontSize(8).font('Helvetica-Bold');
+    doc.text('DATE', M + 12, y + 8);
+    doc.text('RÉFÉRENCE', M + 85, y + 8);
+    doc.text('QUANTITÉ', M + 230, y + 8, { width: 60, align: 'right' });
+    doc.text('MONTANT (FCFA)', M + 310, y + 8, { width: 100, align: 'right' });
+    doc.text('STATUT', M + 430, y + 8, { width: 70, align: 'center' });
+
+    y += 26;
+
+    // Lignes du tableau
+    const maxRows = Math.min(salesRows.length, 12);
+    const statusConfig = {
+      pending: { text: 'En attente', color: colors.gray },
+      confirmed: { text: 'Confirmé', color: '#2563EB' },
+      paid: { text: 'Payé', color: colors.success },
+      delivered: { text: 'Livré', color: colors.primary },
+      cancelled: { text: 'Annulé', color: '#DC2626' }
+    };
+
+    if (salesRows.length === 0) {
+      doc.roundedRect(M, y, CW, 40, 4).fill(colors.lightGray);
+      doc.fillColor(colors.gray).fontSize(10).font('Helvetica');
+      doc.text('Aucune transaction enregistrée', M + 20, y + 14);
+      y += 50;
+    } else {
+      for (let i = 0; i < maxRows; i++) {
+        const sale = salesRows[i];
+        const rowY = y + i * 24;
+
+        // Alternance de fond
+        if (i % 2 === 0) {
+          doc.rect(M, rowY, CW, 24).fill(colors.lightGray);
+        }
+
+        const sDate = new Date(sale.sale_date || sale.created_at).toLocaleDateString('fr-FR');
+        const sRef = sale.sale_number || (sale.id ? sale.id.substring(0, 12) : '—');
+        const sQty = Number(sale.qty || 0).toFixed(1) + ' T';
+        const sAmount = formatMontant(sale.amount);
+        const st = statusConfig[sale.status] || statusConfig.pending;
+
+        doc.fillColor(colors.text).fontSize(9).font('Helvetica');
+        doc.text(sDate, M + 12, rowY + 7);
+        doc.text(sRef, M + 85, rowY + 7);
+        doc.text(sQty, M + 230, rowY + 7, { width: 60, align: 'right' });
+
+        doc.font('Helvetica-Bold');
+        doc.text(sAmount, M + 310, rowY + 7, { width: 100, align: 'right' });
+
+        // Statut
+        doc.fillColor(st.color).fontSize(8).font('Helvetica-Bold');
+        doc.text(st.text, M + 430, rowY + 7, { width: 70, align: 'center' });
+      }
+
+      y += maxRows * 24 + 8;
+
+      // Ligne de séparation
+      doc.rect(M, y, CW, 1).fill(colors.primary);
+      y += 10;
+
+      // Total
+      doc.fillColor(colors.text).fontSize(10).font('Helvetica');
+      doc.text('TOTAL GÉNÉRAL', M + 12, y);
+
+      doc.fillColor(colors.dark).fontSize(14).font('Helvetica-Bold');
+      doc.text(formatMontant(totalRevenue) + ' FCFA', M + 310, y - 2, { width: 100, align: 'right' });
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // PIED DE PAGE
+    // ══════════════════════════════════════════════════════════════════
+
+    const footerY = H - 45;
+
+    // Bande bleu marine
+    doc.rect(0, footerY, W, 45).fill(colors.primary);
+
+    // Ligne dorée
+    doc.rect(0, footerY, W, 2).fill(colors.accent);
+
+    doc.fillColor(colors.white).fontSize(10).font('Helvetica-Bold');
+    doc.text('ALLO BÉTON', M, footerY + 14);
+
+    doc.fillColor('#A8C5DA').fontSize(8).font('Helvetica');
+    doc.text('Document généré automatiquement • Confidentiel', M, footerY + 28);
+
+    doc.fillColor(colors.white).fontSize(9).font('Helvetica');
+    doc.text('Page 1/1', W - M - 50, footerY + 18, { width: 50, align: 'right' });
+
+    // ══════════════════════════════════════════════════════════════════
+    // FIN
+    // ══════════════════════════════════════════════════════════════════
+
+    doc.end();
+
+  } catch (err) {
+    console.error('Erreur PDF:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+module.exports = router;

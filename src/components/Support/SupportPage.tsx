@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { X, HelpCircle, MessageCircle, Phone, Mail, Book, Video, FileText } from 'lucide-react';
 
 interface SupportPageProps {
@@ -71,8 +71,8 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
             <h3 className="text-lg font-medium text-gray-900">Contactez le Support</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="text-center p-6 bg-blue-50 rounded-lg">
-                <Phone className="w-8 h-8 text-blue-600 mx-auto mb-3" />
+              <div className="text-center p-6 bg-orange-50 rounded-lg">
+                <Phone className="w-8 h-8 text-orange-600 mx-auto mb-3" />
                 <h4 className="font-medium text-gray-900 mb-2">Téléphone</h4>
                 <p className="text-sm text-gray-600">+221 33 123 45 67</p>
                 <p className="text-xs text-gray-500 mt-1">Lun-Ven 8h-18h</p>
@@ -102,7 +102,7 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
                   type="text"
                   value={contactForm.subject}
                   onChange={(e) => setContactForm(prev => ({ ...prev, subject: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Décrivez brièvement votre problème"
                   required
                 />
@@ -115,7 +115,7 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
                 <select
                   value={contactForm.priority}
                   onChange={(e) => setContactForm(prev => ({ ...prev, priority: e.target.value }))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 >
                   <option value="low">Faible</option>
                   <option value="normal">Normale</option>
@@ -132,7 +132,7 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
                   value={contactForm.message}
                   onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
                   rows={6}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                   placeholder="Décrivez votre problème en détail..."
                   required
                 />
@@ -140,7 +140,7 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="w-full bg-orange-600 text-white py-2 rounded-lg hover:bg-orange-700 transition-colors duration-200"
               >
                 Envoyer le Message
               </button>
@@ -155,10 +155,10 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-200">
-                <Book className="w-8 h-8 text-blue-600 mb-3" />
+                <Book className="w-8 h-8 text-orange-600 mb-3" />
                 <h4 className="font-medium text-gray-900 mb-2">Guide de Démarrage</h4>
                 <p className="text-sm text-gray-600 mb-4">Apprenez les bases d'Allo Béton en 10 minutes</p>
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                <button className="text-orange-600 hover:text-orange-700 text-sm font-medium">
                   Lire le guide →
                 </button>
               </div>
@@ -200,25 +200,34 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Aide & Support</h2>
+      <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div className="h-1 w-full bg-gradient-to-r from-orange-400 via-indigo-400 to-violet-400" />
+        <div className="flex items-center justify-between p-5 border-b border-gray-100/80">
+          <div className="flex items-center gap-3.5">
+            <div className="w-11 h-11 bg-gradient-to-br from-orange-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-orange-200/40">
+              <HelpCircle className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Aide & Support</h2>
+              <p className="text-sm text-gray-400">Documentation et assistance</p>
+            </div>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="flex">
           {/* Sidebar */}
-          <div className="w-64 bg-gray-50 border-r border-gray-200">
+          <div className="w-64 bg-gradient-to-br from-gray-50/50 to-slate-50/30 border-r border-gray-100/80">
             <nav className="p-4 space-y-2">
               <button
                 onClick={() => setActiveTab('faq')}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors duration-200 ${
-                  activeTab === 'faq' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all ${
+                  activeTab === 'faq' ? 'bg-gradient-to-r from-orange-500 to-indigo-600 text-white shadow-md shadow-orange-200/30' : 'text-gray-500 hover:bg-white hover:shadow-sm'
                 }`}
               >
                 <HelpCircle className="w-5 h-5" />
@@ -227,8 +236,8 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
               
               <button
                 onClick={() => setActiveTab('contact')}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors duration-200 ${
-                  activeTab === 'contact' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all ${
+                  activeTab === 'contact' ? 'bg-gradient-to-r from-orange-500 to-indigo-600 text-white shadow-md shadow-orange-200/30' : 'text-gray-500 hover:bg-white hover:shadow-sm'
                 }`}
               >
                 <MessageCircle className="w-5 h-5" />
@@ -237,8 +246,8 @@ export const SupportPage: React.FC<SupportPageProps> = ({ onClose }) => {
               
               <button
                 onClick={() => setActiveTab('guides')}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors duration-200 ${
-                  activeTab === 'guides' ? 'bg-blue-100 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all ${
+                  activeTab === 'guides' ? 'bg-gradient-to-r from-orange-500 to-indigo-600 text-white shadow-md shadow-orange-200/30' : 'text-gray-500 hover:bg-white hover:shadow-sm'
                 }`}
               >
                 <Book className="w-5 h-5" />
