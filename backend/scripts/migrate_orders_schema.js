@@ -50,6 +50,18 @@ async function migrate() {
   // ── ecom_order_items : cost_price ──────────────────────────────────
   await addCol('ecom_order_items', 'cost_price', 'DECIMAL(15,2) DEFAULT NULL');
 
+  // ── ecom_invoices : colonnes manquantes ────────────────────────────
+  const [invTables] = await pool.query(`SHOW TABLES LIKE 'ecom_invoices'`);
+  if (invTables.length > 0) {
+    await addCol('ecom_invoices', 'shipping_amount', 'DECIMAL(15,2) DEFAULT 0');
+    await addCol('ecom_invoices', 'customer_ninea',  'VARCHAR(50)   DEFAULT NULL');
+    await addCol('ecom_invoices', 'customer_rc',     'VARCHAR(50)   DEFAULT NULL');
+    await addCol('ecom_invoices', 'terms',           'TEXT          DEFAULT NULL');
+    await addCol('ecom_invoices', 'amount_due',      'DECIMAL(15,2) DEFAULT 0');
+    // Backfill amount_due pour les factures existantes
+    await pool.query(`UPDATE ecom_invoices SET amount_due = GREATEST(0, total - COALESCE(amount_paid, 0)) WHERE amount_due = 0`);
+  }
+
   // ── ecom_order_status_history : s'assurer que la table a le bon schéma ──
   // orders.js insère avec id=UUID VARCHAR(36) + comment TEXT
   // Si la table n'existe pas encore, la créer avec le bon schéma

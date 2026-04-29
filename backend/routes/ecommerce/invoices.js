@@ -901,7 +901,7 @@ router.get('/admin/list', authenticateToken, requireRole(['admin']), async (req,
       SELECT
         COUNT(*) as total,
         SUM(CASE WHEN status = 'paid' THEN total ELSE 0 END) as total_paid,
-        SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN amount_due ELSE 0 END) as total_due,
+        SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN (total - COALESCE(amount_paid, 0)) ELSE 0 END) as total_due,
         SUM(CASE WHEN due_date < CURDATE() AND status NOT IN ('paid', 'cancelled') THEN 1 ELSE 0 END) as overdue_count
       FROM ecom_invoices
     `);

@@ -101,7 +101,7 @@ const OrdersDeliveryView: React.FC = () => {
       apiCall('GET', '/api/ecommerce/orders/admin/list?limit=50&status=confirmed,processing,ready_for_pickup,in_transit,delivered'),
       apiCall('GET', '/api/ecommerce/admin/drivers'),
     ]);
-    setOrders(ordRes.data?.orders || ordRes.orders || []);
+    setOrders(Array.isArray(ordRes.data) ? ordRes.data : []);
     setDrivers(drvRes.data || []);
     setLoading(false);
   }, []);

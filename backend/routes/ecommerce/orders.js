@@ -801,8 +801,14 @@ router.get('/admin/list', authenticateToken, requireRole(['admin']), async (req,
     const params = [];
 
     if (status) {
-      whereClause += ' AND o.status = ?';
-      params.push(status);
+      const statusList = status.split(',').map(s => s.trim()).filter(Boolean);
+      if (statusList.length === 1) {
+        whereClause += ' AND o.status = ?';
+        params.push(statusList[0]);
+      } else if (statusList.length > 1) {
+        whereClause += ` AND o.status IN (${statusList.map(() => '?').join(',')})`;
+        params.push(...statusList);
+      }
     }
 
     if (payment_status) {
