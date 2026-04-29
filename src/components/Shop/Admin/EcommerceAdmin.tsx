@@ -3,7 +3,7 @@
  * Dashboard admin complet avec gestion produits, commandes, statistiques
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   LayoutDashboard, Package, ShoppingBag, CreditCard, Users,
   TrendingUp, DollarSign, Clock, CheckCircle, XCircle, Eye, Edit,
@@ -14,13 +14,28 @@ import {
 import { ModuleAnalytics } from '../../Analytics/ModuleAnalytics';
 import { productsAPI, ordersAPI, invoicesAPI, Product, Category } from '../../../services/ecommerce-api';
 import { PromotionsTab, CustomersTab, ReviewsTab, PaymentsTab } from './AdminTabs';
+import { DeliveryTab } from './DeliveryTab';
 import { SettingsTab } from './SettingsTab';
 import { Star } from 'lucide-react';
 
-type Tab = 'dashboard' | 'products' | 'categories' | 'orders' | 'customers' | 'promotions' | 'reviews' | 'payments' | 'analytics' | 'settings';
+type Tab = 'dashboard' | 'products' | 'categories' | 'orders' | 'customers' | 'promotions' | 'reviews' | 'payments' | 'analytics' | 'settings' | 'delivery';
 
 const EcommerceAdmin: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('dashboard');
+  const [pendingOrderCount, setPendingOrderCount] = useState(0);
+
+  // Polling léger pour le badge "Commandes en attente" dans la nav
+  useEffect(() => {
+    const checkPending = async () => {
+      try {
+        const res = await ordersAPI.adminList({ limit: 100, status: 'pending' });
+        setPendingOrderCount((res.data || []).length);
+      } catch { /* silencieux */ }
+    };
+    checkPending();
+    const id = setInterval(checkPending, 30000);
+    return () => clearInterval(id);
+  }, []);
 
   const tabs = [
     { key: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
@@ -31,6 +46,7 @@ const EcommerceAdmin: React.FC = () => {
     { key: 'promotions', label: 'Promotions', icon: Tag },
     { key: 'reviews', label: 'Avis', icon: Star },
     { key: 'payments', label: 'Paiements', icon: CreditCard },
+    { key: 'delivery', label: 'Livraisons', icon: Truck },
     { key: 'analytics', label: 'Analytics', icon: BarChart3 },
     { key: 'settings', label: 'Paramètres', icon: Settings },
   ];
@@ -64,11 +80,12 @@ const EcommerceAdmin: React.FC = () => {
             {tabs.map((tab) => {
               const Icon = tab.icon;
               const active = activeTab === tab.key;
+              const isOrders = tab.key === 'orders';
               return (
                 <button
                   key={tab.key}
-                  onClick={() => setActiveTab(tab.key as Tab)}
-                  className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-3.5 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all border-b-2 snap-start flex-shrink-0 ${
+                  onClick={() => { setActiveTab(tab.key as Tab); if (isOrders) setPendingOrderCount(0); }}
+                  className={`relative flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 lg:px-5 py-3.5 font-semibold text-xs sm:text-sm whitespace-nowrap transition-all border-b-2 snap-start flex-shrink-0 ${
                     active
                       ? 'border-orange-600 text-orange-700 bg-orange-50/40'
                       : 'border-transparent text-gray-500 hover:text-gray-800 hover:bg-gray-50'
@@ -77,8 +94,12 @@ const EcommerceAdmin: React.FC = () => {
                   title={tab.label}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
-                  {/* Label masqué très tôt → seulement icônes sur très petit écran sauf onglet actif */}
                   <span className={`${active ? 'inline' : 'hidden sm:inline'}`}>{tab.label}</span>
+                  {isOrders && pendingOrderCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1 shadow">
+                      {pendingOrderCount > 99 ? '99+' : pendingOrderCount}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -96,6 +117,7 @@ const EcommerceAdmin: React.FC = () => {
         {activeTab === 'promotions' && <PromotionsTab />}
         {activeTab === 'reviews' && <ReviewsTab />}
         {activeTab === 'payments' && <PaymentsTab />}
+        {activeTab === 'delivery' && <DeliveryTab />}
         {activeTab === 'analytics' && <ModuleAnalytics module="ecommerce" title="Analytics E-commerce" />}
         {activeTab === 'settings' && <SettingsTab />}
       </div>
@@ -818,30 +840,54 @@ const CategoryFormModal: React.FC<{
 // ═══════════════════════════════════════════════════════════════
 // ORDERS TAB
 // ═══════════════════════════════════════════════════════════════
+const POLL_INTERVAL = 30000; // 30 secondes
+
 const OrdersTab: React.FC = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [newOrderToast, setNewOrderToast] = useState<string | null>(null);
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => { loadOrders(); }, [statusFilter]);
-
-  const loadOrders = async () => {
-    setLoading(true);
+  const loadOrders = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const res = await ordersAPI.adminList({ limit: 50, status: statusFilter || undefined });
-      setOrders(res.data || []);
+      const fetched: any[] = res.data || [];
+
+      // Détection nouvelles commandes (polling silencieux uniquement)
+      if (silent && knownIdsRef.current.size > 0) {
+        const newOnes = fetched.filter(o => !knownIdsRef.current.has(o.id) && o.status === 'pending');
+        if (newOnes.length > 0) {
+          const first = newOnes[0];
+          setNewOrderToast(`Nouvelle commande ${first.order_number} — ${first.first_name} ${first.last_name}`);
+          setTimeout(() => setNewOrderToast(null), 6000);
+        }
+      }
+
+      knownIdsRef.current = new Set(fetched.map(o => o.id));
+      setOrders(fetched);
     } catch (err) {
-      console.error('Erreur:', err);
+      console.error('Erreur chargement commandes:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [statusFilter]);
+
+  // Chargement initial + reset polling quand filtre change
+  useEffect(() => {
+    loadOrders(false);
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(() => loadOrders(true), POLL_INTERVAL);
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [loadOrders]);
 
   const handleStatusChange = async (orderId: string, status: string) => {
     try {
       await ordersAPI.updateStatus(orderId, status);
-      loadOrders();
+      loadOrders(true);
     } catch (err: any) {
       alert(err.message || 'Erreur');
     }
@@ -872,8 +918,24 @@ const OrdersTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Toast nouvelle commande */}
+      {newOrderToast && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-4 bg-orange-600 text-white rounded-2xl shadow-2xl shadow-orange-900/30 animate-bounce-in max-w-sm">
+          <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+            <ShoppingBag className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="font-bold text-sm">Nouvelle commande !</p>
+            <p className="text-xs text-orange-100 truncate">{newOrderToast}</p>
+          </div>
+          <button onClick={() => setNewOrderToast(null)} className="ml-2 opacity-70 hover:opacity-100 flex-shrink-0">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 items-center">
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -883,9 +945,10 @@ const OrdersTab: React.FC = () => {
             <option key={s.value} value={s.value}>{s.label}</option>
           ))}
         </select>
-        <button onClick={loadOrders} className="px-4 py-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-semibold">
+        <button onClick={() => loadOrders(false)} className="px-4 py-3 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors flex items-center gap-2 text-sm font-semibold">
           <RefreshCw className="w-4 h-4" /> Actualiser
         </button>
+        <span className="text-xs text-gray-400 ml-1">Auto-actualisation toutes les 30s</span>
       </div>
 
       {/* Table */}

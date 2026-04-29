@@ -845,7 +845,7 @@ const ShopPageProContent: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-slate-800 truncate">{item.name}</p>
-                      <p className="text-xs text-slate-400">{formatPrice(item.price)} / {item.unit || 'unit\u00e9'}</p>
+                      <p className="text-xs text-slate-400">{formatPrice(item.unit_price || 0)} / {item.unit || 'unit\u00e9'}</p>
                       <div className="flex items-center gap-2 mt-1.5">
                         <button onClick={() => updateCartItem(item.id, Math.max(1, item.quantity - 1))} className="w-6 h-6 bg-white border border-slate-200 rounded flex items-center justify-center hover:bg-slate-100"><Minus className="w-3 h-3" /></button>
                         <span className="text-sm font-bold text-slate-700 w-6 text-center">{item.quantity}</span>
@@ -853,7 +853,7 @@ const ShopPageProContent: React.FC = () => {
                         <button onClick={() => removeFromCart(item.id)} className="ml-auto p-1 hover:bg-red-50 rounded"><Trash2 className="w-3.5 h-3.5 text-red-400" /></button>
                       </div>
                     </div>
-                    <p className="text-sm font-black text-slate-900 flex-shrink-0">{formatPrice(item.price * item.quantity)}</p>
+                    <p className="text-sm font-black text-slate-900 flex-shrink-0">{formatPrice(item.total_price || (item.unit_price || 0) * item.quantity)}</p>
                   </div>
                 ))
               )}
@@ -862,9 +862,10 @@ const ShopPageProContent: React.FC = () => {
             {cart && cart.items && cart.items.length > 0 && (
               <div className="border-t border-slate-200 px-5 py-4 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-bold text-slate-600">Total</span>
-                  <span className="text-xl font-black text-slate-900">{formatPrice(cart.total || 0)}</span>
+                  <span className="text-sm font-bold text-slate-600">Sous-total</span>
+                  <span className="text-xl font-black text-slate-900">{formatPrice(cart.subtotal || 0)}</span>
                 </div>
+                <p className="text-[11px] text-slate-400 -mt-2">TVA et livraison calculées au paiement</p>
                 <button onClick={() => { setShowMiniCart(false); handleNavigate('cart'); }}
                   className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm rounded-xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-600/20">
                   <ShoppingCart className="w-4 h-4" /> Voir le panier

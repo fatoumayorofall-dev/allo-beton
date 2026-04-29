@@ -215,8 +215,8 @@ export const ShoppingCartPro: React.FC<Props> = ({ onNavigate }) => {
 
                       {/* Price */}
                       <div className="text-right">
-                        <p className="text-base font-black text-gray-900">{formatPrice(item.subtotal || item.price * item.quantity)}</p>
-                        <p className="text-[10px] text-gray-400">{formatPrice(item.price)} / unité</p>
+                        <p className="text-base font-black text-gray-900">{formatPrice(item.total_price || item.subtotal || (item.unit_price || 0) * item.quantity)}</p>
+                        <p className="text-[10px] text-gray-400">{formatPrice(item.unit_price || 0)} / {item.unit || 'unité'}</p>
                       </div>
                     </div>
                   </div>
@@ -315,7 +315,7 @@ export const ShoppingCartPro: React.FC<Props> = ({ onNavigate }) => {
                 <a
                   href={`https://wa.me/${SITE_CONFIG.whatsapp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
                     `🛒 *Commande Allo Béton*\n\n` +
-                    items.map((item: any) => `• ${item.product_name} — Qté: ${item.quantity} × ${formatPrice(item.price)} = ${formatPrice(item.subtotal || item.price * item.quantity)}`).join('\n') +
+                    items.map((item: any) => `• ${item.product_name} — Qté: ${item.quantity} × ${formatPrice(item.unit_price || 0)} = ${formatPrice(item.total_price || (item.unit_price || 0) * item.quantity)}`).join('\n') +
                     `\n\n📋 *Récapitulatif*\nSous-total: ${formatPrice(subtotal)}\nTVA (18%): ${formatPrice(subtotal * TAX_RATE)}\n*Total TTC: ${formatPrice((cart?.total || subtotal * 1.18) - (cart?.discount_amount || 0))}*\n\nMerci de confirmer ma commande !`
                   )}`}
                   target="_blank"

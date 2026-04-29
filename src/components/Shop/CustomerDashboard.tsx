@@ -664,24 +664,21 @@ const CustomerDashboard: React.FC<CustomerDashboardProps> = ({ onNavigate }) => 
       ]);
       if (ordersRes.status === 'fulfilled') {
         const o = ordersRes.value?.data?.orders || ordersRes.value?.data || ordersRes.value || [];
-        const arr = Array.isArray(o) ? o : [];
-        setOrders(arr.length > 0 ? arr : MOCK_ORDERS);
+        setOrders(Array.isArray(o) ? o : []);
       } else {
-        setOrders(MOCK_ORDERS);
+        setOrders([]);
       }
       if (addressesRes.status === 'fulfilled') {
         const a = addressesRes.value?.data || addressesRes.value || [];
-        const arr = Array.isArray(a) ? a : [];
-        setAddresses(arr.length > 0 ? arr : MOCK_ADDRESSES);
+        setAddresses(Array.isArray(a) ? a : []);
       } else {
-        setAddresses(MOCK_ADDRESSES);
+        setAddresses([]);
       }
       if (invoicesRes.status === 'fulfilled') {
         const inv = invoicesRes.value?.data?.invoices || invoicesRes.value?.data || invoicesRes.value || [];
-        const arr = Array.isArray(inv) ? inv : [];
-        setInvoices(arr.length > 0 ? arr : MOCK_INVOICES);
+        setInvoices(Array.isArray(inv) ? inv : []);
       } else {
-        setInvoices(MOCK_INVOICES);
+        setInvoices([]);
       }
       // Load favorites from localStorage
       try {

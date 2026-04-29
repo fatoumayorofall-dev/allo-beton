@@ -1,5 +1,5 @@
 ﻿import React, { useState, Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { AuthProvider, useAuthContext } from './contexts/AuthContext';
 import { DataProvider, useDataContext } from './contexts/DataContext';
@@ -57,6 +57,8 @@ const ProjectManagement = lazy(() => import('./components/Projects/ProjectManage
 // E-COMMERCE - Boutique en ligne PROFESSIONNELLE
 const ShopPagePro = lazy(() => import('./components/Shop/ShopPagePro'));
 const EcommerceAdmin = lazy(() => import('./components/Shop/Admin/EcommerceAdmin').then(module => ({ default: module.default })));
+const TrackingPage = lazy(() => import('./components/Shop/TrackingPage').then(m => ({ default: m.TrackingPage })));
+const DriverTracker = lazy(() => import('./components/Shop/DriverTracker').then(m => ({ default: m.DriverTracker })));
 
 // 🤖 INTELLIGENCE ARTIFICIELLE — Module Unifié
 const AIChat = lazy(() => import('./components/AI/AIChat').then(module => ({ default: module.AIChat })));
@@ -118,6 +120,18 @@ class ErrorBoundary extends React.Component<
   }
 }
 
+// Wrappers pour lire le :token depuis l'URL
+const TrackingPageWrapper: React.FC = () => {
+  const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
+  return <TrackingPage token={token || ''} onBack={() => navigate('/shop')} />;
+};
+
+const DriverTrackerWrapper: React.FC = () => {
+  const { token } = useParams<{ token: string }>();
+  return <DriverTracker driverToken={token || ''} />;
+};
+
 function App() {
   return (
     <Router>
@@ -133,6 +147,18 @@ function App() {
                 <ShopPagePro />
               </Suspense>
             </GoogleOAuthProvider>
+          } />
+
+          {/* Tracking livraison — public */}
+          <Route path="/track/:token" element={
+            <Suspense fallback={<LoadingSpinner />}>
+              <TrackingPageWrapper />
+            </Suspense>
+          } />
+          <Route path="/driver/:token" element={
+            <Suspense fallback={<LoadingSpinner />}>
+              <DriverTrackerWrapper />
+            </Suspense>
           } />
 
           {/* Routes admin (accès réservé via /admin) */}
