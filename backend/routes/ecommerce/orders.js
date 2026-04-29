@@ -504,19 +504,32 @@ router.post('/', authenticateCustomer, async (req, res) => {
     if (invoiceInfo) console.log(`[ECOM→FACTURE] Facture ${invoiceInfo.invoiceNumber} générée`);
 
     // Envoyer l'email de confirmation au client (non-bloquant)
+    const customerFullName = `${customer?.first_name || ''} ${customer?.last_name || ''}`.trim() || 'Client';
     try {
       if (customer && customer.email) {
-        const customerFullName = `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Client';
         sendNotification('ecom_order_confirmed', {
           orderNumber,
           customerName: customerFullName,
           total: new Intl.NumberFormat('fr-FR').format(total),
           itemCount: cartItems.length,
           shippingAddress: shippingAddress || null,
-        }, customer.email).catch(err => console.warn('[ECOM→EMAIL] Erreur envoi:', err.message));
+        }, customer.email).catch(err => console.warn('[ECOM→EMAIL CLIENT] Erreur:', err.message));
       }
     } catch (emailErr) {
-      console.warn('[ECOM→EMAIL] Erreur non-bloquante:', emailErr.message);
+      console.warn('[ECOM→EMAIL CLIENT] Erreur non-bloquante:', emailErr.message);
+    }
+
+    // Notifier l'admin par email (non-bloquant)
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.GMAIL_USER;
+    if (adminEmail) {
+      sendNotification('admin_new_order', {
+        orderNumber,
+        customerName: customerFullName,
+        customerEmail: customer?.email || 'N/A',
+        total: new Intl.NumberFormat('fr-FR').format(total),
+        itemCount: cartItems.length,
+        adminUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
+      }, adminEmail).catch(err => console.warn('[ECOM→EMAIL ADMIN] Erreur:', err.message));
     }
 
     // Récupérer la commande complète
@@ -818,10 +831,15 @@ router.get('/admin/list', authenticateToken, requireRole(['admin']), async (req,
     const sortOrder = order.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
 
     const [orders] = await pool.query(`
-      SELECT o.*, c.first_name, c.last_name, c.email, c.phone, c.company_name,
+      SELECT o.*,
+        COALESCE(c.first_name, o.billing_first_name, o.shipping_first_name) as first_name,
+        COALESCE(c.last_name,  o.billing_last_name,  o.shipping_last_name)  as last_name,
+        COALESCE(c.email, o.billing_email)   as email,
+        COALESCE(c.phone, o.billing_phone, o.shipping_phone) as phone,
+        c.company_name,
         (SELECT COUNT(*) FROM ecom_order_items WHERE order_id = o.id) as item_count
       FROM ecom_orders o
-      JOIN ecom_customers c ON o.customer_id = c.id
+      LEFT JOIN ecom_customers c ON o.customer_id = c.id
       ${whereClause}
       ORDER BY o.${sortField} ${sortOrder}
       LIMIT ? OFFSET ?
@@ -830,7 +848,7 @@ router.get('/admin/list', authenticateToken, requireRole(['admin']), async (req,
     const [countResult] = await pool.query(`
       SELECT COUNT(*) as total
       FROM ecom_orders o
-      JOIN ecom_customers c ON o.customer_id = c.id
+      LEFT JOIN ecom_customers c ON o.customer_id = c.id
       ${whereClause}
     `, params);
 

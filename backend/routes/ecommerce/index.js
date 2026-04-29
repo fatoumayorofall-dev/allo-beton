@@ -19,9 +19,11 @@ const promotionsRoutes = require('./promotions');
 const settingsRoutes = require('./settings');
 const adminLogsRoutes = require('./admin-logs');
 const shippingZonesRoutes = require('./shipping-zones');
+const trackingRoutes = require('./tracking');
 
 // Montage des routes
 router.use('/products', productsRoutes);
+router.use('/categories', productsRoutes); // alias /categories → mêmes routes que /products/categories
 router.use('/cart', cartRoutes);
 router.use('/orders', ordersRoutes);
 router.use('/payments', paymentsRoutes);
@@ -33,6 +35,7 @@ router.use('/promotions', promotionsRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/admin-logs', adminLogsRoutes);
 router.use('/shipping-zones', shippingZonesRoutes);
+router.use('/', trackingRoutes); // /tracking/:token, /drivers/*, /admin/drivers, /admin/orders/:id/assign etc.
 
 // Route de santé e-commerce
 router.get('/health', (req, res) => {

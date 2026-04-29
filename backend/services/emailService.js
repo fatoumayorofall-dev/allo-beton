@@ -577,6 +577,36 @@ const emailTemplates = {
         </div>
       </div>
     `
+  }),
+
+  admin_new_order: (data) => ({
+    subject: `🛒 Nouvelle commande ${data.orderNumber} — ${data.customerName}`,
+    text: `Nouvelle commande reçue : ${data.orderNumber}\nClient : ${data.customerName} (${data.customerEmail})\nTotal : ${data.total} FCFA\n${data.itemCount} article(s)\nConnectez-vous à l'admin pour traiter cette commande.`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; border: 1px solid #E5E7EB; border-radius: 12px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #1E293B, #334155); padding: 20px; text-align: center;">
+          <h2 style="color: white; margin: 0; font-size: 18px;">🛒 Nouvelle commande reçue</h2>
+        </div>
+        <div style="padding: 24px;">
+          <div style="background: #FFF7ED; border: 1px solid #FED7AA; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+            <p style="margin: 4px 0; font-size: 20px; font-weight: bold; color: #EA580C;">${data.orderNumber}</p>
+            <p style="margin: 4px 0; color: #6B7280; font-size: 13px;">${new Date().toLocaleString('fr-FR')}</p>
+          </div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+            <tr><td style="padding: 6px 0; color: #6B7280;">Client</td><td style="padding: 6px 0; font-weight: bold;">${data.customerName}</td></tr>
+            <tr><td style="padding: 6px 0; color: #6B7280;">Email</td><td style="padding: 6px 0;">${data.customerEmail}</td></tr>
+            <tr><td style="padding: 6px 0; color: #6B7280;">Articles</td><td style="padding: 6px 0;">${data.itemCount} article(s)</td></tr>
+            <tr><td style="padding: 6px 0; color: #6B7280;">Total</td><td style="padding: 6px 0; font-weight: bold; color: #16A34A; font-size: 18px;">${data.total} FCFA</td></tr>
+          </table>
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="${data.adminUrl || 'http://localhost:5173'}" style="background: #EA580C; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px;">Voir la commande →</a>
+          </div>
+        </div>
+        <div style="background: #F9FAFB; padding: 12px; text-align: center; border-top: 1px solid #E5E7EB;">
+          <small style="color: #9CA3AF;">Allo Béton — Administration</small>
+        </div>
+      </div>
+    `
   })
 };
 

@@ -36,6 +36,28 @@ const generateSKU = (categorySlug, name) => {
 // ============================================================
 
 /**
+ * GET /api/ecommerce/products/categories
+ * Liste des catégories actives avec comptage produits
+ */
+router.get('/categories', async (req, res) => {
+  try {
+    const [categories] = await pool.query(`
+      SELECT c.*,
+        COUNT(p.id) as product_count
+      FROM ecom_categories c
+      LEFT JOIN ecom_products p ON p.category_id = c.id AND p.is_active = 1
+      WHERE c.is_active = 1
+      GROUP BY c.id
+      ORDER BY c.sort_order ASC, c.name ASC
+    `);
+    res.json({ success: true, data: categories });
+  } catch (error) {
+    console.error('Erreur catégories:', error);
+    res.status(500).json({ success: false, error: 'Erreur serveur' });
+  }
+});
+
+/**
  * GET /api/ecommerce/products
  * Liste des produits avec filtres, pagination, recherche
  * Lit depuis ecom_products + ecom_categories

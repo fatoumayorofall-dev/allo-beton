@@ -473,6 +473,18 @@ router.post('/avatar', authenticateToken, uploadAvatar.single('avatar'), async (
   }
 });
 
+// Supprimer son propre compte
+router.delete('/profile', authenticateToken, async (req, res) => {
+  try {
+    await pool.execute('DELETE FROM user_permissions WHERE user_id = ?', [req.user.id]);
+    await pool.execute('DELETE FROM users WHERE id = ?', [req.user.id]);
+    res.json({ success: true, message: 'Compte supprime avec succes' });
+  } catch (error) {
+    console.error('Erreur suppression compte:', error);
+    res.status(500).json({ success: false, error: 'Erreur lors de la suppression du compte' });
+  }
+});
+
 // ─── ROUTES ADMINISTRATION ────────────────────────────────────────────────
 
 // Lister tous les utilisateurs (admin uniquement)
