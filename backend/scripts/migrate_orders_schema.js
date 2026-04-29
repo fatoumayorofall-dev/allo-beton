@@ -29,6 +29,7 @@ async function migrate() {
     ['coupon_code',       'VARCHAR(50)  DEFAULT NULL'],
     ['ip_address',        'VARCHAR(45)  DEFAULT NULL'],
     ['user_agent',        'TEXT         DEFAULT NULL'],
+    ['confirmed_at',      'TIMESTAMP NULL DEFAULT NULL'],
     ['shipped_at',        'TIMESTAMP NULL DEFAULT NULL'],
     ['cancelled_at',      'TIMESTAMP NULL DEFAULT NULL'],
     ['cancelled_reason',  'TEXT         DEFAULT NULL'],
