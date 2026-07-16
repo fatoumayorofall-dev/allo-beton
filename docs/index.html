@@ -1471,6 +1471,157 @@ de l'Afrique et œuvrent pour son émancipation économique.
 
 <p>Cette huitième section présente les résultats issus de la démarche de recherche : analyse architecturale et fonctionnelle de la plateforme Allo Béton, benchmark comparatif avec les solutions concurrentes, analyse des performances observées des modules IA et paiements mobiles, évaluation économique triangulée, et analyse SWOT prospective. Les résultats sont structurés selon les six hypothèses de recherche et fondés sur les données de production de la plateforme, les analyses comparatives et la revue de littérature.</p>
 
+
+<h2>8.0 Architecture de la base de données MySQL — Choix d'un backend custom vs Backend-as-a-Service</h2>
+
+<div class="module-box"><strong>Modules MMTD mobilisés :</strong> M1.7 — Développement d'Applications &bull; M2.6 — Data Science &bull; M1.4 — Réglementation Financière (SYSCOHADA) &bull; M2.4 — Cybersécurité</div>
+
+<h3>8.0.1 Pourquoi MySQL et non un Backend-as-a-Service (BaaS)</h3>
+<p>Un choix architectural fondamental a orienté le développement d'Allo Béton : le recours à une base de données relationnelle <strong>MySQL auto-hébergée</strong>, déployée sur Railway, plutôt qu'à une solution de type <em>Backend-as-a-Service</em> (BaaS) telle que Firebase (Google), Supabase, PlanetScale ou AWS Amplify. Ce choix mérite une justification rigoureuse.</p>
+
+<table>
+<thead><tr><th>Critère</th><th>BaaS (Firebase / Supabase)</th><th>MySQL custom (Allo Béton)</th></tr></thead>
+<tbody>
+<tr><td><strong>Modèle de données</strong></td><td>NoSQL documentaire (Firebase) ou SQL géré sans contrôle du schéma (Supabase)</td><td>Relationnel normalisé, schéma maîtrisé — 82 tables avec clés étrangères explicites</td></tr>
+<tr><td><strong>Conformité SYSCOHADA</strong></td><td>Impossible nativement — le plan comptable OHADA exige une structure en tables normalisées (<code>plan_comptable</code>, <code>journaux_comptables</code>, <code>ecritures_comptables</code>)</td><td>✅ Plan comptable SYSCOHADA révisé 2017 encodé en base : 7 classes, codes de 1 à 7 chiffres, liaisons compte/écriture/journal</td></tr>
+<tr><td><strong>Transactions ACID</strong></td><td>Limitées ou inexistantes (Firebase) / partielles (Supabase)</td><td>✅ Transactions MySQL complètes — indispensables pour les rapprochements bancaires et les journaux comptables</td></tr>
+<tr><td><strong>Souveraineté des données</strong></td><td>Données hébergées hors Sénégal, soumises au droit américain (CLOUD Act)</td><td>✅ Déployable sur serveur sénégalais ou UEMOA — conformité RGPD/CEDEAO facilité</td></tr>
+<tr><td><strong>Contrôle des coûts</strong></td><td>Coûts variables imprévisibles à l'échelle (Firebase : 0,06 $/100K lectures)</td><td>Abonnement fixe Railway (~5-20 $/mois) — prévisibilité budgétaire pour PME</td></tr>
+<tr><td><strong>Requêtes analytiques complexes</strong></td><td>Non supportées nativement (Firebase) — nécessitent des exports BigQuery</td><td>✅ Jointures multi-tables, agrégations, sous-requêtes — indispensables pour le tableau de bord financier</td></tr>
+<tr><td><strong>Exportation SYSCOHADA / Sage</strong></td><td>Format propriétaire difficile à exporter</td><td>✅ Export natif vers fichiers FEC, formats Sage — réalisé via la route <code>/api/sage-import</code></td></tr>
+</tbody>
+</table>
+
+<blockquote>Le choix de MySQL n'est pas un choix par défaut — c'est un choix architectural délibéré, dicté par les contraintes réglementaires SYSCOHADA, la nécessité de transactions ACID pour la comptabilité, et la souveraineté des données dans le contexte africain. Un BaaS aurait rendu impossible la conformité comptable OHADA.</blockquote>
+
+<h3>8.0.2 Structure de la base de données — 82 tables organisées en 6 domaines fonctionnels</h3>
+<p>La base de données <code>allo_beton</code> (MySQL 5.7+, encodage utf8mb4) comporte <strong>82 tables relationnelles</strong> organisées en six domaines fonctionnels interconnectés. Contrairement à une solution BaaS où le schéma est généré automatiquement ou géré hors du code, chaque table d'Allo Béton a été conçue, migrée et versionnée manuellement dans le code source (<code>backend/scripts/</code>).</p>
+
+<table>
+<thead><tr><th>Domaine fonctionnel</th><th>Tables principales</th><th>Nb tables</th></tr></thead>
+<tbody>
+<tr><td><strong>Gestion utilisateurs &amp; droits</strong></td><td><code>users</code>, <code>user_permissions</code>, <code>audit_logs</code>, <code>settings</code>, <code>notification_preferences</code>, <code>notifications</code></td><td>6</td></tr>
+<tr><td><strong>ERP — Ventes &amp; Clients</strong></td><td><code>customers</code>, <code>sales</code>, <code>sale_items</code>, <code>invoices</code>, <code>invoice_items</code>, <code>delivery_notes</code>, <code>credit_notes</code>, <code>credit_note_items</code>, <code>relances</code>, <code>projects</code></td><td>10</td></tr>
+<tr><td><strong>ERP — Stocks &amp; Fournisseurs</strong></td><td><code>products</code>, <code>categories</code>, <code>inventory_items</code>, <code>stock_movements</code>, <code>suppliers</code>, <code>supplier_products</code>, <code>purchase_orders</code>, <code>purchase_order_items</code></td><td>8</td></tr>
+<tr><td><strong>Finance &amp; Trésorerie</strong></td><td><code>payments</code>, <code>cash_balance</code>, <code>cash_movements</code>, <code>banks</code>, <code>bank_accounts</code>, <code>bank_loans</code>, <code>bank_loan_schedules</code>, <code>client_deposits</code>, <code>deposit_allocations</code>, <code>budgets</code>, <code>comptes_mobile_money</code>, <code>mouvements_mobile_money</code>, <code>immobilisations</code></td><td>13</td></tr>
+<tr><td><strong>Comptabilité SYSCOHADA</strong></td><td><code>plan_comptable</code>, <code>journaux_comptables</code>, <code>ecritures_comptables</code>, <code>lignes_ecritures</code>, <code>exercices_comptables</code>, <code>centres_analytiques</code>, <code>centres_analyse</code>, <code>regles_comptables</code>, <code>declarations_tva</code>, <code>rapprochements</code>, <code>rapprochement_bancaire</code>, <code>releves_bancaires</code>, <code>tiers_comptable</code>, <code>tiers</code>, <code>abonnements_comptables</code>, <code>parametres_comptable</code>, <code>journaux</code>, <code>ecritures</code>, <code>exercices</code></td><td>19</td></tr>
+<tr><td><strong>E-commerce B2C</strong></td><td><code>ecom_products</code>, <code>ecom_categories</code>, <code>ecom_customers</code>, <code>ecom_orders</code>, <code>ecom_order_items</code>, <code>ecom_order_status_history</code>, <code>ecom_carts</code>, <code>ecom_cart_items</code>, <code>ecom_payments</code>, <code>ecom_invoices</code>, <code>ecom_invoice_items</code>, <code>ecom_addresses</code>, <code>ecom_reviews</code>, <code>ecom_promotions</code>, <code>ecom_promotion_uses</code>, <code>ecom_shipping_zones</code>, <code>ecom_pricing_tiers</code>, <code>ecom_settings</code>, <code>ecom_sequences</code>, <code>ecom_admin_logs</code></td><td>20</td></tr>
+<tr><td><strong>RH &amp; Partenaires</strong></td><td><code>employees</code>, <code>salary_payments</code>, <code>salary_advances</code>, <code>partners</code>, <code>partner_contracts</code>, <code>partner_payments</code>, <code>quota_consumptions</code>, <code>client_quotas</code></td><td>8</td></tr>
+<tr><td colspan="2"><strong>TOTAL</strong></td><td><strong>82 tables</strong></td></tr>
+</tbody>
+</table>
+
+<h3>8.0.3 Schémas des tables noyau — Preuve de conception relationnelle</h3>
+<p>Les schémas ci-dessous reproduisent la structure réelle des tables extraite par <code>DESCRIBE</code> SQL sur la base de production. Ils démontrent la conception relationnelle rigoureuse, caractéristique d'un backend custom et non d'un BaaS.</p>
+
+<h4>Table <code>users</code> — Authentification et contrôle d'accès RBAC</h4>
+<table>
+<thead><tr><th>Colonne</th><th>Type</th><th>Contrainte</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>VARCHAR(36)</td><td>PRIMARY KEY</td><td>UUID v4 (non auto-incrémenté — évite les attaques par énumération)</td></tr>
+<tr><td><code>email</code></td><td>VARCHAR(255)</td><td>UNIQUE NOT NULL</td><td>Identifiant de connexion</td></tr>
+<tr><td><code>password_hash</code></td><td>VARCHAR(255)</td><td>NOT NULL</td><td>bcrypt (rounds=12) — jamais stocké en clair</td></tr>
+<tr><td><code>role</code></td><td>ENUM('admin','manager','seller','viewer')</td><td>NOT NULL</td><td>Rôle RBAC — détermine les permissions via <code>user_permissions</code></td></tr>
+<tr><td><code>is_active</code></td><td>TINYINT(1)</td><td>DEFAULT 1</td><td>Soft delete — désactivation sans suppression</td></tr>
+<tr><td><code>created_at</code></td><td>TIMESTAMP</td><td>DEFAULT CURRENT_TIMESTAMP</td><td>Audit trail</td></tr>
+</tbody>
+</table>
+
+<h4>Table <code>ecritures_comptables</code> — Cœur SYSCOHADA</h4>
+<table>
+<thead><tr><th>Colonne</th><th>Type</th><th>Contrainte</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>INT</td><td>PRIMARY KEY AUTO_INCREMENT</td><td>Identifiant séquentiel interne</td></tr>
+<tr><td><code>numero_ecriture</code></td><td>VARCHAR(20)</td><td>NOT NULL</td><td>Numéro conforme SYSCOHADA (ex : VTE-2024-0042)</td></tr>
+<tr><td><code>journal_code</code></td><td>VARCHAR(5)</td><td>FK → journaux_comptables</td><td>Code journal : VTE (ventes), ACH (achats), BNQ (banque), CAI (caisse)</td></tr>
+<tr><td><code>date_ecriture</code></td><td>DATE</td><td>NOT NULL</td><td>Date de l'opération comptable</td></tr>
+<tr><td><code>compte_code</code></td><td>VARCHAR(10)</td><td>FK → plan_comptable</td><td>Code compte SYSCOHADA (ex : 411000 = Clients ordinaires)</td></tr>
+<tr><td><code>debit</code></td><td>DECIMAL(15,2)</td><td>DEFAULT 0</td><td>Montant débit — partie double obligatoire OHADA</td></tr>
+<tr><td><code>credit</code></td><td>DECIMAL(15,2)</td><td>DEFAULT 0</td><td>Montant crédit — partie double obligatoire OHADA</td></tr>
+<tr><td><code>libelle</code></td><td>VARCHAR(255)</td><td>NOT NULL</td><td>Libellé de l'écriture (généré ou saisi)</td></tr>
+</tbody>
+</table>
+
+<h4>Table <code>plan_comptable</code> — SYSCOHADA révisé 2017</h4>
+<table>
+<thead><tr><th>Colonne</th><th>Type</th><th>Contrainte</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>code</code></td><td>VARCHAR(10)</td><td>PRIMARY KEY</td><td>Code compte OHADA (ex : 1, 10, 101, 1011…)</td></tr>
+<tr><td><code>libelle</code></td><td>VARCHAR(150)</td><td>NOT NULL</td><td>Intitulé officiel SYSCOHADA</td></tr>
+<tr><td><code>classe</code></td><td>TINYINT</td><td>NOT NULL</td><td>Classe 1 à 9 (OHADA) : 1=Capitaux, 2=Immo, 3=Stocks, 4=Tiers, 5=Trésorerie, 6=Charges, 7=Produits</td></tr>
+<tr><td><code>type</code></td><td>ENUM('actif','passif','charge','produit','engagement','hao','impot')</td><td>NOT NULL</td><td>Nature comptable — détermine le sens de la balance</td></tr>
+<tr><td><code>parent_code</code></td><td>VARCHAR(10)</td><td>FK → plan_comptable(code)</td><td>Arborescence récursive du plan comptable</td></tr>
+</tbody>
+</table>
+
+<h4>Table <code>ecom_orders</code> — Commandes e-commerce B2C</h4>
+<table>
+<thead><tr><th>Colonne</th><th>Type</th><th>Contrainte</th><th>Description</th></tr></thead>
+<tbody>
+<tr><td><code>id</code></td><td>VARCHAR(36)</td><td>PRIMARY KEY</td><td>UUID v4</td></tr>
+<tr><td><code>order_number</code></td><td>VARCHAR(20)</td><td>UNIQUE NOT NULL</td><td>Référence commande (ex : CMD-2024-00142)</td></tr>
+<tr><td><code>customer_id</code></td><td>VARCHAR(36)</td><td>FK → ecom_customers</td><td>Séparation ERP (table <code>customers</code>) / e-commerce (table <code>ecom_customers</code>)</td></tr>
+<tr><td><code>status</code></td><td>ENUM(10 statuts)</td><td>NOT NULL</td><td>pending → confirmed → processing → shipped → delivered → completed</td></tr>
+<tr><td><code>payment_status</code></td><td>ENUM('pending','partial','paid','refunded','failed')</td><td>NOT NULL</td><td>Statut de paiement indépendant du statut commande</td></tr>
+<tr><td><code>total_amount</code></td><td>DECIMAL(12,2)</td><td>NOT NULL</td><td>Montant total TTC</td></tr>
+<tr><td><code>confirmed_at</code></td><td>TIMESTAMP</td><td>NULL</td><td>Horodatage de confirmation — audit trail obligatoire OHADA</td></tr>
+</tbody>
+</table>
+
+<h3>8.0.4 Diagramme de relations inter-tables — Architecture en étoile</h3>
+<p>L'architecture de la base de données suit un modèle en <strong>étoile étendue</strong> (<em>extended star schema</em>), classique des ERP relationnels, avec la table <code>users</code> comme table de sécurité centrale et des domaines fonctionnels reliés par des clés étrangères explicites :</p>
+
+<div style="font-family: 'Courier New', monospace; font-size: 9pt; background: #f8fafc; border: 1px solid #d0d7de; padding: 16px; border-radius: 6px; line-height: 1.8; overflow-x: auto;">
+<pre style="margin:0; font-size:9pt;">
+┌─────────────────────────────────────────────────────────────┐
+│                    BASE DE DONNÉES allo_beton                │
+│                     MySQL 5.7+ (utf8mb4)                    │
+└─────────────────────────────────────────────────────────────┘
+
+         ┌──────────────┐
+         │    users     │ ← Authentification (bcrypt + JWT)
+         │  (id, role)  │ ← RBAC via user_permissions
+         └──────┬───────┘
+                │ user_id FK (présent dans 12 tables)
+     ┌──────────┼──────────────────────────────┐
+     │          │                              │
+     ▼          ▼                              ▼
+┌─────────┐ ┌─────────┐              ┌──────────────────┐
+│customers│ │  sales  │──── items ──▶│   sale_items     │
+└────┬────┘ └────┬────┘              └──────────────────┘
+     │           │ FK
+     │           ▼
+     │      ┌─────────┐    ┌─────────────────────────┐
+     │      │invoices │    │  ecritures_comptables   │
+     │      └─────────┘    │  (plan_comptable FK)    │
+     │                     │  (journaux_comptables)  │
+     ▼                     └─────────────────────────┘
+┌──────────────────────────────────┐
+│        E-COMMERCE (20 tables)    │
+│  ecom_orders → ecom_order_items  │
+│  ecom_customers (séparé de CRM)  │
+│  ecom_payments → passerelles     │
+└──────────────────────────────────┘
+</pre>
+</div>
+
+<h3>8.0.5 Sécurité de la base de données — Mesures implémentées</h3>
+<p>Un backend custom implique la responsabilité entière de la sécurité de la base de données — contrairement à un BaaS qui gère ces aspects de manière transparente. Allo Béton a implémenté les mesures suivantes, documentées dans le code source (<code>backend/config/database.js</code> et <code>backend/middleware/auth.js</code>) :</p>
+
+<table>
+<thead><tr><th>Menace (OWASP)</th><th>Mesure implémentée</th><th>Couche</th></tr></thead>
+<tbody>
+<tr><td>A03 — Injection SQL</td><td>Requêtes paramétrées exclusivement (<code>mysql2</code> — <code>pool.execute('SELECT ? WHERE id = ?', [val])</code>). <strong>Aucune concaténation de chaîne SQL dans le code.</strong></td><td>ORM/Driver</td></tr>
+<tr><td>A07 — Auth défaillante</td><td>JWT signé (HS256, secret 60 caractères), expiration 7j, bcrypt rounds=12 pour les mots de passe</td><td>Middleware</td></tr>
+<tr><td>Exposition de données</td><td>Champs sensibles (<code>password_hash</code>) jamais renvoyés dans les réponses API — exclus explicitement dans tous les SELECT</td><td>Controller</td></tr>
+<tr><td>Accès non autorisé</td><td>Table <code>user_permissions</code> — 17 modules × 4 droits (CRUD) par utilisateur, vérifiés à chaque requête</td><td>RBAC Middleware</td></tr>
+<tr><td>Audit trail</td><td>Table <code>audit_logs</code> — toutes les mutations (INSERT/UPDATE/DELETE) horodatées avec user_id et IP</td><td>Middleware global</td></tr>
+</tbody>
+</table>
+
+<p>Cette section démontre que la plateforme Allo Béton repose sur une <strong>architecture backend entièrement maîtrisée</strong> : serveur Node.js/Express custom, base de données MySQL relationnelle conçue table par table, API REST documentée avec 31 routes actives, et sécurité implémentée couche par couche. L'utilisation d'un BaaS (Firebase, Supabase, etc.) aurait été incompatible avec la conformité SYSCOHADA, les exigences de transactions ACID pour la comptabilité en partie double, et la souveraineté des données dans le contexte réglementaire sénégalais.</p>
+
+
 <h2>8.1 Validation de H1 — Avantage compétitif de l'adaptation locale</h2>
 
 <p>L'analyse comparative entre Allo Béton et les solutions concurrentes confirme l'hypothèse H1. La grille d'évaluation pondérée ci-dessous applique cinq critères pondérés (couverture fonctionnelle 40 %, coût TCO sur 5 ans 25 %, conformité OHADA 15 %, paiements mobiles UEMOA 10 %, capacités IA 10 %), conformément à la méthodologie présentée en Section 7.5.3. Les scores ont été calculés par l'auteure sur la base des documentations officielles des éditeurs (Odoo, Sage, SmartERP) et des tarifs publics disponibles en 2024-2025.</p>
@@ -1994,19 +2145,34 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li>Recommanderiez-vous cette solution à d'autres dirigeants (échelle NPS : 0 à 10) ? Pourquoi ?</li>
 </ul>
 
-<h2>Annexe B — Schéma d'architecture d'Allo Béton</h2>
+<h2>Annexe B — Schéma d'architecture technique et base de données d'Allo Béton</h2>
 
+<h3>B.1 — Architecture 3-tiers</h3>
 <table>
 <tr><th>Couche</th><th>Composants</th><th>Technologies</th></tr>
 <tr><td>Présentation (Frontend)</td><td>27 modules React, PWA</td><td>React 18, TypeScript, Vite, TailwindCSS</td></tr>
-<tr><td>Logique métier (Backend)</td><td>31 routes API actives, 23 services</td><td>Node.js 20 (prod), Express.js 4.18</td></tr>
-<tr><td>Données (Database)</td><td>~50 tables relationnelles (ERP + e-commerce)</td><td>MySQL 5.7+ (utf8mb4), compatible Railway</td></tr>
-<tr><td>Sécurité</td><td>JWT, bcrypt, Helmet, rate limiting</td><td>jsonwebtoken, bcryptjs, helmet</td></tr>
-<tr><td>IA</td><td>12 services dédiés (NLP, prédiction, anomalies)</td><td>Anthropic Claude API, NLP maison</td></tr>
-<tr><td>Paiements</td><td>2 passerelles intégrées</td><td>PayDunya (mobile money), Stripe (cartes)</td></tr>
-<tr><td>Communications</td><td>Email + SMS</td><td>Nodemailer, Twilio</td></tr>
-<tr><td>Documents</td><td>Génération PDF / Excel</td><td>PDFKit, html2pdf.js, ExcelJS</td></tr>
-<tr><td>Hébergement</td><td>Multi-cloud</td><td>Netlify (front), Railway (back+DB), Nginx</td></tr>
+<tr><td>Logique métier (Backend)</td><td>31 routes API actives, 23 services</td><td>Node.js 20, Express.js 4.18</td></tr>
+<tr><td>Données (Database)</td><td><strong>82 tables relationnelles</strong> (ERP + SYSCOHADA + e-commerce)</td><td>MySQL 5.7+ (utf8mb4), Railway</td></tr>
+<tr><td>Sécurité</td><td>JWT, bcrypt, Helmet, RBAC, audit_logs</td><td>jsonwebtoken, bcryptjs, helmet, joi</td></tr>
+<tr><td>IA</td><td>12 services (NLP, prédiction, anomalies, classification)</td><td>Anthropic Claude API + NLP maison</td></tr>
+<tr><td>Paiements</td><td>Mobile Money + cartes bancaires internationales</td><td>PayDunya, Wave, Orange Money, Stripe</td></tr>
+<tr><td>Documents</td><td>Génération PDF (factures, relevés, rapports SYSCOHADA)</td><td>PDFKit, html2pdf.js, ExcelJS</td></tr>
+<tr><td>Hébergement</td><td>Multi-cloud, séparation front/back</td><td>Netlify (front), Railway (back + DB), Nginx</td></tr>
+</table>
+
+<h3>B.2 — Inventaire complet des 82 tables MySQL (base allo_beton)</h3>
+<table>
+<thead><tr><th>Domaine</th><th>Tables</th><th>Rôle</th></tr></thead>
+<tbody>
+<tr><td><strong>Utilisateurs &amp; Sécurité</strong> (6)</td><td>users, user_permissions, audit_logs, settings, notifications, notification_preferences</td><td>Authentification JWT, RBAC 4 niveaux, traçabilité</td></tr>
+<tr><td><strong>Ventes &amp; Clients ERP</strong> (10)</td><td>customers, sales, sale_items, invoices, invoice_items, delivery_notes, credit_notes, credit_note_items, relances, projects</td><td>Cycle complet devis→livraison→facturation→relance</td></tr>
+<tr><td><strong>Stocks &amp; Fournisseurs</strong> (8)</td><td>products, categories, inventory_items, stock_movements, suppliers, supplier_products, purchase_orders, purchase_order_items</td><td>Gestion des approvisionnements et stocks béton</td></tr>
+<tr><td><strong>Finance &amp; Trésorerie</strong> (13)</td><td>payments, cash_balance, cash_movements, banks, bank_accounts, bank_loans, bank_loan_schedules, client_deposits, deposit_allocations, budgets, comptes_mobile_money, mouvements_mobile_money, immobilisations</td><td>Caisse, banque, Mobile Money, emprunts</td></tr>
+<tr><td><strong>Comptabilité SYSCOHADA</strong> (19)</td><td>plan_comptable, journaux_comptables, ecritures_comptables, lignes_ecritures, exercices_comptables, centres_analytiques, centres_analyse, regles_comptables, declarations_tva, rapprochements, rapprochement_bancaire, releves_bancaires, tiers_comptable, tiers, abonnements_comptables, parametres_comptable, journaux, ecritures, exercices</td><td>Conformité OHADA, partie double, états financiers</td></tr>
+<tr><td><strong>E-commerce B2C</strong> (20)</td><td>ecom_products, ecom_categories, ecom_customers, ecom_orders, ecom_order_items, ecom_order_status_history, ecom_carts, ecom_cart_items, ecom_payments, ecom_invoices, ecom_invoice_items, ecom_addresses, ecom_reviews, ecom_promotions, ecom_promotion_uses, ecom_shipping_zones, ecom_pricing_tiers, ecom_settings, ecom_sequences, ecom_admin_logs</td><td>Boutique en ligne, panier, paiement, livraison</td></tr>
+<tr><td><strong>RH &amp; Partenaires</strong> (6)</td><td>employees, salary_payments, salary_advances, partners, partner_contracts, partner_payments</td><td>Gestion RH, avances, réseau partenaires B2B</td></tr>
+<tr><td><strong>Quotas &amp; Contrôles</strong> (2)</td><td>quota_consumptions, client_quotas</td><td>Limites d'usage par abonnement</td></tr>
+</tbody>
 </table>
 
 <h2>Annexe C — Liste des 31 routes API backend actives</h2>
