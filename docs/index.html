@@ -9,9 +9,13 @@
 @media print {
   .no-print { display: none !important; }
   .page-break { page-break-before: always; }
+  h1.pb { page-break-before: always; }
   body { padding: 0 !important; }
   h1, h2, h3 { page-break-after: avoid; }
-  table, blockquote, .abstract, .keybox { page-break-inside: avoid; }
+  blockquote, .keybox { page-break-inside: avoid; }
+  table { page-break-inside: auto; }
+  tr, .abstract { page-break-inside: avoid; }
+  thead { display: table-header-group; }
 }
 * { box-sizing: border-box; }
 body {
@@ -141,10 +145,10 @@ li { margin-bottom: 0.3em; }
 
 /* === COUVERTURE MODERNE === */
 .cover {
-  min-height: 27cm;
+  min-height: 29.2cm;
   background: linear-gradient(135deg, #0a3d62 0%, #1e5582 50%, #0a3d62 100%);
   color: white;
-  padding: 3cm 2cm;
+  padding: 1.5cm 2cm;
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -183,7 +187,7 @@ li { margin-bottom: 0.3em; }
   font-size: 12pt;
   font-weight: 300;
   letter-spacing: 1px;
-  margin: 0.8cm 0;
+  margin: 0.5cm 0;
   color: #e8d49a;
 }
 .cover h1 {
@@ -192,7 +196,7 @@ li { margin-bottom: 0.3em; }
   font-weight: 300;
   border: none;
   color: white;
-  margin: 1.5cm 0 1cm 0;
+  margin: 0.8cm 0 0.6cm 0;
   line-height: 1.3;
   padding: 0;
 }
@@ -201,7 +205,7 @@ li { margin-bottom: 0.3em; }
   font-family: 'Georgia', serif;
   font-size: 14pt;
   font-style: italic;
-  margin: 0.5cm 0 1cm 0;
+  margin: 0.4cm 0 0.5cm 0;
   color: #f0d99c;
   font-weight: 300;
 }
@@ -209,14 +213,14 @@ li { margin-bottom: 0.3em; }
   width: 100px;
   height: 3px;
   background: #d4a017;
-  margin: 1cm auto;
+  margin: 0.55cm auto;
   border: none;
 }
 .cover .author {
   font-family: 'Helvetica Neue', Arial, sans-serif;
   font-size: 18pt;
   font-weight: 600;
-  margin: 0.6cm 0;
+  margin: 0.4cm 0;
   color: #d4a017;
   letter-spacing: 1px;
 }
@@ -226,7 +230,7 @@ li { margin-bottom: 0.3em; }
   letter-spacing: 2px;
   text-transform: uppercase;
   color: rgba(255,255,255,0.7);
-  margin-top: 0.6cm;
+  margin-top: 0.4cm;
 }
 .cover .year {
   font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -396,10 +400,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 </p>
 </div>
 
-<div class="page-break"></div>
-
 <!-- REMERCIEMENTS -->
-<h1>Remerciements</h1>
+<h1 class="pb">Remerciements</h1>
 <p>La rédaction de ce mémoire de fin d'études n'aurait pu aboutir sans le concours, le soutien et la bienveillance de plusieurs personnes auxquelles je tiens à exprimer ma profonde reconnaissance.</p>
 <p>Je tiens tout d'abord à adresser mes sincères remerciements à <strong>mon directeur de mémoire</strong>, dont la disponibilité, les conseils avisés et la rigueur intellectuelle ont été déterminants tout au long de l'élaboration de ce travail. Sa confiance et ses encouragements m'ont permis de mener à bien cette recherche exigeante.</p>
 <p>Mes remerciements s'adressent ensuite à <strong>la Direction de l'École Supérieure Multinationale des Télécommunications (ESMT)</strong> ainsi qu'à l'ensemble du <strong>corps enseignant du Master Professionnel en Management de la Transformation Digitale (MMTD)</strong>, option Finance Digitale, pour la qualité de la formation dispensée durant ces deux années. Leurs enseignements, à la croisée de la finance, de la technologie et du management, ont nourri ma réflexion et constitué le socle théorique de ce mémoire.</p>
@@ -409,10 +411,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <p>Enfin, je remercie ma <strong>famille et mes proches</strong> pour leur patience, leurs encouragements et leur soutien moral durant ces longues semaines de recherche et de rédaction.</p>
 <p>Que toutes les personnes qui, de près ou de loin, ont contribué à la réalisation de ce travail trouvent ici l'expression de ma sincère reconnaissance.</p>
 
-<div class="page-break"></div>
-
 <!-- RÉSUMÉ -->
-<h1>Résumé</h1>
+<h1 class="pb">Résumé</h1>
 <div class="abstract">
 <p>Le présent mémoire s'inscrit dans le champ de la <strong>Finance Digitale</strong> appliquée aux Petites et Moyennes Entreprises (PME) africaines, et plus spécifiquement à celles du secteur du Bâtiment et des Travaux Publics (BTP) au Sénégal. Face à des défis majeurs — gestion comptable manuelle, fragmentation des outils, faible bancarisation, difficulté d'accès aux financements et limitation des canaux de distribution — les PME du BTP peinent à tirer pleinement parti des opportunités offertes par la transformation numérique.</p>
 <p>Cette recherche propose, à travers la conception et le déploiement de la plateforme <strong>Allo Béton</strong>, un modèle d'écosystème financier digital intégré combinant un ERP complet, une boutique e-commerce B2C, un module de comptabilité conforme à la norme SYSCOHADA, des passerelles de paiements mobiles (PayDunya, Wave, Orange Money, Stripe), et un moteur d'Intelligence Artificielle propriétaire pour l'aide à la décision.</p>
@@ -438,67 +438,65 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <div class="level-1"><span>Dédicace</span><span>i</span></div>
 <div class="level-1"><span>Remerciements</span><span>ii</span></div>
 <div class="level-1"><span>Résumé / Abstract</span><span>iii</span></div>
-<div class="level-1"><span>Liste des sigles et abréviations</span><span>v</span></div>
-<div class="level-1"><span>Liste des tableaux et figures</span><span>vi</span></div>
-<div class="level-1" style="color:#d4a017;"><span>Positionnement académique dans le programme MMTD</span><span>vii</span></div>
+<div class="level-1"><span>Liste des tableaux et figures</span><span>viii</span></div>
+<div class="level-1" style="color:#d4a017;"><span>Positionnement académique dans le programme MMTD</span><span>ix</span></div>
 <div class="level-2" style="color:#666;"><span>— Tronc commun, semestres 1 et 2 (11 UE)</span><span></span></div>
 <div class="level-2" style="color:#666;"><span>— Spécialité Finance Digitale, semestres 3 et 4 (6 UE)</span><span></span></div>
+<div class="level-1"><span>Liste des sigles et abréviations</span><span>xiii</span></div>
 <div class="level-1" style="margin-top:1em;"><span>INTRODUCTION GÉNÉRALE</span><span>1</span></div>
-<div class="level-1"><span>1. CONTEXTE DE L'ÉTUDE</span><span>7</span></div>
+<div class="level-1"><span>1. CONTEXTE DE L'ÉTUDE</span><span>4</span></div>
 <div class="level-2"><span>1.1 Poids économique des PME au Sénégal et en zone UEMOA</span><span></span></div>
 <div class="level-2"><span>1.2 Défis spécifiques du secteur BTP et de la filière béton</span><span></span></div>
 <div class="level-2"><span>1.3 La révolution numérique africaine : opportunités et limites</span><span></span></div>
 <div class="level-2"><span>1.4 Cadre réglementaire et politique</span><span></span></div>
-<div class="level-1"><span>2. PROBLÉMATIQUE ET QUESTIONS DE RECHERCHE</span><span>17</span></div>
+<div class="level-1"><span>2. PROBLÉMATIQUE ET QUESTIONS DE RECHERCHE</span><span>11</span></div>
 <div class="level-2"><span>2.1 Triple contradiction</span><span></span></div>
 <div class="level-2"><span>2.2 Question principale de recherche</span><span></span></div>
 <div class="level-2"><span>2.3 Six sous-questions de recherche</span><span></span></div>
-<div class="level-1"><span>3. OBJECTIFS DE LA RECHERCHE</span><span>23</span></div>
+<div class="level-1"><span>3. OBJECTIFS DE LA RECHERCHE</span><span>18</span></div>
 <div class="level-2"><span>3.1 Objectif général</span><span></span></div>
 <div class="level-2"><span>3.2 Six objectifs spécifiques</span><span></span></div>
 <div class="level-2"><span>3.3 Résultats concrets attendus (livrables)</span><span></span></div>
-<div class="level-1"><span>4. INTÉRÊT DE LA RECHERCHE</span><span>29</span></div>
+<div class="level-1"><span>4. INTÉRÊT DE LA RECHERCHE</span><span>22</span></div>
 <div class="level-2"><span>4.1 Intérêt académique</span><span></span></div>
 <div class="level-2"><span>4.2 Intérêt professionnel et managérial</span><span></span></div>
 <div class="level-2"><span>4.3 Intérêt sociétal et stratégique</span><span></span></div>
-<div class="level-1"><span>5. REVUE DE LA LITTÉRATURE</span><span>35</span></div>
+<div class="level-1"><span>5. REVUE DE LA LITTÉRATURE</span><span>26</span></div>
 <div class="level-2"><span>5.1 Transformation digitale — TAM, UTAUT, Rogers (5.1.4)</span><span></span></div>
 <div class="level-2"><span>5.2 Les ERP : évolution, typologies, adéquation aux PME</span><span></span></div>
 <div class="level-2"><span>5.3 FinTech et inclusion financière en Afrique de l'Ouest</span><span></span></div>
 <div class="level-2"><span>5.4 Intelligence artificielle appliquée à la finance</span><span></span></div>
 <div class="level-2"><span>5.5 Cybersécurité financière et protection des données <em style="color:#d4a017;">[MSI2202]</em></span><span></span></div>
-<div class="level-2"><span>5.6 Modèles d'évaluation des startups SaaS</span><span></span></div>
-<div class="level-1"><span>6. HYPOTHÈSES DE RECHERCHE ET MODÈLE D'ANALYSE</span><span>57</span></div>
+<div class="level-2"><span>5.6 Modèles d'évaluation des startups SaaS · 5.7 Synthèse</span><span></span></div>
+<div class="level-1"><span>6. HYPOTHÈSES DE RECHERCHE ET MODÈLE D'ANALYSE</span><span>39</span></div>
 <div class="level-2"><span>H1 — Avantage compétitif de l'adaptation locale</span><span></span></div>
 <div class="level-2"><span>H2 — Apport mesurable de l'IA</span><span></span></div>
 <div class="level-2"><span>H3 — Effet vertueux des paiements mobiles</span><span></span></div>
 <div class="level-2"><span>H4 — Effet productif de l'IA générative sur le développement</span><span></span></div>
 <div class="level-2"><span>H5 — Valorisation économique</span><span></span></div>
 <div class="level-2"><span>H6 — Conditions de diffusion à grande échelle</span><span></span></div>
-<div class="level-1"><span>7. MÉTHODOLOGIE</span><span>63</span></div>
+<div class="level-1"><span>7. MÉTHODOLOGIE</span><span>43</span></div>
 <div class="level-2"><span>7.1 Type d'investigation</span><span></span></div>
 <div class="level-2"><span>7.2 Échantillonnage</span><span></span></div>
 <div class="level-2"><span>7.3 Variables et mesures</span><span></span></div>
 <div class="level-2"><span>7.4 Instruments de collecte des données</span><span></span></div>
 <div class="level-2"><span>7.5 Techniques d'analyse des données</span><span></span></div>
 <div class="level-2"><span>7.6 Considérations éthiques</span><span></span></div>
-<div class="level-1"><span>8. RÉSULTATS OBTENUS ET DISCUSSION</span><span>77</span></div>
+<div class="level-1"><span>8. RÉSULTATS OBTENUS ET DISCUSSION</span><span>52</span></div>
 <div class="level-2"><span>8.1–8.6 Validation des hypothèses H1 à H6</span><span></span></div>
 <div class="level-2"><span>8.7 Sécurité de la plateforme <em style="color:#d4a017;">[MSI2202]</em></span><span></span></div>
 <div class="level-2"><span>8.8 Confrontation théorique (TCT, RBV, Schumpeter, Rogers)</span><span></span></div>
-<div class="level-2"><span>8.9–8.10 Synthèse, recommandations et conclusion</span><span></span></div>
-<div class="level-1"><span>9. LIMITES DE LA RECHERCHE</span><span>91</span></div>
-<div class="level-2"><span>9.3bis Analyse critique d'Allo Béton (dépendances, scalabilité, biais)</span><span></span></div>
-<div class="level-1"><span>10. PERSPECTIVES ET FEUILLE DE ROUTE DE DÉPLOIEMENT</span><span>97</span></div>
-<div class="level-1"><span>CONCLUSION GÉNÉRALE</span><span>103</span></div>
-<div class="level-1"><span>Bibliographie</span><span>108</span></div>
-<div class="level-1"><span>Annexes (A à G)</span><span>113</span></div>
+<div class="level-2"><span>8.9–8.11 Synthèse, recommandations et conclusion</span><span></span></div>
+<div class="level-1"><span>9. LIMITES DE LA RECHERCHE</span><span>61</span></div>
+<div class="level-2"><span>9.4 Analyse critique d'Allo Béton (dépendances, scalabilité, biais)</span><span></span></div>
+<div class="level-1"><span>10. PERSPECTIVES ET FEUILLE DE ROUTE DE DÉPLOIEMENT</span><span>66</span></div>
+<div class="level-1"><span>CONCLUSION GÉNÉRALE</span><span>70</span></div>
+<div class="level-1"><span>Bibliographie</span><span>74</span></div>
+<div class="level-1"><span>Annexes (A à G)</span><span>79</span></div>
 </div>
 
-<div class="page-break"></div>
-
 <!-- LISTE DES TABLEAUX ET FIGURES -->
-<h1>Liste des tableaux et figures</h1>
+<h1 class="pb">Liste des tableaux et figures</h1>
 <div class="toc no-indent">
 <div class="level-1"><span><strong>Tableaux</strong></span><span></span></div>
 <div class="level-2"><span>Tableau 1 — Indicateurs clés des PME sénégalaises (2024)</span><span>Section 1</span></div>
@@ -520,10 +518,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <div class="level-2"><span>Tableau 17 — Lexique technique</span><span>Annexe G</span></div>
 </div>
 
-<div class="page-break"></div>
-
 <!-- ANCRAGE PÉDAGOGIQUE MMTD -->
-<h1>Positionnement académique dans le programme MMTD</h1>
+<h1 class="pb">Positionnement académique dans le programme MMTD</h1>
 <p>Ce mémoire s'inscrit dans le cadre du <strong>Master en Management de la Transformation Digitale (MMTD)</strong>, spécialité <strong>Finance Digitale</strong>, de l'École Supérieure Multinationale des Télécommunications (ESMT) de Dakar. Conformément à la maquette pédagogique du programme, la formation se déroule sur <strong>deux années et quatre semestres</strong>, et totalise <strong>17 unités d'enseignement (UE), 39 enseignements et 120 crédits</strong> : un tronc commun aux semestres 1 et 2, la spécialisation Finance Digitale au semestre 3, et le mémoire au semestre 4. Les tableaux ci-dessous précisent, unité par unité, la manière dont les enseignements reçus sont mobilisés dans le présent travail, qui prend comme fil conducteur unique la conception, le déploiement et l'évaluation de la plateforme <strong>Allo Béton</strong>.</p>
 <p style="font-size:10pt; color:#555; font-style:italic; text-indent:0;">Source des intitulés, volumes horaires et crédits : fiche de présentation officielle du Master en Management de la Transformation Digitale (MMTD), ESMT Dakar.</p>
 <h2>Tronc commun — Semestre 1</h2>
@@ -563,10 +559,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <strong>Couverture du programme :</strong> le présent mémoire mobilise les <strong>17 UE du cursus</strong>, avec une intensité variable. Les quatre UE de la spécialité Finance Digitale (<strong>ABD2301</strong>, <strong>SFN2302</strong>, <strong>RIF2303</strong>, <strong>MDT2304</strong>) en constituent le cœur théorique et empirique. Le tronc commun fournit les cadres d'analyse économique (ENU2101), stratégique (STG2102), juridique (DRT2103), technique (BDR2203, EBD2201, MSI2202) et méthodologique (MGT2104, MAG2204, LRE2305). Le mémoire lui-même correspond à l'UE <strong>LRE2401</strong>, dotée de 288 heures et de 24 crédits sur les 120 du diplôme. Cette articulation illustre la vocation intégratrice du MMTD : mobiliser conjointement les dimensions technique, financière, réglementaire et managériale sur un cas unique et réellement déployé.
 </div>
 
-<div class="page-break"></div>
-
 <!-- SIGLES -->
-<h1>Liste des sigles et abréviations</h1>
+<h1 class="pb">Liste des sigles et abréviations</h1>
 <table>
 <tr><th>Sigle</th><th>Signification</th></tr>
 <tr><td>ANSD</td><td>Agence Nationale de la Statistique et de la Démographie</td></tr>
@@ -615,12 +609,10 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <tr><td>XOF</td><td>Franc CFA de l'Afrique de l'Ouest</td></tr>
 </table>
 
-<div class="page-break"></div>
-
 <!-- INTRODUCTION GÉNÉRALE -->
-<h1>Introduction Générale</h1>
+<h1 class="pb">Introduction Générale</h1>
 <div class="dropcap">
-<p>L'Afrique vit, depuis une décennie, une transformation numérique sans précédent qui redessine les contours de son économie, de ses services financiers et de la relation entre les entreprises et leurs clients. Selon le rapport <em>GSMA Mobile Economy Sub-Saharan Africa 2024</em>, le continent compte plus de 781 millions d'abonnés mobiles uniques, dont près de 49 % accèdent à internet via leurs smartphones. En parallèle, l'Afrique de l'Ouest s'est imposée comme le berceau mondial du <em>mobile money</em>, avec des opérateurs tels que Wave, Orange Money, Free Money ou MTN Mobile Money qui traitent quotidiennement plusieurs milliards de dollars en transactions.</p>
+<p>L'Afrique vit, depuis une décennie, une transformation numérique sans précédent qui redessine les contours de son économie, de ses services financiers et de la relation entre les entreprises et leurs clients. Selon le rapport <em>GSMA Mobile Economy Sub-Saharan Africa 2024</em>, l'Afrique subsaharienne comptait 527 millions d'abonnés mobiles uniques fin 2023 — soit 44 % de la population — et devrait atteindre 751 millions d'abonnés à l'horizon 2030. En parallèle, l'Afrique de l'Ouest s'est imposée comme le berceau mondial du <em>mobile money</em>, avec des opérateurs tels que Wave, Orange Money, Free Money ou MTN Mobile Money qui traitent quotidiennement plusieurs milliards de dollars en transactions.</p>
 
 <p>Ce dynamisme technologique se heurte cependant à une réalité contrastée : les Petites et Moyennes Entreprises (PME), qui représentent plus de 90 % du tissu économique des pays de l'Union Économique et Monétaire Ouest-Africaine (UEMOA), demeurent largement en marge de cette révolution numérique. La majorité d'entre elles continuent à gérer leur comptabilité sur papier ou via des tableurs Excel, à encaisser leurs ventes en espèces, à émettre leurs factures manuellement, et à subir l'opacité de leurs flux de trésorerie. Cette fragmentation des outils, conjuguée à un accès limité aux solutions logicielles intégrées en raison du coût élevé des ERP propriétaires (SAP, Oracle, Odoo), constitue un frein structurel à leur compétitivité, à leur formalisation et à leur accès aux financements bancaires.</p>
 
@@ -636,15 +628,14 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li><strong>Axe entrepreneurial et stratégique</strong> — <span class="module-tag">STG2102</span> <span class="module-tag">BMA2106</span> <span class="module-tag">MDT2304</span> <span class="module-tag">MAG2204</span> : le modèle SaaS, la boutique e-commerce B2C et la stratégie de déploiement UEMOA incarnent les dimensions entrepreneuriales de la formation.</li>
 </ul>
 
-<p>Conformément au canevas méthodologique recommandé pour les mémoires de fin d'études du MMTD, le présent travail est structuré en dix sections principales. La première section <strong>(Contexte)</strong> présente l'environnement économique, technologique et réglementaire dans lequel s'inscrit la recherche. La deuxième section <strong>(Problématique et questions de recherche)</strong> formule la question centrale et les sous-questions associées. La troisième section <strong>(Objectifs)</strong> précise l'objectif général et les objectifs spécifiques poursuivis. La quatrième section <strong>(Intérêt de la recherche)</strong> justifie sa pertinence académique, professionnelle et sociétale. La cinquième section <strong>(Revue de la littérature)</strong> synthétise les travaux antérieurs sur les ERP, les FinTech, l'IA et la digitalisation des PME. La sixième section <strong>(Hypothèses)</strong> énonce les propositions à tester. La septième section <strong>(Méthodologie)</strong> détaille la démarche d'investigation, l'échantillonnage, les instruments et les techniques d'analyse. La huitième section <strong>(Résultats attendus)</strong> anticipe les apports empiriques de la recherche. La neuvième section <strong>(Limites)</strong> identifie les contraintes méthodologiques et contextuelles. La dixième section <strong>(Plan détaillé du mémoire)</strong> présente l'architecture définitive du document. L'ensemble est encadré par une introduction générale et une conclusion générale.</p>
+<p>Conformément au canevas méthodologique recommandé pour les mémoires de fin d'études du MMTD, le présent travail est structuré en dix sections principales. La première section <strong>(Contexte)</strong> présente l'environnement économique, technologique et réglementaire dans lequel s'inscrit la recherche. La deuxième section <strong>(Problématique et questions de recherche)</strong> formule la question centrale et les sous-questions associées. La troisième section <strong>(Objectifs)</strong> précise l'objectif général et les objectifs spécifiques poursuivis. La quatrième section <strong>(Intérêt de la recherche)</strong> justifie sa pertinence académique, professionnelle et sociétale. La cinquième section <strong>(Revue de la littérature)</strong> synthétise les travaux antérieurs sur les ERP, les FinTech, l'IA et la digitalisation des PME. La sixième section <strong>(Hypothèses)</strong> énonce les propositions à tester. La septième section <strong>(Méthodologie)</strong> détaille la démarche d'investigation, l'échantillonnage, les instruments et les techniques d'analyse. La huitième section <strong>(Résultats obtenus et discussion)</strong> expose les apports empiriques de la recherche et les confronte aux cadres théoriques mobilisés. La neuvième section <strong>(Limites)</strong> identifie les contraintes méthodologiques et contextuelles. La dixième section <strong>(Perspectives et feuille de route de déploiement)</strong> présente le plan du mémoire et opérationnalise les conclusions en trajectoire de déploiement. L'ensemble est encadré par une introduction générale et une conclusion générale, complétées par la bibliographie et les annexes.</p>
+<p>Cette architecture reprend fidèlement les <strong>dix rubriques du canevas de projet de mémoire</strong> du département Management de l'ESMT : contexte, problématique et questions de recherche, objectifs, intérêt de la recherche, revue de la littérature, hypothèses et modèle d'analyse, méthodologie, résultats, limites et plan du mémoire. La rubrique « résultats attendus », propre au projet soumis en amont de l'investigation, y devient — le travail achevé — un exposé des résultats effectivement obtenus et de leur discussion.</p>
 
 <p>L'ambition de ce mémoire dépasse le simple exercice académique : il vise à apporter une contribution tangible à la réflexion sur la transformation digitale des PME africaines, en démontrant qu'il est désormais possible, grâce aux technologies open-source modernes et à l'assistance de l'intelligence artificielle, de concevoir des solutions financières intégrées de niveau international à un coût marginal — révolution silencieuse qui pourrait transformer durablement le paysage entrepreneurial du continent.</p>
 </div>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 1 : CONTEXTE ========== -->
-<h1>1. Contexte</h1>
+<h1 class="pb">1. Contexte</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">ENU2101 — Économie numérique</span>
@@ -729,10 +720,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>1.5 Synthèse contextuelle</h2>
 <p>Le contexte de cette recherche peut être synthétisé autour de quatre constats articulés. <strong>Premièrement</strong>, les PME constituent le moteur de l'économie sénégalaise et ouest-africaine, mais souffrent d'un déficit chronique de digitalisation qui freine leur compétitivité et leur formalisation. <strong>Deuxièmement</strong>, le secteur BTP, et plus particulièrement la filière béton, présente une demande latente forte pour des outils intégrés, en raison de l'inadéquation entre l'exigence opérationnelle du métier et la pauvreté des outils de gestion utilisés. <strong>Troisièmement</strong>, la révolution numérique africaine — mobile money, intelligence artificielle, technologies open-source — offre désormais les ingrédients techniques d'une réponse adaptée, à des coûts compatibles avec le pouvoir d'achat des PME. <strong>Quatrièmement</strong>, le cadre réglementaire et politique régional (UA, UEMOA, OHADA, BCEAO, PSE) est devenu largement favorable à la transformation numérique des entreprises, fournissant un environnement institutionnel propice à des initiatives comme Allo Béton. C'est dans cet espace de convergence — besoin documenté, opportunité technologique, environnement réglementaire favorable — que se déploie la problématique de recherche que la section suivante développe.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 2 : PROBLÉMATIQUE ========== -->
-<h1>2. Problématique et questions de recherche</h1>
+<h1 class="pb">2. Problématique et questions de recherche</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">ENU2101 — Économie numérique</span>
@@ -785,7 +774,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <strong>« Dans quelle mesure un écosystème financier digital intégré — nativement adapté aux normes OHADA, aux paiements mobiles UEMOA et aux spécificités du secteur BTP — génère-t-il un avantage compétitif durable pour les PME d'Afrique de l'Ouest, et selon quelles conditions sa diffusion régionale est-elle envisageable ? »</strong>
 </div>
 
-<p>Cette formulation répond aux trois critères de qualité d'une question de recherche académique tels que définis par <em>Creswell (2014)</em> : elle est <strong>faisable</strong> (un cas réel — Allo Béton — sert de support empirique), <strong>intéressante</strong> (gap de connaissance identifié sur les ERP en Afrique subsaharienne), et <strong>éthique</strong> (données anonymisées, consentement des répondants). Elle se distingue des questions de type ingéniérique (« comment construire ? ») pour se positionner comme une question de type <em>évaluatif et causal</em> : elle cherche à mesurer un effet (avantage compétitif) et à en identifier les conditions de production (facteurs de diffusion).</p>
+<p>Cette formulation répond aux trois critères de qualité d'une question de recherche académique tels que définis par <em>Creswell (2014)</em> : elle est <strong>faisable</strong> (un cas réel — Allo Béton — sert de support empirique), <strong>intéressante</strong> (gap de connaissance identifié sur les ERP en Afrique subsaharienne), et <strong>éthique</strong> (données anonymisées, consentement des répondants). Elle se distingue des questions d'ingénierie (« comment construire ? ») pour se positionner comme une question de type <em>évaluatif et causal</em> : elle cherche à mesurer un effet (avantage compétitif) et à en identifier les conditions de production (facteurs de diffusion).</p>
 
 <p>Sur le plan théorique, la question mobilise simultanément : la <em>Resource-Based View</em> pour la notion d'avantage compétitif durable (<em>Barney, 1991</em>), la <em>théorie de la diffusion de l'innovation</em> pour les conditions de propagation (<em>Rogers, 2003</em>), et la <em>théorie des coûts de transaction</em> pour l'intérêt de l'intégration vs fragmentation (<em>Williamson, 1985</em>).</p>
 
@@ -835,10 +824,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>2.5 Conclusion partielle</h2>
 <p>La problématique de ce mémoire trouve son ancrage dans une triple contradiction observée dans le tissu des PME africaines : importance économique vs sous-équipement numérique, maturité technologique vs faible appropriation, ambition politique vs lenteur des réalisations. Le secteur BTP, et plus particulièrement la filière béton au Sénégal, constitue un terrain d'observation privilégié de ces tensions. La question principale formulée et les six sous-questions associées définissent un programme de recherche cohérent, opérationnel et pluridimensionnel, dont la suite du mémoire — objectifs, intérêt, revue de littérature, hypothèses, méthodologie — déclinera les réponses systématiques.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 3 : OBJECTIFS ========== -->
-<h1>3. Objectifs de la recherche</h1>
+<h1 class="pb">3. Objectifs de la recherche</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">STG2102 — Stratégie</span>
@@ -913,10 +900,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>3.5 Conclusion partielle</h2>
 <p>L'objectif général de ce mémoire — concevoir, déployer et évaluer un écosystème financier digital intégré pour les PME du BTP ouest-africain — se décline en six objectifs spécifiques cohérents, chacun adossé à une sous-question de recherche et donnant lieu à un livrable concret. Cette architecture finaliste structure l'ensemble du dispositif méthodologique présenté à la section 7, et conditionne les résultats attendus exposés à la section 8. La section suivante précise l'intérêt de la recherche, en justifiant sa triple pertinence académique, professionnelle et sociétale.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 4 : INTÉRÊT DE LA RECHERCHE ========== -->
-<h1>4. Intérêt de la recherche</h1>
+<h1 class="pb">4. Intérêt de la recherche</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">STG2102 — Stratégie</span>
@@ -933,7 +918,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <p>La recherche francophone sur la finance digitale en Afrique de l'Ouest, et plus spécifiquement sur l'intégration des technologies dans les PME du secteur BTP, demeure relativement limitée. Si les travaux abondent sur les fintechs grand public (mobile money, micro-finance digitale), les solutions ERP destinées aux entreprises africaines font l'objet d'une littérature beaucoup plus rare. Le présent mémoire vise à combler partiellement ce déficit, en proposant une analyse approfondie d'un cas concret — la plateforme Allo Béton — qui articule plusieurs dimensions habituellement traitées séparément : ERP, e-commerce, comptabilité OHADA, paiements mobiles et intelligence artificielle.</p>
 
 <h3>4.1.2 Une démarche praxéologique originale</h3>
-<p>L'originalité méthodologique de ce mémoire réside dans sa <strong>posture praxéologique</strong> (recherche-action) : l'auteur n'analyse pas seulement un objet extérieur à lui, mais il étudie une plateforme à laquelle il a contribué, dont il connaît l'architecture interne et les données de production. Cette proximité, loin de constituer un biais, offre au contraire une profondeur d'analyse rare dans les travaux universitaires africains, qui se contentent souvent d'une approche purement documentaire ou théorique. Elle permet en outre de produire des recommandations directement actionnables.</p>
+<p>L'originalité méthodologique de ce mémoire réside dans sa <strong>posture praxéologique</strong> (recherche-action) : l'auteure n'analyse pas seulement un objet extérieur à elle, mais elle étudie une plateforme à laquelle elle a contribué, dont elle connaît l'architecture interne et les données de production. Cette proximité, loin de constituer un biais, offre au contraire une profondeur d'analyse rare dans les travaux universitaires africains, qui se contentent souvent d'une approche purement documentaire ou théorique. Elle permet en outre de produire des recommandations directement actionnables.</p>
 
 <h3>4.1.3 Une articulation pluridisciplinaire</h3>
 <p>Le mémoire mobilise et articule plusieurs disciplines enseignées dans le Master MMTD : finance d'entreprise (analyse de la valeur, modèles d'affaires SaaS), systèmes d'information (architecture logicielle, sécurité), comptabilité (SYSCOHADA), marketing digital (e-commerce), gouvernance numérique (RGPD, BCEAO, OHADA), et intelligence artificielle (NLP, machine learning, IA générative). Cette pluridisciplinarité reflète l'esprit même du Master, qui prépare ses étudiants à des fonctions managériales transversales dans la transformation digitale.</p>
@@ -978,10 +963,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>4.5 Conclusion partielle</h2>
 <p>L'intérêt de cette recherche se déploie sur trois plans articulés. Sur le plan <em>académique</em>, le mémoire enrichit un champ francophone encore peu documenté et adopte une démarche praxéologique originale. Sur le plan <em>professionnel</em>, il fournit aux entrepreneurs, dirigeants de PME et conseils des outils d'aide à la décision concrets. Sur le plan <em>sociétal</em>, il contribue à des enjeux majeurs : inclusion financière, formalisation économique, souveraineté numérique, création d'emplois qualifiés. Cette triple pertinence justifie pleinement l'investissement de recherche consenti et fonde l'ambition du présent travail. La section suivante développe la revue de la littérature qui constituera le socle théorique de l'analyse.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 5 : REVUE DE LITTÉRATURE ========== -->
-<h1>5. Revue de la littérature</h1>
+<h1 class="pb">5. Revue de la littérature</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">ENU2101 — Économie numérique</span>
@@ -994,7 +977,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
   <span class="module-tag">MSI2202 — Sécurité SI &amp; monétique</span>
 </div>
 
-<p>La revue de la littérature constitue le socle théorique sur lequel se construit toute recherche scientifique rigoureuse. Elle permet de situer le travail dans la continuité des productions antérieures, d'identifier les concepts mobilisables, de mettre en évidence les zones encore peu explorées et de justifier la valeur ajoutée du mémoire. La présente section organise cette revue autour de cinq axes thématiques articulés à la problématique de recherche : (5.1) la transformation digitale des PME africaines, (5.2) les ERP et leur évolution, (5.3) les FinTech et l'inclusion financière en Afrique de l'Ouest, (5.4) l'intelligence artificielle appliquée à la finance et à la gestion, et (5.5) les modèles d'évaluation des startups SaaS.</p>
+<p>La revue de la littérature constitue le socle théorique sur lequel se construit toute recherche scientifique rigoureuse. Elle permet de situer le travail dans la continuité des productions antérieures, d'identifier les concepts mobilisables, de mettre en évidence les zones encore peu explorées et de justifier la valeur ajoutée du mémoire. La présente section organise cette revue autour de six axes thématiques articulés à la problématique de recherche : (5.1) la transformation digitale des PME africaines, (5.2) les ERP et leur évolution, (5.3) les FinTech et l'inclusion financière en Afrique de l'Ouest, (5.4) l'intelligence artificielle appliquée à la finance et à la gestion, (5.5) la cybersécurité financière et la protection des données, et (5.6) les modèles d'évaluation des startups SaaS.</p>
 
 <h2>5.1 La transformation digitale des PME africaines</h2>
 
@@ -1015,7 +998,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 
 <p><strong>Le modèle TAM (Technology Acceptance Model)</strong> de <em>Davis (1989)</em>, publié dans le <em>MIS Quarterly</em>, postule que l'adoption d'une technologie est déterminée par deux variables : l'<em>utilité perçue</em> (perceived usefulness) et la <em>facilité d'utilisation perçue</em> (perceived ease of use). Ces deux variables influencent l'attitude de l'utilisateur, elle-même déterminant l'intention d'usage. Ce modèle, l'un des plus cités en sciences de l'information, est directement mobilisable pour analyser l'adoption de la plateforme Allo Béton par les dirigeants de PME.</p>
 
-<p><strong>Le modèle UTAUT (Unified Theory of Acceptance and Use of Technology)</strong> de <em>Venkatesh et al. (2003)</em>, publié dans le <em>MIS Quarterly</em>, constitue une synthèse de huit modèles antérieurs (TAM, TPB, MPCU, SCT...). Il identifie quatre déterminants de l'intention d'usage : (i) l'<em>espérance de performance</em>, (ii) l'<em>espérance d'effort</em>, (iii) l'<em>influence sociale</em>, et (iv) les <em>conditions facilitatrices</em>. L'UTAUT est particulièrement adapté aux contextes organisationnels et a été appliqué avec succès dans des études sur l'adoption des technologies en Afrique (<em>Okumus, Koseoglu et Ma, 2018</em>).</p>
+<p><strong>Le modèle UTAUT (Unified Theory of Acceptance and Use of Technology)</strong> de <em>Venkatesh et al. (2003)</em>, publié dans le <em>MIS Quarterly</em>, constitue une synthèse de huit modèles antérieurs (TAM, TPB, MPCU, SCT...). Il identifie quatre déterminants de l'intention d'usage : (i) l'<em>espérance de performance</em>, (ii) l'<em>espérance d'effort</em>, (iii) l'<em>influence sociale</em>, et (iv) les <em>conditions facilitatrices</em>. L'UTAUT est particulièrement adapté aux contextes organisationnels et a été appliqué avec succès dans des études sur l'adoption des services financiers mobiles en Afrique de l'Ouest (<em>Cobla et Osei-Assibey, 2018</em>).</p>
 
 <p><strong>La théorie de la diffusion de l'innovation</strong> de <em>Rogers (1962, 5e éd. 2003)</em>, dans <em>Diffusion of Innovations</em>, propose un cadre pour comprendre comment une innovation se propage au sein d'un système social. Elle identifie cinq catégories d'adopteurs (innovateurs, adopteurs précoces, majorité précoce, majorité tardive, retardataires) et cinq attributs déterminant la vitesse de diffusion : l'<em>avantage relatif</em>, la <em>compatibilité</em>, la <em>complexité</em>, la <em>testabilité</em>, et l'<em>observabilité</em>. Ce cadre est central pour analyser les conditions de diffusion à grande échelle d'Allo Béton dans l'UEMOA (hypothèse H6).</p>
 
@@ -1110,16 +1093,16 @@ de l'Afrique et œuvrent pour son émancipation économique.
 
 <h2>5.6 Les modèles d'évaluation des startups SaaS <span class="module-tag">SFN2302</span> <span class="module-tag">STG2102</span></h2>
 
-<h3>5.5.1 Méthodes classiques de valorisation</h3>
+<h3>5.6.1 Méthodes classiques de valorisation</h3>
 <p>La valorisation d'une entreprise non cotée mobilise traditionnellement quatre familles de méthodes : (i) la méthode patrimoniale (actif net comptable corrigé), (ii) la méthode des flux actualisés (DCF — <em>Discounted Cash Flow</em>), (iii) les méthodes des comparables (multiples de chiffre d'affaires, d'EBITDA, de PER sectoriels), (iv) les méthodes alternatives (Berkus, Risk Factor Summation, Scorecard) particulièrement adaptées aux startups (<em>Damodaran, 2018 — « Valuation »</em>).</p>
 
-<h3>5.5.2 Spécificités de la valorisation SaaS</h3>
+<h3>5.6.2 Spécificités de la valorisation SaaS</h3>
 <p>Les modèles SaaS présentent des caractéristiques économiques spécifiques (revenus récurrents, taux de rétention élevé, scalabilité, faible coût marginal) qui justifient l'usage de multiples de revenu ARR (<em>Annual Recurring Revenue</em>). <em>Aventis Advisors (2025)</em> publie chaque trimestre des analyses des multiples SaaS observés sur les opérations de M&A : entre 3× et 6× l'ARR pour les SaaS en croissance modérée, jusqu'à 10× pour les leaders à forte croissance. Pour les SaaS naissants (early stage), la <em>Scorecard Method</em> de <em>Bill Payne</em> reste largement utilisée.</p>
 
-<h3>5.5.3 Valorisation des startups africaines</h3>
+<h3>5.6.3 Valorisation des startups africaines</h3>
 <p>La littérature sur la valorisation des startups africaines est encore en construction. <em>TechInAfrica (2025)</em> propose un cadre méthodologique combinant DCF (avec un taux d'actualisation ajusté au risque pays — typiquement 18 à 25 %), comparables locaux et méthode Berkus. <em>Briter Bridges</em> et <em>Partech Africa</em> publient régulièrement des données sur les valorisations observées lors des levées de fonds africaines. Pour les SaaS B2B africains spécifiquement, les valorisations observées en 2024 oscillent entre 3× et 8× l'ARR selon le stade de maturité et la traction commerciale.</p>
 
-<h3>5.5.4 Application au cas Allo Béton</h3>
+<h3>5.6.4 Application au cas Allo Béton</h3>
 <p>La valorisation de la plateforme Allo Béton, qui sera développée à la section 8, mobilisera trois méthodes complémentaires :</p>
 <ul>
 <li><strong>Coûts de remplacement</strong> : somme des coûts qui auraient été nécessaires pour reconstruire la plateforme à partir de zéro, avec une équipe pluridisciplinaire (architecte, développeurs frontend/backend, ingénieur IA, expert OHADA, designer UX, DevOps, etc.) sur 18 mois.</li>
@@ -1127,9 +1110,9 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li><strong>Multiples SaaS</strong> : application des multiples sectoriels (3× à 8× l'ARR) à différents scénarios de revenus récurrents projetés (10, 50, 100 PME clientes).</li>
 </ul>
 
-<h2>5.6 Synthèse et zones encore peu explorées</h2>
+<h2>5.7 Synthèse et zones encore peu explorées</h2>
 
-<h3>5.6.1 Synthèse de la revue</h3>
+<h3>5.7.1 Synthèse de la revue</h3>
 <p>La revue de littérature menée fait apparaître plusieurs constats convergents :</p>
 <ol>
 <li>La transformation digitale des PME africaines est documentée mais reste un champ de recherche émergent, particulièrement en zone UEMOA francophone. <span class="module-tag">ENU2101</span></li>
@@ -1140,16 +1123,14 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li>Les modèles d'évaluation des startups SaaS existent mais leur application au contexte africain demande des ajustements méthodologiques. <span class="module-tag">SFN2302</span> <span class="module-tag">STG2102</span></li>
 </ol>
 
-<h3>5.6.2 Zones encore peu explorées et apport du mémoire</h3>
+<h3>5.7.2 Zones encore peu explorées et apport du mémoire</h3>
 <p>À la croisée de ces six champs, plusieurs zones restent sous-documentées : (i) la <strong>conception intégrée</strong> d'une plateforme combinant ERP + e-commerce + IA + paiements mobiles + comptabilité OHADA pour PME africaines ; (ii) l'<strong>évaluation économique précise</strong> de telles plateformes en contexte UEMOA ; (iii) les <strong>conditions de diffusion</strong> à grande échelle ; (iv) la <strong>cybersécurité spécifique aux ERP de PME africaines</strong>. Le présent mémoire ambitionne de contribuer à chacune de ces zones, en mobilisant le cas pratique de la plateforme Allo Béton comme support empirique.</p>
 
-<h2>5.7 Conclusion partielle</h2>
+<h2>5.8 Conclusion partielle</h2>
 <p>La revue de la littérature, organisée autour de six axes thématiques (transformation digitale des PME africaines, évolution des ERP, FinTech et inclusion financière, intelligence artificielle, cybersécurité financière, valorisation SaaS), fournit le cadre conceptuel et théorique nécessaire à l'analyse du cas Allo Béton. Elle met en évidence des dynamiques convergentes, des limites des solutions existantes et des opportunités encore largement inexploitées. La section suivante formule, à partir de ce socle, les hypothèses de recherche qui guideront l'investigation empirique.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 6 : HYPOTHÈSES ========== -->
-<h1>6. Hypothèses de recherche et modèle d'analyse</h1>
+<h1 class="pb">6. Hypothèses de recherche et modèle d'analyse</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">SFN2302 — Services financiers numériques</span>
@@ -1220,10 +1201,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>6.4 Conclusion partielle</h2>
 <p>Les six hypothèses formulées dans cette section structurent l'investigation empirique du mémoire. Elles articulent des propositions opérationnelles, falsifiables et porteuses de sens managérial et stratégique. Leur validation ou infirmation, à travers la méthodologie présentée à la section suivante, fondera les conclusions et recommandations finales du mémoire.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 7 : MÉTHODOLOGIE ========== -->
-<h1>7. Méthodologie</h1>
+<h1 class="pb">7. Méthodologie</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">LRE2305 — Méthodologie de recherche</span>
@@ -1233,7 +1212,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
   <span class="module-tag">MAG2204 — Management agile</span>
 </div>
 
-<p>La méthodologie d'une recherche en sciences de gestion désigne l'ensemble des principes, démarches, techniques et outils mobilisés pour produire des connaissances scientifiques fiables. Conformément aux exigences du Master MMTD et au canevas méthodologique recommandé par l'ESMT, cette septième section précise (7.1) le type d'investigation retenu, (7.2) la stratégie d'échantillonnage, (7.3) les variables et mesures mobilisées, (7.4) les instruments de collecte des données, et (7.5) les techniques d'analyse.</p>
+<p>La méthodologie d'une recherche en sciences de gestion désigne l'ensemble des principes, démarches, techniques et outils mobilisés pour produire des connaissances scientifiques fiables. Conformément aux exigences du Master MMTD et au canevas méthodologique recommandé par l'ESMT, cette septième section précise (7.1) le type d'investigation retenu, (7.2) la stratégie d'échantillonnage, (7.3) les variables et mesures mobilisées, (7.4) les instruments de collecte des données, (7.5) les techniques d'analyse, (7.6) les dispositifs de validité et de fiabilité, (7.7) les considérations éthiques et (7.8) le calendrier de la recherche.</p>
 
 <h2>7.1 Type d'investigation</h2>
 
@@ -1244,7 +1223,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <p>La recherche mobilise une <strong>approche mixte</strong> (quantitative et qualitative), recommandée par <em>Creswell et Plano Clark (2017)</em> pour les phénomènes complexes nécessitant une triangulation de sources. La dimension qualitative repose sur la revue de littérature, l'analyse documentaire et les entretiens semi-directifs. La dimension quantitative s'appuie sur l'analyse des données de production de la plateforme (volumes de transactions, taux d'usage des modules, données financières anonymisées) et sur les questionnaires structurés.</p>
 
 <h3>7.1.3 Une posture praxéologique (recherche-action)</h3>
-<p>L'auteur du mémoire est le concepteur et développeur principal de la plateforme Allo Béton, qu'elle a conçue, architecturée et déployée de manière autonome avec assistance d'outils d'IA générative. Cette implication directe confère à la recherche une posture <strong>praxéologique</strong> (recherche-action) au sens de <em>Lewin (1946)</em>. Loin de constituer un biais, elle garantit une connaissance fine de l'architecture interne, des choix techniques, des données de production et des retours utilisateurs — profondeur d'analyse inaccessible à un observateur extérieur — et permet de produire des recommandations directement actionnables. Les précautions méthodologiques nécessaires (objectivation des observations, triangulation des sources, validation par des tiers) sont rigoureusement respectées pour préserver la validité scientifique du travail.</p>
+<p>L'auteure du mémoire est la conceptrice et développeuse principale de la plateforme Allo Béton, qu'elle a conçue, architecturée et déployée de manière autonome avec assistance d'outils d'IA générative. Cette implication directe confère à la recherche une posture <strong>praxéologique</strong> (recherche-action) au sens de <em>Lewin (1946)</em>. Loin de constituer un biais, elle garantit une connaissance fine de l'architecture interne, des choix techniques, des données de production et des retours utilisateurs — profondeur d'analyse inaccessible à un observateur extérieur — et permet de produire des recommandations directement actionnables. Les précautions méthodologiques nécessaires (objectivation des observations, triangulation des sources, validation par des tiers) sont rigoureusement respectées pour préserver la validité scientifique du travail.</p>
 
 <h2>7.2 Échantillonnage</h2>
 
@@ -1312,7 +1291,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li><strong>Bloc 1</strong> — Profil du répondant et de son organisation (secteur, taille, ancienneté)</li>
 <li><strong>Bloc 2</strong> — Pratiques actuelles de gestion financière (outils utilisés, fréquence, douleurs)</li>
 <li><strong>Bloc 3</strong> — Perception des outils ERP existants (connaissance, usage passé, freins)</li>
-<li><strong>Bloc 4</strong> — Paiements mobiles : usage, impact trésorerie, incidents (wave, Orange Money)</li>
+<li><strong>Bloc 4</strong> — Paiements mobiles : usage, impact trésorerie, incidents (Wave, Orange Money)</li>
 <li><strong>Bloc 5</strong> — Évaluation de la plateforme Allo Béton : fonctionnalités prioritaires, intention d'adoption (TAM : utilité perçue, facilité d'usage perçue), prix acceptable (willingness to pay)</li>
 </ul>
 <p>La durée moyenne d'un entretien est de 45 à 60 minutes. Les entretiens sont enregistrés avec consentement éclairé et retranscrits intégralement. L'analyse thématique suit la méthode de codage de <em>Bardin (2013)</em>, en articulant les thèmes émergents aux variables TAM (Section 5.1.4).</p>
@@ -1381,10 +1360,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>7.9 Conclusion partielle</h2>
 <p>La méthodologie présentée combine rigueur scientifique et adaptation au caractère exploratoire du sujet. Le recours à une approche mixte, à une posture praxéologique assumée, et à une triangulation des sources (entretiens, questionnaires, données de production, analyse comparative) garantit la robustesse des conclusions. La section suivante anticipe les résultats attendus de cette démarche.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 8 : RÉSULTATS ET DISCUSSION ========== -->
-<h1>8. Résultats obtenus et discussion</h1>
+<h1 class="pb">8. Résultats obtenus et discussion</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">SFN2302 — Services financiers numériques</span>
@@ -1522,9 +1499,9 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>8.9 Synthèse des résultats</h2>
 <p>L'ensemble des résultats obtenus converge vers une validation des hypothèses formulées : la plateforme Allo Béton constitue une démonstration empirique qu'il est possible de concevoir, à partir de technologies open-source et avec assistance IA, un écosystème financier digital intégré fonctionnellement complet et adapté aux réalités africaines, à un coût de production significativement inférieur aux modèles d'édition logicielle traditionnels. Les apports de la recherche s'articulent sur quatre registres : <strong>théorique</strong> (test empirique des cadres TCT, RBV, Rogers sur un cas africain inédit), <strong>empirique</strong> (premier cas documenté d'ERP intégré IA pour PME BTP en zone UEMOA), <strong>méthodologique</strong> (triangulation de méthodes de valorisation pour startups SaaS africaines), et <strong>stratégique</strong> (conditions de diffusion régionale).</p>
 
-<h2>8.9 Recommandations</h2>
+<h2>8.10 Recommandations</h2>
 
-<h3>8.9.1 Recommandations aux dirigeants de PME</h3>
+<h3>8.10.1 Recommandations aux dirigeants de PME</h3>
 <ul>
 <li>Investir dans la formation numérique du personnel ;</li>
 <li>Adopter progressivement les modules (commencer par caisse + facturation, puis comptabilité, puis e-commerce) ;</li>
@@ -1532,7 +1509,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li>Digitaliser les encaissements via mobile money pour réduire le BFR.</li>
 </ul>
 
-<h3>8.9.2 Recommandations aux entrepreneurs technologiques</h3>
+<h3>8.10.2 Recommandations aux entrepreneurs technologiques</h3>
 <ul>
 <li>S'appuyer sur les technologies open-source pour réduire les coûts ;</li>
 <li>Mobiliser activement les outils d'IA générative dans le développement ;</li>
@@ -1540,7 +1517,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li>Adopter un modèle SaaS récurrent pour maximiser la valorisation.</li>
 </ul>
 
-<h3>8.9.3 Recommandations aux pouvoirs publics</h3>
+<h3>8.10.3 Recommandations aux pouvoirs publics</h3>
 <ul>
 <li>Renforcer les programmes de soutien à la digitalisation des PME (DER, FONSIS) ;</li>
 <li>Encourager la formation aux technologies digitales dans les filières BTP et finance ;</li>
@@ -1548,13 +1525,11 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li>Soutenir l'écosystème FinTech local face aux acteurs internationaux.</li>
 </ul>
 
-<h2>8.10 Conclusion partielle</h2>
+<h2>8.11 Conclusion partielle</h2>
 <p>Les résultats obtenus, structurés autour des six hypothèses, convergent vers la confirmation de la valeur stratégique d'Allo Béton et plus largement du modèle d'écosystème financier digital intégré. Les recommandations formulées s'adressent aux trois grandes catégories d'acteurs concernés : dirigeants de PME, entrepreneurs technologiques, et pouvoirs publics. La section suivante examine les limites de la recherche, qui en délimitent rigoureusement la portée.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 9 : LIMITES ========== -->
-<h1>9. Limites de la recherche</h1>
+<h1 class="pb">9. Limites de la recherche</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">TDR2105 — Risques digitaux</span>
@@ -1563,12 +1538,12 @@ de l'Afrique et œuvrent pour son émancipation économique.
   <span class="module-tag">LSO2205 — Conduite du changement</span>
 </div>
 
-<p>Toute recherche scientifique, aussi rigoureuse soit-elle, comporte des limites qu'il convient d'expliciter pour permettre au lecteur d'apprécier la portée et la généralisation possibles des résultats. La présente section identifie les principales limites du présent mémoire selon cinq dimensions : (9.1) limites méthodologiques, (9.2) limites empiriques, (9.3) limites contextuelles, (9.4) limites théoriques, et (9.5) pistes pour des recherches futures.</p>
+<p>Toute recherche scientifique, aussi rigoureuse soit-elle, comporte des limites qu'il convient d'expliciter pour permettre au lecteur d'apprécier la portée et la généralisation possibles des résultats. La présente section identifie les principales limites du présent mémoire selon six dimensions : (9.1) limites méthodologiques, (9.2) limites empiriques, (9.3) limites contextuelles, (9.4) l'analyse critique de la plateforme elle-même, (9.5) limites théoriques, et (9.6) pistes pour des recherches futures.</p>
 
 <h2>9.1 Limites méthodologiques</h2>
 
 <h3>9.1.1 Le risque de biais lié à la posture praxéologique</h3>
-<p>La posture de recherche-action, si elle confère une profondeur d'analyse, comporte un risque inhérent de <strong>biais de confirmation</strong> : l'auteur, étant proche de l'objet étudié, pourrait inconsciemment privilégier les éléments qui valident ses hypothèses au détriment des observations contraires. Pour atténuer ce risque, plusieurs précautions sont prises : (i) recours systématique à des sources externes (entretiens, benchmarks, statistiques publiques), (ii) confrontation des analyses avec le directeur de mémoire et des pairs, (iii) explicitation des choix méthodologiques. Néanmoins, cette limite ne peut être totalement éliminée et doit être reconnue.</p>
+<p>La posture de recherche-action, si elle confère une profondeur d'analyse, comporte un risque inhérent de <strong>biais de confirmation</strong> : l'auteure, étant proche de l'objet étudié, pourrait inconsciemment privilégier les éléments qui valident ses hypothèses au détriment des observations contraires. Pour atténuer ce risque, plusieurs précautions sont prises : (i) recours systématique à des sources externes (entretiens, benchmarks, statistiques publiques), (ii) confrontation des analyses avec le directeur de mémoire et des pairs, (iii) explicitation des choix méthodologiques. Néanmoins, cette limite ne peut être totalement éliminée et doit être reconnue.</p>
 
 <h3>9.1.2 La taille limitée de l'échantillon</h3>
 <p>L'échantillon prévisionnel d'environ 18 à 24 répondants pour les entretiens semi-directifs et de 50 à 100 répondants pour le questionnaire en ligne ne permet pas une généralisation statistique stricte. Les conclusions tirées sont donc à considérer comme des <strong>tendances qualitatives</strong> et non comme des vérités universelles. Une étude future portant sur un échantillon plus large serait nécessaire pour confirmer la robustesse des résultats.</p>
@@ -1598,7 +1573,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h3>9.3.3 L'évolution rapide des technologies</h3>
 <p>Les technologies (IA générative, frameworks de développement, plateformes cloud) évoluent à un rythme particulièrement rapide. Certaines analyses techniques produites dans ce mémoire pourraient être partiellement obsolètes au moment de sa soutenance ou peu après. Cette limite, inhérente à toute recherche en technologies digitales, est partiellement compensée par le focus sur les principes et architectures plutôt que sur les versions précises des outils.</p>
 
-<h2>9.3bis Analyse critique de la plateforme Allo Béton</h2>
+<h2>9.4 Analyse critique de la plateforme Allo Béton</h2>
 
 <p>Au-delà des limites méthodologiques et empiriques, la plateforme Allo Béton elle-même comporte des limites intrinsèques qui méritent une analyse critique honnête :</p>
 
@@ -1614,15 +1589,15 @@ de l'Afrique et œuvrent pour son émancipation économique.
 
 <p>Cette analyse critique, loin d'invalider la valeur de la plateforme, permet d'en circonscrire précisément la portée. Elle distingue ce mémoire d'un simple plaidoyer pro domo et en renforce la crédibilité scientifique.</p>
 
-<h2>9.4 Limites théoriques</h2>
+<h2>9.5 Limites théoriques</h2>
 
-<h3>9.4.1 La complexité du concept d'écosystème financier digital</h3>
+<h3>9.5.1 La complexité du concept d'écosystème financier digital</h3>
 <p>Le concept central du mémoire — l'écosystème financier digital intégré — est volontairement large pour intégrer plusieurs dimensions (ERP, e-commerce, IA, paiements). Cette ampleur peut être perçue comme un manque de spécification théorique. Une recherche future pourrait approfondir chacune des dimensions en construisant des cadres conceptuels plus pointus et des indicateurs de mesure plus précis.</p>
 
-<h3>9.4.2 L'évaluation économique : robustesse des hypothèses</h3>
+<h3>9.5.2 L'évaluation économique : robustesse des hypothèses</h3>
 <p>Les valorisations économiques produites reposent sur des hypothèses (multiples SaaS, taux de croissance, marges) qui pourraient s'écarter de la réalité observée. Les fourchettes annoncées (60 à 150M XOF en vente directe, 300 à 750M XOF en SaaS) doivent être interprétées avec prudence et révisées en fonction des données observées.</p>
 
-<h2>9.5 Pistes pour des recherches futures</h2>
+<h2>9.6 Pistes pour des recherches futures</h2>
 
 <p>Les limites identifiées ouvrent plusieurs pistes pour des recherches futures :</p>
 
@@ -1636,13 +1611,11 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <tr><td>Étude sur la cybersécurité</td><td>Quels risques cyber spécifiques aux ERP de PME africaines, et quelles mesures de mitigation ?</td></tr>
 </table>
 
-<h2>9.6 Conclusion partielle</h2>
+<h2>9.7 Conclusion partielle</h2>
 <p>L'identification rigoureuse des limites de la présente recherche n'en diminue pas la valeur, mais en précise au contraire la portée. Les résultats produits sont des contributions exploratoires, à valeur indicative pour des praticiens et chercheurs, ouvrant la voie à des travaux complémentaires plus approfondis. Cette transparence sur les limites est elle-même une exigence de la rigueur scientifique. La section suivante présente le plan détaillé du mémoire final.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== SECTION 10 : PERSPECTIVES ET FEUILLE DE ROUTE ========== -->
-<h1>10. Perspectives et feuille de route de déploiement</h1>
+<h1 class="pb">10. Perspectives et feuille de route de déploiement</h1>
 <div class="module-box">
   <strong>UE du programme mobilisées :</strong>
   <span class="module-tag">LSO2205 — Conduite du changement</span>
@@ -1678,13 +1651,31 @@ de l'Afrique et œuvrent pour son émancipation économique.
 
 <h3>Introduction générale</h3>
 <ul>
-<li>Contexte général</li>
-<li>Justification du choix du sujet</li>
-<li>Problématique et questions de recherche</li>
-<li>Hypothèses</li>
-<li>Objectifs</li>
-<li>Méthodologie résumée</li>
-<li>Annonce du plan</li>
+<li>Contexte général et justification du choix du sujet</li>
+<li>Rappel de la problématique, des questions de recherche, des hypothèses et des objectifs</li>
+<li>Méthodologie résumée et annonce du plan</li>
+</ul>
+
+<h3>Corps du mémoire — les dix rubriques du canevas</h3>
+<table>
+<tr><th>Rubrique</th><th>Section</th><th>Contenu</th></tr>
+<tr><td>1</td><td>Contexte</td><td>Poids économique des PME en zone UEMOA, défis de la filière béton, révolution numérique africaine, cadre réglementaire et politique</td></tr>
+<tr><td>2</td><td>Problématique et questions de recherche</td><td>Triple contradiction, construction et énoncé de la problématique, question principale et six sous-questions</td></tr>
+<tr><td>3</td><td>Objectifs de la recherche</td><td>Objectif général, six objectifs spécifiques, livrables attendus et articulation avec les hypothèses</td></tr>
+<tr><td>4</td><td>Intérêt de la recherche</td><td>Intérêts académique, professionnel et sociétal ; contributions originales</td></tr>
+<tr><td>5</td><td>Revue de la littérature</td><td>Six axes : transformation digitale des PME, ERP, FinTech et inclusion, intelligence artificielle, cybersécurité, valorisation SaaS</td></tr>
+<tr><td>6</td><td>Hypothèses et modèle d'analyse</td><td>Six hypothèses testables (H1 à H6) et modèle conceptuel en quatre niveaux</td></tr>
+<tr><td>7</td><td>Méthodologie</td><td>Type d'investigation, échantillonnage, variables et mesures, instruments de collecte, techniques d'analyse, validité, éthique, calendrier</td></tr>
+<tr><td>8</td><td>Résultats obtenus et discussion</td><td>Validation des six hypothèses, sécurité de la plateforme, confrontation aux cadres théoriques, synthèse et recommandations</td></tr>
+<tr><td>9</td><td>Limites de la recherche</td><td>Limites méthodologiques, empiriques et contextuelles, analyse critique de la plateforme, limites théoriques, pistes futures</td></tr>
+<tr><td>10</td><td>Perspectives et plan du mémoire</td><td>Feuille de route commerciale, plan du document, évolutions techniques prioritaires, extension régionale UEMOA</td></tr>
+</table>
+
+<h3>Parties finales</h3>
+<ul>
+<li>Conclusion générale : rappel de la problématique, bilan de validation des hypothèses, synthèse des apports, contributions originales et perspectives</li>
+<li>Bibliographie : ouvrages, articles scientifiques, rapports institutionnels et professionnels, sources sénégalaises, documentation technique</li>
+<li>Annexes A à G : grille d'entretien, architecture technique, routes API, modules frontend, stack technologique, données de production, lexique</li>
 </ul>
 
 <h2>10.3 Évolutions techniques prioritaires</h2>
@@ -1712,10 +1703,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>10.5 Conclusion partielle</h2>
 <p>Les perspectives présentées dans cette section opérationnalisent les conclusions de recherche en une feuille de route concrète, mesurable et réaliste. La validation des hypothèses H1 à H5 fournit les fondements empiriques de cette trajectoire. L'horizon de 5 ans (2026–2030) et les étapes chiffrées permettent un pilotage rigoureux et une communication transparente avec les partenaires financiers et institutionnels. La conclusion générale qui suit synthétise l'ensemble de la démarche.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== CONCLUSION GÉNÉRALE ========== -->
-<h1>Conclusion Générale</h1>
+<h1 class="pb">Conclusion Générale</h1>
 
 <p>Au terme de ce projet de mémoire, plusieurs enseignements peuvent être tirés et plusieurs perspectives ouvertes. Cette conclusion générale rappelle la problématique centrale, synthétise les apports principaux, met en lumière les contributions originales et trace les perspectives futures pour la recherche et l'action.</p>
 
@@ -1737,7 +1726,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <p>Ce bilan confirme que cinq hypothèses sur six sont pleinement validées à ce stade de la recherche. H6 est partiellement validée — ses conditions sont documentées et cohérentes avec la littérature, mais leur vérification empirique complète nécessite un suivi longitudinal sur 2 à 5 ans.</p>
 
 <h2>Synthèse des apports</h2>
-<p>Sur les plans <strong>contextuel et empirique</strong>, le mémoire documente avec précision la situation des PME bétonnières au Sénégal et leurs besoins de digitalisation. Sur les plans <strong>technologique et conceptuel</strong>, il propose un modèle d'écosystème financier digital intégré combinant cinq dimensions complémentaires (ERP, comptabilité SYSCOHADA, e-commerce, paiements mobiles, IA), illustré par le cas pratique de la plateforme Allo Béton. Sur le plan <strong>économique</strong>, il développe une méthodologie originale de valorisation par triangulation (coûts de remplacement, comparables marché, multiples SaaS) appliquée au contexte africain. Sur le plan <strong>stratégique</strong>, il formule des recommandations actionnables pour les dirigeants de PME, les entrepreneurs technologiques et les pouvoirs publics.</p>
+<p>Sur les plans <strong>contextuel et empirique</strong>, le mémoire documente avec précision la situation des PME bétonnières au Sénégal et leurs besoins de digitalisation. Sur les plans <strong>technologique et conceptuel</strong>, il propose un modèle d'écosystème financier digital intégré combinant six dimensions complémentaires (ERP, comptabilité SYSCOHADA, e-commerce, paiements mobiles, intelligence artificielle et cybersécurité), illustré par le cas pratique de la plateforme Allo Béton. Sur le plan <strong>économique</strong>, il développe une méthodologie originale de valorisation par triangulation (coûts de remplacement, comparables marché, multiples SaaS) appliquée au contexte africain. Sur le plan <strong>stratégique</strong>, il formule des recommandations actionnables pour les dirigeants de PME, les entrepreneurs technologiques et les pouvoirs publics.</p>
 
 <h2>Contributions originales</h2>
 <p>Quatre contributions originales émergent de ce travail. <strong>Première contribution</strong> : la mise en évidence d'une <em>nouvelle voie économique</em> pour les ERP en Afrique — le sur-mesure abordable assisté par IA — qui rebat les cartes entre solutions internationales coûteuses et bricolage Excel. <strong>Deuxième contribution</strong> : un <em>modèle conceptuel d'écosystème financier digital intégré</em> articulant six dimensions complémentaires (ERP, e-commerce, IA, paiements mobiles, comptabilité OHADA, cybersécurité). <strong>Troisième contribution</strong> : une <em>méthodologie de valorisation</em> adaptée aux startups SaaS africaines, croisant trois approches complémentaires. <strong>Quatrième contribution</strong> : un <em>cas d'étude documenté</em> (Allo Béton) qui peut servir de référence à de futurs projets similaires.</p>
@@ -1753,19 +1742,18 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>Mot de la fin</h2>
 <p>« On dit souvent que l'Afrique est en retard. Elle ne l'est pas : elle est en avance d'un chapitre que les autres n'ont pas encore lu. » Cette phrase, paraphrasée d'<em>Felwine Sarr</em> dans <em>Afrotopia</em>, résume l'esprit de cette recherche. Le défi n'est pas de rattraper, mais d'inventer. Les PME africaines, équipées d'écosystèmes financiers digitaux conçus pour leurs réalités, peuvent devenir le laboratoire mondial d'un capitalisme inclusif, frugal et créatif. Allo Béton et les plateformes qui suivront en sont les pierres fondatrices.</p>
 
-<div class="page-break"></div>
-
 <!-- ========== BIBLIOGRAPHIE ========== -->
-<h1>Bibliographie</h1>
+<h1 class="pb">Bibliographie</h1>
 
 <h2>Ouvrages</h2>
 <ul>
 <li>Bardin, L. (2013). <em>L'analyse de contenu</em>. Presses Universitaires de France, Paris.</li>
 <li>Creswell, J. W., & Plano Clark, V. L. (2017). <em>Designing and Conducting Mixed Methods Research</em> (3rd ed.). SAGE Publications.</li>
-<li>Damodaran, A. (2018). <em>Valuation: Measuring and Managing the Value of Companies</em> (7th ed.). Wiley.</li>
+<li>Damodaran, A. (2018). <em>The Dark Side of Valuation: Valuing Young, Distressed, and Complex Businesses</em> (3e éd.). Pearson.</li>
 <li>Goodfellow, I., Bengio, Y., & Courville, A. (2016). <em>Deep Learning</em>. MIT Press.</li>
 <li>Patton, M. Q. (2002). <em>Qualitative Research and Evaluation Methods</em> (3rd ed.). SAGE Publications.</li>
 <li>Sarr, F. (2016). <em>Afrotopia</em>. Éditions Philippe Rey.</li>
+<li>Stallings, W. (2022). <em>Cryptography and Network Security: Principles and Practice</em> (8e éd.). Pearson.</li>
 <li>Westerman, G., Bonnet, D., & McAfee, A. (2014). <em>Leading Digital: Turning Technology into Business Transformation</em>. Harvard Business Review Press.</li>
 <li>Yin, R. K. (2018). <em>Case Study Research and Applications: Design and Methods</em> (6th ed.). SAGE Publications.</li>
 </ul>
@@ -1773,6 +1761,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <h2>Articles scientifiques</h2>
 <ul>
 <li>Arzeni, S., & Mawalala, R. (2020). « Mobile Money Regulations and Consumer Protection in Sub-Saharan Africa ». <em>OECD Development Policy Papers</em>, n° 32. OCDE, Paris.</li>
+<li>Cobla, G. M., & Osei-Assibey, E. (2018). « Mobile money adoption and spending behaviour: The case of students in Ghana ». <em>International Journal of Social Economics</em>, 45(1), 29–42. DOI : 10.1108/IJSE-11-2016-0302.</li>
 <li>Beck, T., Senbet, L., & Simbanegavi, W. (2015). « Financial Inclusion and Innovation in Africa: An Overview ». <em>Journal of African Economies</em>, 24(suppl_1), i3-i11.</li>
 <li>Bender, E. M., Gebru, T., McMillan-Major, A., & Shmitchell, S. (2021). « On the Dangers of Stochastic Parrots: Can Language Models Be Too Big? ». <em>Proceedings of FAccT '21</em>, 610-623.</li>
 <li>Bouwman, H., Nikou, S., Molina-Castillo, F. J., & de Reuver, M. (2019). « The impact of digitalization on business models ». <em>Digital Policy, Regulation and Governance</em>, 20(2), 105-124.</li>
@@ -1811,6 +1800,10 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li>Banque Mondiale (2022). <em>Mobile Money in West Africa: Trends and Outlook</em>. Washington D.C.</li>
 <li>BCEAO (2023). <em>Rapport sur les services financiers numériques dans l'UEMOA</em>. Dakar.</li>
 <li>Briter Bridges (2024). <em>Africa Investment Report 2024</em>. Londres.</li>
+<li>Conseil de Stabilité Financière — FSB (2017). <em>Financial Stability Implications from FinTech</em>. Bâle.</li>
+<li>ENISA (2024). <em>Threat Landscape 2024</em>. Agence de l'Union européenne pour la cybersécurité, Athènes.</li>
+<li>GSMA (2022). <em>The State of the Industry Report on Mobile Money 2022</em>. Londres.</li>
+<li>Interpol (2023). <em>African Cyberthreat Assessment Report 2023</em>. Lyon.</li>
 <li>Deloitte (2023). <em>BTP en Afrique : tendances et perspectives</em>. Paris.</li>
 <li>Gartner (2024). <em>Magic Quadrant for Cloud ERP for Service-Centric Enterprises</em>. Stamford.</li>
 <li>GSMA (2024). <em>The State of the Industry Report on Mobile Money 2024</em>. Londres.</li>
@@ -1846,10 +1839,8 @@ de l'Afrique et œuvrent pour son émancipation économique.
 <li>WEBGRAM (2025). <em>SmartERP — Présentation produit</em>. https://www.agencewebgram.com.</li>
 </ul>
 
-<div class="page-break"></div>
-
 <!-- ========== ANNEXES ========== -->
-<h1>Annexes</h1>
+<h1 class="pb">Annexes</h1>
 
 <h2>Annexe A — Grille d'entretien semi-directif</h2>
 
@@ -1930,7 +1921,7 @@ de l'Afrique et œuvrent pour son émancipation économique.
 </table>
 
 <h2>Annexe F — Données de production (anonymisées et agrégées)</h2>
-<p>Les données spécifiques de production sont disponibles, sous forme anonymisée et agrégée, sur demande motivée auprès de l'auteur du mémoire. Elles couvrent : volumes de transactions, profils de paiement, taux d'usage des modules, performance des prédictions IA, retours utilisateurs (NPS).</p>
+<p>Les données spécifiques de production sont disponibles, sous forme anonymisée et agrégée, sur demande motivée auprès de l'auteure du mémoire. Elles couvrent : volumes de transactions, profils de paiement, taux d'usage des modules, performance des prédictions IA, retours utilisateurs (NPS).</p>
 
 <h2>Annexe G — Lexique technique</h2>
 <table>
@@ -1965,7 +1956,7 @@ function telechargerPDF() {
 
   var opt = {
     margin: [18, 15, 18, 20],
-    filename: 'Memoire_MMTD_AllobBeton_FatouMayoroFall.pdf',
+    filename: 'Memoire_MMTD_AlloBeton_FatouMayoroFall.pdf',
     image: { type: 'jpeg', quality: 0.97 },
     html2canvas: {
       scale: 2,
