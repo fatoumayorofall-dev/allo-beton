@@ -62,8 +62,9 @@ const VALUES = [
 ];
 
 const MILESTONES = [
-  { year: '2024', title: 'Naissance de l\'idée', description: 'Constat du retard digital du secteur BTP au Sénégal.' },
-  { year: '2025', title: 'Création d\'ICOPS SUARL', description: 'Structuration juridique et premiers prototypes.' },
+  { year: '2022', title: 'Création d\'ICOPS SUARL', description: 'Immatriculation au Registre du Commerce de Dakar.' },
+  { year: '2024', title: 'Autorisation de carrière', description: 'Carrière d\'argile à Ouonck, Ziguinchor : 9 hectares.' },
+  { year: '2025', title: 'Extension de la flotte', description: 'Quatre camions bennes de 50 tonnes.' },
   { year: '2026', title: 'Lancement Allô Béton', description: 'Plateforme e-commerce + IA déployée sur allobeton.sn.' },
   { year: '2027', title: 'Expansion régionale', description: 'Couverture Thiès, Saint-Louis et application mobile native.' },
   { year: '2028', title: 'Afrique de l\'Ouest', description: 'Réplication au Mali, Côte d\'Ivoire, Guinée.' },
@@ -157,7 +158,7 @@ export const AboutPage: React.FC<Props> = ({ onNavigate }) => {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Depuis</p>
-                  <p className="text-2xl font-black text-slate-900">2024</p>
+                  <p className="text-2xl font-black text-slate-900">2022</p>
                 </div>
               </div>
               <p className="text-sm text-slate-600">
