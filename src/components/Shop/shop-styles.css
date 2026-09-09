@@ -3,8 +3,6 @@
    Premium typography, glass morphism, mesh gradients, animations
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@500;600;700;800;900&display=swap');
-
 /* ------- Scope tous les enfants de .shop-root ------- */
 .shop-root {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
