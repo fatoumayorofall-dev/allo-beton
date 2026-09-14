@@ -158,10 +158,16 @@ const clients = [
   { name: 'CRSG', fullName: 'China Railway Seventh Group', prestations: 'Fourniture de gravier', sector: 'Ferroviaire' },
   { name: 'CERAMICS CO. LTD', fullName: 'Ceramics Company Limited', prestations: 'Transport argile noir', sector: 'Céramique' },
   { name: 'KOM KOM PLUS', fullName: 'Senegal Kom Kom Plus', prestations: 'Mise à disposition de matériels', sector: 'Services' },
-  { name: 'MEDY INDUSTIES', fullName: 'Medy Industies', prestations: 'Transport denrées alimentaires', sector: 'Agro-industrie' },
-  { name: 'EREM SARL', fullName: 'Erem SARL', prestations: 'Transport de gravier concassé et sable', sector: 'BTP' },
-  { name: 'MC2T', fullName: 'MC2T', prestations: 'Transport de gravier concassé et sable', sector: 'BTP' },
   { name: 'KEDA SN CERAMICS', fullName: 'Keda SN Ceramics', prestations: 'Transport de gravier concassé et sable', sector: 'Céramique' },
+];
+
+// Sociétés financées par ICOPS — indépendantes les unes des autres, ce ne sont pas des clients.
+const societesGroupe = [
+  { name: 'M.I.B.S.', fullName: 'Maintenance Industrielle · Bâtiment · Services', activite: 'Exploitation technique de la carrière de Mboro', flux: 'Conduite de la ligne de concassage et des engins', sector: 'Technique' },
+  { name: 'MC2T', fullName: 'MC2T', activite: 'Carrières de Kédougou et de Toglou, transport et location de camions', flux: 'Transport de gravier concassé et sable', sector: 'Carrières · Transport' },
+  { name: 'EREM SARL', fullName: 'Erem SARL', activite: 'Recherche et exploitation minière, repérage des zones exploitables', flux: 'Transport de gravier concassé et sable', sector: 'Mines' },
+  { name: 'EMD', fullName: 'EMD', activite: "Réponse aux appels d'offres publics : mobilier, fournitures, équipements", flux: 'Marchés publics', sector: 'Marchés publics' },
+  { name: 'MEDY INDUSTIES', fullName: 'Medy Industies', activite: 'Fourniture de denrées alimentaires aux établissements pénitentiaires', flux: 'Transport denrées alimentaires', sector: 'Agro-industrie' },
 ];
 
 const fournisseurs = [
@@ -346,6 +352,17 @@ const exportProfilePDF = async () => {
         )
         .join('')}</tbody>
     </table>
+    <h2 style="font-size:16px;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin:24px 0 16px;">Sociétés financées par ICOPS (${societesGroupe.length})</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px;">
+      <thead><tr style="background:#f8fafc;"><th style="text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#475569;font-weight:600;">Société</th><th style="text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#475569;font-weight:600;">Activité</th><th style="text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#475569;font-weight:600;">Domaine</th></tr></thead>
+      <tbody>${societesGroupe
+        .map(
+          (g) =>
+            `<tr><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;font-weight:600;color:#1e293b;">${g.name}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;color:#64748b;">${g.activite}</td><td style="padding:8px 12px;border-bottom:1px solid #f1f5f9;"><span style="background:#eef2ff;color:#4338ca;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">${g.sector}</span></td></tr>`
+        )
+        .join('')}</tbody>
+    </table>
+    <p style="font-size:11px;color:#64748b;margin:-12px 0 24px;font-style:italic;">Sociétés indépendantes les unes des autres, toutes financées par ICOPS. Elles ne figurent pas au portefeuille clients.</p>
     <h2 style="font-size:16px;color:#1e293b;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin:24px 0 16px;">Fournisseurs (${fournisseurs.length})</h2>
     <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:24px;">
       <thead><tr style="background:#f8fafc;"><th style="text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#475569;font-weight:600;">Raison sociale</th><th style="text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#475569;font-weight:600;">Produits/Services</th><th style="text-align:left;padding:8px 12px;border-bottom:2px solid #e2e8f0;color:#475569;font-weight:600;">Paiement</th></tr></thead>
@@ -394,6 +411,7 @@ export const CompanyProfile: React.FC = () => {
     equipment: true,
     personnel: true,
     clients: true,
+    groupe: true,
     fournisseurs: true,
     legal: true,
     certifications: true,
@@ -501,7 +519,7 @@ export const CompanyProfile: React.FC = () => {
               {
                 label: 'Clients actifs',
                 value: clients.length,
-                sub: '+3 nouveaux en 2024',
+                sub: 'Hors sociétés du groupe',
                 icon: Users,
                 bg: 'bg-orange-50',
                 iconBg: 'bg-orange-100',
@@ -1006,6 +1024,63 @@ export const CompanyProfile: React.FC = () => {
             </div>
             <p className="text-xs text-gray-400 mt-3 italic">
               Règlements au comptant ou selon les dispositions contractuelles (max 30 jours).
+            </p>
+          </CollapsibleSection>
+
+          {/* Sociétés du groupe */}
+          <CollapsibleSection
+            title={`Sociétés financées par ICOPS (${societesGroupe.length})`}
+            icon={<Building2 className="w-5 h-5" />}
+            expanded={expandedSections.groupe}
+            onToggle={() => toggleSection('groupe')}
+            headerColor="bg-gradient-to-r from-indigo-50 to-sky-50"
+          >
+            <div className="overflow-x-auto rounded-xl border border-gray-200">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gradient-to-r from-gray-50 to-indigo-50/30">
+                    <th className="text-left py-3.5 px-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Société
+                    </th>
+                    <th className="text-left py-3.5 px-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Nom complet
+                    </th>
+                    <th className="text-left py-3.5 px-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Activité
+                    </th>
+                    <th className="text-left py-3.5 px-5 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      Domaine
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {societesGroupe.map((g, idx) => (
+                    <tr key={idx} className="border-t border-gray-100 hover:bg-indigo-50/30 transition-colors">
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 bg-gradient-to-br from-indigo-100 to-sky-100 rounded-lg flex items-center justify-center text-xs font-bold text-indigo-600">
+                            {g.name.slice(0, 2)}
+                          </div>
+                          <span className="font-bold text-gray-900 text-sm">{g.name}</span>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-5 text-xs text-gray-500 max-w-[200px] truncate">
+                        {g.fullName}
+                      </td>
+                      <td className="py-3.5 px-5 text-sm text-gray-600">{g.activite}</td>
+                      <td className="py-3.5 px-5">
+                        <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg">
+                          {g.sector}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-gray-400 mt-3 italic">
+              Sociétés indépendantes les unes des autres, toutes financées par ICOPS. Elles ne
+              figurent pas au portefeuille clients.
             </p>
           </CollapsibleSection>
 
