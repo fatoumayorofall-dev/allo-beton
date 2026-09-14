@@ -119,7 +119,7 @@ export const AboutPage: React.FC<Props> = ({ onNavigate }) => {
               Démocratiser l'accès aux matériaux BTP de qualité
             </h2>
             <p className="text-slate-600 text-base leading-relaxed mb-4">
-              Le secteur du BTP représente <strong>plus de 6% du PIB sénégalais</strong> mais souffre encore
+              Le secteur du BTP représente <strong>environ 4,5% du PIB sénégalais</strong> (ANSD) mais souffre encore
               d'une grande informalité. Les petits entrepreneurs perdent du temps à courir entre les dépôts,
               les prix sont opaques, et les femmes sont sous-représentées.
             </p>
