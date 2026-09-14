@@ -1220,7 +1220,7 @@ export const ProductCatalogPro: React.FC<Props> = ({
             )}
             {!hasMore && products.length > 0 && (
               <div className="text-center py-8">
-                <p className="text-sm text-slate-400 font-medium">✔ Tous les produits sont affich\u00e9s ({products.length})</p>
+                <p className="text-sm text-slate-400 font-medium">✔ Tous les produits sont affichés ({products.length})</p>
               </div>
             )}
           </div>
@@ -1292,7 +1292,7 @@ export const ProductCatalogPro: React.FC<Props> = ({
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    <th className="text-left py-3 px-2 text-slate-500 font-medium">Crit\u00e8re</th>
+                    <th className="text-left py-3 px-2 text-slate-500 font-medium">Critère</th>
                     {compareList.map(cp => (
                       <th key={cp.id} className="py-3 px-2 text-center">
                         <div className="w-20 h-20 rounded-lg overflow-hidden mx-auto mb-2 bg-slate-100">

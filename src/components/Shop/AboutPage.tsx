@@ -62,8 +62,9 @@ const VALUES = [
 ];
 
 const MILESTONES = [
-  { year: '2024', title: 'Naissance de l\'idée', description: 'Constat du retard digital du secteur BTP au Sénégal.' },
-  { year: '2025', title: 'Création d\'ICOPS SUARL', description: 'Structuration juridique et premiers prototypes.' },
+  { year: '2022', title: 'Création d\'ICOPS SUARL', description: 'Immatriculation au Registre du Commerce de Dakar.' },
+  { year: '2024', title: 'Autorisation de carrière', description: 'Carrière d\'argile à Ouonck, Ziguinchor : 9 hectares.' },
+  { year: '2025', title: 'Extension de la flotte', description: 'Quatre camions bennes de 50 tonnes.' },
   { year: '2026', title: 'Lancement Allô Béton', description: 'Plateforme e-commerce + IA déployée sur allobeton.sn.' },
   { year: '2027', title: 'Expansion régionale', description: 'Couverture Thiès, Saint-Louis et application mobile native.' },
   { year: '2028', title: 'Afrique de l\'Ouest', description: 'Réplication au Mali, Côte d\'Ivoire, Guinée.' },
@@ -118,7 +119,7 @@ export const AboutPage: React.FC<Props> = ({ onNavigate }) => {
               Démocratiser l'accès aux matériaux BTP de qualité
             </h2>
             <p className="text-slate-600 text-base leading-relaxed mb-4">
-              Le secteur du BTP représente <strong>plus de 6% du PIB sénégalais</strong> mais souffre encore
+              Le secteur du BTP représente <strong>environ 4,5% du PIB sénégalais</strong> (ANSD) mais souffre encore
               d'une grande informalité. Les petits entrepreneurs perdent du temps à courir entre les dépôts,
               les prix sont opaques, et les femmes sont sous-représentées.
             </p>
@@ -157,7 +158,7 @@ export const AboutPage: React.FC<Props> = ({ onNavigate }) => {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Depuis</p>
-                  <p className="text-2xl font-black text-slate-900">2024</p>
+                  <p className="text-2xl font-black text-slate-900">2022</p>
                 </div>
               </div>
               <p className="text-sm text-slate-600">
@@ -198,7 +199,7 @@ export const AboutPage: React.FC<Props> = ({ onNavigate }) => {
                 <span className="text-orange-700 text-xs font-bold uppercase tracking-wide">Mot du fondateur</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2">
-                Alioune CISSE
+                Alioune CISSÉ
               </h2>
               <p className="text-orange-700 font-semibold text-sm mb-6">Fondateur & Gérant · ICOPS SUARL</p>
               <blockquote className="text-slate-700 text-base leading-relaxed border-l-4 border-orange-500 pl-6 italic mb-6">

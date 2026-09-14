@@ -99,7 +99,7 @@ const INTENTS: { id: string; pat: RegExp[]; pri: number }[] = [
   { id: 'norms', pat: [/norme|reglement|nf|iso|certification/], pri: 7 },
   { id: 'joke', pat: [/blague|fais rire|drole/], pri: 7 },
   { id: 'language', pat: [/tu parles|wolof|francais|english|langue/], pri: 7 },
-  // === Nouveaux corps de m\u00e9tier ===
+  // === Nouveaux corps de métier ===
   { id: 'toiture', pat: [/toit|toiture|charpente|tuile|ardoise|tole|bac acier/], pri: 8 },
   { id: 'plomberie', pat: [/plomb|tuyau|robinet|pvc|wc|salle de bain|douche|baignoire|chauffe.eau|fosse septique/], pri: 8 },
   { id: 'electricite', pat: [/electric|cable|prise|interrupteur|tableau electrique|disjoncteur|gaine|fil/], pri: 8 },

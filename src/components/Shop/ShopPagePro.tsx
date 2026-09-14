@@ -744,7 +744,7 @@ const ShopPageProContent: React.FC = () => {
           <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
             <div className="flex items-center gap-2 mb-5">
               <Eye className="w-5 h-5 text-orange-600" />
-              <h3 className="text-lg font-black text-slate-900">R\u00e9cemment consult\u00e9s</h3>
+              <h3 className="text-lg font-black text-slate-900">Récemment consultés</h3>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
               {recentlyViewed.slice(0, 8).map((p: any) => (
@@ -782,8 +782,8 @@ const ShopPageProContent: React.FC = () => {
             </button>
             <div className="bg-gradient-to-br from-orange-600 to-orange-700 p-8 text-center">
               <Gift className="w-12 h-12 text-white mx-auto mb-3" />
-              <h3 className="text-2xl font-black text-white mb-1">Bienvenue ! \ud83c\udf89</h3>
-              <p className="text-slate-100 text-sm">Profitez de -10% sur votre premi\u00e8re commande</p>
+              <h3 className="text-2xl font-black text-white mb-1">Bienvenue ! 🎉</h3>
+              <p className="text-slate-100 text-sm">Profitez de -10% sur votre première commande</p>
             </div>
             <div className="p-6">
               <div className="bg-slate-50 border-2 border-dashed border-orange-300 rounded-xl p-4 text-center mb-5">
@@ -803,7 +803,7 @@ const ShopPageProContent: React.FC = () => {
                   OK
                 </button>
               </div>
-              {welcomeClaimed && <p className="text-emerald-600 text-xs font-bold mt-3 text-center">\u2705 Code envoy\u00e9 ! Utilisez BIENVENUE10 au checkout</p>}
+              {welcomeClaimed && <p className="text-emerald-600 text-xs font-bold mt-3 text-center">✅ Code envoyé ! Utilisez BIENVENUE10 au checkout</p>}
               <p className="text-[10px] text-slate-400 mt-3 text-center">Offre valable 7 jours. Non cumulable.</p>
             </div>
           </div>
@@ -834,7 +834,7 @@ const ShopPageProContent: React.FC = () => {
                   <p className="text-slate-400 text-sm font-medium">Votre panier est vide</p>
                   <button onClick={() => { setShowMiniCart(false); handleNavigate('catalog'); }}
                     className="mt-4 px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-sm font-bold rounded-xl transition-colors">
-                    D\u00e9couvrir nos produits
+                    Découvrir nos produits
                   </button>
                 </div>
               ) : (
