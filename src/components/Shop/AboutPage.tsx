@@ -199,7 +199,7 @@ export const AboutPage: React.FC<Props> = ({ onNavigate }) => {
                 <span className="text-orange-700 text-xs font-bold uppercase tracking-wide">Mot du fondateur</span>
               </div>
               <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-2">
-                Alioune CISSE
+                Alioune CISSÉ
               </h2>
               <p className="text-orange-700 font-semibold text-sm mb-6">Fondateur & Gérant · ICOPS SUARL</p>
               <blockquote className="text-slate-700 text-base leading-relaxed border-l-4 border-orange-500 pl-6 italic mb-6">

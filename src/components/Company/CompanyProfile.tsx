@@ -48,16 +48,17 @@ type TabKey = 'overview' | 'activities' | 'resources' | 'network' | 'legal';
 const companyInfo = {
   name: 'ICOPS SUARL',
   fullName: 'Intermédiaire Commercial et Prestations de Services',
-  founder: 'Alioune CISSE',
-  founderTitle: 'Fondateur & Gérant',
+  founder: 'Alioune CISSÉ',
+  founderTitle: 'Fondateur & Directeur Général',
   founderDescription:
-    "Opérateur économique sénégalais, diplômé du Diplôme Supérieur d'Études Comptable et de Gestion de l'École Supérieure Polytechnique de Dakar (2010). Parcours de près d'une décennie en banque (2011-2021), puis Directeur Général à MEDY INDUSTIES.",
+    "Opérateur économique sénégalais, diplômé du Diplôme Supérieur d'Études Comptable et de Gestion de l'École Supérieure Polytechnique de Dakar (2010). Parcours de près d'une décennie en banque (2011-2021), puis Directeur Général à MEDY INDUSTRIE.",
   legalForm: 'Société Unipersonnelle à Responsabilité Limitée (SUARL)',
   capital: '1 000 000 FCFA',
   registrationNumber: 'SN.DKR.2022. B.765',
   registrationType: 'Registre du Commerce et du Crédit Mobilier de Dakar',
   yearFounded: 2022,
-  headquarters: 'Cité Colgate, Rufisque',
+  headquarters: 'Immeuble Bilguiss, VDN Station Elton, 1er étage, Dakar',
+  secondHeadquarters: 'ZAC Mbao, rond-point AXA, Dakar',
   country: 'Sénégal',
   terrain: 'Terrain de 1 000 m² à Sindia (aire de stationnement camions)',
   phone: '+221 77 000 00 00',
@@ -79,7 +80,7 @@ const companyInfo = {
 const timeline = [
   { year: '2010', event: 'Diplôme DSECG — ESP Dakar', type: 'formation' as const },
   { year: '2011', event: 'Début de carrière bancaire', type: 'carriere' as const },
-  { year: '2021', event: 'DG chez MEDY INDUSTIES', type: 'carriere' as const },
+  { year: '2021', event: 'DG chez MEDY INDUSTRIE', type: 'carriere' as const },
   { year: '2022', event: "Création d'ICOPS SUARL", type: 'milestone' as const },
   { year: '2023', event: 'Premiers contrats majeurs (ZCCC, AKWABA)', type: 'business' as const },
   { year: '2024', event: "Autorisation carrière d'argile — Ouonck", type: 'milestone' as const },
@@ -167,7 +168,7 @@ const societesGroupe = [
   { name: 'MC2T', fullName: 'MC2T', activite: 'Carrières de Kédougou et de Toglou, transport et location de camions', flux: 'Transport de gravier concassé et sable', sector: 'Carrières · Transport' },
   { name: 'EREM SARL', fullName: 'Erem SARL', activite: 'Recherche et exploitation minière, repérage des zones exploitables', flux: 'Transport de gravier concassé et sable', sector: 'Mines' },
   { name: 'EMD', fullName: 'EMD', activite: "Réponse aux appels d'offres publics : mobilier, fournitures, équipements", flux: 'Marchés publics', sector: 'Marchés publics' },
-  { name: 'MEDY INDUSTIES', fullName: 'Medy Industies', activite: 'Fourniture de denrées alimentaires aux établissements pénitentiaires', flux: 'Transport denrées alimentaires', sector: 'Agro-industrie' },
+  { name: 'MEDY INDUSTRIE', fullName: 'Medy Industrie', activite: 'Fourniture de denrées alimentaires aux établissements pénitentiaires', flux: 'Transport denrées alimentaires', sector: 'Agro-industrie' },
 ];
 
 const fournisseurs = [
@@ -295,6 +296,7 @@ const exportProfilePDF = async () => {
     <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
       ${[
         { l: 'Siège social', v: `${companyInfo.headquarters}, ${companyInfo.country}` },
+        { l: 'Second siège', v: `${companyInfo.secondHeadquarters}, ${companyInfo.country}` },
         { l: 'Fondée en', v: String(companyInfo.yearFounded) },
         { l: 'Capital', v: companyInfo.capital },
         { l: 'RC', v: companyInfo.registrationNumber },
