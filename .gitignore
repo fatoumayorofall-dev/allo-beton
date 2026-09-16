@@ -43,3 +43,11 @@ backend/uploads/*
 
 # Local Netlify folder
 .netlify
+
+# Mémoire : document privé et confidentiel, ne doit jamais être versionné
+# ni publié par GitHub Pages (le site est servi depuis docs/).
+docs/
+*.docx
+*.odt
+*Memoire*
+*emoire*.pdf
