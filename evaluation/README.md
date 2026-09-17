@@ -52,3 +52,42 @@ autorise des constats descriptifs, non des inférences.
 `indicateurs-exploitation.cjs` n'extrait que des agrégations. Aucune requête ne
 renvoie de donnée nominative, conformément au § 7.7 du mémoire et à la loi
 sénégalaise n° 2008-12 sur la protection des données à caractère personnel.
+
+## Vérifier le script d'indicateurs sans toucher à la base de production
+
+`indicateurs-exploitation.cjs` est le seul script qui interroge une vraie base.
+Pour le valider sans risque, on peut monter une base locale à partir des
+migrations du projet :
+
+```bash
+# 1. base vide
+mysql -e "CREATE DATABASE allo_beton CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 2. schéma, à partir des migrations du dépôt
+cd backend
+node scripts/migrate.js
+node scripts/create_all_ecom_tables.js
+node scripts/migrate_ecom_customers.js
+node scripts/migrate_tracking.js
+node scripts/migrate_orders_schema.js
+
+# 3. le script, pointé sur cette base via backend/.env
+cd ..
+node evaluation/indicateurs-exploitation.cjs
+```
+
+Le script relève d'abord le schéma présent : un indicateur dont la table manque
+est déclaré indisponible, il ne fait pas échouer les autres.
+
+## Deux pièges du schéma, à connaître avant d'interpréter les résultats
+
+**La table `sales` ne porte pas de colonne `paid_amount`.** Le montant réglé se
+calcule à partir des paiements rattachés à la vente, ce que fait l'indicateur
+`encours_client`. Toute requête qui supposerait cette colonne échouerait.
+
+**Deux tables de paiement coexistent, et une seule ventile par opérateur.**
+`payments.payment_method` (côté ERP) est une énumération dont `mobile_money` est
+une valeur unique : elle ne distingue ni Wave, ni Orange Money, ni Free Money.
+La ventilation par opérateur se lit dans `ecom_payments.method`, côté boutique.
+Le § 8.3 du mémoire doit donc prendre ses chiffres par opérateur dans la seconde
+table, et ses délais de recouvrement dans la première.
