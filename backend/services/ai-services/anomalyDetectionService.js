@@ -8,14 +8,23 @@ async function detectAnomalies(options = {}) {
   try {
     const days = options.days || 30;
 
-    const [salesAnomalies, cashAnomalies, weightAnomalies, patternAnomalies] = await Promise.all([
-      detectSalesAnomalies(days),
-      detectCashAnomalies(days),
-      detectWeightAnomalies(days),
-      detectPatternAnomalies(days)
-    ]);
-
-    const all = [...salesAnomalies, ...cashAnomalies, ...weightAnomalies, ...patternAnomalies];
+    // Chaque détecteur est isolé : l'échec de l'un ne doit pas priver l'utilisateur des autres.
+    const detecteurs = [
+      ['ventes',   detectSalesAnomalies],
+      ['caisse',   detectCashAnomalies],
+      ['tonnage',  detectWeightAnomalies],
+      ['patterns', detectPatternAnomalies]
+    ];
+    const issues = await Promise.allSettled(detecteurs.map(([, fn]) => fn(days)));
+    const detecteursEnEchec = [];
+    const all = [];
+    issues.forEach((r, i) => {
+      if (r.status === 'fulfilled') all.push(...r.value);
+      else {
+        detecteursEnEchec.push(detecteurs[i][0]);
+        console.error(`Détecteur « ${detecteurs[i][0]} » en échec :`, r.reason?.message || r.reason);
+      }
+    });
     all.sort((a, b) => b.severity - a.severity);
 
     const criticalCount = all.filter(a => a.severity >= 8).length;
@@ -31,6 +40,8 @@ async function detectAnomalies(options = {}) {
       riskScore,
       riskLevel: riskScore >= 70 ? 'critique' : riskScore >= 40 ? 'élevé' : riskScore >= 15 ? 'modéré' : 'faible',
       summary: { total: all.length, critical: criticalCount, warning: warningCount, info: infoCount },
+      detecteursEnEchec,
+      partiel: detecteursEnEchec.length > 0,
       anomalies: all.slice(0, 20),
       recommendations: generateRecommendations(all)
     };
@@ -226,8 +237,9 @@ async function detectPatternAnomalies(days) {
                AND sale_date < DATE_SUB(CURDATE(), INTERVAL ? DAY) THEN total_amount END) as avg_previous
     FROM sales WHERE status != 'cancelled'`, [days, days * 2, days]);
 
-  if (avgCheck[0].avg_previous && avgCheck[0].avg_recent) {
-    const drop = ((avgCheck[0].avg_previous - avgCheck[0].avg_recent) / avgCheck[0].avg_previous) * 100;
+  const moyennes = avgCheck[0] || {};
+  if (moyennes.avg_previous && moyennes.avg_recent) {
+    const drop = ((moyennes.avg_previous - moyennes.avg_recent) / moyennes.avg_previous) * 100;
     if (drop > 15) {
       anomalies.push({
         type: 'avg_ticket_drop',
@@ -235,7 +247,7 @@ async function detectPatternAnomalies(days) {
         severity: 7,
         icon: '📊',
         title: 'Baisse du panier moyen',
-        description: `Le panier moyen a baissé de ${drop.toFixed(0)}% : ${fmt(avgCheck[0].avg_recent)} FCFA vs ${fmt(avgCheck[0].avg_previous)} FCFA (période précédente).`,
+        description: `Le panier moyen a baissé de ${drop.toFixed(0)}% : ${fmt(moyennes.avg_recent)} FCFA vs ${fmt(moyennes.avg_previous)} FCFA (période précédente).`,
         date: new Date().toISOString(),
         value: drop
       });

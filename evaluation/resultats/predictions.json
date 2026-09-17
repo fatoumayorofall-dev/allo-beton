@@ -1,0 +1,80 @@
+{
+  "genere_le": "2026-09-17T01:09:34.086Z",
+  "protocole": "Rejeu sur historique : 83 jours d'apprentissage, 7 jours masqués puis prédits.",
+  "graine": 7,
+  "horizon_jours": 7,
+  "jours_apprentissage": 83,
+  "performance": {
+    "mae_fcfa": 64724,
+    "mape": 0.061171675616834405,
+    "precision": 0.9388283243831655,
+    "taux_couverture_intervalle": 1,
+    "duree_ms": 15
+  },
+  "tendance_detectee": "hausse",
+  "detail": [
+    {
+      "date": "2026-09-18",
+      "jour": "Ven",
+      "predit": 1373266,
+      "reel": 1248689,
+      "erreur_absolue": 124577,
+      "erreur_relative": 0.09976623482708664,
+      "dans_intervalle": true
+    },
+    {
+      "date": "2026-09-19",
+      "jour": "Sam",
+      "predit": 581032,
+      "reel": 584800,
+      "erreur_absolue": 3768,
+      "erreur_relative": 0.006443228454172367,
+      "dans_intervalle": true
+    },
+    {
+      "date": "2026-09-20",
+      "jour": "Dim",
+      "predit": 214230,
+      "reel": 228476,
+      "erreur_absolue": 14246,
+      "erreur_relative": 0.06235228207776747,
+      "dans_intervalle": true
+    },
+    {
+      "date": "2026-09-21",
+      "jour": "Lun",
+      "predit": 1264053,
+      "reel": 1148460,
+      "erreur_absolue": 115593,
+      "erreur_relative": 0.10065043623635128,
+      "dans_intervalle": true
+    },
+    {
+      "date": "2026-09-22",
+      "jour": "Mar",
+      "predit": 1311351,
+      "reel": 1220338,
+      "erreur_absolue": 91013,
+      "erreur_relative": 0.07458015730068226,
+      "dans_intervalle": true
+    },
+    {
+      "date": "2026-09-23",
+      "jour": "Mer",
+      "predit": 1260106,
+      "reel": 1215734,
+      "erreur_absolue": 44372,
+      "erreur_relative": 0.03649811554172212,
+      "dans_intervalle": true
+    },
+    {
+      "date": "2026-09-24",
+      "jour": "Jeu",
+      "predit": 1301357,
+      "reel": 1241858,
+      "erreur_absolue": 59499,
+      "erreur_relative": 0.04791127488005875,
+      "dans_intervalle": true
+    }
+  ]
+}

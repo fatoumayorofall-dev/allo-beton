@@ -1,0 +1,28 @@
+{
+  "genere_le": "2026-09-17T01:08:17.450Z",
+  "protocole": "Jeu de contrôle synthétique à vérité terrain connue ; accès aux données substitué en mémoire.",
+  "graine": 42,
+  "jeu": {
+    "ventes_normales": 200,
+    "ventes_anormales": 12,
+    "total": 212
+  },
+  "sortie_service": {
+    "anomalies_totales": 25,
+    "anomalies_retournees": 20,
+    "liste_tronquee": true,
+    "score_de_risque": 100,
+    "niveau": "critique"
+  },
+  "performance": {
+    "vrais_positifs": 12,
+    "faux_positifs": 1,
+    "faux_negatifs": 0,
+    "vrais_negatifs": 199,
+    "precision": 0.9230769230769231,
+    "rappel": 1,
+    "f1": 0.9600000000000001,
+    "taux_fausses_alertes": 0.005
+  },
+  "duree_ms": 16
+}
