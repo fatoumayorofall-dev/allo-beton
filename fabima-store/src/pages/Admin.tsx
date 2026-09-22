@@ -1,0 +1,375 @@
+import React, { useMemo, useState } from 'react';
+import { AlertTriangle, BarChart3, LogOut, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { useStore } from '../context/StoreContext';
+import { CATEGORIES } from '../data/catalog';
+import type { CategoryId, Order, OrderStatus, Product } from '../data/types';
+import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
+import { formatDate, formatPrice, slugify } from '../utils/format';
+import { usePageTitle } from '../utils/usePageTitle';
+import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
+import { ProductImage } from '../components/ProductImage';
+
+const SESSION_KEY = 'fabima_admin';
+
+const STATUS_STYLES: Record<OrderStatus, string> = {
+  en_attente: 'bg-amber-100 text-amber-800',
+  confirmee: 'bg-sky-100 text-sky-800',
+  en_preparation: 'bg-violet-100 text-violet-800',
+  expediee: 'bg-indigo-100 text-indigo-800',
+  livree: 'bg-emerald-100 text-emerald-800',
+  annulee: 'bg-red-100 text-red-800',
+};
+
+export const Admin: React.FC = () => {
+  usePageTitle('Espace gérant');
+  const [authed, setAuthed] = useState(() => {
+    try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
+  });
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState(false);
+  const [tab, setTab] = useState<'dashboard' | 'orders' | 'products'>('dashboard');
+
+  if (!authed) {
+    return (
+      <div className="max-w-sm mx-auto px-4 pt-24">
+        <form onSubmit={e => {
+          e.preventDefault();
+          if (pin === SITE_CONFIG.adminPin) { try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ } setAuthed(true); } else setError(true);
+        }} className="bg-white rounded-3xl p-8 text-center">
+          <h1 className="font-display text-3xl">Espace gérant</h1>
+          <p className="text-sm text-ink/60 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
+          <input value={pin} onChange={e => { setPin(e.target.value); setError(false); }} type="password" inputMode="numeric" placeholder="••••" aria-label="Code PIN"
+            className={`mt-6 w-full text-center tracking-[0.5em] text-2xl px-4 py-3 rounded-xl border outline-none ${error ? 'border-[#a3142b]' : 'border-ink/15 focus:border-ink'}`} />
+          {error && <p className="text-xs text-[#a3142b] mt-2">Code incorrect</p>}
+          <button className="mt-5 w-full py-3.5 rounded-full bg-ink text-ivory font-semibold">Se connecter</button>
+          <p className="text-xs text-ink/40 mt-4">Code de démonstration : {SITE_CONFIG.adminPin}</p>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <h1 className="font-display text-4xl">Espace gérant</h1>
+        <button onClick={() => { try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ } setAuthed(false); }}
+          className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
+      </div>
+      <div className="flex gap-2 mb-8 overflow-x-auto">
+        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package]] as const).map(([id, label, Icon]) => (
+          <button key={id} onClick={() => setTab(id)}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap ${tab === id ? 'bg-ink text-ivory' : 'bg-white hover:bg-ink/5'}`}>
+            <Icon className="w-4 h-4" /> {label}
+          </button>
+        ))}
+      </div>
+      {tab === 'dashboard' && <Dashboard onGoto={setTab} />}
+      {tab === 'orders' && <Orders />}
+      {tab === 'products' && <Products />}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Tableau de bord                                                    */
+/* ------------------------------------------------------------------ */
+
+const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ onGoto }) => {
+  const { orders, products } = useStore();
+  const valid = orders.filter(o => o.status !== 'annulee');
+  const revenue = valid.reduce((s, o) => s + o.total, 0);
+  const pending = orders.filter(o => o.status === 'en_attente').length;
+  const lowStock = products.filter(p => p.stock <= 5).sort((a, b) => a.stock - b.stock);
+
+  const byCategory = useMemo(() => {
+    const map: Record<string, number> = {};
+    valid.forEach(o => o.items.forEach(i => {
+      const cat = products.find(p => p.id === i.productId)?.category ?? 'autre';
+      map[cat] = (map[cat] ?? 0) + i.price * i.quantity;
+    }));
+    return CATEGORIES.map(c => ({ name: c.name, value: map[c.id] ?? 0 }));
+  }, [valid, products]);
+  const maxCat = Math.max(1, ...byCategory.map(c => c.value));
+
+  const kpis = [
+    { label: 'Chiffre d\'affaires', value: formatPrice(revenue), Icon: Wallet },
+    { label: 'Commandes', value: String(valid.length), Icon: ShoppingCart },
+    { label: 'Panier moyen', value: formatPrice(valid.length ? revenue / valid.length : 0), Icon: BarChart3 },
+    { label: 'À traiter', value: String(pending), Icon: AlertTriangle },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map(({ label, value, Icon }) => (
+          <div key={label} className="bg-white rounded-3xl p-5">
+            <Icon className="w-5 h-5 text-gold-dark" />
+            <p className="text-xs text-ink/50 mt-3">{label}</p>
+            <p className="font-display text-2xl sm:text-3xl mt-1">{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-3xl p-6">
+          <h2 className="font-display text-xl mb-5">Ventes par catégorie</h2>
+          <ul className="space-y-4">
+            {byCategory.map(c => (
+              <li key={c.name}>
+                <div className="flex justify-between text-sm mb-1.5"><span>{c.name}</span><span className="font-medium">{formatPrice(c.value)}</span></div>
+                <div className="h-2 rounded-full bg-ink/5"><div className="h-full rounded-full bg-gold" style={{ width: `${(c.value / maxCat) * 100}%` }} /></div>
+              </li>
+            ))}
+          </ul>
+          {valid.length === 0 && <p className="text-sm text-ink/50 mt-4">Aucune vente pour le moment. Passez une commande test depuis la boutique.</p>}
+        </div>
+        <div className="bg-white rounded-3xl p-6">
+          <div className="flex justify-between items-center mb-5">
+            <h2 className="font-display text-xl">Stock faible</h2>
+            <button onClick={() => onGoto('products')} className="text-sm underline underline-offset-4">Gérer</button>
+          </div>
+          {lowStock.length === 0 ? <p className="text-sm text-ink/50">Tous les stocks sont suffisants.</p> : (
+            <ul className="divide-y divide-ink/5">
+              {lowStock.slice(0, 6).map(p => (
+                <li key={p.id} className="flex items-center gap-3 py-2.5">
+                  <ProductImage src={p.images[0]} alt={p.name} className="w-10 h-12 rounded-lg" />
+                  <span className="flex-1 text-sm line-clamp-1">{p.name}</span>
+                  <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${p.stock === 0 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{p.stock === 0 ? 'Épuisé' : `${p.stock} restants`}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+      {orders.length > 0 && (
+        <div className="bg-white rounded-3xl p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-display text-xl">Dernières commandes</h2>
+            <button onClick={() => onGoto('orders')} className="text-sm underline underline-offset-4">Tout voir</button>
+          </div>
+          <ul className="divide-y divide-ink/5 text-sm">
+            {orders.slice(0, 5).map(o => (
+              <li key={o.id} className="flex flex-wrap items-center gap-3 py-3">
+                <strong className="w-28">{o.id}</strong>
+                <span className="flex-1">{o.customer.firstName} {o.customer.lastName}</span>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span>
+                <span className="w-28 text-right font-medium">{formatPrice(o.total)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Commandes                                                          */
+/* ------------------------------------------------------------------ */
+
+const Orders: React.FC = () => {
+  const { orders, updateOrderStatus, markOrderPaid } = useStore();
+  const [filter, setFilter] = useState<OrderStatus | ''>('');
+  const [selected, setSelected] = useState<Order | null>(null);
+  const list = filter ? orders.filter(o => o.status === filter) : orders;
+  const current = selected ? orders.find(o => o.id === selected.id) ?? null : null;
+
+  return (
+    <div>
+      <div className="flex gap-2 mb-5 overflow-x-auto">
+        <button onClick={() => setFilter('')} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${!filter ? 'bg-ink text-ivory' : 'bg-white'}`}>Toutes ({orders.length})</button>
+        {(Object.keys(STATUS_LABELS) as OrderStatus[]).map(s => (
+          <button key={s} onClick={() => setFilter(s)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${filter === s ? 'bg-ink text-ivory' : 'bg-white'}`}>
+            {STATUS_LABELS[s]} ({orders.filter(o => o.status === s).length})
+          </button>
+        ))}
+      </div>
+      {list.length === 0 ? (
+        <p className="bg-white rounded-3xl p-10 text-center text-ink/50">Aucune commande.</p>
+      ) : (
+        <div className="bg-white rounded-3xl overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
+            <thead className="text-left text-ink/50 border-b border-ink/10">
+              <tr><th className="p-4 font-medium">Commande</th><th className="p-4 font-medium">Client</th><th className="p-4 font-medium">Paiement</th><th className="p-4 font-medium">Statut</th><th className="p-4 font-medium text-right">Total</th></tr>
+            </thead>
+            <tbody>
+              {list.map(o => (
+                <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-ink/5 hover:bg-ivory cursor-pointer">
+                  <td className="p-4"><strong>{o.id}</strong><br /><span className="text-xs text-ink/50">{formatDate(o.createdAt)}</span></td>
+                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.customer.zone}</span></td>
+                  <td className="p-4">{PAYMENT_LABELS[o.paymentMethod]}<br /><span className={`text-xs ${o.paymentStatus === 'paye' ? 'text-emerald-700' : 'text-amber-700'}`}>{o.paymentStatus === 'paye' ? 'Payé' : 'En attente'}</span></td>
+                  <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span></td>
+                  <td className="p-4 text-right font-semibold">{formatPrice(o.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {current && (
+        <Modal title={`Commande ${current.id}`} onClose={() => setSelected(null)}>
+          <div className="space-y-5 text-sm">
+            <div className="p-4 rounded-2xl bg-ivory">
+              <p className="font-semibold">{current.customer.firstName} {current.customer.lastName}</p>
+              <p>{current.customer.phone}{current.customer.email && ` · ${current.customer.email}`}</p>
+              <p className="text-ink/60">{current.customer.address}, {current.customer.zone}</p>
+              {current.customer.notes && <p className="mt-2 italic text-ink/60">« {current.customer.notes} »</p>}
+              <a href={buildWhatsAppLink(`Bonjour ${current.customer.firstName}, ici Fabima Store concernant votre commande ${current.id}.`, current.customer.phone.replace(/\D/g, '').replace(/^(?!221)/, '221'))}
+                target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-[#128C7E] font-semibold"><MessageCircle className="w-4 h-4" /> Contacter sur WhatsApp</a>
+            </div>
+            <ul className="divide-y divide-ink/5">
+              {current.items.map(i => (
+                <li key={i.key} className="flex justify-between py-2"><span>{i.name} <span className="text-ink/50">{[i.color, i.size].filter(Boolean).join(' / ')} × {i.quantity}</span></span><span>{formatPrice(i.price * i.quantity)}</span></li>
+              ))}
+            </ul>
+            <div className="flex justify-between font-semibold text-base border-t border-ink/10 pt-3"><span>Total</span><span>{formatPrice(current.total)}</span></div>
+            <label className="block">
+              <span className="font-medium">Statut</span>
+              <select value={current.status} onChange={e => updateOrderStatus(current.id, e.target.value as OrderStatus)}
+                className="mt-1.5 w-full px-4 py-3 rounded-xl border border-ink/15 outline-none focus:border-ink">
+                {(Object.keys(STATUS_LABELS) as OrderStatus[]).map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+              </select>
+            </label>
+            {current.paymentStatus !== 'paye' && (
+              <button onClick={() => markOrderPaid(current.id)} className="w-full py-3 rounded-full bg-emerald-700 text-white font-semibold">Marquer comme payée</button>
+            )}
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/*  Produits                                                           */
+/* ------------------------------------------------------------------ */
+
+const emptyProduct = (): Product => ({
+  id: `FAB-${Date.now().toString(36).toUpperCase()}`,
+  slug: '', name: '', category: 'chaussures', subcategory: '', gender: 'femme', price: 0, images: [''], colors: [], sizes: [],
+  stock: 10, description: '', details: [], rating: 5, reviewCount: 0, isNew: true, createdAt: new Date().toISOString(),
+});
+
+const Products: React.FC = () => {
+  const { products, saveProduct, deleteProduct, resetCatalog, notify } = useStore();
+  const [q, setQ] = useState('');
+  const [editing, setEditing] = useState<Product | null>(null);
+  const list = products.filter(p => `${p.name} ${p.id} ${p.subcategory}`.toLowerCase().includes(q.toLowerCase()));
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-3 mb-5">
+        <div className="flex-1 min-w-[200px] flex items-center gap-2 px-4 rounded-full bg-white">
+          <Search className="w-4 h-4 text-ink/40" />
+          <input value={q} onChange={e => setQ(e.target.value)} placeholder="Rechercher un produit" aria-label="Rechercher un produit" className="flex-1 py-3 outline-none bg-transparent text-sm" />
+        </div>
+        <button onClick={() => setEditing(emptyProduct())} className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-ink text-ivory text-sm font-semibold"><Plus className="w-4 h-4" /> Nouveau produit</button>
+        <button onClick={() => { if (confirm('Restaurer le catalogue d\'origine ? Vos modifications de produits seront perdues.')) { resetCatalog(); notify('Catalogue restauré', 'info'); } }}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white text-sm"><RotateCcw className="w-4 h-4" /> Restaurer</button>
+      </div>
+      <div className="bg-white rounded-3xl overflow-x-auto">
+        <table className="w-full text-sm min-w-[680px]">
+          <thead className="text-left text-ink/50 border-b border-ink/10">
+            <tr><th className="p-4 font-medium">Produit</th><th className="p-4 font-medium">Catégorie</th><th className="p-4 font-medium">Prix</th><th className="p-4 font-medium">Stock</th><th className="p-4" /></tr>
+          </thead>
+          <tbody>
+            {list.map(p => (
+              <tr key={p.id} className="border-b border-ink/5">
+                <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}</p><p className="text-xs text-ink/50">{p.id}</p></div></div></td>
+                <td className="p-4">{CATEGORIES.find(c => c.id === p.category)?.name}<br /><span className="text-xs text-ink/50">{p.subcategory}</span></td>
+                <td className="p-4">{formatPrice(p.price)}{p.oldPrice && <><br /><span className="text-xs text-ink/40 line-through">{formatPrice(p.oldPrice)}</span></>}</td>
+                <td className="p-4"><span className={p.stock === 0 ? 'text-red-700 font-semibold' : p.stock <= 5 ? 'text-amber-700 font-semibold' : ''}>{p.stock}</span></td>
+                <td className="p-4 text-right whitespace-nowrap">
+                  <button onClick={() => setEditing(p)} aria-label="Modifier" className="p-2 rounded-full hover:bg-ink/5"><Pencil className="w-4 h-4" /></button>
+                  <button onClick={() => { if (confirm(`Supprimer « ${p.name} » ?`)) { deleteProduct(p.id); notify('Produit supprimé', 'info'); } }}
+                    aria-label="Supprimer" className="p-2 rounded-full hover:bg-red-50 text-red-700"><Trash2 className="w-4 h-4" /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {editing && (
+        <ProductForm product={editing} onClose={() => setEditing(null)}
+          onSave={p => { saveProduct(p); notify('Produit enregistré'); setEditing(null); }} />
+      )}
+    </div>
+  );
+};
+
+const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p: Product) => void }> = ({ product, onClose, onSave }) => {
+  const [p, setP] = useState<Product>(product);
+  const [imagesText, setImagesText] = useState(product.images.filter(Boolean).join('\n'));
+  const [sizesText, setSizesText] = useState(product.sizes.join(', '));
+  const [colorsText, setColorsText] = useState(product.colors.map(c => `${c.name}:${c.hex}`).join(', '));
+  const [detailsText, setDetailsText] = useState(product.details.join('\n'));
+
+  const field = 'mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink/15 outline-none focus:border-ink text-sm';
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!p.name.trim() || p.price <= 0) return;
+    onSave({
+      ...p,
+      slug: p.slug || slugify(p.name),
+      subcategory: p.subcategory || CATEGORIES.find(c => c.id === p.category)!.name,
+      oldPrice: p.oldPrice && p.oldPrice > p.price ? p.oldPrice : undefined,
+      images: imagesText.split('\n').map(s => s.trim()).filter(Boolean),
+      sizes: sizesText.split(',').map(s => s.trim()).filter(Boolean),
+      colors: colorsText.split(',').map(s => s.trim()).filter(Boolean).map(s => {
+        const [name, hex] = s.split(':');
+        return { name: name.trim(), hex: (hex ?? '#999999').trim() };
+      }),
+      details: detailsText.split('\n').map(s => s.trim()).filter(Boolean),
+    });
+  };
+
+  return (
+    <Modal title={product.name ? 'Modifier le produit' : 'Nouveau produit'} onClose={onClose}>
+      <form onSubmit={submit} className="grid grid-cols-2 gap-4 text-sm">
+        <label className="col-span-2">Nom *<input required value={p.name} onChange={e => setP({ ...p, name: e.target.value })} className={field} /></label>
+        <label>Catégorie
+          <select value={p.category} onChange={e => setP({ ...p, category: e.target.value as CategoryId })} className={field}>
+            {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </label>
+        <label>Type<input value={p.subcategory} onChange={e => setP({ ...p, subcategory: e.target.value })} placeholder="Ex : Escarpins" className={field} /></label>
+        <label>Prix (FCFA) *<input required type="number" min={1} value={p.price || ''} onChange={e => setP({ ...p, price: Number(e.target.value) })} className={field} /></label>
+        <label>Ancien prix<input type="number" min={0} value={p.oldPrice ?? ''} onChange={e => setP({ ...p, oldPrice: e.target.value ? Number(e.target.value) : undefined })} className={field} /></label>
+        <label>Stock<input type="number" min={0} value={p.stock} onChange={e => setP({ ...p, stock: Number(e.target.value) })} className={field} /></label>
+        <label>Pour
+          <select value={p.gender} onChange={e => setP({ ...p, gender: e.target.value as Product['gender'] })} className={field}>
+            <option value="femme">Femme</option><option value="homme">Homme</option><option value="unisexe">Unisexe</option>
+          </select>
+        </label>
+        <label className="col-span-2">Images (une URL par ligne)<textarea rows={2} value={imagesText} onChange={e => setImagesText(e.target.value)} className={field} /></label>
+        <label className="col-span-2">Tailles (séparées par des virgules)<input value={sizesText} onChange={e => setSizesText(e.target.value)} placeholder="38, 39, 40 — vide si taille unique" className={field} /></label>
+        <label className="col-span-2">Couleurs (nom:code, …)<input value={colorsText} onChange={e => setColorsText(e.target.value)} placeholder="Noir:#111111, Camel:#b5835a" className={field} /></label>
+        <label className="col-span-2">Description<textarea rows={3} value={p.description} onChange={e => setP({ ...p, description: e.target.value })} className={field} /></label>
+        <label className="col-span-2">Détails (un par ligne)<textarea rows={3} value={detailsText} onChange={e => setDetailsText(e.target.value)} className={field} /></label>
+        <div className="col-span-2 flex gap-5">
+          <label className="flex items-center gap-2"><input type="checkbox" checked={!!p.isNew} onChange={e => setP({ ...p, isNew: e.target.checked })} className="accent-ink" /> Nouveauté</label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={!!p.isBestseller} onChange={e => setP({ ...p, isBestseller: e.target.checked })} className="accent-ink" /> Best-seller</label>
+        </div>
+        <div className="col-span-2 flex gap-3 pt-2">
+          <button type="button" onClick={onClose} className="flex-1 py-3 rounded-full border border-ink/20 font-semibold">Annuler</button>
+          <button className="flex-1 py-3 rounded-full bg-ink text-ivory font-semibold">Enregistrer</button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
+  <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="absolute inset-0 bg-ink/50" onClick={onClose} />
+    <div className="relative bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6 animate-fade-up" role="dialog" aria-label={title}>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="font-display text-2xl">{title}</h2>
+        <button onClick={onClose} aria-label="Fermer" className="p-2 rounded-full hover:bg-ink/5"><X className="w-5 h-5" /></button>
+      </div>
+      {children}
+    </div>
+  </div>
+);

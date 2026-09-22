@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-ivory text-ink font-sans antialiased;
+  }
+  ::selection { @apply bg-gold-light text-ink; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-gold; }
+}
+
+@media print {
+  header, footer, .print\:hidden { display: none !important; }
+}
