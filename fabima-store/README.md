@@ -86,7 +86,9 @@ src/
 ├── data/catalog.ts        # Catégories, occasions et catalogue initial (30 pièces pour femme)
 ├── data/journal.ts        # Articles du journal (blocs texte, astuces, produits cités)
 ├── data/types.ts          # Types Produit, Panier, Commande
-├── services/api.ts        # Appels au serveur (assistante, WhatsApp), avec repli si absent
+├── services/api.ts        # Appels au serveur (assistante, WhatsApp, vitrine, voix), avec repli si absent
+├── utils/statusImage.ts   # Image du statut WhatsApp (1080 × 1920)
+├── utils/share.ts         # Liens courts /p/…, textes de statut et de réponse
 ├── context/StoreContext   # État global : produits, panier, favoris, commandes, avis, notifications
 ├── utils/hooks.ts         # Échap, blocage du défilement, apparition au défilement
 ├── components/            # Navbar, Footer, panier latéral, carte produit, recherche…
@@ -94,9 +96,30 @@ src/
 ```
 
 Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
-`whatsapp.js` (Twilio et textes des messages).
+`whatsapp.js` (Twilio et textes des messages), `store.js` (vitrine du statut, compteurs de visites, notes vocales).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
+
+## Vendre avec le statut WhatsApp
+
+Dans l'espace gérant, onglet **Statut WhatsApp** :
+
+1. Touchez une pièce.
+2. Touchez **Publier sur mon statut** : l'image (format statut, prix en grand, couleurs, lien court écrit en gros)
+   et le texte avec le lien cliquable sont prêts. Sur téléphone, le menu de partage s'ouvre : choisissez WhatsApp → *Mon statut*.
+   Sur ordinateur, l'image est téléchargée et le texte copié.
+3. Facultatif : **Ajouter à la vitrine du jour** et **Enregistrer ma voix** (présentation en wolof ou en français, 1 minute).
+
+Ce que voit la cliente :
+
+| Lien | Page |
+|---|---|
+| `/p/109` | Page très simple d'une pièce : grande photo, prix en très gros, couleurs en ronds, tailles en gros boutons, 🔊 écouter (votre voix, ou lecture automatique de la fiche), gros bouton vert « Commander sur WhatsApp » avec couleur et taille déjà écrites |
+| `/s` | Vitrine du jour : toutes les pièces mises en statut, en grandes photos avec le prix |
+
+Chaque visite arrivée depuis un statut est comptée : le nombre s'affiche sur chaque pièce dans l'onglet.
+La vitrine, les notes vocales et les compteurs sont gardés par le serveur (`server/data/`, ou le dossier `DATA_DIR`) :
+sur un hébergement, prévoyez un disque persistant pour ce dossier.
 
 ## Modifier le catalogue
 

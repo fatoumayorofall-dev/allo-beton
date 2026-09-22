@@ -21,6 +21,8 @@ import { About } from './pages/About';
 import { FAQ } from './pages/FAQ';
 import { NotFound } from './pages/NotFound';
 import { ArticlePage, Journal } from './pages/Journal';
+import { SimpleProduct } from './pages/SimpleProduct';
+import { Showcase } from './pages/Showcase';
 
 // L'espace gérant n'est chargé que lorsqu'on y accède : la clientèle ne télécharge pas son code.
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
@@ -42,6 +44,13 @@ const PageFallback: React.FC = () => (
   <div className="min-h-[60vh] grid place-items-center"><span className="font-script text-5xl text-gold animate-pulse">Fabima</span></div>
 );
 
+/** Les pages « statut » (/p/…, /s) ont leur propre en-tête, très simple : pas de menu, pied de page ni boutons flottants. */
+const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { pathname } = useLocation();
+  const simple = pathname.startsWith('/p/') || pathname === '/s';
+  return simple ? null : <>{children}</>;
+};
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -49,7 +58,7 @@ export default function App() {
         <ScrollToTop />
         <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-ink focus:text-ivory focus:px-4 focus:py-2">Aller au contenu</a>
         <div className="min-h-screen flex flex-col">
-          <Navbar />
+          <Chrome><Navbar /></Chrome>
           <main id="contenu" className="flex-1">
             <Suspense fallback={<PageFallback />}>
               <Routes>
@@ -63,6 +72,8 @@ export default function App() {
                 <Route path="/suivi" element={<Tracking />} />
                 <Route path="/favoris" element={<Wishlist />} />
                 <Route path="/mes-commandes" element={<MyOrders />} />
+                <Route path="/p/:code" element={<SimpleProduct />} />
+                <Route path="/s" element={<Showcase />} />
                 <Route path="/journal" element={<Journal />} />
                 <Route path="/journal/:slug" element={<ArticlePage />} />
                 <Route path="/a-propos" element={<About />} />
@@ -72,13 +83,12 @@ export default function App() {
               </Routes>
             </Suspense>
           </main>
-          <Footer />
+          <Chrome><Footer /></Chrome>
         </div>
         <CartDrawer />
         <QuickView />
         <Toasts />
-        <FloatingActions />
-        <Assistant />
+        <Chrome><FloatingActions /><Assistant /></Chrome>
       </StoreProvider>
     </BrowserRouter>
   );

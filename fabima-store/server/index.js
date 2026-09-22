@@ -13,6 +13,7 @@ try { process.loadEnvFile(path.join(here, '.env')); } catch { /* pas de fichier 
 
 const { assistantEnabled, sanitizeMessages, streamAssistant, Anthropic } = await import('./assistant.js');
 const wa = await import('./whatsapp.js');
+const store = await import('./store.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -43,7 +44,7 @@ function validOrder(o) {
 
 /* ---------- État des services ---------- */
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
+  res.json({ ok: true, storage: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
 });
 
 /* ---------- Assistant IA ---------- */
@@ -95,6 +96,48 @@ app.post('/api/notify/restock', async (req, res) => {
   const phones = [...new Set(contacts.map(wa.toE164).filter(Boolean))].slice(0, 50);
   const results = await Promise.all(phones.map(p => wa.sendWhatsApp(p, wa.buildRestockMessage(product))));
   res.json({ sent: results.filter(r => r.ok).length, total: phones.length });
+});
+
+/* ---------- Statut WhatsApp : vitrine du jour ---------- */
+app.get('/api/showcase', (_req, res) => res.json({ items: store.getShowcase() }));
+app.post('/api/showcase', (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+  const { slug, action } = req.body || {};
+  if (!store.validSlug(slug)) return res.status(400).json({ error: 'Produit invalide' });
+  if (action === 'remove') store.removeFromShowcase(slug); else store.addToShowcase(slug);
+  res.json({ items: store.getShowcase() });
+});
+
+/* ---------- Statut WhatsApp : compteurs de visites ---------- */
+app.post('/api/track', (req, res) => {
+  const { slug, source } = req.body || {};
+  if (!store.validSlug(slug)) return res.status(400).end();
+  // Une visite comptée par personne et par pièce toutes les 30 minutes
+  if (limit(`visit:${req.ip}:${slug}`, 1, 30 * 60e3)) store.recordVisit(slug, source);
+  res.status(204).end();
+});
+app.get('/api/stats', (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+  res.json({ visits: store.getVisits() });
+});
+
+/* ---------- Notes vocales des produits ---------- */
+app.get('/api/voice', (_req, res) => res.json({ slugs: store.listVoices() }));
+app.get('/api/voice/:slug', (req, res) => {
+  const v = store.validSlug(req.params.slug) && store.findVoice(req.params.slug);
+  if (!v) return res.status(404).end();
+  res.type(v.type).sendFile(v.path, { maxAge: '5m' });
+});
+app.put('/api/voice/:slug', express.raw({ type: 'audio/*', limit: '4mb' }), (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+  if (!store.validSlug(req.params.slug) || !Buffer.isBuffer(req.body) || req.body.length < 500) return res.status(400).json({ error: 'Enregistrement invalide' });
+  if (!store.saveVoice(req.params.slug, req.get('content-type'), req.body)) return res.status(415).json({ error: 'Format audio non pris en charge' });
+  res.json({ ok: true });
+});
+app.delete('/api/voice/:slug', (req, res) => {
+  if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+  if (store.validSlug(req.params.slug)) store.deleteVoice(req.params.slug);
+  res.json({ ok: true });
 });
 
 /* ---------- Site compilé (production) ---------- */

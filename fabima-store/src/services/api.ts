@@ -9,6 +9,8 @@ const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/,
 
 export interface ServerStatus {
   ok: boolean;
+  /** Stockage partagé disponible (vitrine du statut, notes vocales, compteurs) */
+  storage?: boolean;
   assistant: boolean;
   whatsapp: boolean;
   ownerNotifications: boolean;
@@ -95,3 +97,48 @@ export const notifyStatus = (order: Order, status: OrderStatus, pin: string) => 
 /** Retour en stock : message aux clientes qui ont demandé une alerte. */
 export const notifyRestock = (product: Product, contacts: string[], pin: string) =>
   post<{ sent: number; total: number }>('/api/notify/restock', { product: { name: product.name, slug: product.slug }, contacts }, pin);
+
+/* ---------- Statut WhatsApp : vitrine, visites, notes vocales ---------- */
+
+export interface ShowcaseItem { slug: string; addedAt: string }
+export type VisitSource = 'statut' | 'partage' | 'vitrine';
+export type VisitStats = Record<string, { statut: number; partage: number; vitrine: number; last: string | null }>;
+
+async function getJson<T>(path: string, pin?: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${API}${path}`, { headers: pin ? { 'x-admin-pin': pin } : {}, signal: AbortSignal.timeout(6000) });
+    return res.ok ? (await res.json()) as T : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Pièces mises en statut (vitrine du jour), partagées par toutes les visiteuses. */
+export const getShowcase = () => getJson<{ items: ShowcaseItem[] }>('/api/showcase').then(r => r?.items ?? null);
+export const setShowcase = (slug: string, action: 'add' | 'remove', pin: string) =>
+  post<{ items: ShowcaseItem[] }>('/api/showcase', { slug, action }, pin).then(r => r?.items ?? null);
+
+/** Compte une visite arrivée depuis un statut ou un lien partagé (sans bloquer l'affichage). */
+export function trackVisit(slug: string, source: VisitSource) {
+  fetch(`${API}/api/track`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, source }), keepalive: true }).catch(() => {});
+}
+export const getVisitStats = (pin: string) => getJson<{ visits: VisitStats }>('/api/stats', pin).then(r => r?.visits ?? null);
+
+/** Notes vocales enregistrées par la gérante. */
+export const listVoices = () => getJson<{ slugs: string[] }>('/api/voice').then(r => r?.slugs ?? []);
+export const voiceUrl = (slug: string) => `${API}/api/voice/${encodeURIComponent(slug)}`;
+export async function uploadVoice(slug: string, blob: Blob, pin: string): Promise<boolean> {
+  try {
+    const res = await fetch(voiceUrl(slug), { method: 'PUT', headers: { 'Content-Type': blob.type.split(';')[0] || 'audio/webm', 'x-admin-pin': pin }, body: blob });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+export async function deleteVoice(slug: string, pin: string): Promise<boolean> {
+  try {
+    return (await fetch(voiceUrl(slug), { method: 'DELETE', headers: { 'x-admin-pin': pin } })).ok;
+  } catch {
+    return false;
+  }
+}

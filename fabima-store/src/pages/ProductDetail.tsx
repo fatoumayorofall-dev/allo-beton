@@ -13,6 +13,8 @@ import { Stars } from '../components/Stars';
 import { ProductCard } from '../components/ProductCard';
 import { Reveal } from '../components/Reveal';
 import { Flower } from '../components/Decor';
+import { ListenButton } from '../components/ListenButton';
+import { shortLink } from '../utils/share';
 
 /** Image principale avec zoom qui suit le curseur (desktop). */
 const ZoomImage: React.FC<{ src?: string; alt: string }> = ({ src, alt }) => {
@@ -174,10 +176,11 @@ export const ProductDetail: React.FC = () => {
   const handleBuyNow = () => { if (validate() && addToCart(product, { size, color, quantity: qty, silent: true })) navigate('/commande'); };
 
   const share = async () => {
-    const data = { title: product.name, text: `${product.name} — ${formatPrice(product.price)} chez Fabima Store`, url: window.location.href };
+    const url = shortLink(product, 'partage');
+    const data = { title: product.name, text: `${product.name} — ${formatPrice(product.price)} chez Fabima Store`, url };
     try {
       if (navigator.share) await navigator.share(data);
-      else { await navigator.clipboard.writeText(window.location.href); notify('Lien copié dans le presse-papiers', 'info'); }
+      else { await navigator.clipboard.writeText(url); notify('Lien copié dans le presse-papiers', 'info'); }
     } catch { /* partage annulé */ }
   };
 
@@ -241,6 +244,7 @@ export const ProductDetail: React.FC = () => {
               {product.oldPrice && <span className="text-ink/35 line-through">{formatPrice(product.oldPrice)}</span>}
             </div>
             <p className="text-[11px] text-ink/45 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
+            <ListenButton product={product} className="mt-4" />
 
             <p className="mt-7 text-[15px] text-ink/70 leading-relaxed">{product.description}</p>
 
