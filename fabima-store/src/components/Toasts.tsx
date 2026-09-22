@@ -1,17 +1,19 @@
 import React from 'react';
-import { CheckCircle2, Info, XCircle } from 'lucide-react';
+import { Check, Info, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 
 export const Toasts: React.FC = () => {
   const { toasts } = useStore();
   return (
-    <div className="fixed bottom-24 sm:bottom-6 left-1/2 -translate-x-1/2 z-[100] flex flex-col gap-2 w-[calc(100%-2rem)] max-w-sm" aria-live="polite">
+    <div className="fixed bottom-24 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto z-[100] flex flex-col gap-2 sm:w-[360px]" aria-live="polite">
       {toasts.map(t => {
-        const Icon = t.type === 'error' ? XCircle : t.type === 'info' ? Info : CheckCircle2;
+        const Icon = t.type === 'error' ? X : t.type === 'info' ? Info : Check;
         return (
-          <div key={t.id} className="flex items-center gap-3 px-4 py-3 rounded-xl bg-ink text-ivory shadow-2xl animate-fade-up text-sm">
-            <Icon className={`w-5 h-5 shrink-0 ${t.type === 'error' ? 'text-red-400' : 'text-gold-light'}`} />
-            <span>{t.message}</span>
+          <div key={t.id} className="flex items-center gap-4 pl-4 pr-5 py-4 bg-ink text-ivory shadow-luxe animate-fade-up text-[13px]">
+            <span className={`w-7 h-7 rounded-full grid place-items-center shrink-0 ${t.type === 'error' ? 'bg-wine' : 'border border-gold-light/50'}`}>
+              <Icon className="w-3.5 h-3.5 text-gold-light" />
+            </span>
+            <span className="leading-snug">{t.message}</span>
           </div>
         );
       })}

@@ -53,6 +53,16 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface CustomerInfo {
+  firstName: string;
+  lastName: string;
+  phone: string;
+  email?: string;
+  zone: string;
+  address: string;
+  notes?: string;
+}
+
 export type PaymentMethod = 'wave' | 'orange_money' | 'free_money' | 'card' | 'cash';
 
 export type OrderStatus = 'en_attente' | 'confirmee' | 'en_preparation' | 'expediee' | 'livree' | 'annulee';
@@ -60,19 +70,13 @@ export type OrderStatus = 'en_attente' | 'confirmee' | 'en_preparation' | 'exped
 export interface Order {
   id: string;
   createdAt: string;
-  customer: {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    email?: string;
-    zone: string;
-    address: string;
-    notes?: string;
-  };
+  customer: CustomerInfo;
   items: CartItem[];
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  giftFee: number;
+  giftMessage?: string;
   total: number;
   promoCode?: string;
   paymentMethod: PaymentMethod;

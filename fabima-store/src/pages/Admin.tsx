@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, BarChart3, LogOut, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { AlertTriangle, BarChart3, Download, LogOut, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
 import type { CategoryId, Order, OrderStatus, Product } from '../data/types';
@@ -35,12 +35,12 @@ export const Admin: React.FC = () => {
         <form onSubmit={e => {
           e.preventDefault();
           if (pin === SITE_CONFIG.adminPin) { try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ } setAuthed(true); } else setError(true);
-        }} className="bg-white rounded-3xl p-8 text-center">
+        }} className="bg-white border border-ink/[0.06] p-8 text-center">
           <h1 className="font-display text-3xl">Espace gérant</h1>
           <p className="text-sm text-ink/60 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
           <input value={pin} onChange={e => { setPin(e.target.value); setError(false); }} type="password" inputMode="numeric" placeholder="••••" aria-label="Code PIN"
-            className={`mt-6 w-full text-center tracking-[0.5em] text-2xl px-4 py-3 rounded-xl border outline-none ${error ? 'border-[#a3142b]' : 'border-ink/15 focus:border-ink'}`} />
-          {error && <p className="text-xs text-[#a3142b] mt-2">Code incorrect</p>}
+            className={`mt-6 w-full text-center tracking-[0.5em] text-2xl px-4 py-3 rounded-xl border outline-none ${error ? 'border-wine' : 'border-ink/15 focus:border-ink'}`} />
+          {error && <p className="text-xs text-wine mt-2">Code incorrect</p>}
           <button className="mt-5 w-full py-3.5 rounded-full bg-ink text-ivory font-semibold">Se connecter</button>
           <p className="text-xs text-ink/40 mt-4">Code de démonstration : {SITE_CONFIG.adminPin}</p>
         </form>
@@ -51,7 +51,7 @@ export const Admin: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <h1 className="font-display text-4xl">Espace gérant</h1>
+        <div><p className="eyebrow">Fabima Store</p><h1 className="font-display text-5xl mt-2">Espace gérant</h1></div>
         <button onClick={() => { try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ } setAuthed(false); }}
           className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
@@ -102,7 +102,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(({ label, value, Icon }) => (
-          <div key={label} className="bg-white rounded-3xl p-5">
+          <div key={label} className="bg-white border border-ink/[0.06] p-5">
             <Icon className="w-5 h-5 text-gold-dark" />
             <p className="text-xs text-ink/50 mt-3">{label}</p>
             <p className="font-display text-2xl sm:text-3xl mt-1">{value}</p>
@@ -110,7 +110,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
         ))}
       </div>
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-3xl p-6">
+        <div className="bg-white border border-ink/[0.06] p-6">
           <h2 className="font-display text-xl mb-5">Ventes par catégorie</h2>
           <ul className="space-y-4">
             {byCategory.map(c => (
@@ -122,7 +122,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
           </ul>
           {valid.length === 0 && <p className="text-sm text-ink/50 mt-4">Aucune vente pour le moment. Passez une commande test depuis la boutique.</p>}
         </div>
-        <div className="bg-white rounded-3xl p-6">
+        <div className="bg-white border border-ink/[0.06] p-6">
           <div className="flex justify-between items-center mb-5">
             <h2 className="font-display text-xl">Stock faible</h2>
             <button onClick={() => onGoto('products')} className="text-sm underline underline-offset-4">Gérer</button>
@@ -131,7 +131,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
             <ul className="divide-y divide-ink/5">
               {lowStock.slice(0, 6).map(p => (
                 <li key={p.id} className="flex items-center gap-3 py-2.5">
-                  <ProductImage src={p.images[0]} alt={p.name} className="w-10 h-12 rounded-lg" />
+                  <ProductImage src={p.images[0]} alt={p.name} label="" className="w-10 h-12 rounded-lg" />
                   <span className="flex-1 text-sm line-clamp-1">{p.name}</span>
                   <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${p.stock === 0 ? 'bg-red-100 text-red-800' : 'bg-amber-100 text-amber-800'}`}>{p.stock === 0 ? 'Épuisé' : `${p.stock} restants`}</span>
                 </li>
@@ -141,7 +141,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
         </div>
       </div>
       {orders.length > 0 && (
-        <div className="bg-white rounded-3xl p-6">
+        <div className="bg-white border border-ink/[0.06] p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-display text-xl">Dernières commandes</h2>
             <button onClick={() => onGoto('orders')} className="text-sm underline underline-offset-4">Tout voir</button>
@@ -166,6 +166,24 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
 /*  Commandes                                                          */
 /* ------------------------------------------------------------------ */
 
+/** Export CSV (séparateur « ; » pour Excel en français, BOM UTF-8 pour les accents). */
+function exportOrdersCsv(orders: Order[]) {
+  const esc = (v: string | number | undefined) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const header = ['Commande', 'Date', 'Client', 'Téléphone', 'Zone', 'Adresse', 'Articles', 'Sous-total', 'Réduction', 'Livraison', 'Cadeau', 'Total', 'Paiement', 'Payé', 'Statut'];
+  const rows = orders.map(o => [
+    o.id, new Date(o.createdAt).toLocaleString('fr-FR'), `${o.customer.firstName} ${o.customer.lastName}`, o.customer.phone, o.customer.zone, o.customer.address,
+    o.items.map(i => `${i.quantity}× ${i.name}${i.size ? ` (${i.size})` : ''}`).join(' | '),
+    o.subtotal, o.discount, o.deliveryFee, o.giftFee ?? 0, o.total, PAYMENT_LABELS[o.paymentMethod], o.paymentStatus === 'paye' ? 'oui' : 'non', STATUS_LABELS[o.status],
+  ]);
+  const csv = '\ufeff' + [header, ...rows].map(r => r.map(esc).join(';')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `commandes-fabima-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 const Orders: React.FC = () => {
   const { orders, updateOrderStatus, markOrderPaid } = useStore();
   const [filter, setFilter] = useState<OrderStatus | ''>('');
@@ -175,7 +193,10 @@ const Orders: React.FC = () => {
 
   return (
     <div>
-      <div className="flex gap-2 mb-5 overflow-x-auto">
+      <div className="flex gap-2 mb-5 overflow-x-auto no-scrollbar">
+        <button onClick={() => exportOrdersCsv(list)} disabled={list.length === 0} className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm whitespace-nowrap bg-gold text-white disabled:opacity-40">
+          <Download className="w-4 h-4" /> Exporter (CSV)
+        </button>
         <button onClick={() => setFilter('')} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${!filter ? 'bg-ink text-ivory' : 'bg-white'}`}>Toutes ({orders.length})</button>
         {(Object.keys(STATUS_LABELS) as OrderStatus[]).map(s => (
           <button key={s} onClick={() => setFilter(s)} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${filter === s ? 'bg-ink text-ivory' : 'bg-white'}`}>
@@ -184,9 +205,9 @@ const Orders: React.FC = () => {
         ))}
       </div>
       {list.length === 0 ? (
-        <p className="bg-white rounded-3xl p-10 text-center text-ink/50">Aucune commande.</p>
+        <p className="bg-white border border-ink/[0.06] p-10 text-center text-ink/50">Aucune commande.</p>
       ) : (
-        <div className="bg-white rounded-3xl overflow-x-auto">
+        <div className="bg-white border border-ink/[0.06] overflow-x-auto">
           <table className="w-full text-sm min-w-[720px]">
             <thead className="text-left text-ink/50 border-b border-ink/10">
               <tr><th className="p-4 font-medium">Commande</th><th className="p-4 font-medium">Client</th><th className="p-4 font-medium">Paiement</th><th className="p-4 font-medium">Statut</th><th className="p-4 font-medium text-right">Total</th></tr>
@@ -214,6 +235,7 @@ const Orders: React.FC = () => {
               <p>{current.customer.phone}{current.customer.email && ` · ${current.customer.email}`}</p>
               <p className="text-ink/60">{current.customer.address}, {current.customer.zone}</p>
               {current.customer.notes && <p className="mt-2 italic text-ink/60">« {current.customer.notes} »</p>}
+              {current.giftFee > 0 && <p className="mt-2 text-gold-dark">🎁 Emballage cadeau{current.giftMessage && ` — « ${current.giftMessage} »`}</p>}
               <a href={buildWhatsAppLink(`Bonjour ${current.customer.firstName}, ici Fabima Store concernant votre commande ${current.id}.`, current.customer.phone.replace(/\D/g, '').replace(/^(?!221)/, '221'))}
                 target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-[#128C7E] font-semibold"><MessageCircle className="w-4 h-4" /> Contacter sur WhatsApp</a>
             </div>
@@ -267,7 +289,7 @@ const Products: React.FC = () => {
         <button onClick={() => { if (confirm('Restaurer le catalogue d\'origine ? Vos modifications de produits seront perdues.')) { resetCatalog(); notify('Catalogue restauré', 'info'); } }}
           className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white text-sm"><RotateCcw className="w-4 h-4" /> Restaurer</button>
       </div>
-      <div className="bg-white rounded-3xl overflow-x-auto">
+      <div className="bg-white border border-ink/[0.06] overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
           <thead className="text-left text-ink/50 border-b border-ink/10">
             <tr><th className="p-4 font-medium">Produit</th><th className="p-4 font-medium">Catégorie</th><th className="p-4 font-medium">Prix</th><th className="p-4 font-medium">Stock</th><th className="p-4" /></tr>
@@ -275,7 +297,7 @@ const Products: React.FC = () => {
           <tbody>
             {list.map(p => (
               <tr key={p.id} className="border-b border-ink/5">
-                <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}</p><p className="text-xs text-ink/50">{p.id}</p></div></div></td>
+                <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} label="" className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}</p><p className="text-xs text-ink/50">{p.id}</p></div></div></td>
                 <td className="p-4">{CATEGORIES.find(c => c.id === p.category)?.name}<br /><span className="text-xs text-ink/50">{p.subcategory}</span></td>
                 <td className="p-4">{formatPrice(p.price)}{p.oldPrice && <><br /><span className="text-xs text-ink/40 line-through">{formatPrice(p.oldPrice)}</span></>}</td>
                 <td className="p-4"><span className={p.stock === 0 ? 'text-red-700 font-semibold' : p.stock <= 5 ? 'text-amber-700 font-semibold' : ''}>{p.stock}</span></td>
@@ -364,7 +386,7 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
 const Modal: React.FC<{ title: string; onClose: () => void; children: React.ReactNode }> = ({ title, onClose, children }) => (
   <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4">
     <div className="absolute inset-0 bg-ink/50" onClick={onClose} />
-    <div className="relative bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-6 animate-fade-up" role="dialog" aria-label={title}>
+    <div className="relative bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:border border-ink/[0.06] p-6 animate-fade-up" role="dialog" aria-label={title}>
       <div className="flex items-center justify-between mb-5">
         <h2 className="font-display text-2xl">{title}</h2>
         <button onClick={onClose} aria-label="Fermer" className="p-2 rounded-full hover:bg-ink/5"><X className="w-5 h-5" /></button>

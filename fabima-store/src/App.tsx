@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { StoreProvider } from './context/StoreContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
+import { QuickView } from './components/QuickView';
 import { Toasts } from './components/Toasts';
-import { WhatsAppButton } from './components/WhatsAppButton';
+import { FloatingActions } from './components/FloatingActions';
 import { Home } from './pages/Home';
 import { Catalog } from './pages/Catalog';
 import { ProductDetail } from './pages/ProductDetail';
@@ -14,53 +15,65 @@ import { Checkout } from './pages/Checkout';
 import { OrderSuccess } from './pages/OrderSuccess';
 import { Tracking } from './pages/Tracking';
 import { Wishlist } from './pages/Wishlist';
+import { MyOrders } from './pages/MyOrders';
 import { About } from './pages/About';
 import { FAQ } from './pages/FAQ';
-import { Admin } from './pages/Admin';
 import { NotFound } from './pages/NotFound';
 
-/** Remonte en haut de page à chaque changement de route (hors ancres). */
+// L'espace gérant n'est chargé que lorsqu'on y accède : les clientes et clients ne téléchargent pas son code.
+const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
+
+/** Remonte en haut de page à chaque changement de route (ou vers l'ancre demandée). */
 const ScrollToTop: React.FC = () => {
   const { pathname, hash } = useLocation();
   useEffect(() => {
     if (hash) {
-      document.getElementById(hash.slice(1))?.scrollIntoView();
-    } else {
-      window.scrollTo({ top: 0 });
+      const t = setTimeout(() => document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' }), 80);
+      return () => clearTimeout(t);
     }
+    window.scrollTo({ top: 0 });
   }, [pathname, hash]);
   return null;
 };
+
+const PageFallback: React.FC = () => (
+  <div className="min-h-[60vh] grid place-items-center"><span className="font-display italic text-3xl text-gold animate-pulse">Fabima</span></div>
+);
 
 export default function App() {
   return (
     <BrowserRouter>
       <StoreProvider>
         <ScrollToTop />
+        <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-ink focus:text-ivory focus:px-4 focus:py-2">Aller au contenu</a>
         <div className="min-h-screen flex flex-col">
           <Navbar />
-          <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/boutique" element={<Catalog />} />
-              <Route path="/boutique/:category" element={<Catalog />} />
-              <Route path="/produit/:slug" element={<ProductDetail />} />
-              <Route path="/panier" element={<Cart />} />
-              <Route path="/commande" element={<Checkout />} />
-              <Route path="/confirmation/:id" element={<OrderSuccess />} />
-              <Route path="/suivi" element={<Tracking />} />
-              <Route path="/favoris" element={<Wishlist />} />
-              <Route path="/a-propos" element={<About />} />
-              <Route path="/faq" element={<FAQ />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+          <main id="contenu" className="flex-1">
+            <Suspense fallback={<PageFallback />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/boutique" element={<Catalog />} />
+                <Route path="/boutique/:category" element={<Catalog />} />
+                <Route path="/produit/:slug" element={<ProductDetail />} />
+                <Route path="/panier" element={<Cart />} />
+                <Route path="/commande" element={<Checkout />} />
+                <Route path="/confirmation/:id" element={<OrderSuccess />} />
+                <Route path="/suivi" element={<Tracking />} />
+                <Route path="/favoris" element={<Wishlist />} />
+                <Route path="/mes-commandes" element={<MyOrders />} />
+                <Route path="/a-propos" element={<About />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </main>
           <Footer />
         </div>
         <CartDrawer />
+        <QuickView />
         <Toasts />
-        <WhatsAppButton />
+        <FloatingActions />
       </StoreProvider>
     </BrowserRouter>
   );

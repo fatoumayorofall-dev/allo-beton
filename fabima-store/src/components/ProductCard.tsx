@@ -1,68 +1,87 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag } from 'lucide-react';
+import { Eye, Heart, Plus } from 'lucide-react';
 import type { Product } from '../data/types';
 import { useStore } from '../context/StoreContext';
 import { discountPercent, formatPrice } from '../utils/format';
 import { ProductImage } from './ProductImage';
 import { ColorSwatch } from './ColorSwatch';
-import { Stars } from './Stars';
 
-export const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
-  const { addToCart, toggleWishlist, isInWishlist } = useStore();
+export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = ({ product }) => {
+  const { addToCart, toggleWishlist, isInWishlist, openQuickView } = useStore();
   const off = discountPercent(product.price, product.oldPrice);
   const liked = isInWishlist(product.id);
-  const needsChoice = product.sizes.length > 0;
   const outOfStock = product.stock <= 0;
+  const color = product.colors[0]?.name;
 
   return (
-    <article className="group relative flex flex-col animate-fade-up">
-      <div className="relative aspect-[3/4] overflow-hidden rounded-2xl bg-ivory-deep">
-        <Link to={`/produit/${product.slug}`} aria-label={product.name}>
+    <article className="group relative flex flex-col">
+      <div className="relative aspect-[3/4] overflow-hidden bg-ivory-deep">
+        <Link to={`/produit/${product.slug}`} aria-label={product.name} className="block w-full h-full">
           <ProductImage src={product.images[0]} alt={product.name}
-            className="w-full h-full transition-transform duration-700 group-hover:scale-105" />
+            className="w-full h-full transition-transform duration-[1.4s] ease-luxe group-hover:scale-[1.06]" />
           {product.images[1] && (
             <ProductImage src={product.images[1]} alt=""
-              className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           )}
         </Link>
 
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none">
-          {off > 0 && <span className="px-2.5 py-1 rounded-full text-white text-[11px] font-semibold bg-[#a3142b]">-{off}%</span>}
-          {product.isNew && <span className="px-2.5 py-1 rounded-full bg-ink text-ivory text-[11px] font-semibold">Nouveau</span>}
-          {product.isBestseller && !product.isNew && <span className="px-2.5 py-1 rounded-full bg-gold text-white text-[11px] font-semibold">Best-seller</span>}
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 pointer-events-none">
+          {outOfStock && <span className="px-2.5 py-1 bg-white text-ink/60 text-[9px] uppercase tracking-[0.2em] font-semibold">Épuisé</span>}
+          {off > 0 && <span className="px-2.5 py-1 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold">-{off}%</span>}
+          {product.isNew && <span className="px-2.5 py-1 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold">Nouveau</span>}
+          {!product.isNew && !off && product.isBestseller && <span className="px-2.5 py-1 bg-ink text-gold-light text-[9px] uppercase tracking-[0.2em] font-semibold">Iconique</span>}
         </div>
 
-        <button onClick={() => toggleWishlist(product.id)} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur grid place-items-center shadow-sm hover:scale-110 transition-transform">
-          <Heart className={`w-4 h-4 ${liked ? 'fill-[#a3142b] text-[#a3142b]' : 'text-ink'}`} />
-        </button>
-
-        {outOfStock ? (
-          <div className="absolute inset-x-3 bottom-3 py-2.5 rounded-xl bg-white/90 text-center text-xs font-semibold text-ink/60">Épuisé</div>
-        ) : needsChoice ? (
-          <Link to={`/produit/${product.slug}`}
-            className="absolute inset-x-3 bottom-3 py-2.5 rounded-xl bg-ink text-ivory text-center text-xs font-semibold tracking-wide opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-            Choisir la taille
-          </Link>
-        ) : (
-          <button onClick={() => addToCart(product, { color: product.colors[0]?.name })}
-            className="absolute inset-x-3 bottom-3 py-2.5 rounded-xl bg-ink text-ivory text-xs font-semibold tracking-wide flex items-center justify-center gap-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-            <ShoppingBag className="w-4 h-4" /> Ajouter au panier
+        {/* Actions */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
+          <button onClick={() => toggleWishlist(product.id)} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            className="w-9 h-9 rounded-full bg-white/90 backdrop-blur grid place-items-center transition-transform hover:scale-110">
+            <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : 'text-ink'}`} strokeWidth={1.5} />
           </button>
+          <button onClick={() => openQuickView(product)} aria-label="Aperçu rapide"
+            className="w-9 h-9 rounded-full bg-white/90 backdrop-blur grid place-items-center transition-all hover:scale-110 lg:opacity-0 lg:translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 duration-500">
+            <Eye className="w-4 h-4 text-ink" strokeWidth={1.5} />
+          </button>
+        </div>
+
+        {/* Ajout rapide (desktop) : tailles directement sur la carte */}
+        {!outOfStock && (
+          <div className="hidden lg:block absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-luxe">
+            <div className="bg-white/95 backdrop-blur px-4 py-3.5">
+              {product.sizes.length > 0 ? (
+                <>
+                  <p className="text-[9px] uppercase tracking-[0.25em] text-ink/50 text-center mb-2">Ajout rapide · taille</p>
+                  <div className="flex flex-wrap justify-center gap-1">
+                    {product.sizes.map(s => (
+                      <button key={s} onClick={() => addToCart(product, { size: s, color })}
+                        className="min-w-9 h-8 px-2 text-xs border border-ink/15 hover:bg-ink hover:text-ivory hover:border-ink transition-colors">{s}</button>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <button onClick={() => addToCart(product, { color })} className="w-full flex items-center justify-center gap-2 text-[10px] uppercase tracking-[0.25em] font-semibold py-1.5 hover:text-gold-dark">
+                  <Plus className="w-3.5 h-3.5" /> Ajouter au panier
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="pt-3 flex flex-col gap-1">
+      <div className="pt-4 flex flex-col gap-1.5">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-[11px] uppercase tracking-[0.18em] text-ink/50">{product.subcategory}</span>
-          <div className="flex gap-1">{product.colors.slice(0, 4).map(c => <ColorSwatch key={c.name} color={c} size={12} />)}</div>
+          <span className="text-[9px] uppercase tracking-[0.25em] text-ink/45">{product.subcategory}</span>
+          <div className="flex gap-1">
+            {product.colors.slice(0, 4).map(c => <ColorSwatch key={c.name} color={c} size={10} />)}
+            {product.colors.length > 4 && <span className="text-[10px] text-ink/40">+{product.colors.length - 4}</span>}
+          </div>
         </div>
-        <Link to={`/produit/${product.slug}`} className="font-medium text-ink leading-snug hover:text-gold-dark line-clamp-1">{product.name}</Link>
-        <div className="flex items-center gap-1.5 text-xs text-ink/50"><Stars rating={product.rating} size={12} /> ({product.reviewCount})</div>
-        <div className="flex items-baseline gap-2">
-          <span className="font-semibold text-ink">{formatPrice(product.price)}</span>
-          {product.oldPrice && <span className="text-sm text-ink/40 line-through">{formatPrice(product.oldPrice)}</span>}
+        <Link to={`/produit/${product.slug}`} className="font-display text-[19px] leading-tight text-ink hover:text-gold-dark transition-colors line-clamp-1">{product.name}</Link>
+        <div className="flex items-baseline gap-2.5 text-[13px]">
+          <span className={`font-semibold ${off ? 'text-wine' : 'text-ink'}`}>{formatPrice(product.price)}</span>
+          {product.oldPrice && <span className="text-ink/35 line-through">{formatPrice(product.oldPrice)}</span>}
         </div>
       </div>
     </article>

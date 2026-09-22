@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export const Logo: React.FC<{ light?: boolean }> = ({ light }) => (
-  <Link to="/" className="flex items-center gap-2.5 group" aria-label="Fabima Store — accueil">
-    <span className={`w-10 h-10 rounded-full grid place-items-center font-display italic text-2xl transition-transform group-hover:rotate-12 ${
-      light ? 'bg-ivory text-ink' : 'bg-ink text-gold-light'}`}>F</span>
-    <span className="leading-none">
-      <span className={`block font-display text-xl tracking-wide ${light ? 'text-ivory' : 'text-ink'}`}>Fabima</span>
-      <span className="block text-[10px] tracking-[0.35em] uppercase text-gold">Store</span>
+export const Logo: React.FC<{ light?: boolean; className?: string }> = ({ light, className = '' }) => (
+  <Link to="/" className={`group flex flex-col items-center leading-none ${className}`} aria-label="Fabima Store — accueil">
+    <span className={`font-display text-[28px] sm:text-[32px] tracking-[0.18em] uppercase transition-colors ${light ? 'text-ivory' : 'text-ink'}`}>
+      Fabima
+    </span>
+    <span className={`mt-1 flex items-center gap-2 text-[8px] sm:text-[9px] tracking-[0.55em] uppercase ${light ? 'text-gold-light' : 'text-gold-dark'}`}>
+      <span className="w-4 h-px bg-current" />Store<span className="w-4 h-px bg-current" />
     </span>
   </Link>
 );

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
@@ -8,6 +8,11 @@ import { ProductCard } from '../components/ProductCard';
 import { ColorSwatch } from '../components/ColorSwatch';
 import { usePageTitle } from '../utils/usePageTitle';
 import { formatPrice } from '../utils/format';
+import { SITE_CONFIG } from '../config/site';
+import { ProductImage } from '../components/ProductImage';
+import { useEscape, useLockBody } from '../utils/hooks';
+
+const PAGE_SIZE = 12;
 
 const SORTS = {
   pertinence: 'Pertinence',
@@ -25,13 +30,17 @@ const PRICE_RANGES = [
   { id: 'gt50', label: 'Plus de 50 000', test: (p: number) => p > 50000 },
 ];
 
-const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export const Catalog: React.FC = () => {
   const { category } = useParams<{ category?: CategoryId }>();
   const [params, setParams] = useSearchParams();
   const { products } = useStore();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [shown, setShown] = useState(PAGE_SIZE);
+  useLockBody(filtersOpen);
+  useEscape(filtersOpen, () => setFiltersOpen(false));
+  useEffect(() => setShown(PAGE_SIZE), [params, category]);
 
   const cat = CATEGORIES.find(c => c.id === category);
   const q = params.get('q') ?? '';
@@ -88,29 +97,29 @@ export const Catalog: React.FC = () => {
       {!cat && (
         <FilterGroup title="Catégorie">
           {CATEGORIES.map(c => (
-            <Link key={c.id} to={`/boutique/${c.id}?${params.toString()}`} className="block py-1 text-sm text-ink/70 hover:text-ink">{c.name}</Link>
+            <Link key={c.id} to={`/boutique/${c.id}?${params.toString()}`} className="block py-1 text-sm text-ink/60 hover:text-ink link-luxe">{c.name}</Link>
           ))}
         </FilterGroup>
       )}
       <FilterGroup title="Pour">
         {[['', 'Tous'], ['femme', 'Femme'], ['homme', 'Homme']].map(([v, l]) => (
-          <Radio key={v} checked={gender === v} onChange={() => setParam('genre', v || null)} label={l} />
+          <Radio name="genre" key={v} checked={gender === v} onChange={() => setParam('genre', v || null)} label={l} />
         ))}
       </FilterGroup>
       {subcategories.length > 1 && (
         <FilterGroup title="Type">
-          <Radio checked={!sub} onChange={() => setParam('type', null)} label="Tous" />
-          {subcategories.map(s => <Radio key={s} checked={sub === s} onChange={() => setParam('type', s)} label={s} />)}
+          <Radio name="type" checked={!sub} onChange={() => setParam('type', null)} label="Tous" />
+          {subcategories.map(s => <Radio name="type" key={s} checked={sub === s} onChange={() => setParam('type', s)} label={s} />)}
         </FilterGroup>
       )}
       <FilterGroup title="Prix (FCFA)">
-        <Radio checked={!price} onChange={() => setParam('prix', null)} label="Tous les prix" />
-        {PRICE_RANGES.map(r => <Radio key={r.id} checked={price === r.id} onChange={() => setParam('prix', r.id)} label={r.label} />)}
+        <Radio name="prix" checked={!price} onChange={() => setParam('prix', null)} label="Tous les prix" />
+        {PRICE_RANGES.map(r => <Radio name="prix" key={r.id} checked={price === r.id} onChange={() => setParam('prix', r.id)} label={r.label} />)}
       </FilterGroup>
       <FilterGroup title="Couleur">
         <div className="flex flex-wrap gap-2.5">
           {colors.map(c => (
-            <ColorSwatch key={c.name} color={c} size={26} selected={color === c.name} onClick={() => setParam('couleur', color === c.name ? null : c.name)} />
+            <ColorSwatch key={c.name} color={c} size={22} selected={color === c.name} onClick={() => setParam('couleur', color === c.name ? null : c.name)} />
           ))}
         </div>
       </FilterGroup>
@@ -122,77 +131,97 @@ export const Catalog: React.FC = () => {
           <input type="checkbox" checked={promoOnly} onChange={e => setParam('promo', e.target.checked ? '1' : null)} className="accent-ink w-4 h-4" /> En promotion
         </label>
       </FilterGroup>
-      {activeCount > 0 && <button onClick={reset} className="text-sm underline underline-offset-4">Réinitialiser les filtres</button>}
+      {activeCount > 0 && <button onClick={reset} className="text-[11px] uppercase tracking-[0.2em] font-semibold link-luxe">Tout effacer ({activeCount})</button>}
     </div>
   );
 
+  const visible = filtered.slice(0, shown);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
-      <nav className="flex items-center gap-1.5 text-xs text-ink/50 mb-6" aria-label="Fil d'Ariane">
-        <Link to="/" className="hover:text-ink">Accueil</Link><ChevronRight className="w-3 h-3" />
-        <Link to="/boutique" className="hover:text-ink">Boutique</Link>
-        {cat && <><ChevronRight className="w-3 h-3" /><span className="text-ink">{cat.name}</span></>}
-      </nav>
+    <div>
+      {/* Bannière */}
+      <section className="relative h-[42vh] min-h-[320px] max-h-[460px] overflow-hidden bg-ink grain">
+        <ProductImage src={cat?.image ?? CATEGORIES[1].image} alt="" className="absolute inset-0 w-full h-full opacity-70 animate-kenburns" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/30 to-ink/20" />
+        <div className="relative h-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-end pb-10 text-ivory">
+          <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ivory/60 mb-5" aria-label="Fil d'Ariane">
+            <Link to="/" className="hover:text-ivory">Accueil</Link><ChevronRight className="w-3 h-3" />
+            <Link to="/boutique" className="hover:text-ivory">Boutique</Link>
+            {cat && <><ChevronRight className="w-3 h-3" /><span className="text-ivory">{cat.name}</span></>}
+          </nav>
+          <h1 className="font-display text-5xl sm:text-7xl leading-none">{cat?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em>{q}</em> »</> : 'La boutique')}</h1>
+          <p className="mt-3 text-ivory/70 text-sm max-w-md">{cat?.description ?? (promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : 'Chaussures, sacs, accessoires, bijoux et prêt-à-porter.')}</p>
+        </div>
+      </section>
 
-      <header className="mb-8">
-        <h1 className="font-display text-4xl sm:text-5xl">{cat?.name ?? (promoOnly ? 'Soldes' : q ? `Résultats pour « ${q} »` : 'Toute la boutique')}</h1>
-        <p className="mt-2 text-ink/60">{cat?.description ?? 'Chaussures, sacs, accessoires, bijoux et prêt-à-porter.'}</p>
-        {q && <button onClick={() => setParam('q', null)} className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-ink/5 text-sm">« {q} » <X className="w-3.5 h-3.5" /></button>}
-      </header>
+      <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12">
+        {/* Univers */}
+        <div className="flex gap-7 overflow-x-auto no-scrollbar border-b border-ink/10 -mx-5 px-5 sm:mx-0 sm:px-0">
+          <Link to="/boutique" className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${!cat ? 'border-ink' : 'border-transparent text-ink/45 hover:text-ink'}`}>Tout</Link>
+          {CATEGORIES.map(c => (
+            <Link key={c.id} to={`/boutique/${c.id}`} className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${cat?.id === c.id ? 'border-ink' : 'border-transparent text-ink/45 hover:text-ink'}`}>{c.name}</Link>
+          ))}
+        </div>
 
-      {/* Onglets catégories */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
-        <Link to="/boutique" className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${!cat ? 'bg-ink text-ivory' : 'border border-ink/15'}`}>Tout</Link>
-        {CATEGORIES.map(c => (
-          <Link key={c.id} to={`/boutique/${c.id}`} className={`px-4 py-2 rounded-full text-sm whitespace-nowrap ${cat?.id === c.id ? 'bg-ink text-ivory' : 'border border-ink/15 hover:border-ink'}`}>{c.name}</Link>
-        ))}
-      </div>
-
-      <div className="grid lg:grid-cols-[230px_1fr] gap-10">
-        <aside className="hidden lg:block">{filters}</aside>
-
-        <div>
-          <div className="flex items-center justify-between gap-3 mb-6">
-            <button onClick={() => setFiltersOpen(true)} className="lg:hidden inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-ink/20 text-sm">
-              <SlidersHorizontal className="w-4 h-4" /> Filtres {activeCount > 0 && <span className="w-5 h-5 rounded-full bg-ink text-ivory text-[10px] grid place-items-center">{activeCount}</span>}
-            </button>
-            <p className="text-sm text-ink/60 hidden sm:block">{filtered.length} article{filtered.length > 1 ? 's' : ''}</p>
-            <label className="flex items-center gap-2 text-sm">
-              <span className="text-ink/60 hidden sm:inline">Trier par</span>
+        {/* Barre d'outils */}
+        <div className="flex items-center justify-between gap-3 py-6 sticky top-16 lg:top-[116px] z-30 bg-ivory/95 backdrop-blur">
+          <button onClick={() => setFiltersOpen(true)} className="lg:hidden inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold">
+            <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} /> Filtrer {activeCount > 0 && <span className="w-5 h-5 rounded-full bg-ink text-ivory text-[10px] grid place-items-center">{activeCount}</span>}
+          </button>
+          <p className="text-xs text-ink/55 hidden lg:block">{filtered.length} pièce{filtered.length > 1 ? 's' : ''}</p>
+          <div className="flex items-center gap-3">
+            {q && <button onClick={() => setParam('q', null)} className="hidden sm:inline-flex items-center gap-1.5 px-3 h-8 border border-ink/15 text-xs">« {q} » <X className="w-3 h-3" /></button>}
+            <label className="flex items-center gap-2 text-xs">
+              <span className="text-ink/55 hidden sm:inline uppercase tracking-[0.18em]">Trier</span>
               <select value={sort} onChange={e => setParam('tri', e.target.value === 'pertinence' ? null : e.target.value)}
-                className="px-3 py-2.5 rounded-full border border-ink/20 bg-transparent outline-none">
+                className="h-10 pl-3 pr-8 border border-ink/15 bg-transparent outline-none text-sm focus:border-ink">
                 {Object.entries(SORTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
             </label>
           </div>
+        </div>
 
-          {filtered.length === 0 ? (
-            <div className="text-center py-24 bg-white rounded-3xl">
-              <p className="font-display text-2xl">Aucun article ne correspond</p>
-              <p className="text-ink/60 mt-2">Essayez d'élargir vos critères.</p>
-              <button onClick={reset} className="mt-6 px-6 py-3 rounded-full bg-ink text-ivory text-sm font-semibold">Réinitialiser</button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-10">
-              {filtered.map(p => <ProductCard key={p.id} product={p} />)}
-            </div>
-          )}
-          <p className="text-xs text-ink/40 mt-10 text-center">Tous nos prix sont en FCFA, TTC. Livraison offerte dès {formatPrice(50000)}.</p>
+        <div className="grid lg:grid-cols-[240px_1fr] gap-12">
+          <aside className="hidden lg:block"><div className="sticky top-[210px] max-h-[calc(100vh-230px)] overflow-y-auto no-scrollbar pb-6">{filters}</div></aside>
+
+          <div>
+            {filtered.length === 0 ? (
+              <div className="text-center py-28 border border-ink/10">
+                <p className="font-display text-4xl">Aucune pièce ne correspond</p>
+                <p className="text-ink/60 mt-3 text-sm">Élargissez vos critères pour découvrir d'autres merveilles.</p>
+                <button onClick={reset} className="btn-dark mt-8">Réinitialiser les filtres</button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 sm:gap-x-6 gap-y-12">
+                  {visible.map(p => <ProductCard key={p.id} product={p} />)}
+                </div>
+                <div className="mt-16 text-center">
+                  <p className="text-xs text-ink/50">{visible.length} sur {filtered.length} pièces</p>
+                  <div className="w-48 h-[2px] bg-ink/10 mx-auto mt-3"><div className="h-full bg-ink transition-all duration-700" style={{ width: `${(visible.length / filtered.length) * 100}%` }} /></div>
+                  {visible.length < filtered.length && (
+                    <button onClick={() => setShown(n => n + PAGE_SIZE)} className="btn-outline mt-8">Voir plus de pièces</button>
+                  )}
+                </div>
+              </>
+            )}
+            <p className="text-[11px] text-ink/40 mt-12 text-center">Prix en FCFA, TTC · Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</p>
+          </div>
         </div>
       </div>
 
       {filtersOpen && (
         <div className="fixed inset-0 z-[75] lg:hidden">
-          <div className="absolute inset-0 bg-ink/50" onClick={() => setFiltersOpen(false)} />
-          <div className="absolute bottom-0 inset-x-0 max-h-[85vh] overflow-y-auto bg-ivory rounded-t-3xl p-6 animate-fade-up">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-display text-2xl">Filtres</h2>
-              <button onClick={() => setFiltersOpen(false)} aria-label="Fermer"><X className="w-6 h-6" /></button>
+          <div className="absolute inset-0 bg-ink/50 animate-fade-in" onClick={() => setFiltersOpen(false)} />
+          <div role="dialog" aria-modal="true" aria-label="Filtres" className="absolute bottom-0 inset-x-0 max-h-[88vh] flex flex-col bg-ivory animate-fade-up">
+            <div className="flex items-center justify-between px-6 h-16 border-b border-ink/10">
+              <h2 className="font-display text-3xl">Filtrer</h2>
+              <button onClick={() => setFiltersOpen(false)} aria-label="Fermer" className="w-10 h-10 grid place-items-center"><X className="w-5 h-5" strokeWidth={1.5} /></button>
             </div>
-            {filters}
-            <button onClick={() => setFiltersOpen(false)} className="mt-8 w-full py-3.5 rounded-full bg-ink text-ivory font-semibold">
-              Voir {filtered.length} article{filtered.length > 1 ? 's' : ''}
-            </button>
+            <div className="flex-1 overflow-y-auto px-6 py-6">{filters}</div>
+            <div className="p-4 border-t border-ink/10">
+              <button onClick={() => setFiltersOpen(false)} className="btn-dark w-full">Voir {filtered.length} pièce{filtered.length > 1 ? 's' : ''}</button>
+            </div>
           </div>
         </div>
       )}
@@ -202,14 +231,17 @@ export const Catalog: React.FC = () => {
 
 const FilterGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div>
-    <h3 className="text-xs uppercase tracking-[0.2em] font-semibold mb-3">{title}</h3>
-    <div className="space-y-1">{children}</div>
+    <h3 className="text-[10px] uppercase tracking-luxe font-semibold mb-4 pb-3 border-b border-ink/10">{title}</h3>
+    <div className="space-y-1.5">{children}</div>
   </div>
 );
 
-const Radio: React.FC<{ checked: boolean; onChange: () => void; label: string }> = ({ checked, onChange, label }) => (
-  <label className="flex items-center gap-2.5 py-1 text-sm cursor-pointer">
-    <input type="radio" checked={checked} onChange={onChange} className="accent-ink w-4 h-4" />
-    <span className={checked ? 'text-ink font-medium' : 'text-ink/70'}>{label}</span>
+const Radio: React.FC<{ name: string; checked: boolean; onChange: () => void; label: string }> = ({ name, checked, onChange, label }) => (
+  <label className="flex items-center gap-3 py-1 text-sm cursor-pointer group">
+    <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only peer" />
+    <span className={`w-3.5 h-3.5 rounded-full border grid place-items-center transition-colors peer-focus-visible:outline peer-focus-visible:outline-1 peer-focus-visible:outline-gold ${checked ? 'border-ink' : 'border-ink/30 group-hover:border-ink'}`}>
+      {checked && <span className="w-1.5 h-1.5 rounded-full bg-ink" />}
+    </span>
+    <span className={checked ? 'text-ink' : 'text-ink/60 group-hover:text-ink transition-colors'}>{label}</span>
   </label>
 );

@@ -1,50 +1,62 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Gem, HeartHandshake, Leaf, Truck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { ProductImage } from '../components/ProductImage';
+import { Reveal } from '../components/Reveal';
 import { usePageTitle } from '../utils/usePageTitle';
 
+const px = (id: number, w = 1200) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
+
 export const About: React.FC = () => {
-  usePageTitle('Notre histoire');
+  usePageTitle('Notre maison');
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-14">
-      <div className="grid md:grid-cols-2 gap-12 items-center">
-        <div>
-          <p className="text-gold-dark uppercase tracking-[0.3em] text-xs">Notre histoire</p>
-          <h1 className="font-display text-5xl mt-3 leading-tight">Née à Dakar, pensée pour vous</h1>
-          <p className="mt-6 text-ink/70 leading-relaxed">
-            Fabima Store est née d'une passion simple : rendre la mode de qualité accessible à toutes et à tous au Sénégal.
-            Nous sélectionnons chaque paire de chaussures, chaque sac et chaque bijou avec exigence, et nous collaborons
-            avec des artisanes et tailleurs dakarois pour nos collections en wax et bazin.
-          </p>
-          <p className="mt-4 text-ink/70 leading-relaxed">
-            Commandez en quelques clics, payez avec Wave ou Orange Money, et recevez vos articles dès le lendemain à Dakar.
-          </p>
-          <Link to="/boutique" className="inline-block mt-8 px-7 py-3.5 rounded-full bg-ink text-ivory font-semibold">Découvrir la boutique</Link>
-        </div>
-        <ProductImage src="https://images.pexels.com/photos/1488463/pexels-photo-1488463.jpeg?auto=compress&cs=tinysrgb&w=1000" alt="Boutique Fabima" className="w-full aspect-[4/5] rounded-3xl" />
-      </div>
+    <div>
+      <section className="max-w-5xl mx-auto px-5 sm:px-8 pt-20 text-center">
+        <p className="eyebrow animate-fade-up">Notre maison</p>
+        <h1 className="font-display text-6xl sm:text-8xl leading-[0.95] mt-6 animate-fade-up" style={{ animationDelay: '120ms' }}>Née à Dakar,<br /><em className="text-gold-dark">pensée pour vous</em></h1>
+      </section>
 
-      <div className="mt-24 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <Reveal className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 mt-16">
+        <ProductImage src={px(1488463, 2000)} alt="La boutique Fabima à Dakar" label="La boutique · Sacré-Cœur" className="w-full aspect-[16/9] sm:aspect-[21/9]" />
+      </Reveal>
+
+      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 mt-24 grid lg:grid-cols-12 gap-10">
+        <Reveal className="lg:col-span-4"><p className="eyebrow">Depuis 2021</p><h2 className="font-display text-4xl sm:text-5xl mt-4 leading-tight">Une exigence, une promesse</h2></Reveal>
+        <Reveal className="lg:col-span-7 lg:col-start-6 space-y-6 text-ink/70 leading-relaxed text-[15px]" delay={120}>
+          <p className="font-display text-2xl sm:text-3xl text-ink leading-snug">Fabima est née d'une conviction simple : l'élégance ne devrait pas être un luxe inaccessible.</p>
+          <p>Nous sélectionnons chaque paire de chaussures, chaque sac et chaque bijou avec la même exigence que s'il nous était destiné. Nous collaborons avec des artisanes et tailleurs dakarois pour nos collections en wax et en bazin, afin que chaque pièce raconte aussi une histoire d'ici.</p>
+          <p>Commandez en quelques instants, réglez par Wave ou Orange Money, et recevez vos pièces dès le lendemain à Dakar, soigneusement emballées.</p>
+        </Reveal>
+      </section>
+
+      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 mt-28 grid sm:grid-cols-2 lg:grid-cols-4 border-t border-ink/10">
         {[
-          { Icon: Gem, t: 'Qualité sélectionnée', d: 'Chaque article est contrôlé avant expédition.' },
-          { Icon: HeartHandshake, t: 'Artisanat local', d: 'Nos pièces en wax sont confectionnées à Dakar.' },
-          { Icon: Truck, t: 'Livraison rapide', d: '24h à Dakar, partout au Sénégal en 72h.' },
-          { Icon: Leaf, t: 'Emballage responsable', d: 'Pochettes réutilisables et papier recyclé.' },
-        ].map(({ Icon, t, d }) => (
-          <div key={t} className="bg-white rounded-3xl p-7">
-            <Icon className="w-8 h-8 text-gold-dark" strokeWidth={1.5} />
-            <h3 className="font-display text-xl mt-4">{t}</h3>
-            <p className="text-sm text-ink/60 mt-2">{d}</p>
-          </div>
+          ['01', 'Sélection', 'Chaque pièce est choisie, essayée et contrôlée avant de rejoindre la boutique.'],
+          ['02', 'Artisanat', 'Nos créations en wax sont coupées et cousues à la main dans la Médina.'],
+          ['03', 'Service', 'Un conseil personnalisé sur WhatsApp, 7 jours sur 7.'],
+          ['04', 'Responsabilité', 'Pochettes réutilisables, papier recyclé et livraisons groupées.'],
+        ].map(([n, t, d], i) => (
+          <Reveal key={t} delay={i * 90} className={`py-10 sm:pr-8 ${i > 0 ? 'sm:pl-8 sm:border-l' : ''} border-ink/10`}>
+            <p className="font-display italic text-gold-dark text-2xl">{n}</p>
+            <h3 className="font-display text-3xl mt-4">{t}</h3>
+            <p className="text-sm text-ink/60 mt-3 leading-relaxed">{d}</p>
+          </Reveal>
         ))}
-      </div>
+      </section>
 
-      <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-        {[['5 000+', 'clients satisfaits'], ['300+', 'articles en boutique'], ['24h', 'livraison à Dakar'], ['4,8/5', 'note moyenne']].map(([n, l]) => (
-          <div key={l}><p className="font-display text-4xl sm:text-5xl text-gold-dark">{n}</p><p className="text-sm text-ink/60 mt-1">{l}</p></div>
-        ))}
-      </div>
+      <section className="bg-ink text-ivory mt-20">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-20 grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
+          {[['5 000+', 'clientes & clients'], ['300+', 'pièces en boutique'], ['24h', 'livraison à Dakar'], ['4,8/5', 'note moyenne']].map(([n, l]) => (
+            <Reveal key={l}><p className="font-display text-5xl sm:text-6xl text-gold-light">{n}</p><p className="text-[10px] uppercase tracking-luxe text-ivory/60 mt-3">{l}</p></Reveal>
+          ))}
+        </div>
+      </section>
+
+      <section className="text-center pt-24 px-5">
+        <h2 className="font-display text-4xl sm:text-5xl">Venez nous rendre visite</h2>
+        <p className="text-ink/60 mt-3">Sacré-Cœur 3, Dakar — ou découvrez la boutique en ligne.</p>
+        <Link to="/boutique" className="btn-dark mt-8">Entrer dans la boutique <ArrowRight className="w-4 h-4" /></Link>
+      </section>
     </div>
   );
 };

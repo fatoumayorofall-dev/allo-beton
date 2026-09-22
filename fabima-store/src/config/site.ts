@@ -17,6 +17,7 @@ export const SITE_CONFIG = {
     tiktok: 'https://tiktok.com/@fabimastore',
   },
   freeShippingThreshold: 50000,
+  giftWrapFee: 2000,
   adminPin: '2026',
 };
 
@@ -35,9 +36,18 @@ export const DELIVERY_ZONES: { name: string; fee: number; delay: string }[] = [
 ];
 
 /** Codes promo disponibles */
-export const PROMO_CODES: Record<string, { label: string; percent?: number; amount?: number; freeShipping?: boolean }> = {
+export interface PromoCode {
+  label: string;
+  percent?: number;
+  amount?: number;
+  freeShipping?: boolean;
+  /** Montant minimum du sous-total pour que le code s'applique */
+  minSubtotal?: number;
+}
+
+export const PROMO_CODES: Record<string, PromoCode> = {
   BIENVENUE: { label: '-10 % sur votre 1re commande', percent: 10 },
-  FABIMA5000: { label: '-5 000 FCFA dès 40 000 FCFA', amount: 5000 },
+  FABIMA5000: { label: '-5 000 FCFA dès 40 000 FCFA', amount: 5000, minSubtotal: 40000 },
   LIVRAISON: { label: 'Livraison offerte', freeShipping: true },
 };
 

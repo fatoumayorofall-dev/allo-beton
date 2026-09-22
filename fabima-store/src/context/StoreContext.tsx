@@ -1,7 +1,8 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { INITIAL_PRODUCTS } from '../data/catalog';
-import type { CartItem, Order, OrderStatus, Product } from '../data/types';
+import type { CartItem, CustomerInfo, Order, OrderStatus, Product, Review } from '../data/types';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
+import { formatPrice } from '../utils/format';
 
 /* ------------------------------------------------------------------ */
 /*  Persistance locale                                                 */
@@ -13,6 +14,9 @@ const KEYS = {
   wishlist: 'fabima_wishlist',
   orders: 'fabima_orders',
   recent: 'fabima_recent',
+  promo: 'fabima_promo',
+  gift: 'fabima_gift',
+  customer: 'fabima_customer',
 };
 
 function load<T>(key: string, fallback: T): T {
@@ -26,7 +30,8 @@ function load<T>(key: string, fallback: T): T {
 
 function save(key: string, value: unknown) {
   try {
-    localStorage.setItem(key, JSON.stringify(value));
+    if (value === null || value === undefined) localStorage.removeItem(key);
+    else localStorage.setItem(key, JSON.stringify(value));
   } catch {
     /* stockage indisponible (navigation privée) : on continue sans persister */
   }
@@ -42,12 +47,20 @@ export interface Toast {
   type: 'success' | 'error' | 'info';
 }
 
-interface Totals {
+export interface Totals {
   subtotal: number;
   discount: number;
   deliveryFee: number;
+  giftFee: number;
   total: number;
   itemCount: number;
+  /** Montant manquant pour atteindre le minimum du code promo (0 si atteint) */
+  promoShortfall: number;
+}
+
+export interface GiftWrap {
+  enabled: boolean;
+  message: string;
 }
 
 interface StoreContextValue {
@@ -56,9 +69,10 @@ interface StoreContextValue {
   saveProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   resetCatalog: () => void;
+  addReview: (productId: string, review: Omit<Review, 'date'>) => void;
 
   cart: CartItem[];
-  addToCart: (product: Product, opts?: { size?: string; color?: string; quantity?: number }) => void;
+  addToCart: (product: Product, opts?: { size?: string; color?: string; quantity?: number; silent?: boolean }) => boolean;
   updateQuantity: (key: string, quantity: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
@@ -66,8 +80,10 @@ interface StoreContextValue {
   setCartOpen: (open: boolean) => void;
 
   promoCode: string | null;
-  applyPromo: (code: string) => boolean;
+  applyPromo: (code: string) => { ok: boolean; message: string };
   removePromo: () => void;
+  giftWrap: GiftWrap;
+  setGiftWrap: (g: GiftWrap) => void;
   computeTotals: (deliveryFee: number) => Totals;
 
   wishlist: string[];
@@ -76,6 +92,12 @@ interface StoreContextValue {
 
   recentlyViewed: string[];
   markViewed: (productId: string) => void;
+
+  quickView: Product | null;
+  openQuickView: (product: Product | null) => void;
+
+  savedCustomer: CustomerInfo | null;
+  saveCustomer: (c: CustomerInfo | null) => void;
 
   orders: Order[];
   placeOrder: (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'history'>) => Order;
@@ -99,8 +121,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [wishlist, setWishlist] = useState<string[]>(() => load(KEYS.wishlist, []));
   const [orders, setOrders] = useState<Order[]>(() => load(KEYS.orders, []));
   const [recentlyViewed, setRecentlyViewed] = useState<string[]>(() => load(KEYS.recent, []));
-  const [promoCode, setPromoCode] = useState<string | null>(null);
+  const [promoCode, setPromoCode] = useState<string | null>(() => {
+    const code = load<string | null>(KEYS.promo, null);
+    return code && PROMO_CODES[code] ? code : null;
+  });
+  const [giftWrap, setGiftWrap] = useState<GiftWrap>(() => load(KEYS.gift, { enabled: false, message: '' }));
+  const [savedCustomer, setSavedCustomer] = useState<CustomerInfo | null>(() => load(KEYS.customer, null));
   const [cartOpen, setCartOpen] = useState(false);
+  const [quickView, setQuickView] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => save(KEYS.products, products), [products]);
@@ -108,12 +136,34 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => save(KEYS.wishlist, wishlist), [wishlist]);
   useEffect(() => save(KEYS.orders, orders), [orders]);
   useEffect(() => save(KEYS.recent, recentlyViewed), [recentlyViewed]);
+  useEffect(() => save(KEYS.promo, promoCode), [promoCode]);
+  useEffect(() => save(KEYS.gift, giftWrap), [giftWrap]);
+  useEffect(() => save(KEYS.customer, savedCustomer), [savedCustomer]);
 
   const notify = useCallback((message: string, type: Toast['type'] = 'success') => {
     const id = Date.now() + Math.random();
-    setToasts(t => [...t, { id, message, type }]);
+    setToasts(t => [...t.slice(-2), { id, message, type }]);
     setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 3200);
   }, []);
+
+  /* ---------- Synchronisation panier ↔ catalogue ----------
+     Le panier garde une copie du prix : on la réaligne quand le gérant modifie un produit,
+     on plafonne la quantité au stock restant et on retire les articles supprimés ou épuisés. */
+  useEffect(() => {
+    setCart(items => {
+      let changed = false;
+      const next: CartItem[] = [];
+      for (const item of items) {
+        const p = products.find(x => x.id === item.productId);
+        if (!p || p.stock <= 0) { changed = true; continue; }
+        const quantity = Math.min(item.quantity, p.stock);
+        const image = p.images[0] ?? item.image;
+        if (quantity !== item.quantity || p.price !== item.price || p.name !== item.name || image !== item.image) changed = true;
+        next.push({ ...item, quantity, price: p.price, name: p.name, image });
+      }
+      return changed ? next : items;
+    });
+  }, [products]);
 
   /* ---------- Produits ---------- */
   const getProduct = useCallback(
@@ -131,55 +181,92 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const deleteProduct = useCallback((id: string) => setProducts(list => list.filter(p => p.id !== id)), []);
   const resetCatalog = useCallback(() => setProducts(INITIAL_PRODUCTS), []);
 
+  const addReview = useCallback((productId: string, review: Omit<Review, 'date'>) => {
+    setProducts(list => list.map(p => {
+      if (p.id !== productId) return p;
+      const reviewCount = p.reviewCount + 1;
+      const rating = Math.round(((p.rating * p.reviewCount + review.rating) / reviewCount) * 10) / 10;
+      return { ...p, rating, reviewCount, reviews: [{ ...review, date: new Date().toISOString().slice(0, 10) }, ...(p.reviews ?? [])] };
+    }));
+  }, []);
+
   /* ---------- Panier ---------- */
   const addToCart: StoreContextValue['addToCart'] = useCallback((product, opts = {}) => {
     const size = opts.size || undefined;
     const color = opts.color || undefined;
     const quantity = opts.quantity ?? 1;
     const key = [product.id, size ?? '', color ?? ''].join('|');
+    const inCart = cart.filter(i => i.productId === product.id).reduce((s, i) => s + i.quantity, 0);
+    const available = product.stock - inCart;
+    if (available <= 0) {
+      notify(product.stock <= 0 ? 'Cet article est épuisé' : `Stock maximum atteint (${product.stock})`, 'error');
+      return false;
+    }
+    const qty = Math.min(quantity, available);
     setCart(items => {
       const existing = items.find(i => i.key === key);
-      if (existing) {
-        return items.map(i => (i.key === key ? { ...i, quantity: Math.min(i.quantity + quantity, product.stock) } : i));
-      }
-      return [...items, { key, productId: product.id, name: product.name, image: product.images[0], price: product.price, size, color, quantity }];
+      if (existing) return items.map(i => (i.key === key ? { ...i, quantity: i.quantity + qty } : i));
+      return [...items, { key, productId: product.id, name: product.name, image: product.images[0], price: product.price, size, color, quantity: qty }];
     });
-    notify(`« ${product.name} » ajouté au panier`);
-  }, [notify]);
+    if (!opts.silent) {
+      notify(qty < quantity ? `Seulement ${qty} ajouté(s) : stock limité` : `« ${product.name} » ajouté au panier`, qty < quantity ? 'info' : 'success');
+    }
+    return true;
+  }, [cart, notify]);
 
   const updateQuantity = useCallback((key: string, quantity: number) => {
-    setCart(items => (quantity <= 0 ? items.filter(i => i.key !== key) : items.map(i => (i.key === key ? { ...i, quantity } : i))));
-  }, []);
+    setCart(items => {
+      if (quantity <= 0) return items.filter(i => i.key !== key);
+      const item = items.find(i => i.key === key);
+      if (!item) return items;
+      const stock = products.find(p => p.id === item.productId)?.stock ?? quantity;
+      const others = items.filter(i => i.productId === item.productId && i.key !== key).reduce((s, i) => s + i.quantity, 0);
+      const capped = Math.max(1, Math.min(quantity, stock - others));
+      return items.map(i => (i.key === key ? { ...i, quantity: capped } : i));
+    });
+  }, [products]);
 
   const removeFromCart = useCallback((key: string) => setCart(items => items.filter(i => i.key !== key)), []);
-  const clearCart = useCallback(() => { setCart([]); setPromoCode(null); }, []);
+  const clearCart = useCallback(() => {
+    setCart([]);
+    setPromoCode(null);
+    setGiftWrap({ enabled: false, message: '' });
+  }, []);
 
   /* ---------- Promo & totaux ---------- */
   const applyPromo = useCallback((code: string) => {
     const normalized = code.trim().toUpperCase();
-    if (!PROMO_CODES[normalized]) return false;
+    const promo = PROMO_CODES[normalized];
+    if (!promo) return { ok: false, message: 'Ce code promo n\'existe pas' };
     setPromoCode(normalized);
-    return true;
-  }, []);
+    const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+    if (promo.minSubtotal && subtotal < promo.minSubtotal) {
+      return { ok: true, message: `Code enregistré : il s'appliquera dès ${formatPrice(promo.minSubtotal)} d'achat` };
+    }
+    return { ok: true, message: `Code ${normalized} appliqué` };
+  }, [cart]);
   const removePromo = useCallback(() => setPromoCode(null), []);
 
   const computeTotals = useCallback((deliveryFee: number): Totals => {
     const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
     const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
     const promo = promoCode ? PROMO_CODES[promoCode] : undefined;
+    const promoShortfall = promo?.minSubtotal ? Math.max(0, promo.minSubtotal - subtotal) : 0;
+    const promoActive = !!promo && promoShortfall === 0;
     let discount = 0;
-    if (promo?.percent) discount = Math.round((subtotal * promo.percent) / 100);
-    if (promo?.amount && subtotal >= 40000) discount = promo.amount;
-    const freeShipping = promo?.freeShipping || subtotal - discount >= SITE_CONFIG.freeShippingThreshold;
+    if (promoActive && promo.percent) discount = Math.round((subtotal * promo.percent) / 100);
+    if (promoActive && promo.amount) discount = Math.min(promo.amount, subtotal);
+    const freeShipping = (promoActive && promo.freeShipping) || subtotal - discount >= SITE_CONFIG.freeShippingThreshold;
     const fee = freeShipping ? 0 : deliveryFee;
-    return { subtotal, discount, deliveryFee: fee, total: Math.max(0, subtotal - discount + fee), itemCount };
-  }, [cart, promoCode]);
+    const giftFee = giftWrap.enabled && cart.length > 0 ? SITE_CONFIG.giftWrapFee : 0;
+    return { subtotal, discount, deliveryFee: fee, giftFee, total: Math.max(0, subtotal - discount + fee + giftFee), itemCount, promoShortfall };
+  }, [cart, promoCode, giftWrap.enabled]);
 
   /* ---------- Favoris & vus récemment ---------- */
   const toggleWishlist = useCallback((productId: string) => {
     const has = wishlist.includes(productId);
     setWishlist(list => (has ? list.filter(id => id !== productId) : [...list, productId]));
-    notify(has ? 'Retiré de vos favoris' : 'Ajouté à vos favoris ♥', has ? 'info' : 'success');
+    notify(has ? 'Retiré de vos favoris' : 'Ajouté à vos favoris', has ? 'info' : 'success');
   }, [wishlist, notify]);
   const isInWishlist = useCallback((productId: string) => wishlist.includes(productId), [wishlist]);
 
@@ -188,24 +275,32 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   /* ---------- Commandes ---------- */
+  const adjustStock = useCallback((items: CartItem[], direction: 1 | -1) => {
+    setProducts(list => list.map(p => {
+      const qty = items.filter(i => i.productId === p.id).reduce((s, i) => s + i.quantity, 0);
+      return qty ? { ...p, stock: Math.max(0, p.stock + direction * qty) } : p;
+    }));
+  }, []);
+
   const placeOrder: StoreContextValue['placeOrder'] = useCallback((data) => {
     const now = new Date().toISOString();
     const id = `FB-${Date.now().toString(36).toUpperCase().slice(-6)}`;
     const order: Order = { ...data, id, createdAt: now, status: 'en_attente', history: [{ status: 'en_attente', date: now }] };
     setOrders(list => [order, ...list]);
-    // Décrémente le stock
-    setProducts(list => list.map(p => {
-      const qty = data.items.filter(i => i.productId === p.id).reduce((s, i) => s + i.quantity, 0);
-      return qty ? { ...p, stock: Math.max(0, p.stock - qty) } : p;
-    }));
+    adjustStock(data.items, -1);
     return order;
-  }, []);
+  }, [adjustStock]);
 
   const updateOrderStatus = useCallback((id: string, status: OrderStatus) => {
+    const order = orders.find(o => o.id === id);
+    if (!order || order.status === status) return;
+    // Une annulation remet les articles en stock ; une réactivation les retire à nouveau.
+    if (status === 'annulee') adjustStock(order.items, 1);
+    if (order.status === 'annulee') adjustStock(order.items, -1);
     setOrders(list => list.map(o => (o.id === id
       ? { ...o, status, history: [...o.history, { status, date: new Date().toISOString() }], paymentStatus: status === 'livree' ? 'paye' : o.paymentStatus }
       : o)));
-  }, []);
+  }, [orders, adjustStock]);
 
   const markOrderPaid = useCallback((id: string) => {
     setOrders(list => list.map(o => (o.id === id ? { ...o, paymentStatus: 'paye' } : o)));
@@ -217,16 +312,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [orders]);
 
   const value = useMemo<StoreContextValue>(() => ({
-    products, getProduct, saveProduct, deleteProduct, resetCatalog,
+    products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview,
     cart, addToCart, updateQuantity, removeFromCart, clearCart, cartOpen, setCartOpen,
-    promoCode, applyPromo, removePromo, computeTotals,
+    promoCode, applyPromo, removePromo, giftWrap, setGiftWrap, computeTotals,
     wishlist, toggleWishlist, isInWishlist,
     recentlyViewed, markViewed,
+    quickView, openQuickView: setQuickView,
+    savedCustomer, saveCustomer: setSavedCustomer,
     orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder,
     toasts, notify,
-  }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, cart, addToCart, updateQuantity, removeFromCart, clearCart,
-    cartOpen, promoCode, applyPromo, removePromo, computeTotals, wishlist, toggleWishlist, isInWishlist, recentlyViewed, markViewed,
-    orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder, toasts, notify]);
+  }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
+    cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, isInWishlist, recentlyViewed, markViewed,
+    quickView, savedCustomer, orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder, toasts, notify]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };

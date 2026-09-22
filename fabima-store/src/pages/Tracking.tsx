@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { PackageSearch } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import type { Order } from '../data/types';
 import { formatDate, formatPrice } from '../utils/format';
@@ -28,32 +27,30 @@ export const Tracking: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-14">
+    <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-16">
       <div className="text-center">
-        <PackageSearch className="w-12 h-12 mx-auto text-gold-dark" strokeWidth={1.4} />
-        <h1 className="font-display text-4xl sm:text-5xl mt-4">Suivre ma commande</h1>
-        <p className="text-ink/60 mt-3">Saisissez votre numéro de commande (ex : FB-A1B2C3) et le téléphone utilisé lors de l'achat.</p>
+        <p className="eyebrow">Service client</p>
+        <h1 className="font-display text-5xl sm:text-6xl mt-4">Suivre une commande</h1>
+        <p className="text-ink/60 mt-4 max-w-md mx-auto">Saisissez votre numéro de commande (ex : FB-A1B2C3) et le téléphone utilisé lors de l'achat.</p>
       </div>
 
-      <form onSubmit={search} className="mt-10 bg-white rounded-3xl p-6 sm:p-8 grid sm:grid-cols-[1fr_1fr_auto] gap-3">
-        <input value={id} onChange={e => setId(e.target.value)} placeholder="N° de commande" aria-label="Numéro de commande" required
-          className="px-4 py-3 rounded-xl border border-ink/15 outline-none focus:border-ink uppercase" />
-        <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" type="tel" aria-label="Téléphone" required
-          className="px-4 py-3 rounded-xl border border-ink/15 outline-none focus:border-ink" />
-        <button className="px-6 py-3 rounded-xl bg-ink text-ivory font-semibold">Rechercher</button>
+      <form onSubmit={search} className="mt-12 grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+        <input value={id} onChange={e => setId(e.target.value)} placeholder="N° de commande" aria-label="Numéro de commande" required className="field uppercase" />
+        <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" type="tel" aria-label="Téléphone" required className="field" />
+        <button className="btn-dark !h-12">Rechercher</button>
       </form>
 
-      {notFound && <p className="mt-6 text-center text-[#a3142b]">Aucune commande ne correspond. Vérifiez vos informations ou contactez-nous sur WhatsApp.</p>}
+      {notFound && <p className="mt-8 text-center text-sm text-wine">Aucune commande ne correspond. Vérifiez vos informations ou écrivez-nous sur WhatsApp.</p>}
 
       {order && (
-        <div className="mt-8 bg-white rounded-3xl p-6 sm:p-8 animate-fade-up">
-          <div className="flex flex-wrap justify-between gap-4 pb-6 border-b border-ink/10">
-            <div><p className="text-xs text-ink/50">Commande</p><p className="font-display text-2xl">{order.id}</p><p className="text-xs text-ink/50">{formatDate(order.createdAt)}</p></div>
-            <div className="text-right"><p className="text-xs text-ink/50">Total</p><p className="font-semibold text-lg">{formatPrice(order.total)}</p>
-              <p className="text-xs">{PAYMENT_LABELS[order.paymentMethod]} · <span className={order.paymentStatus === 'paye' ? 'text-emerald-700' : 'text-amber-700'}>{order.paymentStatus === 'paye' ? 'Payé' : 'À payer'}</span></p></div>
+        <div className="mt-10 bg-white border border-ink/[0.06] p-7 sm:p-10 animate-fade-up">
+          <div className="flex flex-wrap justify-between gap-6 pb-8 border-b border-ink/10">
+            <div><p className="field-label">Commande</p><p className="font-display text-4xl">{order.id}</p><p className="text-xs text-ink/50 mt-1">{formatDate(order.createdAt)}</p></div>
+            <div className="sm:text-right"><p className="field-label">Total</p><p className="font-display text-3xl">{formatPrice(order.total)}</p>
+              <p className="text-xs mt-1">{PAYMENT_LABELS[order.paymentMethod]} · <span className={order.paymentStatus === 'paye' ? 'text-emerald-800' : 'text-amber-800'}>{order.paymentStatus === 'paye' ? 'Payé' : 'À régler'}</span></p></div>
           </div>
-          <div className="pt-6"><OrderTimeline order={order} /></div>
-          <p className="mt-6 text-sm text-ink/60">{order.items.reduce((s, i) => s + i.quantity, 0)} article(s) · Livraison : {order.customer.zone}</p>
+          <div className="pt-8"><OrderTimeline order={order} /></div>
+          <p className="text-sm text-ink/60 border-t border-ink/10 pt-6">{order.items.reduce((s, i) => s + i.quantity, 0)} pièce(s) · Livraison : {order.customer.zone}</p>
         </div>
       )}
     </div>
