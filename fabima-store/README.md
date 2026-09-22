@@ -96,9 +96,30 @@ src/
 ```
 
 Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
-`whatsapp.js` (Twilio et textes des messages), `store.js` (vitrine du statut, compteurs de visites, notes vocales).
+`whatsapp.js` (Twilio et textes des messages), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
+
+## Application sur le téléphone et compte par numéro
+
+**Installer Fabima** : sur Android, le bouton « Mettre Fabima sur mon téléphone » (bandeau sur mobile, page Mon compte)
+ouvre directement l'installation. Sur iPhone, un guide en 3 images (avec lecture à voix haute) montre les gestes dans Safari.
+Une fois installée, Fabima s'ouvre depuis son icône, en plein écran, et reste consultable avec une connexion faible
+(`public/sw.js`, `public/manifest.webmanifest`, icônes dans `public/icons/`). L'installation demande un site en **https**.
+
+**Compte cliente (`/compte`)** : la cliente saisit son numéro, reçoit un **code à 4 chiffres sur WhatsApp**, l'écrit, puis
+donne son prénom. Pas de mot de passe. Avec son compte, elle retrouve sur n'importe quel téléphone ses commandes, ses favoris
+et son adresse ; ses coordonnées sont préremplies à la commande. La gérante voit les inscrites dans l'onglet **Clientes**
+(export Excel, bouton WhatsApp).
+
+| Réglage (`server/.env`) | Rôle |
+|---|---|
+| Twilio configuré | Le code part par WhatsApp |
+| `TWILIO_TPL_OTP` | Modèle « authentification » approuvé par Meta, obligatoire en production |
+| `OTP_DEV_MODE=1` | Sans WhatsApp, le code s'affiche à l'écran (tests uniquement) ; mettre `0` en production |
+
+Sécurité : code valable 10 minutes, 5 essais maximum, 3 demandes de code par numéro toutes les 10 minutes ;
+le serveur ne garde que l'empreinte des codes et des jetons de session (valables 6 mois).
 
 ## Vendre avec le statut WhatsApp
 

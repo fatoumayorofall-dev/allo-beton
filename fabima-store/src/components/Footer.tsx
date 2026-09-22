@@ -75,6 +75,7 @@ export const Footer: React.FC = () => {
         <div>
           <p className={col}>Service client</p>
           <ul className="space-y-3">
+            <li><Link to="/compte" className={lnk}>Mon compte</Link></li>
             <li><Link to="/mes-commandes" className={lnk}>Mes commandes</Link></li>
             <li><Link to="/suivi" className={lnk}>Suivre une commande</Link></li>
             <li><Link to="/faq" className={lnk}>Livraison & échanges</Link></li>

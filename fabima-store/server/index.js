@@ -14,6 +14,7 @@ try { process.loadEnvFile(path.join(here, '.env')); } catch { /* pas de fichier 
 const { assistantEnabled, sanitizeMessages, streamAssistant, Anthropic } = await import('./assistant.js');
 const wa = await import('./whatsapp.js');
 const store = await import('./store.js');
+const { registerAuthRoutes } = await import('./auth.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -44,7 +45,7 @@ function validOrder(o) {
 
 /* ---------- État des services ---------- */
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, storage: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
+  res.json({ ok: true, storage: true, accounts: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
 });
 
 /* ---------- Assistant IA ---------- */
@@ -139,6 +140,9 @@ app.delete('/api/voice/:slug', (req, res) => {
   if (store.validSlug(req.params.slug)) store.deleteVoice(req.params.slug);
   res.json({ ok: true });
 });
+
+/* ---------- Comptes clientes (numéro de téléphone + code WhatsApp) ---------- */
+registerAuthRoutes(app, { limit, wa, store, isAdmin });
 
 /* ---------- Site compilé (production) ---------- */
 const dist = path.join(here, '..', 'dist');

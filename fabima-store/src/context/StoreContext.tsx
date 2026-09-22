@@ -99,6 +99,8 @@ interface StoreContextValue {
 
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
+  /** Ajoute des favoris venus d'ailleurs (compte en ligne) sans rien retirer */
+  mergeWishlist: (ids: string[]) => void;
   isInWishlist: (productId: string) => boolean;
 
   recentlyViewed: string[];
@@ -292,6 +294,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setWishlist(list => (has ? list.filter(id => id !== productId) : [...list, productId]));
     notify(has ? 'Retiré de vos favoris' : 'Ajouté à vos favoris', has ? 'info' : 'success');
   }, [wishlist, notify]);
+  const mergeWishlist = useCallback((ids: string[]) => {
+    setWishlist(list => {
+      const extra = ids.filter(id => !list.includes(id));
+      return extra.length ? [...list, ...extra] : list;
+    });
+  }, []);
   const isInWishlist = useCallback((productId: string) => wishlist.includes(productId), [wishlist]);
 
   const markViewed = useCallback((productId: string) => {
@@ -345,7 +353,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview,
     cart, addToCart, updateQuantity, removeFromCart, clearCart, cartOpen, setCartOpen,
     promoCode, applyPromo, removePromo, giftWrap, setGiftWrap, computeTotals,
-    wishlist, toggleWishlist, isInWishlist,
+    wishlist, toggleWishlist, mergeWishlist, isInWishlist,
     recentlyViewed, markViewed,
     quickView, openQuickView: setQuickView,
     savedCustomer, saveCustomer: setSavedCustomer,
@@ -353,7 +361,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder,
     toasts, notify,
   }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
-    cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, isInWishlist, recentlyViewed, markViewed,
+    cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, mergeWishlist, isInWishlist, recentlyViewed, markViewed,
     quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, toasts, notify]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { StoreProvider } from './context/StoreContext';
+import { AccountProvider } from './context/AccountContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { CartDrawer } from './components/CartDrawer';
@@ -23,6 +24,8 @@ import { NotFound } from './pages/NotFound';
 import { ArticlePage, Journal } from './pages/Journal';
 import { SimpleProduct } from './pages/SimpleProduct';
 import { Showcase } from './pages/Showcase';
+import { Account } from './pages/Account';
+import { InstallBanner } from './components/InstallApp';
 
 // L'espace gérant n'est chargé que lorsqu'on y accède : la clientèle ne télécharge pas son code.
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
@@ -55,6 +58,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <StoreProvider>
+        <AccountProvider>
         <ScrollToTop />
         <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-ink focus:text-ivory focus:px-4 focus:py-2">Aller au contenu</a>
         <div className="min-h-screen flex flex-col">
@@ -72,6 +76,7 @@ export default function App() {
                 <Route path="/suivi" element={<Tracking />} />
                 <Route path="/favoris" element={<Wishlist />} />
                 <Route path="/mes-commandes" element={<MyOrders />} />
+                <Route path="/compte" element={<Account />} />
                 <Route path="/p/:code" element={<SimpleProduct />} />
                 <Route path="/s" element={<Showcase />} />
                 <Route path="/journal" element={<Journal />} />
@@ -88,7 +93,8 @@ export default function App() {
         <CartDrawer />
         <QuickView />
         <Toasts />
-        <Chrome><FloatingActions /><Assistant /></Chrome>
+        <Chrome><FloatingActions /><Assistant /><InstallBanner /></Chrome>
+        </AccountProvider>
       </StoreProvider>
     </BrowserRouter>
   );

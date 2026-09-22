@@ -16,7 +16,7 @@ fs.mkdirSync(VOICE_DIR, { recursive: true });
 const SLUG_RE = /^[a-z0-9-]{2,80}$/;
 export const validSlug = s => typeof s === 'string' && SLUG_RE.test(s);
 
-let state = { showcase: [], visits: {} };
+let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {} };
 try { state = { ...state, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { /* premier démarrage */ }
 
 let timer = null;
@@ -68,4 +68,33 @@ export function saveVoice(slug, contentType, buffer) {
 export function deleteVoice(slug) {
   const v = findVoice(slug);
   if (v) fs.unlinkSync(v.path);
+}
+
+/* ---------- Comptes clientes (inscription par numéro de téléphone) ---------- */
+export const getUser = phone => state.users[phone] ?? null;
+export const listUsers = () => Object.values(state.users);
+export function saveUser(phone, patch) {
+  const now = new Date().toISOString();
+  state.users[phone] = { phone, createdAt: now, ...state.users[phone], ...patch, updatedAt: now };
+  persist();
+  return state.users[phone];
+}
+
+/** Sessions : on ne garde que l'empreinte du jeton, jamais le jeton lui-même. */
+export const getSession = tokenHash => state.sessions[tokenHash] ?? null;
+export function saveSession(tokenHash, phone) {
+  state.sessions[tokenHash] = { phone, createdAt: new Date().toISOString() };
+  persist();
+}
+export function deleteSession(tokenHash) {
+  delete state.sessions[tokenHash];
+  persist();
+}
+
+/** Commandes rattachées au compte (retrouvées sur n'importe quel téléphone). */
+export const getOrders = phone => state.orders[phone] ?? [];
+export function saveOrder(phone, order) {
+  const list = (state.orders[phone] ?? []).filter(o => o.id !== order.id);
+  state.orders[phone] = [order, ...list].slice(0, 100);
+  persist();
 }

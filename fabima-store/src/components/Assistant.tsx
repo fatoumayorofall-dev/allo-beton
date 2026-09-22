@@ -271,7 +271,7 @@ export const AssistantLauncher: React.FC = () => {
   return (
     <div className="relative">
       {hint && (
-        <div className="absolute right-[4.25rem] bottom-1 w-56 bg-white rounded-2xl rounded-br-md shadow-luxe p-3.5 text-xs animate-fade-up border border-ink/[0.06]">
+        <div className="assistant-hint absolute right-[4.25rem] bottom-1 w-56 bg-white rounded-2xl rounded-br-md shadow-luxe p-3.5 text-xs animate-fade-up border border-ink/[0.06]">
           <button onClick={dismiss} aria-label="Masquer" className="absolute top-1.5 right-1.5 p-1 text-ink/40"><X className="w-3 h-3" /></button>
           <p className="font-script text-xl text-gold-dark leading-none">Fabi</p>
           <p className="mt-1 text-ink/75">Une question sur une pièce, la livraison ou votre commande ? Je vous réponds tout de suite.</p>

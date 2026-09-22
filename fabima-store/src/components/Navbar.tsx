@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ArrowRight, Heart, Menu, Package, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { useAccount } from '../context/AccountContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId } from '../data/types';
 import { SITE_CONFIG } from '../config/site';
@@ -22,6 +23,7 @@ const ANNOUNCEMENTS = [
 
 export const Navbar: React.FC = () => {
   const { cart, wishlist, setCartOpen, products } = useStore();
+  const account = useAccount();
   const location = useLocation();
   const isHome = location.pathname === '/';
   const [scrolled, setScrolled] = useState(false);
@@ -85,7 +87,10 @@ export const Navbar: React.FC = () => {
 
           {/* Droite */}
           <div className={`flex items-center justify-end gap-0.5 sm:gap-1 ${tone}`}>
-            <Link to="/mes-commandes" aria-label="Mes commandes" className={`hidden sm:grid ${iconBtn}`}><User className="w-[18px] h-[18px]" strokeWidth={1.5} /></Link>
+            <Link to="/compte" aria-label={account.user ? `Mon compte (${account.user.firstName || 'connectée'})` : 'Mon compte'} className={`hidden sm:grid ${iconBtn}`}>
+              <User className="w-[18px] h-[18px]" strokeWidth={1.5} />
+              {account.user && <span className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-ivory" />}
+            </Link>
             <Link to="/favoris" aria-label="Mes favoris" className={iconBtn}>
               <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
               {wishlist.length > 0 && <span className={`${badge} bg-gold text-white`}>{wishlist.length}</span>}
@@ -174,7 +179,8 @@ export const Navbar: React.FC = () => {
               </div>
               <Link to="/journal" className="flex items-center justify-between py-4 mt-6 border-y border-ink/10 font-display text-2xl">Le journal <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
               <div className="mt-8 space-y-4 text-sm">
-                <Link to="/mes-commandes" className="flex items-center gap-3"><User className="w-4 h-4" strokeWidth={1.5} /> Mes commandes</Link>
+                <Link to="/compte" className="flex items-center gap-3"><User className="w-4 h-4" strokeWidth={1.5} /> {account.user ? `Mon compte · ${account.user.firstName || 'connectée'}` : 'Mon compte (avec mon numéro)'}</Link>
+                <Link to="/mes-commandes" className="flex items-center gap-3"><Package className="w-4 h-4" strokeWidth={1.5} /> Mes commandes</Link>
                 <Link to="/suivi" className="flex items-center gap-3"><Package className="w-4 h-4" strokeWidth={1.5} /> Suivre une commande</Link>
                 <Link to="/favoris" className="flex items-center gap-3"><Heart className="w-4 h-4" strokeWidth={1.5} /> Mes favoris ({wishlist.length})</Link>
               </div>

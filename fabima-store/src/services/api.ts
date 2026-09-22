@@ -11,6 +11,8 @@ export interface ServerStatus {
   ok: boolean;
   /** Stockage partagé disponible (vitrine du statut, notes vocales, compteurs) */
   storage?: boolean;
+  /** Comptes clientes par numéro de téléphone disponibles */
+  accounts?: boolean;
   assistant: boolean;
   whatsapp: boolean;
   ownerNotifications: boolean;
@@ -142,3 +144,45 @@ export async function deleteVoice(slug: string, pin: string): Promise<boolean> {
     return false;
   }
 }
+
+/* ---------- Comptes clientes (numéro de téléphone + code WhatsApp) ---------- */
+
+export interface Account {
+  phone: string;
+  firstName: string;
+  lastName: string;
+  zone: string;
+  address: string;
+  wishlist: string[];
+  createdAt: string;
+}
+
+type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string; status: number };
+
+async function call<T>(path: string, init: RequestInit & { token?: string } = {}): Promise<ApiResult<T>> {
+  const { token, headers, ...rest } = init;
+  try {
+    const res = await fetch(`${API}${path}`, {
+      ...rest,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
+      signal: AbortSignal.timeout(15000),
+    });
+    const body = res.status === 204 ? null : await res.json().catch(() => null);
+    return res.ok ? { ok: true, data: body as T } : { ok: false, error: body?.error || 'Une erreur est survenue', status: res.status };
+  } catch {
+    return { ok: false, error: 'Pas de connexion. Vérifiez votre internet et réessayez.', status: 0 };
+  }
+}
+
+export const authStart = (phone: string) =>
+  call<{ sent: boolean; channel?: 'whatsapp'; devCode?: string; isNew: boolean }>('/api/auth/start', { method: 'POST', body: JSON.stringify({ phone }) });
+export const authVerify = (phone: string, code: string) =>
+  call<{ token: string; user: Account }>('/api/auth/verify', { method: 'POST', body: JSON.stringify({ phone, code }) });
+export const authLogout = (token: string) => call<null>('/api/auth/logout', { method: 'POST', token });
+export const fetchMe = (token: string) => call<{ user: Account; orders: Order[] }>('/api/me', { token });
+export const updateMe = (token: string, patch: Partial<Omit<Account, 'phone' | 'createdAt'>>) =>
+  call<{ user: Account }>('/api/me', { method: 'PATCH', token, body: JSON.stringify(patch) });
+export const saveMyOrder = (token: string, order: Order) => call<{ ok: true }>('/api/me/orders', { method: 'POST', token, body: JSON.stringify({ order }) });
+
+export interface CustomerRow extends Account { lastLogin?: string; orders: number; spent: number }
+export const fetchCustomers = (pin: string) => getJson<{ customers: CustomerRow[] }>('/api/admin/customers', pin).then(r => r?.customers ?? null);

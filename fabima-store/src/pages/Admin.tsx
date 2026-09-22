@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, BarChart3, Download, LogOut, Send, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { AlertTriangle, BarChart3, Download, LogOut, Send, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
@@ -9,6 +9,7 @@ import { usePageTitle } from '../utils/usePageTitle';
 import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
 import { ProductImage } from '../components/ProductImage';
 import { StatusTab } from './AdminStatus';
+import { CustomersTab } from './AdminCustomers';
 import { getServerStatus, notifyRestock, notifyStatus, type ServerStatus } from '../services/api';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 
@@ -42,7 +43,7 @@ export const Admin: React.FC = () => {
   });
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
-  const [tab, setTab] = useState<'dashboard' | 'orders' | 'products' | 'status'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'orders' | 'products' | 'customers' | 'status'>('dashboard');
 
   if (!authed) {
     return (
@@ -71,7 +72,7 @@ export const Admin: React.FC = () => {
           className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
       <div className="flex gap-2 mb-8 overflow-x-auto">
-        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ['status', 'Statut WhatsApp', Send]] as const).map(([id, label, Icon]) => (
+        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send]] as const).map(([id, label, Icon]) => (
           <button key={id} onClick={() => setTab(id)}
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap ${tab === id ? 'bg-ink text-ivory' : 'bg-white hover:bg-ink/5'}`}>
             <Icon className="w-4 h-4" /> {label}
@@ -81,6 +82,7 @@ export const Admin: React.FC = () => {
       {tab === 'dashboard' && <Dashboard onGoto={setTab} />}
       {tab === 'orders' && <Orders />}
       {tab === 'products' && <Products />}
+      {tab === 'customers' && <CustomersTab />}
       {tab === 'status' && <StatusTab />}
     </div>
   );

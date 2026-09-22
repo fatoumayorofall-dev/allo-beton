@@ -9,6 +9,7 @@ import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { PromoBox } from './Cart';
 import { notifyOrder } from '../services/api';
+import { useAccount } from '../context/AccountContext';
 
 const PAYMENT_METHODS: { id: PaymentMethod; name: string; desc: string; color: string; Icon: typeof Smartphone }[] = [
   { id: 'wave', name: 'Wave', desc: 'Instantané, sans frais', color: '#1dc4ff', Icon: Smartphone },
@@ -34,11 +35,15 @@ export const Checkout: React.FC = () => {
   usePageTitle('Commande');
   const { cart, computeTotals, placeOrder, clearCart, promoCode, notify, savedCustomer, saveCustomer, giftWrap, logNotification } = useStore();
   const navigate = useNavigate();
+  const account = useAccount();
+  const me = account.user;
 
   const [step, setStep] = useState<1 | 2>(1);
+  // Préremplissage : coordonnées mémorisées sur ce téléphone, sinon celles du compte
   const [form, setForm] = useState<FormState>(() => ({
-    firstName: savedCustomer?.firstName ?? '', lastName: savedCustomer?.lastName ?? '', phone: savedCustomer?.phone ?? '',
-    email: savedCustomer?.email ?? '', zone: savedCustomer?.zone ?? DELIVERY_ZONES[0].name, address: savedCustomer?.address ?? '', notes: '',
+    firstName: savedCustomer?.firstName || me?.firstName || '', lastName: savedCustomer?.lastName || me?.lastName || '',
+    phone: savedCustomer?.phone || me?.phone.replace(/^\+221/, '') || '',
+    email: savedCustomer?.email ?? '', zone: savedCustomer?.zone || me?.zone || DELIVERY_ZONES[0].name, address: savedCustomer?.address || me?.address || '', notes: '',
   }));
   const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
@@ -78,6 +83,7 @@ export const Checkout: React.FC = () => {
     const { notes: _notes, ...profile } = form;
     saveCustomer(remember ? { ...profile, email: profile.email || undefined } : null);
     if (!payPhone) setPayPhone(form.phone);
+    if (me) account.saveProfile({ firstName: form.firstName, lastName: form.lastName, zone: form.zone, address: form.address });
     setStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -105,6 +111,7 @@ export const Checkout: React.FC = () => {
     });
     // Messages WhatsApp automatiques (gérante + cliente) si le serveur est configuré ; sinon la page
     // de confirmation propose l'envoi manuel du récapitulatif.
+    account.recordOrder(order); // retrouvable depuis n'importe quel téléphone
     notifyOrder(order).then(r => {
       if (!r) return;
       if (!r.owner.simulated) logNotification(order.id, { event: 'nouvelle', to: 'gerante', channel: r.owner.ok ? 'auto' : 'echec' });
@@ -149,7 +156,12 @@ export const Checkout: React.FC = () => {
             <form onSubmit={goToPayment} className="space-y-10 animate-fade-in" noValidate>
               <fieldset className="space-y-5">
                 <legend className="font-display text-3xl mb-6">Vos coordonnées</legend>
-                {savedCustomer && <p className="text-xs text-ink/55 -mt-3">Bon retour parmi nous, {savedCustomer.firstName} : vos coordonnées ont été préremplies.</p>}
+                {(savedCustomer || me?.firstName) && <p className="text-xs text-ink/55 -mt-3">Bon retour parmi nous, {savedCustomer?.firstName || me?.firstName} : vos coordonnées ont été préremplies.</p>}
+                {account.status === 'guest' && !savedCustomer && (
+                  <Link to="/compte?retour=/commande" className="flex items-center gap-3 p-4 -mt-1 rounded-2xl bg-blush/40 text-sm">
+                    <span className="text-2xl">📱</span><span><strong>Déjà cliente ?</strong> Connectez-vous avec votre numéro pour tout préremplir.</span>
+                  </Link>
+                )}
                 <div className="grid sm:grid-cols-2 gap-5">
                   {input('firstName', 'Prénom *', { autoComplete: 'given-name' })}
                   {input('lastName', 'Nom *', { autoComplete: 'family-name' })}

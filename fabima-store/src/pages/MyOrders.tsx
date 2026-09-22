@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { useAccount } from '../context/AccountContext';
 import { formatDate, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { STATUS_LABELS } from '../components/OrderTimeline';
@@ -10,14 +11,18 @@ import { ProductImage } from '../components/ProductImage';
 /** Historique des commandes passées depuis cet appareil. */
 export const MyOrders: React.FC = () => {
   usePageTitle('Mes commandes');
-  const { orders, savedCustomer, saveCustomer, notify } = useStore();
+  const { orders: localOrders, savedCustomer, saveCustomer, notify } = useStore();
+  const { remoteOrders, status, user } = useAccount();
+  // Commandes de ce téléphone + celles du compte (autres téléphones), sans doublon
+  const orders = [...new Map([...remoteOrders, ...localOrders].map(o => [o.id, o])).values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <div className="max-w-4xl mx-auto px-5 sm:px-8 pt-14">
       <div className="text-center pb-10 border-b border-ink/10">
         <p className="eyebrow">Mon espace</p>
         <h1 className="font-display text-5xl sm:text-6xl mt-4">{savedCustomer ? <>Bonjour, <em>{savedCustomer.firstName}</em></> : 'Mes commandes'}</h1>
-        <p className="text-sm text-ink/55 mt-4">Retrouvez les commandes passées depuis cet appareil.</p>
+        <p className="text-sm text-ink/55 mt-4">{user ? 'Toutes vos commandes, sur tous vos téléphones.' : 'Retrouvez les commandes passées depuis cet appareil.'}</p>
+        {status === 'guest' && <Link to="/compte" className="mt-4 inline-flex items-center gap-2 px-5 h-11 rounded-full bg-ink text-ivory text-sm font-semibold">📱 Retrouver toutes mes commandes avec mon numéro</Link>}
       </div>
 
       {orders.length === 0 ? (
