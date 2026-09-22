@@ -40,7 +40,8 @@ export const OrderSuccess: React.FC = () => {
 
       <div className="mt-14 bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10 animate-fade-up" style={{ animationDelay: '400ms' }}>
         <dl className="grid sm:grid-cols-3 gap-6 text-sm pb-8 border-b border-ink/10">
-          <div><dt className="field-label">Livraison</dt><dd className="font-medium">{order.customer.zone}</dd><dd className="text-ink/60">{order.customer.address}</dd></div>
+          <div><dt className="field-label">Livraison</dt><dd className="font-medium">{order.customer.zone}</dd><dd className="text-ink/60">{[order.customer.location?.label, order.customer.address].filter(Boolean).join(' · ')}</dd>
+            {order.customer.location && <dd className="text-emerald-800 text-xs mt-1">📍 Point GPS enregistré</dd>}</div>
           <div><dt className="field-label">Paiement</dt><dd className="font-medium">{PAYMENT_LABELS[order.paymentMethod]}</dd>
             <dd className={order.paymentStatus === 'paye' ? 'text-emerald-800' : 'text-amber-800'}>{order.paymentStatus === 'paye' ? 'Payé' : 'À régler à la livraison'}</dd></div>
           <div><dt className="field-label">Total</dt><dd className="font-display text-4xl">{formatPrice(order.total)}</dd></div>
@@ -79,7 +80,10 @@ export const OrderSuccess: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-8 flex flex-col sm:flex-row gap-2 justify-center print:hidden">
+      <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl bg-blush/40 print:hidden">
+        🛵 Quand votre livreur partira, vous recevrez un message WhatsApp : vous pourrez le <strong>suivre en direct sur la carte</strong>, jusqu'à votre porte.
+      </p>
+      <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center print:hidden">
         <Link to={`/suivi?commande=${order.id}&tel=${encodeURIComponent(order.customer.phone)}`} className="btn-dark">Suivre ma commande</Link>
         <button onClick={() => window.print()} className="btn-outline"><Printer className="w-4 h-4" strokeWidth={1.5} /> Imprimer</button>
       </div>

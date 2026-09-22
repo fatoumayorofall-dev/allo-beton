@@ -16,7 +16,7 @@ fs.mkdirSync(VOICE_DIR, { recursive: true });
 const SLUG_RE = /^[a-z0-9-]{2,80}$/;
 export const validSlug = s => typeof s === 'string' && SLUG_RE.test(s);
 
-let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {} };
+let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {} };
 try { state = { ...state, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { /* premier démarrage */ }
 
 let timer = null;
@@ -97,4 +97,26 @@ export function saveOrder(phone, order) {
   const list = (state.orders[phone] ?? []).filter(o => o.id !== order.id);
   state.orders[phone] = [order, ...list].slice(0, 100);
   persist();
+}
+
+/* ---------- Commandes de la boutique (toutes les clientes) ---------- */
+export const getShopOrder = id => state.shopOrders[id] ?? null;
+export const listShopOrders = () => Object.values(state.shopOrders).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export function saveShopOrder(order) {
+  state.shopOrders[order.id] = order;
+  // met aussi à jour la copie rattachée au compte de la cliente, si elle en a un
+  for (const [phone, list] of Object.entries(state.orders)) {
+    if (list.some(o => o.id === order.id)) state.orders[phone] = list.map(o => (o.id === order.id ? order : o));
+  }
+  persist();
+  return order;
+}
+
+/* ---------- Livraisons (livreur + position GPS) ---------- */
+export const getDelivery = orderId => state.deliveries[orderId] ?? null;
+export const findDeliveryByToken = token => (token ? Object.values(state.deliveries).find(d => d.driverToken === token) ?? null : null);
+export function saveDelivery(orderId, patch) {
+  state.deliveries[orderId] = { orderId, ...state.deliveries[orderId], ...patch };
+  persist();
+  return state.deliveries[orderId];
 }

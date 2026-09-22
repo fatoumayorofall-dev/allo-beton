@@ -66,11 +66,18 @@ Chaque correction a été vérifiée par un test automatisé dans un navigateur 
 - Fiche produit : pastilles d'occasion, encart « Le conseil de Fabima », onglet matière & entretien.
 - Pages journal éditoriales (article, astuce, produits cités, « À lire aussi »).
 
-## 6. Restent à traiter avant la mise en ligne
+## 6. Livraison : point GPS et suivi du livreur en direct
+
+- À la commande, la cliente touche « Je suis ici » (GPS), cherche un lieu connu ou fait glisser la carte : elle n'a plus à expliquer le chemin. La zone et les frais se règlent tout seuls.
+- La gérante voit le point sur la carte (lien Google Maps) et confie la livraison à un livreur, qui reçoit un lien secret.
+- Le livreur démarre la course ; sa position est envoyée toutes les 4 secondes. La cliente reçoit un WhatsApp « en route » avec le lien de suivi, puis « il arrive » à moins de 400 m, puis « livrée ».
+- Limite : la position n'est envoyée que tant que la page du livreur reste ouverte (l'écran est maintenu allumé).
+
+## 7. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 
-1. **Données locales** : commandes, stock et catalogue vivent dans le navigateur de chaque appareil. Le gérant ne voit pas les commandes passées sur le téléphone d'un client. → Brancher `StoreContext` sur une API (le backend Express/MySQL d'Allô Béton peut servir de base).
+1. **Données locales** : ~~le gérant ne voit pas les commandes passées sur le téléphone d'un client~~ → réglé : les commandes sont enregistrées sur le serveur (`/api/orders`) et apparaissent dans l'espace gérant. Le stock et le catalogue restent dans le navigateur ; les montants envoyés par le navigateur ne sont pas recalculés par le serveur. → À terme, une vraie base de données (le backend Express/MySQL d'Allô Béton peut servir de base).
 2. **Paiement simulé** : aucun débit réel. → Intégrer Wave Business, Orange Money ou un agrégateur (PayDunya, CinetPay).
 3. **Espace gérant** : le code PIN est vérifié dans le navigateur, il ne protège pas réellement. → Authentification côté serveur.
 4. **Avis clients** : publiés sans modération ni vérification d'achat. → À valider côté serveur.

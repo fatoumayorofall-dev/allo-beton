@@ -76,6 +76,35 @@ export interface CustomerInfo {
   zone: string;
   address: string;
   notes?: string;
+  /** Point de livraison choisi sur la carte (GPS, recherche ou déplacement de la carte) */
+  location?: DeliveryLocation;
+}
+
+export interface DeliveryLocation {
+  lat: number;
+  lng: number;
+  /** Adresse lisible du point (« Rue SC-110, Sacré-Cœur 3, Dakar ») */
+  label?: string;
+  /** Précision du GPS en mètres */
+  accuracy?: number;
+  /** Repère donné par la cliente : portail vert, près de la mosquée… */
+  landmark?: string;
+  source?: 'gps' | 'recherche' | 'carte';
+}
+
+/** Livraison suivie en direct (renvoyée par le serveur) */
+export interface DeliveryInfo {
+  driverName: string;
+  driverPhone: string;
+  state: 'assignee' | 'en_route' | 'livree';
+  assignedAt: string;
+  startedAt: string | null;
+  deliveredAt: string | null;
+  position: { lat: number; lng: number; accuracy: number | null; heading: number | null; speed: number | null; at: string; stale: boolean } | null;
+  distanceM: number | null;
+  etaMin: number | null;
+  /** Lien secret du livreur (vue gérante uniquement) */
+  driverLink?: string;
 }
 
 export interface StockAlert {
@@ -106,6 +135,8 @@ export interface Order {
   history: { status: OrderStatus; date: string }[];
   /** Journal des messages WhatsApp liés à la commande */
   notifications?: OrderNotification[];
+  /** Livreur et position (commandes enregistrées sur le serveur, vue gérante) */
+  delivery?: DeliveryInfo | null;
 }
 
 export interface OrderNotification {

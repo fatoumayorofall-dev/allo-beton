@@ -10,7 +10,8 @@ import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
 import { ProductImage } from '../components/ProductImage';
 import { StatusTab } from './AdminStatus';
 import { CustomersTab } from './AdminCustomers';
-import { getServerStatus, notifyRestock, notifyStatus, type ServerStatus } from '../services/api';
+import { fetchAdminOrders, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, type ServerStatus } from '../services/api';
+import { DeliveryPanel } from './AdminDelivery';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 
 const PIN_KEY = 'fabima_admin_pin';
@@ -234,14 +235,34 @@ function exportOrdersCsv(orders: Order[]) {
 }
 
 const Orders: React.FC = () => {
-  const { orders, updateOrderStatus, markOrderPaid, logNotification, notify } = useStore();
+  const { orders, updateOrderStatus, markOrderPaid, logNotification, notify, syncOrders } = useStore();
   const server = useServerStatus();
   const autoWhatsApp = !!(server?.whatsapp && server.adminApi);
+  const serverOrders = !!(server?.orders && server.adminApi);
   const [lastChange, setLastChange] = useState<{ id: string; status: OrderStatus } | null>(null);
+
+  // Commandes de toutes les clientes (enregistrées sur le serveur), actualisées toutes les 15 s
+  const refresh = React.useCallback(() => { fetchAdminOrders(adminPin()).then(list => list && syncOrders(list)); }, [syncOrders]);
+  useEffect(() => {
+    if (!serverOrders) return;
+    refresh();
+    const t = setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 15000);
+    return () => clearInterval(t);
+  }, [serverOrders, refresh]);
 
   const changeStatus = async (order: Order, status: OrderStatus) => {
     updateOrderStatus(order.id, status);
     setLastChange({ id: order.id, status });
+    // Commande du serveur : il enregistre le statut et prévient la cliente lui-même
+    if (serverOrders && order.delivery !== undefined) {
+      const r = await patchAdminOrder(order.id, { status }, adminPin());
+      if (r.ok) {
+        syncOrders([{ ...r.data.order, delivery: order.delivery }]);
+        refresh();
+        if (r.data.sent && !r.data.sent.simulated) notify(r.data.sent.ok ? `${order.customer.firstName} a été prévenue sur WhatsApp` : 'Message WhatsApp non envoyé : utilisez l\'envoi manuel', r.data.sent.ok ? 'success' : 'error');
+        return;
+      }
+    }
     if (!autoWhatsApp || status === 'en_attente') return;
     const r = await notifyStatus(order, status, adminPin());
     logNotification(order.id, { event: status, to: 'cliente', channel: r?.ok ? 'auto' : 'echec' });
@@ -277,7 +298,7 @@ const Orders: React.FC = () => {
               {list.map(o => (
                 <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-ink/5 hover:bg-ivory cursor-pointer">
                   <td className="p-4"><strong>{o.id}</strong><br /><span className="text-xs text-ink/50">{formatDate(o.createdAt)}</span></td>
-                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.customer.zone}</span></td>
+                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.customer.location && <span title="Point GPS">📍 </span>}{o.customer.zone}{o.delivery?.state === 'en_route' && <span className="text-wine"> · 🛵 en route</span>}</span></td>
                   <td className="p-4">{PAYMENT_LABELS[o.paymentMethod]}<br /><span className={`text-xs ${o.paymentStatus === 'paye' ? 'text-emerald-700' : 'text-amber-700'}`}>{o.paymentStatus === 'paye' ? 'Payé' : 'En attente'}</span></td>
                   <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span></td>
                   <td className="p-4 text-right font-semibold">{formatPrice(o.total)}</td>
@@ -294,7 +315,7 @@ const Orders: React.FC = () => {
             <div className="p-4 rounded-2xl bg-ivory">
               <p className="font-semibold">{current.customer.firstName} {current.customer.lastName}</p>
               <p>{current.customer.phone}{current.customer.email && ` · ${current.customer.email}`}</p>
-              <p className="text-ink/60">{current.customer.address}, {current.customer.zone}</p>
+              <p className="text-ink/60">{[current.customer.address, current.customer.zone].filter(Boolean).join(', ')}</p>
               {current.customer.notes && <p className="mt-2 italic text-ink/60">« {current.customer.notes} »</p>}
               {current.giftFee > 0 && <p className="mt-2 text-gold-dark">🎁 Emballage cadeau{current.giftMessage && ` — « ${current.giftMessage} »`}</p>}
               <a href={buildWhatsAppLink(`Bonjour ${current.customer.firstName}, ici Fabima Store concernant votre commande ${current.id}.`, current.customer.phone.replace(/\D/g, '').replace(/^(?!221)/, '221'))}
@@ -326,8 +347,9 @@ const Orders: React.FC = () => {
               );
             })()}
             {current.paymentStatus !== 'paye' && (
-              <button onClick={() => markOrderPaid(current.id)} className="w-full py-3 rounded-full bg-emerald-700 text-white font-semibold">Marquer comme payée</button>
+              <button onClick={() => { markOrderPaid(current.id); if (current.delivery !== undefined) patchAdminOrder(current.id, { paymentStatus: 'paye' }, adminPin()); }} className="w-full py-3 rounded-full bg-emerald-700 text-white font-semibold">Marquer comme payée</button>
             )}
+            <DeliveryPanel order={current} pin={adminPin()} onChanged={refresh} />
             {!!current.notifications?.length && (
               <div>
                 <p className="font-medium mb-2">Messages WhatsApp</p>

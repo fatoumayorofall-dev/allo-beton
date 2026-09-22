@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Banknote, Check, ChevronLeft, CreditCard, Gift, Loader2, Lock, Smartphone } from 'lucide-react';
+import { Banknote, Check, ChevronDown, ChevronLeft, CreditCard, Gift, Loader2, Lock, MapPin, Smartphone } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { DELIVERY_ZONES } from '../config/site';
-import type { PaymentMethod } from '../data/types';
+import { DELIVERY_ZONES, SHOP_LOCATION, zoneForPoint } from '../config/site';
+import type { DeliveryLocation, PaymentMethod } from '../data/types';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { PromoBox } from './Cart';
-import { notifyOrder } from '../services/api';
+import { createOrder } from '../services/api';
 import { useAccount } from '../context/AccountContext';
+
+const LocationPicker = lazy(() => import('../components/LocationPicker'));
 
 const PAYMENT_METHODS: { id: PaymentMethod; name: string; desc: string; color: string; Icon: typeof Smartphone }[] = [
   { id: 'wave', name: 'Wave', desc: 'Instantané, sans frais', color: '#1dc4ff', Icon: Smartphone },
@@ -29,6 +31,7 @@ interface FormState {
   zone: string;
   address: string;
   notes: string;
+  location?: DeliveryLocation;
 }
 
 export const Checkout: React.FC = () => {
@@ -44,7 +47,10 @@ export const Checkout: React.FC = () => {
     firstName: savedCustomer?.firstName || me?.firstName || '', lastName: savedCustomer?.lastName || me?.lastName || '',
     phone: savedCustomer?.phone || me?.phone.replace(/^\+221/, '') || '',
     email: savedCustomer?.email ?? '', zone: savedCustomer?.zone || me?.zone || DELIVERY_ZONES[0].name, address: savedCustomer?.address || me?.address || '', notes: '',
+    location: savedCustomer?.location || me?.location || undefined,
   }));
+  const [zoneAuto, setZoneAuto] = useState(!!(savedCustomer?.location || me?.location));
+  const [zonesOpen, setZonesOpen] = useState(false);
   const [remember, setRemember] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [method, setMethod] = useState<PaymentMethod>('wave');
@@ -58,7 +64,15 @@ export const Checkout: React.FC = () => {
   const t = computeTotals(zone.fee);
   const isMobile = method === 'wave' || method === 'orange_money' || method === 'free_money';
 
-  const set = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  /** Point choisi sur la carte : la zone et les frais de livraison se règlent tout seuls. */
+  const setLocation = (location: DeliveryLocation | undefined) => {
+    setForm(f => ({ ...f, location, zone: location ? zoneForPoint(location) : f.zone }));
+    setZoneAuto(!!location);
+    setErrors(er => ({ ...er, location: undefined, address: undefined }));
+  };
+  const zoneCenter = DELIVERY_ZONES.find(z => z.name === form.zone)?.center ?? SHOP_LOCATION;
+
+  const set = (key: Exclude<keyof FormState, 'location'>) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(f => ({ ...f, [key]: e.target.value }));
     setErrors(er => ({ ...er, [key]: undefined }));
   };
@@ -69,7 +83,8 @@ export const Checkout: React.FC = () => {
     if (!form.lastName.trim()) er.lastName = 'Nom requis';
     if (!PHONE_RE.test(form.phone.trim())) er.phone = 'Numéro sénégalais invalide (ex : 77 123 45 67)';
     if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) er.email = 'E-mail invalide';
-    if (form.address.trim().length < 5) er.address = 'Précisez votre adresse';
+    // Avec un point sur la carte, l'adresse écrite n'est plus nécessaire
+    if (!form.location && form.address.trim().length < 5) er.location = 'Touchez « Je suis ici » ou placez la maison sur la carte (ou écrivez votre adresse plus bas)';
     setErrors(er);
     return Object.keys(er).length === 0;
   };
@@ -83,7 +98,7 @@ export const Checkout: React.FC = () => {
     const { notes: _notes, ...profile } = form;
     saveCustomer(remember ? { ...profile, email: profile.email || undefined } : null);
     if (!payPhone) setPayPhone(form.phone);
-    if (me) account.saveProfile({ firstName: form.firstName, lastName: form.lastName, zone: form.zone, address: form.address });
+    if (me) account.saveProfile({ firstName: form.firstName, lastName: form.lastName, zone: form.zone, address: form.address, location: form.location ?? null });
     setStep(2);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -97,7 +112,7 @@ export const Checkout: React.FC = () => {
     // Simulation de la passerelle de paiement (à brancher sur l'API Wave / Orange Money / PayDunya en production)
     await new Promise(r => setTimeout(r, method === 'cash' ? 600 : 2200));
     const order = placeOrder({
-      customer: { ...form, email: form.email || undefined, notes: form.notes || undefined },
+      customer: { ...form, email: form.email || undefined, notes: form.notes || undefined, location: form.location },
       items: cart,
       subtotal: t.subtotal,
       discount: t.discount,
@@ -112,7 +127,8 @@ export const Checkout: React.FC = () => {
     // Messages WhatsApp automatiques (gérante + cliente) si le serveur est configuré ; sinon la page
     // de confirmation propose l'envoi manuel du récapitulatif.
     account.recordOrder(order); // retrouvable depuis n'importe quel téléphone
-    notifyOrder(order).then(r => {
+    // Commande enregistrée sur le serveur : la gérante la voit, le livreur y sera rattaché
+    createOrder(order).then(r => {
       if (!r) return;
       if (!r.owner.simulated) logNotification(order.id, { event: 'nouvelle', to: 'gerante', channel: r.owner.ok ? 'auto' : 'echec' });
       if (!r.customer.simulated) logNotification(order.id, { event: 'nouvelle', to: 'cliente', channel: r.customer.ok ? 'auto' : 'echec' });
@@ -121,7 +137,7 @@ export const Checkout: React.FC = () => {
     clearCart();
   };
 
-  const input = (key: keyof FormState, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
+  const input = (key: Exclude<keyof FormState, 'location'>, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <label className="block">
       <span className="field-label">{label}</span>
       <input value={form[key]} onChange={set(key)} aria-invalid={!!errors[key]} {...props} className={`field ${errors[key] ? '!border-wine' : ''}`} />
@@ -151,10 +167,10 @@ export const Checkout: React.FC = () => {
       </div>
 
       <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
-        <div>
+        <div className="min-w-0">
           {step === 1 ? (
             <form onSubmit={goToPayment} className="space-y-10 animate-fade-in" noValidate>
-              <fieldset className="space-y-5">
+              <fieldset className="space-y-5 min-w-0">
                 <legend className="font-display text-3xl mb-6">Vos coordonnées</legend>
                 {(savedCustomer || me?.firstName) && <p className="text-xs text-ink/55 -mt-3">Bon retour parmi nous, {savedCustomer?.firstName || me?.firstName} : vos coordonnées ont été préremplies.</p>}
                 {account.status === 'guest' && !savedCustomer && (
@@ -170,23 +186,38 @@ export const Checkout: React.FC = () => {
                 </div>
               </fieldset>
 
-              <fieldset className="space-y-5">
+              <fieldset className="space-y-5 min-w-0">
                 <legend className="font-display text-3xl mb-6">Livraison</legend>
-                <div>
-                  <span className="field-label">Zone de livraison *</span>
-                  <div className="grid sm:grid-cols-2 gap-2">
-                    {DELIVERY_ZONES.map(z => (
-                      <label key={z.name} className={`flex items-center justify-between gap-3 px-4 h-14 border rounded-2xl cursor-pointer transition-colors ${form.zone === z.name ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
-                        <span className="flex items-center gap-3">
-                          <input type="radio" name="zone" value={z.name} checked={form.zone === z.name} onChange={set('zone')} className="accent-ink" />
-                          <span className="text-sm">{z.name}<span className="block text-[11px] text-ink/45">{z.delay}</span></span>
-                        </span>
-                        <span className="text-xs">{computeTotals(z.fee).deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(z.fee)}</span>
-                      </label>
-                    ))}
-                  </div>
+                <Suspense fallback={<div className="h-96 rounded-[1.5rem] bg-blush/30 animate-pulse" />}>
+                  <LocationPicker value={form.location} onChange={setLocation} initialCenter={form.location ?? zoneCenter} error={errors.location} />
+                </Suspense>
+                <div className="rounded-2xl border border-ink/10 overflow-hidden">
+                  <button type="button" onClick={() => setZonesOpen(o => !o)} aria-expanded={zonesOpen}
+                    className="w-full flex items-center justify-between gap-3 px-4 h-14 bg-white text-sm text-left">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <MapPin className="w-4 h-4 text-ink/40 shrink-0" />
+                      <span className="truncate"><span className="text-ink/55">{zoneAuto ? 'Zone reconnue : ' : 'Zone : '}</span><strong>{zone.name}</strong> · {zone.delay}</span>
+                    </span>
+                    <span className="flex items-center gap-2 shrink-0 text-xs">
+                      {t.deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(zone.fee)}
+                      <ChevronDown className={`w-4 h-4 transition-transform ${zonesOpen ? 'rotate-180' : ''}`} />
+                    </span>
+                  </button>
+                  {zonesOpen && (
+                    <div className="grid sm:grid-cols-2 gap-2 p-3 border-t border-ink/10">
+                      {DELIVERY_ZONES.map(z => (
+                        <label key={z.name} className={`flex items-center justify-between gap-3 px-4 h-14 border rounded-2xl cursor-pointer transition-colors ${form.zone === z.name ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
+                          <span className="flex items-center gap-3">
+                            <input type="radio" name="zone" value={z.name} checked={form.zone === z.name} onChange={e => { set('zone')(e); setZoneAuto(false); }} className="accent-ink" />
+                            <span className="text-sm">{z.name}<span className="block text-[11px] text-ink/45">{z.delay}</span></span>
+                          </span>
+                          <span className="text-xs">{computeTotals(z.fee).deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(z.fee)}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {input('address', 'Adresse précise *', { placeholder: 'Quartier, rue, n° de villa, point de repère…', autoComplete: 'street-address' })}
+                {input('address', form.location ? 'Précisions (facultatif)' : 'Adresse écrite (si vous ne pouvez pas utiliser la carte)', { placeholder: form.location ? 'Villa n°, étage, appartement…' : 'Quartier, rue, n° de villa, point de repère…', autoComplete: 'street-address' })}
                 <label className="block">
                   <span className="field-label">Instructions au livreur (facultatif)</span>
                   <textarea value={form.notes} onChange={set('notes')} rows={3} placeholder="Ex : appeler avant de passer, livrer après 17h…" className="field resize-none" />
@@ -204,7 +235,8 @@ export const Checkout: React.FC = () => {
                 <div className="text-sm">
                   <p className="field-label !mb-1.5">Livraison à</p>
                   <p className="font-semibold">{form.firstName} {form.lastName} · {form.phone}</p>
-                  <p className="text-ink/60">{form.address}, {form.zone} — {zone.delay}</p>
+                  <p className="text-ink/60">{[form.location?.label, form.location?.landmark, form.address].filter(Boolean).join(' · ') || form.zone} — {form.zone}, {zone.delay}</p>
+                  {form.location && <p className="text-xs text-emerald-800 mt-1">📍 Point de livraison enregistré sur la carte : le livreur viendra directement.</p>}
                 </div>
                 <button onClick={() => setStep(1)} className="text-[11px] uppercase tracking-[0.2em] link-luxe shrink-0">Modifier</button>
               </div>

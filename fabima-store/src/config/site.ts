@@ -21,19 +21,49 @@ export const SITE_CONFIG = {
   adminPin: '2026',
 };
 
-/** Zones de livraison et frais (FCFA) */
-export const DELIVERY_ZONES: { name: string; fee: number; delay: string }[] = [
-  { name: 'Dakar Plateau', fee: 1500, delay: '24h' },
-  { name: 'Médina', fee: 1500, delay: '24h' },
-  { name: 'Sacré-Cœur / Mermoz', fee: 1500, delay: '24h' },
-  { name: 'Almadies / Ngor', fee: 2000, delay: '24h' },
-  { name: 'Parcelles Assainies', fee: 2000, delay: '24h' },
-  { name: 'Pikine / Guédiawaye', fee: 2500, delay: '24–48h' },
-  { name: 'Rufisque', fee: 3000, delay: '48h' },
-  { name: 'Diamniadio', fee: 3000, delay: '48h' },
-  { name: 'Thiès', fee: 4000, delay: '48–72h' },
+/** Point de départ des livraisons (boutique) et centre de la carte par défaut */
+export const SHOP_LOCATION = { lat: 14.7195, lng: -17.4655 };
+
+/**
+ * Zones de livraison et frais (FCFA). `center` et `radiusKm` servent à reconnaître la zone
+ * automatiquement à partir du point choisi sur la carte.
+ */
+export const DELIVERY_ZONES: { name: string; fee: number; delay: string; center?: { lat: number; lng: number }; radiusKm?: number }[] = [
+  { name: 'Dakar Plateau', fee: 1500, delay: '24h', center: { lat: 14.6675, lng: -17.4365 }, radiusKm: 2.2 },
+  { name: 'Médina', fee: 1500, delay: '24h', center: { lat: 14.6860, lng: -17.4520 }, radiusKm: 2.2 },
+  { name: 'Sacré-Cœur / Mermoz', fee: 1500, delay: '24h', center: { lat: 14.7160, lng: -17.4700 }, radiusKm: 3.5 },
+  { name: 'Almadies / Ngor', fee: 2000, delay: '24h', center: { lat: 14.7450, lng: -17.5080 }, radiusKm: 4 },
+  { name: 'Parcelles Assainies', fee: 2000, delay: '24h', center: { lat: 14.7650, lng: -17.4400 }, radiusKm: 3.5 },
+  { name: 'Pikine / Guédiawaye', fee: 2500, delay: '24–48h', center: { lat: 14.7600, lng: -17.3900 }, radiusKm: 5 },
+  { name: 'Rufisque', fee: 3000, delay: '48h', center: { lat: 14.7200, lng: -17.2750 }, radiusKm: 6 },
+  { name: 'Diamniadio', fee: 3000, delay: '48h', center: { lat: 14.7230, lng: -17.1830 }, radiusKm: 7 },
+  { name: 'Thiès', fee: 4000, delay: '48–72h', center: { lat: 14.7900, lng: -16.9300 }, radiusKm: 12 },
   { name: 'Autres régions', fee: 5000, delay: '3–5 jours' },
 ];
+
+/** Distance en km entre deux points GPS. */
+export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const h = Math.sin(toRad(b.lat - a.lat) / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(toRad(b.lng - a.lng) / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
+
+/** Zone de livraison correspondant à un point de la carte (la plus proche, sinon « Autres régions »). */
+export function zoneForPoint(p: { lat: number; lng: number }): string {
+  let best: { name: string; score: number } | null = null;
+  for (const z of DELIVERY_ZONES) {
+    if (!z.center || !z.radiusKm) continue;
+    const score = distanceKm(p, z.center) / z.radiusKm;
+    if (!best || score < best.score) best = { name: z.name, score };
+  }
+  // Au-delà d'environ 2 rayons de la zone la plus proche : hors des zones listées
+  return best && best.score <= 2 ? best.name : DELIVERY_ZONES[DELIVERY_ZONES.length - 1].name;
+}
+
+/** Itinéraire vers un point dans Google Maps (ouvre l'application sur téléphone). */
+export const googleMapsDirections = (p: { lat: number; lng: number }) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+/** Itinéraire vers un point dans Waze. */
+export const wazeDirections = (p: { lat: number; lng: number }) => `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
 
 /** Codes promo disponibles */
 export interface PromoCode {

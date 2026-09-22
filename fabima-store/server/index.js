@@ -2,6 +2,7 @@
 //  SERVEUR FABIMA STORE
 //  - /api/chat      : assistant IA (Claude), réponse diffusée en direct (SSE)
 //  - /api/notify/*  : notifications WhatsApp (nouvelle commande, statut, retour en stock)
+//  - /api/orders, /api/driver/*, /api/geo/* : commandes, livreur suivi en direct, carte
 //  - sert aussi le site compilé (dist/) en production
 // ============================================================
 import express from 'express';
@@ -15,6 +16,7 @@ const { assistantEnabled, sanitizeMessages, streamAssistant, Anthropic } = await
 const wa = await import('./whatsapp.js');
 const store = await import('./store.js');
 const { registerAuthRoutes } = await import('./auth.js');
+const { registerOrderRoutes } = await import('./orders.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -45,7 +47,7 @@ function validOrder(o) {
 
 /* ---------- État des services ---------- */
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, storage: true, accounts: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
+  res.json({ ok: true, storage: true, accounts: true, orders: true, maps: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
 });
 
 /* ---------- Assistant IA ---------- */
@@ -143,6 +145,9 @@ app.delete('/api/voice/:slug', (req, res) => {
 
 /* ---------- Comptes clientes (numéro de téléphone + code WhatsApp) ---------- */
 registerAuthRoutes(app, { limit, wa, store, isAdmin });
+
+/* ---------- Commandes, livraison et suivi GPS du livreur ---------- */
+registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder });
 
 /* ---------- Site compilé (production) ---------- */
 const dist = path.join(here, '..', 'dist');

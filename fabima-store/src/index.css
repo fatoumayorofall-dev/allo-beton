@@ -79,3 +79,27 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
 @media print {
   header, footer, .print\:hidden { display: none !important; }
 }
+
+/* ---------- Carte : épingles Fabima (cliente, livreur, boutique) ---------- */
+.fabima-pin { background: none; border: 0; }
+.fabima-pin-home {
+  display: grid; place-items: center; width: 44px; height: 44px; margin: 0 auto;
+  border-radius: 50% 50% 50% 0; transform: rotate(-45deg);
+  background: #b03a64; border: 3px solid #fff; box-shadow: 0 6px 16px rgba(58,31,45,.35);
+}
+.fabima-pin-home > span { transform: rotate(45deg); font-size: 18px; line-height: 1; }
+.fabima-pin-lift { animation: pin-drop .35s ease-out; }
+@keyframes pin-drop { from { transform: translateY(-14px) rotate(-45deg); opacity: .6; } to { transform: rotate(-45deg); opacity: 1; } }
+.fabima-pin-driver { position: relative; display: grid; place-items: center; width: 52px; height: 52px; }
+.fabima-pin-scooter {
+  position: relative; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 9999px;
+  background: #3a1f2d; border: 3px solid #fff; font-size: 20px; box-shadow: 0 6px 16px rgba(58,31,45,.4);
+}
+.fabima-pin-pulse { position: absolute; inset: 0; border-radius: 9999px; background: rgba(176,58,100,.35); animation: pin-pulse 1.8s ease-out infinite; }
+@keyframes pin-pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
+.fabima-pin-shop {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9999px; background: #fff; border: 2px solid #3a1f2d;
+  font-family: 'Pinyon Script', cursive; font-size: 24px; color: #3a1f2d; box-shadow: 0 4px 12px rgba(58,31,45,.25);
+}
+.leaflet-container { font-family: inherit; }
+.leaflet-control-attribution { font-size: 9px; }

@@ -29,6 +29,7 @@ import { InstallBanner } from './components/InstallApp';
 
 // L'espace gérant n'est chargé que lorsqu'on y accède : la clientèle ne télécharge pas son code.
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
+const Driver = lazy(() => import('./pages/Driver'));
 
 /** Remonte en haut de page à chaque changement de route (ou vers l'ancre demandée). */
 const ScrollToTop: React.FC = () => {
@@ -47,10 +48,10 @@ const PageFallback: React.FC = () => (
   <div className="min-h-[60vh] grid place-items-center"><span className="font-script text-5xl text-gold animate-pulse">Fabima</span></div>
 );
 
-/** Les pages « statut » (/p/…, /s) ont leur propre en-tête, très simple : pas de menu, pied de page ni boutons flottants. */
+/** Les pages « statut » (/p/…, /s) et la page du livreur ont leur propre en-tête, très simple : pas de menu, pied de page ni boutons flottants. */
 const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
-  const simple = pathname.startsWith('/p/') || pathname === '/s';
+  const simple = pathname.startsWith('/p/') || pathname === '/s' || pathname.startsWith('/livreur/');
   return simple ? null : <>{children}</>;
 };
 
@@ -84,6 +85,7 @@ export default function App() {
                 <Route path="/a-propos" element={<About />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/livreur/:token" element={<Driver />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>

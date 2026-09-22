@@ -38,10 +38,13 @@ const PAYMENT = { wave: 'Wave', orange_money: 'Orange Money', free_money: 'Free 
 export const STATUS_MESSAGES = {
   confirmee: 'est confirmée ✅ Nous la préparons avec soin.',
   en_preparation: 'est en cours de préparation 🎀 Elle sera bientôt prête à partir.',
-  expediee: 'est en route 🛵 Notre livreur vous appellera avant de passer.',
+  expediee: 'est en route 🛵 Suivez votre livreur en direct sur la carte avec le lien ci-dessous.',
   livree: 'a bien été livrée 🌸 Merci pour votre confiance ! Un avis sur votre pièce nous ferait très plaisir.',
   annulee: 'a été annulée. Si c\'est une erreur, répondez simplement à ce message.',
 };
+
+/** Lien Google Maps vers le point de livraison (ouvre l'itinéraire sur le téléphone). */
+export const mapsLink = p => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
 
 export function trackingUrl(order) {
   return `${SITE_URL}/suivi?commande=${encodeURIComponent(order.id)}&tel=${encodeURIComponent(order.customer.phone)}`;
@@ -54,6 +57,7 @@ export function buildOwnerMessage(order) {
     ``,
     `👤 ${c.firstName} ${c.lastName} — ${c.phone}`,
     `📍 ${c.zone} — ${c.address}`,
+    ...(c.location ? [`🗺️ ${mapsLink(c.location)}`] : []),
     ``,
     ...order.items.map(i => `• ${i.quantity}× ${i.name}${[i.color, i.size && `T.${i.size}`].filter(Boolean).length ? ` (${[i.color, i.size && `T.${i.size}`].filter(Boolean).join(', ')})` : ''} — ${fcfa(i.price * i.quantity)}`),
     ``,
@@ -124,4 +128,38 @@ export async function notifyStatus(order, status) {
 
 export function buildRestockMessage(product) {
   return [`Bonjour 🌸`, ``, `Bonne nouvelle : *${product.name}* est de retour chez Fabima Store !`, `Les pièces partent vite : ${SITE_URL}/produit/${product.slug}`].join('\n');
+}
+
+/* ---------- Livraison suivie en direct ---------- */
+
+export function buildDriverMessage(order, link) {
+  const c = order.customer;
+  return [
+    `🛵 *Livraison ${order.id}* — Fabima Store`,
+    ``,
+    `Cliente : ${c.firstName} ${c.lastName} — ${c.phone}`,
+    `Quartier : ${c.zone}${c.address ? ` — ${c.address}` : ''}`,
+    order.paymentStatus === 'paye' ? `Déjà payé ✅` : `À encaisser : *${fcfa(order.total)}*`,
+    ``,
+    `1. Ouvrez ce lien et touchez « Démarrer la course » :`,
+    link,
+    `2. Gardez la page ouverte pendant le trajet (la cliente vous voit sur la carte).`,
+    `3. Touchez « Colis remis » à l'arrivée.`,
+  ].join('\n');
+}
+
+export function buildOnTheWayMessage(order, driverName) {
+  return [
+    `Bonjour ${order.customer.firstName} 🌸`,
+    ``,
+    `Votre commande *${order.id}* est en route 🛵${driverName ? ` avec ${driverName}` : ''}.`,
+    `Suivez votre livreur en direct sur la carte, comme un taxi :`,
+    trackingUrl(order),
+    ``,
+    `Il vient à l'endroit que vous avez indiqué sur la carte, pas besoin d'expliquer le chemin.`,
+  ].join('\n');
+}
+
+export function buildArrivingMessage(order, minutes) {
+  return `🛵 ${order.customer.firstName}, votre livreur Fabima arrive dans ${minutes <= 1 ? 'une minute' : `environ ${minutes} minutes`} ! Gardez votre téléphone près de vous.\n\nSuivi : ${trackingUrl(order)}`;
 }

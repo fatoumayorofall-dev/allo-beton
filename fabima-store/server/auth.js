@@ -16,7 +16,7 @@ const devMode = () => process.env.OTP_DEV_MODE === '1' || (process.env.NODE_ENV 
 
 function publicUser(u) {
   if (!u) return null;
-  return { phone: u.phone, firstName: u.firstName ?? '', lastName: u.lastName ?? '', zone: u.zone ?? '', address: u.address ?? '', wishlist: u.wishlist ?? [], createdAt: u.createdAt };
+  return { phone: u.phone, firstName: u.firstName ?? '', lastName: u.lastName ?? '', zone: u.zone ?? '', address: u.address ?? '', location: u.location ?? null, wishlist: u.wishlist ?? [], createdAt: u.createdAt };
 }
 
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : undefined);
@@ -90,6 +90,10 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     for (const [k, n] of [['firstName', 40], ['lastName', 40], ['zone', 60], ['address', 160]]) {
       const v = clip(b[k], n);
       if (v !== undefined) patch[k] = v;
+    }
+    if (b.location === null) patch.location = null;
+    else if (b.location && Number.isFinite(b.location.lat) && Number.isFinite(b.location.lng) && Math.abs(b.location.lat) <= 90 && Math.abs(b.location.lng) <= 180) {
+      patch.location = { lat: b.location.lat, lng: b.location.lng, label: clip(b.location.label, 200) ?? '', landmark: clip(b.location.landmark, 160) ?? '' };
     }
     if (Array.isArray(b.wishlist)) patch.wishlist = b.wishlist.filter(x => typeof x === 'string' && x.length <= 40).slice(0, 200);
     res.json({ user: publicUser(store.saveUser(user.phone, patch)) });

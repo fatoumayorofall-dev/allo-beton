@@ -122,6 +122,8 @@ interface StoreContextValue {
   markOrderPaid: (id: string) => void;
   logNotification: (id: string, entry: Omit<OrderNotification, 'date'>) => void;
   findOrder: (id: string, phone: string) => Order | undefined;
+  /** Gérante : fusionne les commandes enregistrées sur le serveur (le serveur fait foi pour le statut) */
+  syncOrders: (list: Order[]) => void;
 
   toasts: Toast[];
   notify: (message: string, type?: Toast['type']) => void;
@@ -349,6 +351,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return orders.find(o => o.id.toUpperCase() === id.trim().toUpperCase() && digits(o.customer.phone) === digits(phone));
   }, [orders]);
 
+  const syncOrders = useCallback((list: Order[]) => {
+    if (!list.length) return;
+    setOrders(local => {
+      const byId = new Map(local.map(o => [o.id, o]));
+      for (const remote of list) {
+        const mine = byId.get(remote.id);
+        // les envois ouverts à la main depuis ce téléphone ne sont connus que localement
+        const manual = (mine?.notifications ?? []).filter(n => n.channel === 'manuel');
+        const notifications = [...(remote.notifications ?? []), ...manual].sort((a, b) => a.date.localeCompare(b.date));
+        byId.set(remote.id, { ...mine, ...remote, notifications });
+      }
+      return [...byId.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    });
+  }, []);
+
   const value = useMemo<StoreContextValue>(() => ({
     products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview,
     cart, addToCart, updateQuantity, removeFromCart, clearCart, cartOpen, setCartOpen,
@@ -358,11 +375,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     quickView, openQuickView: setQuickView,
     savedCustomer, saveCustomer: setSavedCustomer,
     stockAlerts, addStockAlert, removeStockAlerts,
-    orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder,
+    orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, syncOrders,
     toasts, notify,
   }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
     cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, mergeWishlist, isInWishlist, recentlyViewed, markViewed,
-    quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, toasts, notify]);
+    quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, syncOrders, toasts, notify]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };

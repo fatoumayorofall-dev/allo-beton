@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { Order, OrderStatus, Product } from '../data/types';
+import type { DeliveryInfo, DeliveryLocation, Order, OrderStatus, Product } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -17,6 +17,8 @@ export interface ServerStatus {
   whatsapp: boolean;
   ownerNotifications: boolean;
   adminApi: boolean;
+  /** Commandes enregistrées sur le serveur (suivi du livreur en direct) */
+  orders?: boolean;
 }
 
 const OFFLINE: ServerStatus = { ok: false, assistant: false, whatsapp: false, ownerNotifications: false, adminApi: false };
@@ -153,6 +155,8 @@ export interface Account {
   lastName: string;
   zone: string;
   address: string;
+  /** Dernier point de livraison choisi sur la carte */
+  location?: DeliveryLocation | null;
   wishlist: string[];
   createdAt: string;
 }
@@ -186,3 +190,50 @@ export const saveMyOrder = (token: string, order: Order) => call<{ ok: true }>('
 
 export interface CustomerRow extends Account { lastLogin?: string; orders: number; spent: number }
 export const fetchCustomers = (pin: string) => getJson<{ customers: CustomerRow[] }>('/api/admin/customers', pin).then(r => r?.customers ?? null);
+
+/* ---------- Commandes enregistrées sur le serveur + livraison suivie en direct ---------- */
+
+/** Enregistre la commande sur le serveur (visible par la gérante) et envoie les messages WhatsApp. */
+export const createOrder = (order: Order) => post<{ order: Order; owner: SendResult; customer: SendResult }>('/api/orders', { order });
+
+export type TrackingResult = { order: Order; delivery: DeliveryInfo | null };
+/** Suivi d'une commande (numéro + téléphone). `null` si introuvable ou serveur absent. */
+export const lookupOrder = (id: string, phone: string) =>
+  getJson<TrackingResult>(`/api/orders/lookup?id=${encodeURIComponent(id.trim())}&phone=${encodeURIComponent(phone)}`);
+
+/* Gérante */
+export const fetchAdminOrders = (pin: string) => getJson<{ orders: Order[] }>('/api/admin/orders', pin).then(r => r?.orders ?? null);
+export const patchAdminOrder = (id: string, patch: { status?: OrderStatus; paymentStatus?: 'paye' | 'en_attente' }, pin: string) =>
+  call<{ order: Order; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
+export const assignDriver = (id: string, driver: { name: string; phone: string }, pin: string) =>
+  call<{ delivery: DeliveryInfo; driverMessage: string; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(id)}/driver`, { method: 'POST', body: JSON.stringify(driver), headers: { 'x-admin-pin': pin } });
+
+/* Livreur (lien secret) */
+export interface DriverJob {
+  order: {
+    id: string; status: OrderStatus; total: number; paymentMethod: Order['paymentMethod']; paymentStatus: Order['paymentStatus']; items: number;
+    customer: { firstName: string; lastName: string; phone: string; zone: string; address: string; notes?: string; location: DeliveryLocation | null };
+  };
+  delivery: DeliveryInfo;
+}
+export interface GpsFix { lat: number; lng: number; accuracy?: number; heading?: number | null; speed?: number | null }
+const driverPath = (token: string, action = '') => `/api/driver/${encodeURIComponent(token)}${action}`;
+export const fetchDriverJob = (token: string) => call<DriverJob>(driverPath(token));
+export const driverStart = (token: string, fix?: GpsFix) => call<DriverJob>(driverPath(token, '/start'), { method: 'POST', body: JSON.stringify(fix ?? {}) });
+export const driverPosition = (token: string, fix: GpsFix) =>
+  call<{ distanceM: number | null; etaMin: number | null }>(driverPath(token, '/position'), { method: 'POST', body: JSON.stringify(fix) });
+export const driverDelivered = (token: string) => call<DriverJob>(driverPath(token, '/delivered'), { method: 'POST' });
+
+/* Carte : recherche d'adresse (OpenStreetMap via le serveur) */
+export interface PlaceResult { label: string; kind: string; lat: number; lng: number }
+export async function searchPlaces(q: string, near?: { lat: number; lng: number }, signal?: AbortSignal): Promise<PlaceResult[] | null> {
+  try {
+    const bias = near ? `&lat=${near.lat}&lng=${near.lng}` : '';
+    const res = await fetch(`${API}/api/geo/search?q=${encodeURIComponent(q)}${bias}`, { signal });
+    return res.ok ? ((await res.json()).results as PlaceResult[]) : null;
+  } catch {
+    return null;
+  }
+}
+export const reverseGeocode = (p: { lat: number; lng: number }) =>
+  getJson<{ label: string; area: string; city: string }>(`/api/geo/reverse?lat=${p.lat.toFixed(6)}&lng=${p.lng.toFixed(6)}`);

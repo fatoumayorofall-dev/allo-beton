@@ -37,7 +37,7 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setStatus('user');
     mergeWishlist(u.wishlist);
     if (!savedCustomer && u.firstName) {
-      saveCustomer({ firstName: u.firstName, lastName: u.lastName, phone: u.phone.replace(/^\+221/, ''), zone: u.zone, address: u.address });
+      saveCustomer({ firstName: u.firstName, lastName: u.lastName, phone: u.phone.replace(/^\+221/, ''), zone: u.zone, address: u.address, location: u.location ?? undefined });
     }
     synced.current = true;
   }, [mergeWishlist, savedCustomer, saveCustomer]);

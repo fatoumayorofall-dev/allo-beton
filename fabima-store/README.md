@@ -74,6 +74,7 @@ modifier une teinte à cet endroit la change sur tout le site.
 | Panier latéral, codes promo, emballage cadeau avec message, livraison offerte dès 50 000 FCFA | |
 | Commande en 2 étapes, coordonnées mémorisées, validation du numéro sénégalais | |
 | Confirmation imprimable, suivi de commande, page « Mes commandes » | |
+| Point de livraison sur la carte (GPS, recherche, épingle), suivi du livreur en direct | Carte de la commande, livreur avec lien de suivi, WhatsApp « en route / il arrive » |
 | FAQ, frais de livraison, guide des tailles, page « Notre maison » | |
 
 Codes promo de démonstration : `BIENVENUE` (-10 %), `FABIMA5000` (-5 000 FCFA dès 40 000), `LIVRAISON` (livraison offerte).
@@ -96,7 +97,7 @@ src/
 ```
 
 Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
-`whatsapp.js` (Twilio et textes des messages), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
+`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
 
@@ -120,6 +121,39 @@ et son adresse ; ses coordonnées sont préremplies à la commande. La gérante 
 
 Sécurité : code valable 10 minutes, 5 essais maximum, 3 demandes de code par numéro toutes les 10 minutes ;
 le serveur ne garde que l'empreinte des codes et des jetons de session (valables 6 mois).
+
+## Livraison : la cliente pointe sa maison, puis suit son livreur (comme Yango)
+
+**À la commande**, plus besoin d'expliquer le chemin :
+
+1. la cliente touche **« 📍 Je suis ici, livrez-moi ici »** : le GPS du téléphone place la maison sur la carte, avec l'adresse écrite ;
+2. ou elle écrit un quartier, une mosquée, une école, une pharmacie… et choisit dans la liste ;
+3. elle peut faire glisser la carte pour mettre l'épingle exactement sur sa porte, et ajouter un repère (« portail vert »).
+
+La zone de livraison et ses frais sont reconnus automatiquement à partir du point (zones et rayons dans `config/site.ts`).
+Le point est gardé pour les commandes suivantes (sur le téléphone et dans le compte). Un bouton 🔊 lit les explications à voix haute.
+Sans carte (serveur absent, GPS refusé), la cliente peut toujours écrire son adresse.
+
+**La livraison** (espace gérant → Commandes → une commande) :
+
+| Étape | Ce qui se passe |
+|---|---|
+| La gérante ouvre la commande | Point sur la carte, repère, bouton « Ouvrir dans Google Maps » |
+| Elle choisit un livreur (nom + téléphone) | Le livreur reçoit sur WhatsApp un lien secret `/livreur/…` (ou la gérante l'envoie en un clic) |
+| Le livreur touche « Démarrer la course » | La commande passe « en route » ; la cliente reçoit un WhatsApp avec le lien pour **suivre le livreur en direct** |
+| Pendant le trajet | La position du livreur est envoyée toutes les 4 s ; la cliente voit le scooter avancer vers sa maison et le temps d'arrivée ; boutons Google Maps / Waze et appel pour le livreur |
+| À moins de 400 m | La cliente reçoit « votre livreur arrive » |
+| « Colis remis » | Commande livrée et payée, message de remerciement |
+
+Les commandes sont maintenant **enregistrées sur le serveur** : la gérante voit celles de toutes les clientes, depuis n'importe quel appareil.
+
+**Cartes utilisées** : OpenStreetMap (gratuit, sans clé, très complet à Dakar) avec Leaflet pour l'affichage,
+Photon pour la recherche et Nominatim pour l'adresse d'un point, appelés par le serveur (mis en cache).
+Pour un gros volume, prenez un fond de carte payant (MapTiler, Stadia…) avec `VITE_MAP_TILES`, et réglez
+`PHOTON_URL` / `NOMINATIM_URL` (voir `server/.env.example`). Google Maps reste utilisé pour l'itinéraire du livreur.
+
+**Bon à savoir** : la géolocalisation demande un site en **https**. Le livreur doit garder la page ouverte pendant
+le trajet (l'écran reste allumé automatiquement) ; s'il la ferme, la cliente voit la dernière position connue.
 
 ## Vendre avec le statut WhatsApp
 
@@ -158,8 +192,8 @@ et `vercel.json` renvoient toutes les adresses vers l'application (sinon un rafr
   Pour une vraie boutique multi-appareils, brancher `StoreContext` sur une API (le backend Express/MySQL d'Allô Béton peut servir de base).
 - **Paiement** : la passerelle est simulée dans `pages/Checkout.tsx` (fonction `pay`). À remplacer par l'API Wave Business,
   Orange Money ou un agrégateur (PayDunya, CinetPay…).
-- **Notifications** : sans base de données, le serveur reçoit la commande depuis le navigateur de la cliente ;
-  il vérifie le format et limite les envois, mais une vraie base de commandes côté serveur reste l'étape suivante.
+- **Commandes** : elles sont gardées par le serveur dans un fichier JSON (`DATA_DIR`) ; il vérifie le format et limite
+  les envois, mais ne recalcule pas les montants. Pour un gros volume, passer à une vraie base de données.
 - **Espace gérant** : le PIN est vérifié côté navigateur, il ne protège donc qu'une démo. Une authentification serveur est nécessaire en production.
 - **Coordonnées** : le téléphone, le WhatsApp, l'e-mail et les réseaux sociaux de `config/site.ts` sont des valeurs d'exemple à remplacer.
 - **Photos** : les images proviennent de Pexels ; si une image ne charge pas, un visuel de remplacement s'affiche.
