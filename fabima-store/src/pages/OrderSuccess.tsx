@@ -28,15 +28,15 @@ export const OrderSuccess: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-16">
       <div className="text-center">
-        <span className="w-20 h-20 rounded-full border border-gold grid place-items-center mx-auto animate-fade-up"><Check className="w-8 h-8 text-gold-dark" strokeWidth={1.3} /></span>
+        <span className="w-20 h-20 rounded-full bg-gradient-to-br from-blush to-gold-light grid place-items-center mx-auto animate-fade-up"><Check className="w-8 h-8 text-gold-dark" strokeWidth={1.3} /></span>
         <p className="eyebrow mt-8 animate-fade-up" style={{ animationDelay: '100ms' }}>Commande {order.id}</p>
-        <h1 className="font-display text-5xl sm:text-7xl mt-4 animate-fade-up" style={{ animationDelay: '200ms' }}>Merci, <em>{order.customer.firstName}</em></h1>
+        <h1 className="font-display text-5xl sm:text-7xl mt-4 animate-fade-up" style={{ animationDelay: '200ms' }}>Merci, <span className="font-script text-gold-dark text-[1.15em]">{order.customer.firstName}</span></h1>
         <p className="mt-5 text-ink/65 max-w-lg mx-auto animate-fade-up" style={{ animationDelay: '300ms' }}>
           Votre commande est entre de bonnes mains. Nous vous appelons très vite au <strong className="text-ink">{order.customer.phone}</strong> pour convenir de la livraison.
         </p>
       </div>
 
-      <div className="mt-14 bg-white border border-ink/[0.06] p-7 sm:p-10 animate-fade-up" style={{ animationDelay: '400ms' }}>
+      <div className="mt-14 bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10 animate-fade-up" style={{ animationDelay: '400ms' }}>
         <dl className="grid sm:grid-cols-3 gap-6 text-sm pb-8 border-b border-ink/10">
           <div><dt className="field-label">Livraison</dt><dd className="font-medium">{order.customer.zone}</dd><dd className="text-ink/60">{order.customer.address}</dd></div>
           <div><dt className="field-label">Paiement</dt><dd className="font-medium">{PAYMENT_LABELS[order.paymentMethod]}</dd>
@@ -46,7 +46,7 @@ export const OrderSuccess: React.FC = () => {
         <ul className="divide-y divide-ink/10">
           {order.items.map(i => (
             <li key={i.key} className="flex items-center gap-5 py-5">
-              <ProductImage src={i.image} alt={i.name} label="" className="w-16 h-20" />
+              <ProductImage src={i.image} alt={i.name} label="" className="w-16 h-20 rounded-xl" />
               <div className="flex-1 text-sm"><p className="font-display text-xl">{i.name}</p><p className="text-ink/50">{[i.color, i.size && `T. ${i.size}`, `× ${i.quantity}`].filter(Boolean).join(' · ')}</p></div>
               <span className="text-sm">{formatPrice(i.price * i.quantity)}</span>
             </li>

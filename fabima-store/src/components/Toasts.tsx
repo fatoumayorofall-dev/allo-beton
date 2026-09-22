@@ -9,7 +9,7 @@ export const Toasts: React.FC = () => {
       {toasts.map(t => {
         const Icon = t.type === 'error' ? X : t.type === 'info' ? Info : Check;
         return (
-          <div key={t.id} className="flex items-center gap-4 pl-4 pr-5 py-4 bg-ink text-ivory shadow-luxe animate-fade-up text-[13px]">
+          <div key={t.id} className="flex items-center gap-4 pl-4 pr-5 py-4 rounded-2xl bg-ink text-ivory shadow-luxe animate-fade-up text-[13px]">
             <span className={`w-7 h-7 rounded-full grid place-items-center shrink-0 ${t.type === 'error' ? 'bg-wine' : 'border border-gold-light/50'}`}>
               <Icon className="w-3.5 h-3.5 text-gold-light" />
             </span>

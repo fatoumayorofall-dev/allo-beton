@@ -49,7 +49,7 @@ const ReviewForm: React.FC<{ onSubmit: (r: { author: string; rating: number; com
   const [comment, setComment] = useState('');
   if (!open) return <button onClick={() => setOpen(true)} className="btn-outline !h-11 !px-6 mt-2">Donner mon avis</button>;
   return (
-    <form className="space-y-3 mt-2 p-5 bg-ivory-deep/60" onSubmit={e => {
+    <form className="space-y-3 mt-2 p-5 bg-ivory-deep/60 rounded-3xl" onSubmit={e => {
       e.preventDefault();
       if (!author.trim() || comment.trim().length < 10) return;
       onSubmit({ author: author.trim(), rating, comment: comment.trim() });
@@ -165,17 +165,17 @@ export const ProductDetail: React.FC = () => {
               <div className="hidden lg:flex flex-col gap-3 w-20 shrink-0">
                 {product.images.map((img, i) => (
                   <button key={img} onClick={() => setImageIdx(i)} aria-label={`Image ${i + 1}`}
-                    className={`aspect-[3/4] overflow-hidden transition-opacity ${i === imageIdx ? 'ring-1 ring-ink ring-offset-2 ring-offset-ivory' : 'opacity-50 hover:opacity-100'}`}>
+                    className={`aspect-[3/4] overflow-hidden rounded-2xl transition-opacity ${i === imageIdx ? 'ring-1 ring-ink ring-offset-2 ring-offset-ivory' : 'opacity-50 hover:opacity-100'}`}>
                     <ProductImage src={img} alt="" className="w-full h-full" />
                   </button>
                 ))}
               </div>
             )}
-            <div className="relative flex-1 min-w-0 aspect-[4/5] bg-ivory-deep">
+            <div className="relative flex-1 min-w-0 aspect-[4/5] bg-ivory-deep rounded-[2.5rem] overflow-hidden">
               <div key={imageIdx} className="absolute inset-0 animate-fade-in"><ZoomImage src={product.images[imageIdx]} alt={product.name} /></div>
               <div className="absolute top-4 left-4 flex flex-col gap-1.5 pointer-events-none">
-                {off > 0 && <span className="px-3 py-1.5 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold">-{off}%</span>}
-                {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold">Nouveau</span>}
+                {off > 0 && <span className="px-3 py-1.5 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
+                {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
               </div>
               {product.images.length > 1 && (
                 <div className="lg:hidden absolute bottom-4 inset-x-0 flex justify-center gap-2">
@@ -225,7 +225,7 @@ export const ProductDetail: React.FC = () => {
                 <div className="grid grid-cols-6 gap-1.5">
                   {product.sizes.map(s => (
                     <button key={s} onClick={() => { setSize(s); setSizeError(false); }} aria-pressed={size === s}
-                      className={`h-12 text-sm border transition-colors duration-300 ${
+                      className={`h-12 text-sm border rounded-full transition-colors duration-300 ${
                         size === s ? 'bg-ink text-ivory border-ink' : sizeError ? 'border-wine/50 hover:border-wine' : 'border-ink/15 hover:border-ink'}`}>{s}</button>
                   ))}
                 </div>
@@ -238,24 +238,24 @@ export const ProductDetail: React.FC = () => {
             </p>
 
             <div ref={buyRef} className="mt-5 flex gap-2">
-              <div className="flex items-center border border-ink/15 h-[52px]">
+              <div className="flex items-center border border-ink/15 h-[52px] rounded-full overflow-hidden">
                 <button onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Diminuer" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3.5 h-3.5" /></button>
                 <span className="w-8 text-center" aria-live="polite">{qty}</span>
                 <button onClick={() => setQty(q => Math.min(Math.max(1, product.stock), q + 1))} aria-label="Augmenter" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Plus className="w-3.5 h-3.5" /></button>
               </div>
               <button onClick={handleAdd} disabled={outOfStock} className="btn-dark flex-1">{outOfStock ? 'Épuisé' : 'Ajouter au panier'}</button>
               <button onClick={() => toggleWishlist(product.id)} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                className="w-[52px] h-[52px] border border-ink/15 grid place-items-center hover:border-ink transition-colors shrink-0">
+                className="w-[52px] h-[52px] rounded-full border border-ink/15 grid place-items-center hover:border-ink transition-colors shrink-0">
                 <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
               </button>
             </div>
             <button onClick={handleBuyNow} disabled={outOfStock} className="btn-gold w-full mt-2">Acheter maintenant</button>
             <a href={waLink} target="_blank" rel="noopener noreferrer"
-              className="mt-2 w-full h-[52px] border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#1f8f4e] hover:text-[#1f8f4e] transition-colors">
+              className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#1f8f4e] hover:text-[#1f8f4e] transition-colors">
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Commander sur WhatsApp
             </a>
 
-            <ul className="mt-8 grid grid-cols-3 border border-ink/10 divide-x divide-ink/10 text-center text-[11px] text-ink/65">
+            <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/65">
               {[
                 { Icon: Truck, t: `Offerte dès ${(SITE_CONFIG.freeShippingThreshold / 1000).toFixed(0)} 000 F` },
                 { Icon: RefreshCw, t: 'Échange 7 jours' },

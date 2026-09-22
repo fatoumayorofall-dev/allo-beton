@@ -140,7 +140,7 @@ export const Catalog: React.FC = () => {
   return (
     <div>
       {/* Bannière */}
-      <section className="relative h-[42vh] min-h-[320px] max-h-[460px] overflow-hidden bg-ink grain">
+      <section className="relative h-[42vh] min-h-[320px] max-h-[460px] overflow-hidden bg-ink grain rounded-b-[3rem] mx-0 sm:mx-4">
         <ProductImage src={cat?.image ?? CATEGORIES[1].image} alt="" className="absolute inset-0 w-full h-full opacity-70 animate-kenburns" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/30 to-ink/20" />
         <div className="relative h-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-end pb-10 text-ivory">
@@ -170,11 +170,11 @@ export const Catalog: React.FC = () => {
           </button>
           <p className="text-xs text-ink/55 hidden lg:block">{filtered.length} pièce{filtered.length > 1 ? 's' : ''}</p>
           <div className="flex items-center gap-3">
-            {q && <button onClick={() => setParam('q', null)} className="hidden sm:inline-flex items-center gap-1.5 px-3 h-8 border border-ink/15 text-xs">« {q} » <X className="w-3 h-3" /></button>}
+            {q && <button onClick={() => setParam('q', null)} className="hidden sm:inline-flex items-center gap-1.5 px-3 h-8 rounded-full border border-ink/15 text-xs">« {q} » <X className="w-3 h-3" /></button>}
             <label className="flex items-center gap-2 text-xs">
               <span className="text-ink/55 hidden sm:inline uppercase tracking-[0.18em]">Trier</span>
               <select value={sort} onChange={e => setParam('tri', e.target.value === 'pertinence' ? null : e.target.value)}
-                className="h-10 pl-3 pr-8 border border-ink/15 bg-transparent outline-none text-sm focus:border-ink">
+                className="h-10 pl-4 pr-8 rounded-full border border-ink/15 bg-transparent outline-none text-sm focus:border-ink">
                 {Object.entries(SORTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
             </label>
@@ -186,7 +186,7 @@ export const Catalog: React.FC = () => {
 
           <div>
             {filtered.length === 0 ? (
-              <div className="text-center py-28 border border-ink/10">
+              <div className="text-center py-28 border border-ink/10 rounded-[2rem]">
                 <p className="font-display text-4xl">Aucune pièce ne correspond</p>
                 <p className="text-ink/60 mt-3 text-sm">Élargissez vos critères pour découvrir d'autres merveilles.</p>
                 <button onClick={reset} className="btn-dark mt-8">Réinitialiser les filtres</button>
@@ -213,7 +213,7 @@ export const Catalog: React.FC = () => {
       {filtersOpen && (
         <div className="fixed inset-0 z-[75] lg:hidden">
           <div className="absolute inset-0 bg-ink/50 animate-fade-in" onClick={() => setFiltersOpen(false)} />
-          <div role="dialog" aria-modal="true" aria-label="Filtres" className="absolute bottom-0 inset-x-0 max-h-[88vh] flex flex-col bg-ivory animate-fade-up">
+          <div role="dialog" aria-modal="true" aria-label="Filtres" className="absolute bottom-0 inset-x-0 max-h-[88vh] flex flex-col bg-ivory rounded-t-[2rem] overflow-hidden animate-fade-up">
             <div className="flex items-center justify-between px-6 h-16 border-b border-ink/10">
               <h2 className="font-display text-3xl">Filtrer</h2>
               <button onClick={() => setFiltersOpen(false)} aria-label="Fermer" className="w-10 h-10 grid place-items-center"><X className="w-5 h-5" strokeWidth={1.5} /></button>

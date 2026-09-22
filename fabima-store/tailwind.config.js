@@ -4,20 +4,23 @@ export default {
   theme: {
     extend: {
       colors: {
-        ink: { DEFAULT: '#16120f', soft: '#2b2420', muted: '#6b615a' },
-        ivory: { DEFAULT: '#f8f4ee', deep: '#efe7dc', warm: '#e7dccd' },
-        gold: { DEFAULT: '#a8844a', light: '#d8bf8f', dark: '#7d6031', pale: '#f3eadb' },
-        blush: '#e8d5c9',
-        wine: '#7a1f2b',
+        // Thème féminin : les noms de jetons sont conservés, seules les teintes changent.
+        ink: { DEFAULT: '#3a1f2d', soft: '#54304a', muted: '#86677a' },     // prune profond (texte, boutons)
+        ivory: { DEFAULT: '#fdf7f5', deep: '#f9e9e6', warm: '#f3d9d5' },   // crème rosée (fonds)
+        gold: { DEFAULT: '#c48a82', light: '#f0c9c1', dark: '#a0625c', pale: '#fbeeea' }, // rose doré (accents)
+        blush: '#f5d5d6',
+        mauve: '#b996b8',
+        wine: '#b03a64',                                                    // framboise (promos)
       },
       fontFamily: {
         display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
         sans: ['Manrope', 'system-ui', 'sans-serif'],
+        script: ['"Pinyon Script"', '"Great Vibes"', 'cursive'],
       },
       letterSpacing: { luxe: '0.32em' },
       boxShadow: {
-        luxe: '0 30px 60px -30px rgba(22,18,15,.35)',
-        soft: '0 12px 40px -18px rgba(22,18,15,.25)',
+        luxe: '0 30px 60px -28px rgba(120,50,80,.35)',
+        soft: '0 14px 40px -18px rgba(120,50,80,.28)',
       },
       transitionTimingFunction: { luxe: 'cubic-bezier(.22,1,.36,1)' },
       keyframes: {
@@ -28,6 +31,8 @@ export default {
         marquee: { '0%': { transform: 'translateX(0)' }, '100%': { transform: 'translateX(-50%)' } },
         kenburns: { '0%': { transform: 'scale(1.08)' }, '100%': { transform: 'scale(1)' } },
         progress: { '0%': { transform: 'scaleX(0)' }, '100%': { transform: 'scaleX(1)' } },
+        floaty: { '0%, 100%': { transform: 'translateY(0) rotate(0deg)' }, '50%': { transform: 'translateY(-10px) rotate(6deg)' } },
+        twinkle: { '0%, 100%': { opacity: '.25', transform: 'scale(.8)' }, '50%': { opacity: '1', transform: 'scale(1)' } },
       },
       animation: {
         'fade-up': 'fade-up .7s cubic-bezier(.22,1,.36,1) both',
@@ -37,6 +42,8 @@ export default {
         marquee: 'marquee 40s linear infinite',
         kenburns: 'kenburns 7s ease-out both',
         progress: 'progress 7s linear both',
+        floaty: 'floaty 6s ease-in-out infinite',
+        twinkle: 'twinkle 3.5s ease-in-out infinite',
       },
     },
   },

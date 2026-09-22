@@ -45,7 +45,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
   return (
     <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Recherche">
       <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm animate-fade-in" onClick={onClose} />
-      <div className="relative bg-ivory animate-fade-up shadow-luxe">
+      <div className="relative bg-ivory animate-fade-up shadow-luxe rounded-b-[2.5rem]">
         <div className="max-w-6xl mx-auto px-5 sm:px-10 pt-8 pb-10">
           <div className="flex justify-end"><button onClick={onClose} aria-label="Fermer la recherche" className="w-10 h-10 grid place-items-center hover:rotate-90 transition-transform duration-500"><X className="w-5 h-5" strokeWidth={1.5} /></button></div>
           <form onSubmit={submit} className="flex items-center gap-4 border-b border-ink pb-4">
@@ -75,7 +75,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
                   {list.map(p => (
                     <li key={p.id}>
                       <Link to={`/produit/${p.slug}`} onClick={onClose} className="group block">
-                        <div className="aspect-[3/4] overflow-hidden"><ProductImage src={p.images[0]} alt={p.name} className="w-full h-full group-hover:scale-105 transition-transform duration-700" /></div>
+                        <div className="aspect-[3/4] overflow-hidden rounded-3xl"><ProductImage src={p.images[0]} alt={p.name} className="w-full h-full group-hover:scale-105 transition-transform duration-700" /></div>
                         <p className="font-display text-lg mt-2 leading-tight line-clamp-1">{p.name}</p>
                         <p className="text-xs text-ink/55">{formatPrice(p.price)}</p>
                       </Link>

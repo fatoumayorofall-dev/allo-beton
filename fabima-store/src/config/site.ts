@@ -1,6 +1,6 @@
 export const SITE_CONFIG = {
   name: 'Fabima Store',
-  tagline: 'La mode qui vous ressemble',
+  tagline: 'La mode au féminin',
   phone: '+221 77 000 00 00',
   phoneRaw: '+221770000000',
   whatsappRaw: '221770000000', // format wa.me

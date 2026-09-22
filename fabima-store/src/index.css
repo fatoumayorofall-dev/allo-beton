@@ -14,18 +14,18 @@
   input, select, textarea { @apply text-ink; }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
-  ::-webkit-scrollbar-track { background: #efe7dc; }
-  ::-webkit-scrollbar-thumb { background: #cdbba0; border-radius: 10px; border: 2px solid #efe7dc; }
+  ::-webkit-scrollbar-track { background: #f9e9e6; }
+  ::-webkit-scrollbar-thumb { background: #e2b3ad; border-radius: 10px; border: 2px solid #f9e9e6; }
 }
 
 @layer components {
   /* Libellé éditorial : petites capitales espacées */
   .eyebrow { @apply text-[10px] sm:text-[11px] uppercase tracking-luxe font-semibold text-gold-dark; }
 
-  .btn { @apply inline-flex items-center justify-center gap-2.5 px-8 h-[52px] text-[11px] uppercase tracking-[0.22em] font-semibold transition-all duration-500 ease-luxe disabled:opacity-40 disabled:pointer-events-none; }
-  .btn-dark { @apply btn bg-ink text-ivory hover:bg-gold-dark; }
+  .btn { @apply inline-flex items-center justify-center gap-2.5 px-8 h-[52px] rounded-full text-[11px] uppercase tracking-[0.22em] font-semibold transition-all duration-500 ease-luxe disabled:opacity-40 disabled:pointer-events-none; }
+  .btn-dark { @apply btn bg-ink text-ivory hover:bg-gold-dark hover:shadow-soft; }
   .btn-light { @apply btn bg-ivory text-ink hover:bg-gold-light; }
-  .btn-gold { @apply btn bg-gold text-white hover:bg-gold-dark; }
+  .btn-gold { @apply btn bg-gradient-to-r from-gold to-wine/80 text-white hover:shadow-soft hover:brightness-105; }
   .btn-outline { @apply btn border border-ink/80 text-ink hover:bg-ink hover:text-ivory; }
   .btn-ghost-light { @apply btn border border-ivory/50 text-ivory hover:bg-ivory hover:text-ink; }
 
@@ -34,12 +34,23 @@
   .link-luxe::after { content: ''; @apply absolute left-0 -bottom-0.5 h-px w-full bg-current origin-right scale-x-0 transition-transform duration-500 ease-luxe; }
   .link-luxe:hover::after, .link-luxe.is-active::after { @apply origin-left scale-x-100; }
 
-  .field { @apply w-full h-12 px-4 bg-white border border-ink/15 outline-none transition-colors focus:border-ink placeholder:text-ink/35; }
+  .field { @apply w-full h-12 px-5 rounded-2xl bg-white border border-ink/15 outline-none transition-colors focus:border-ink placeholder:text-ink/35; }
   textarea.field { @apply h-auto py-3; }
   .field-label { @apply block text-[11px] uppercase tracking-[0.18em] font-semibold text-ink/70 mb-2; }
 
-  .card-luxe { @apply bg-white border border-ink/[0.06]; }
+  .card-luxe { @apply bg-white border border-ink/[0.06] rounded-3xl; }
+  /* Arche : forme signature du thème féminin */
+  .arch { border-radius: 999px 999px 1.75rem 1.75rem; }
   .hairline { @apply h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent; }
+}
+
+/* Fond pétale : halos pastel superposés */
+.bg-petal {
+  background-color: #fdf7f5;
+  background-image:
+    radial-gradient(40rem 28rem at 8% 10%, rgba(245,213,214,.75), transparent 60%),
+    radial-gradient(34rem 26rem at 95% 30%, rgba(185,150,184,.25), transparent 60%),
+    radial-gradient(30rem 24rem at 60% 100%, rgba(240,201,193,.55), transparent 60%);
 }
 
 /* Grain photographique subtil pour les visuels plein écran */

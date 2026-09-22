@@ -37,7 +37,7 @@ const ScrollToTop: React.FC = () => {
 };
 
 const PageFallback: React.FC = () => (
-  <div className="min-h-[60vh] grid place-items-center"><span className="font-display italic text-3xl text-gold animate-pulse">Fabima</span></div>
+  <div className="min-h-[60vh] grid place-items-center"><span className="font-script text-5xl text-gold animate-pulse">Fabima</span></div>
 );
 
 export default function App() {

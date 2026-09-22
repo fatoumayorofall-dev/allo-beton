@@ -16,7 +16,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
 
   return (
     <article className="group relative flex flex-col">
-      <div className="relative aspect-[3/4] overflow-hidden bg-ivory-deep">
+      <div className="relative aspect-[3/4] overflow-hidden bg-ivory-deep rounded-[2rem]">
         <Link to={`/produit/${product.slug}`} aria-label={product.name} className="block w-full h-full">
           <ProductImage src={product.images[0]} alt={product.name}
             className="w-full h-full transition-transform duration-[1.4s] ease-luxe group-hover:scale-[1.06]" />
@@ -28,10 +28,10 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 pointer-events-none">
-          {outOfStock && <span className="px-2.5 py-1 bg-white text-ink/60 text-[9px] uppercase tracking-[0.2em] font-semibold">Épuisé</span>}
-          {off > 0 && <span className="px-2.5 py-1 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold">-{off}%</span>}
-          {product.isNew && <span className="px-2.5 py-1 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold">Nouveau</span>}
-          {!product.isNew && !off && product.isBestseller && <span className="px-2.5 py-1 bg-ink text-gold-light text-[9px] uppercase tracking-[0.2em] font-semibold">Iconique</span>}
+          {outOfStock && <span className="px-2.5 py-1 bg-white text-ink/60 text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Épuisé</span>}
+          {off > 0 && <span className="px-2.5 py-1 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
+          {product.isNew && <span className="px-2.5 py-1 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
+          {!product.isNew && !off && product.isBestseller && <span className="px-2.5 py-1 bg-ink text-gold-light text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Coup de cœur</span>}
         </div>
 
         {/* Actions */}
@@ -49,14 +49,14 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
         {/* Ajout rapide (desktop) : tailles directement sur la carte */}
         {!outOfStock && (
           <div className="hidden lg:block absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-luxe">
-            <div className="bg-white/95 backdrop-blur px-4 py-3.5">
+            <div className="bg-white/90 backdrop-blur px-4 py-3.5 rounded-t-3xl">
               {product.sizes.length > 0 ? (
                 <>
                   <p className="text-[9px] uppercase tracking-[0.25em] text-ink/50 text-center mb-2">Ajout rapide · taille</p>
                   <div className="flex flex-wrap justify-center gap-1">
                     {product.sizes.map(s => (
                       <button key={s} onClick={() => addToCart(product, { size: s, color })}
-                        className="min-w-9 h-8 px-2 text-xs border border-ink/15 hover:bg-ink hover:text-ivory hover:border-ink transition-colors">{s}</button>
+                        className="min-w-9 h-8 px-2 text-xs border rounded-full border-ink/15 hover:bg-ink hover:text-ivory hover:border-ink transition-colors">{s}</button>
                     ))}
                   </div>
                 </>

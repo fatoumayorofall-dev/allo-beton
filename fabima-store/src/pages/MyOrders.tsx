@@ -32,7 +32,7 @@ export const MyOrders: React.FC = () => {
             <li key={o.id}>
               <Link to={`/suivi?commande=${o.id}&tel=${encodeURIComponent(o.customer.phone)}`} className="group flex flex-wrap items-center gap-5 py-7">
                 <div className="flex -space-x-4">
-                  {o.items.slice(0, 3).map(i => <ProductImage key={i.key} src={i.image} alt={i.name} label="" className="w-14 h-[72px] border-2 border-ivory" />)}
+                  {o.items.slice(0, 3).map(i => <ProductImage key={i.key} src={i.image} alt={i.name} label="" className="w-14 h-[72px] rounded-xl border-2 border-ivory" />)}
                 </div>
                 <div className="flex-1 min-w-[160px]">
                   <p className="font-display text-2xl">{o.id}</p>

@@ -10,21 +10,22 @@ import { usePageTitle } from '../utils/usePageTitle';
 import { ProductCard } from '../components/ProductCard';
 import { ProductImage } from '../components/ProductImage';
 import { Reveal } from '../components/Reveal';
+import { FloatingPetals, Flourish, Flower } from '../components/Decor';
 
 const px = (id: number, w = 1600) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
 const HERO_SLIDES = [
   {
-    kicker: 'Collection Automne — 2026',
-    title: ['L\'élégance', 'jusqu\'au bout', 'des pieds'],
+    kicker: 'Collection Automne 2026 · Pour elle',
+    title: ['Belle', 'à chaque', 'pas'],
     accent: 1,
-    text: 'Escarpins en velours, mocassins cousus main et sneakers en cuir : la nouvelle saison se porte avec assurance.',
+    text: 'Escarpins en velours, sandales dorées et mules raffinées : la nouvelle saison se porte avec grâce.',
     cta: { label: 'Découvrir les chaussures', to: '/boutique/chaussures' },
     image: px(1464625),
   },
   {
     kicker: 'Maroquinerie',
-    title: ['Le sac', 'qui signe', 'votre allure'],
+    title: ['Le sac', 'qui vous', 'ressemble'],
     accent: 1,
     text: 'Sacs structurés, cabas en wax façonnés à Dakar et pochettes de soirée perlées.',
     cta: { label: 'Explorer les sacs', to: '/boutique/sacs' },
@@ -32,9 +33,9 @@ const HERO_SLIDES = [
   },
   {
     kicker: 'Joaillerie',
-    title: ['L\'éclat', 'des grands', 'jours'],
-    accent: 2,
-    text: 'Plaqué or 18 carats, perles nacrées et créoles lumineuses pour chaque cérémonie.',
+    title: ['Brillez', 'de mille', 'feux'],
+    accent: 1,
+    text: 'Plaqué or 18 carats, perles nacrées et créoles lumineuses pour briller à chaque cérémonie.',
     cta: { label: 'Voir les bijoux', to: '/boutique/bijoux' },
     image: px(1191531),
   },
@@ -42,7 +43,7 @@ const HERO_SLIDES = [
 
 const TESTIMONIALS = [
   { name: 'Aïssatou N.', city: 'Mermoz, Dakar', text: 'Commande reçue le lendemain dans un écrin magnifique. Le sac Fatou est encore plus beau en vrai — on me demande sans cesse d\'où il vient.' },
-  { name: 'Ousmane F.', city: 'Thiès', text: 'Des mocassins d\'une qualité rare, payés avec Wave en deux minutes. Un service client attentionné, à l\'écoute sur WhatsApp.' },
+  { name: 'Ndèye F.', city: 'Thiès', text: 'Des sandales dorées d\'une qualité rare, payées avec Wave en deux minutes. Une équipe douce et attentionnée, toujours à l\'écoute sur WhatsApp.' },
   { name: 'Coumba S.', city: 'Almadies, Dakar', text: 'J\'ai échangé ma pointure sans aucune difficulté. Les escarpins Aminata étaient parfaits pour le mariage de ma sœur.' },
 ];
 
@@ -81,7 +82,7 @@ export const Home: React.FC = () => {
   const [c0, ...cRest] = CATEGORIES;
 
   return (
-    <div>
+    <div className="overflow-x-clip">
       {/* ───────────── HERO ───────────── */}
       <section className="relative h-[100svh] min-h-[620px] overflow-hidden bg-ink grain" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         aria-roledescription="carrousel" aria-label="À la une">
@@ -92,15 +93,15 @@ export const Home: React.FC = () => {
             </div>
           </div>
         ))}
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/30 to-ink/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-wine/15 to-ink/35" />
         <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent" />
 
         <div className="relative h-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-end pb-24 sm:pb-28">
           <div key={slide} className="max-w-3xl text-ivory">
-            <p className="text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light animate-fade-up">{current.kicker}</p>
+            <p className="text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light animate-fade-up flex items-center gap-3"><Flower className="w-3.5 h-3.5" />{current.kicker}</p>
             <h1 className="font-display font-normal text-[3.4rem] sm:text-7xl lg:text-[7.5rem] leading-[0.92] mt-5">
               {current.title.map((line, i) => (
-                <span key={i} className={`block animate-fade-up ${i === current.accent ? 'italic text-gold-light' : ''}`} style={{ animationDelay: `${120 + i * 110}ms` }}>{line}</span>
+                <span key={i} className={`block animate-fade-up ${i === current.accent ? 'font-script text-gold-light text-[1.15em] leading-[0.95] pl-2' : ''}`} style={{ animationDelay: `${120 + i * 110}ms` }}>{line}</span>
               ))}
             </h1>
             <div className="mt-8 flex flex-col sm:flex-row sm:items-end gap-8 animate-fade-up" style={{ animationDelay: '500ms' }}>
@@ -129,20 +130,23 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ───────────── MANIFESTE ───────────── */}
-      <section className="max-w-4xl mx-auto px-5 sm:px-8 py-24 sm:py-32 text-center">
-        <Reveal>
-          <p className="eyebrow">Maison Fabima · Dakar</p>
-          <p className="font-display text-3xl sm:text-5xl leading-[1.15] mt-8">
-            Nous sélectionnons chaque pièce comme on choisit un bijou de famille : <em className="text-gold-dark">pour sa qualité</em>, pour son allure, et pour les souvenirs qu'elle accompagnera.
-          </p>
-          <div className="hairline w-40 mx-auto mt-12" />
-        </Reveal>
+      <section className="relative">
+        <FloatingPetals />
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 py-24 sm:py-32 text-center">
+          <Reveal>
+            <p className="font-script text-4xl sm:text-5xl text-gold-dark">Pour toutes les femmes</p>
+            <p className="font-display text-3xl sm:text-5xl leading-[1.15] mt-6">
+              Celles qui rayonnent au bureau, qui dansent jusqu'au bout de la nuit aux mariages, et qui brillent <em className="text-gold-dark">simplement d'être elles-mêmes</em>. Chaque pièce Fabima est choisie pour vous.
+            </p>
+            <Flourish className="mt-12" />
+          </Reveal>
+        </div>
       </section>
 
       {/* ───────────── UNIVERS ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12">
         <Reveal className="flex items-end justify-between gap-6 mb-10">
-          <div><p className="eyebrow">Nos univers</p><h2 className="font-display text-5xl sm:text-6xl mt-3">La garde-robe <em>complète</em></h2></div>
+          <div><p className="eyebrow">Nos univers</p><h2 className="font-display text-5xl sm:text-6xl mt-3">Tout pour vous <span className="font-script text-gold-dark text-[1.1em]">sublimer</span></h2></div>
           <Link to="/boutique" className="hidden sm:inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe">Toute la boutique <ArrowRight className="w-3.5 h-3.5" /></Link>
         </Reveal>
         <div className="grid lg:grid-cols-2 gap-4">
@@ -161,11 +165,11 @@ export const Home: React.FC = () => {
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
         <Reveal className="text-center mb-12">
           <p className="eyebrow">La sélection</p>
-          <h2 className="font-display text-5xl sm:text-6xl mt-3">Les pièces du moment</h2>
-          <div className="mt-8 inline-flex gap-8 border-b border-ink/10" role="tablist">
-            {([['bestsellers', 'Iconiques'], ['nouveautes', 'Nouveautés'], ['promos', 'Offres']] as const).map(([id, label]) => (
+          <h2 className="font-display text-5xl sm:text-6xl mt-3">Nos <span className="font-script text-gold-dark text-[1.15em]">coups de cœur</span></h2>
+          <div className="mt-8 inline-flex gap-1 p-1 rounded-full bg-white border border-ink/[0.06] shadow-soft" role="tablist">
+            {([['bestsellers', 'Coups de cœur'], ['nouveautes', 'Nouveautés'], ['promos', 'Petits prix']] as const).map(([id, label]) => (
               <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-                className={`pb-3 -mb-px text-[11px] uppercase tracking-[0.22em] font-semibold border-b transition-colors ${tab === id ? 'border-ink text-ink' : 'border-transparent text-ink/40 hover:text-ink'}`}>{label}</button>
+                className={`px-5 h-10 rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold transition-colors ${tab === id ? 'bg-ink text-ivory' : 'text-ink/50 hover:text-ink hover:bg-blush/60'}`}>{label}</button>
             ))}
           </div>
         </Reveal>
@@ -178,16 +182,16 @@ export const Home: React.FC = () => {
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
         <div className="grid lg:grid-cols-12 gap-10 lg:gap-6 items-center">
           <Reveal className="lg:col-span-5 relative">
-            <div className="aspect-[4/5] overflow-hidden"><ProductImage src={px(6044266, 1000)} alt="Artisane de l'atelier Teranga" label="Atelier Teranga" className="w-full h-full" /></div>
-            <div className="hidden sm:block absolute -bottom-10 -right-10 lg:-right-20 w-44 lg:w-56 aspect-[3/4] overflow-hidden border-[10px] border-ivory shadow-luxe">
+            <div className="aspect-[4/5] overflow-hidden arch"><ProductImage src={px(6044266, 1000)} alt="Artisane de l'atelier Teranga" label="Atelier Teranga" className="w-full h-full" /></div>
+            <div className="hidden sm:block absolute -bottom-10 -right-10 lg:-right-20 w-44 lg:w-56 aspect-[3/4] overflow-hidden arch border-[8px] border-ivory shadow-luxe">
               <ProductImage src={px(994523, 600)} alt="Robe en wax" label="" className="w-full h-full" />
             </div>
           </Reveal>
           <Reveal className="lg:col-span-6 lg:col-start-7" delay={120}>
             <p className="eyebrow">Fait main à Dakar</p>
-            <h2 className="font-display text-5xl sm:text-7xl leading-[0.95] mt-4">L'atelier<br /><em className="text-gold-dark">Teranga</em></h2>
+            <h2 className="font-display text-5xl sm:text-7xl leading-[0.95] mt-4">L'atelier<br /><span className="font-script text-gold-dark text-[1.2em]">Teranga</span></h2>
             <p className="mt-8 text-ink/65 leading-relaxed max-w-lg">
-              Au cœur de la Médina, nos artisanes et tailleurs façonnent des cabas en wax et des robes cintrées aux imprimés vibrants.
+              Au cœur de la Médina, nos artisanes façonnent des cabas en wax et des robes cintrées aux imprimés vibrants.
               Chaque pièce est coupée à la main, numérotée et ne sera jamais tout à fait identique à une autre.
             </p>
             <dl className="mt-10 grid grid-cols-3 gap-6 max-w-md">
@@ -201,12 +205,12 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ───────────── BANDEAU DÉFILANT ───────────── */}
-      <section className="mt-32 sm:mt-40 border-y border-ink/10 py-8 overflow-hidden" aria-hidden>
+      <section className="mt-32 sm:mt-40 bg-blush/50 py-8 overflow-hidden -rotate-1 scale-[1.02]" aria-hidden>
         <div className="flex whitespace-nowrap animate-marquee w-max">
           {[0, 1].map(k => (
             <div key={k} className="flex items-center">
-              {['Élégance', 'Savoir-faire', 'Teranga', 'Raffinement', 'Dakar', 'Audace'].map(w => (
-                <span key={w} className="font-display italic text-5xl sm:text-7xl px-8 text-ink/85 flex items-center gap-16">{w}<span className="text-gold text-2xl not-italic">✦</span></span>
+              {['Grâce', 'Élégance', 'Féminité', 'Teranga', 'Douceur', 'Audace'].map(w => (
+                <span key={w} className="font-display italic text-5xl sm:text-7xl px-8 text-ink/85 flex items-center gap-16">{w}<Flower className="w-7 h-7 text-gold-light" /></span>
               ))}
             </div>
           ))}
@@ -217,7 +221,7 @@ export const Home: React.FC = () => {
       {look.length > 0 && (
         <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <Reveal className="relative aspect-[4/5] overflow-hidden">
+            <Reveal className="relative aspect-[4/5] overflow-hidden arch">
               <ProductImage src={px(1536619, 1200)} alt="Look de cérémonie Fabima" label="Le look cérémonie" className="w-full h-full" />
               {look.map((p, i) => {
                 const pos = [['30%', '38%'], ['62%', '58%'], ['44%', '86%'], ['48%', '22%']][i];
@@ -228,7 +232,7 @@ export const Home: React.FC = () => {
                       <span className="absolute inset-0 rounded-full bg-ivory/60 animate-ping" />
                       <Plus className="relative w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
                     </span>
-                    <span className="absolute left-10 top-1/2 -translate-y-1/2 bg-ivory px-3 py-2 whitespace-nowrap text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-soft">
+                    <span className="absolute left-10 top-1/2 -translate-y-1/2 bg-ivory px-4 py-2 rounded-full whitespace-nowrap text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-soft">
                       {p.name} · {formatPrice(p.price)}
                     </span>
                   </Link>
@@ -243,7 +247,7 @@ export const Home: React.FC = () => {
                 {look.map(p => (
                   <li key={p.id}>
                     <Link to={`/produit/${p.slug}`} className="group flex items-center gap-5 py-4">
-                      <ProductImage src={p.images[0]} alt={p.name} label="" className="w-16 h-20 shrink-0" />
+                      <ProductImage src={p.images[0]} alt={p.name} label="" className="w-16 h-20 shrink-0 rounded-2xl" />
                       <span className="flex-1"><span className="eyebrow !text-ink/40">{p.subcategory}</span><span className="block font-display text-xl mt-1 group-hover:text-gold-dark transition-colors">{p.name}</span></span>
                       <span className="text-sm">{formatPrice(p.price)}</span>
                       <ArrowUpRight className="w-4 h-4 text-ink/30 group-hover:text-ink group-hover:rotate-45 transition-all" />
@@ -276,9 +280,10 @@ export const Home: React.FC = () => {
       </section>
 
       {/* ───────────── TÉMOIGNAGES ───────────── */}
-      <section className="mt-20 bg-ivory-deep">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8 py-24 sm:py-32 text-center">
-          <p className="eyebrow">Ils nous font confiance</p>
+      <section className="relative mt-20 mx-3 sm:mx-6 rounded-[3rem] overflow-hidden bg-petal">
+        <FloatingPetals />
+        <div className="relative max-w-4xl mx-auto px-5 sm:px-8 py-24 sm:py-32 text-center">
+          <p className="font-script text-4xl text-gold-dark">Elles nous aiment</p>
           <div className="relative mt-10 min-h-[220px] sm:min-h-[200px]">
             {TESTIMONIALS.map((t, i) => (
               <figure key={t.name} className={`absolute inset-0 transition-all duration-1000 ease-luxe ${i === quote ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`} aria-hidden={i !== quote}>
@@ -289,7 +294,7 @@ export const Home: React.FC = () => {
           </div>
           <div className="flex justify-center gap-2 mt-8">
             {TESTIMONIALS.map((t, i) => (
-              <button key={t.name} onClick={() => setQuote(i)} aria-label={`Témoignage ${i + 1}`} className={`h-[2px] transition-all duration-500 ${i === quote ? 'w-10 bg-ink' : 'w-5 bg-ink/20'}`} />
+              <button key={t.name} onClick={() => setQuote(i)} aria-label={`Témoignage ${i + 1}`} className={`h-2 rounded-full transition-all duration-500 ${i === quote ? 'w-8 bg-gold' : 'w-2 bg-ink/20'}`} />
             ))}
           </div>
           <p className="mt-12 text-sm text-ink/55">Note moyenne <strong className="text-ink">4,8/5</strong> sur plus de 800 avis vérifiés</p>
@@ -301,13 +306,13 @@ export const Home: React.FC = () => {
         <Reveal className="text-center mb-10 px-5">
           <p className="eyebrow">@fabimastore</p>
           <h2 className="font-display text-5xl sm:text-6xl mt-3">#FabimaStyle</h2>
-          <p className="text-ink/55 mt-3 text-sm">Partagez votre look avec le hashtag pour apparaître ici.</p>
+          <p className="text-ink/55 mt-3 text-sm">Partagez votre look avec le hashtag, les plus belles d'entre vous apparaissent ici.</p>
         </Reveal>
-        <div className="grid grid-cols-3 lg:grid-cols-6">
+        <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-6">
           {products.filter(p => p.images[0]).slice(0, 6).map((p, i) => (
-            <a key={p.id} href={SITE_CONFIG.social.instagram} target="_blank" rel="noopener noreferrer" className="group relative aspect-square overflow-hidden" aria-label={`Instagram — ${p.name}`}>
+            <a key={p.id} href={SITE_CONFIG.social.instagram} target="_blank" rel="noopener noreferrer" className={`group relative aspect-square overflow-hidden ${i % 2 ? 'rounded-[2rem]' : 'arch'}`} aria-label={`Instagram — ${p.name}`}>
               <ProductImage src={p.images[p.images.length > 1 && i % 2 ? 1 : 0]} alt="" className="w-full h-full group-hover:scale-110 transition-transform duration-[1.2s]" />
-              <span className="absolute inset-0 bg-ink/0 group-hover:bg-ink/40 transition-colors duration-500 grid place-items-center">
+              <span className="absolute inset-0 bg-wine/0 group-hover:bg-wine/40 transition-colors duration-500 grid place-items-center">
                 <Instagram className="w-6 h-6 text-ivory opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.4} />
               </span>
             </a>
@@ -328,9 +333,9 @@ export const Home: React.FC = () => {
 };
 
 const CategoryTile: React.FC<{ id: string; name: string; description: string; image: string; tall?: boolean }> = ({ id, name, description, image, tall }) => (
-  <Link to={`/boutique/${id}`} className={`group relative block overflow-hidden ${tall ? 'aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[640px]' : 'aspect-[3/4]'}`}>
+  <Link to={`/boutique/${id}`} className={`group relative block overflow-hidden ${tall ? 'rounded-[2.5rem] aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[640px]' : 'arch aspect-[3/4]'}`}>
     <ProductImage src={image} alt={name} label="" className="absolute inset-0 w-full h-full transition-transform duration-[1.6s] ease-luxe group-hover:scale-[1.07]" />
-    <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/5 to-transparent" />
+    <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-wine/5 to-transparent" />
     <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 text-ivory flex items-end justify-between gap-4">
       <div>
         <h3 className={`font-display leading-none ${tall ? 'text-5xl sm:text-6xl' : 'text-3xl sm:text-4xl'}`}>{name}</h3>

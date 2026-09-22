@@ -16,7 +16,7 @@ export const PromoBox: React.FC = () => {
 
   if (promoCode) {
     return (
-      <div className={`flex items-center justify-between gap-3 px-4 py-3 text-sm border ${shortfall ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>
+      <div className={`flex items-center justify-between gap-3 px-4 py-3 text-sm border rounded-2xl ${shortfall ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>
         <span className="flex items-start gap-2.5"><Tag className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={1.5} />
           <span><strong>{promoCode}</strong> — {PROMO_CODES[promoCode].label}
             {shortfall > 0 && <span className="block text-xs mt-0.5">Encore {formatPrice(shortfall)} d'achat pour l'activer.</span>}
@@ -30,9 +30,9 @@ export const PromoBox: React.FC = () => {
     return <button onClick={() => setOpen(true)} className="text-[11px] uppercase tracking-[0.2em] font-semibold link-luxe inline-flex items-center gap-2"><Tag className="w-3.5 h-3.5" strokeWidth={1.5} /> J'ai un code promo</button>;
   }
   return (
-    <form onSubmit={e => { e.preventDefault(); const r = applyPromo(code); notify(r.message, r.ok ? 'success' : 'error'); if (r.ok) setCode(''); }} className="flex animate-fade-in">
-      <input value={code} onChange={e => setCode(e.target.value)} placeholder="Code promo" aria-label="Code promo" autoFocus className="field uppercase text-sm !border-r-0" />
-      <button className="px-5 bg-ink text-ivory text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-gold-dark transition-colors">OK</button>
+    <form onSubmit={e => { e.preventDefault(); const r = applyPromo(code); notify(r.message, r.ok ? 'success' : 'error'); if (r.ok) setCode(''); }} className="flex gap-2 animate-fade-in">
+      <input value={code} onChange={e => setCode(e.target.value)} placeholder="Code promo" aria-label="Code promo" autoFocus className="field uppercase text-sm" />
+      <button className="px-5 rounded-full bg-ink text-ivory text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-gold-dark transition-colors">OK</button>
     </form>
   );
 };
@@ -46,7 +46,7 @@ export const Cart: React.FC = () => {
   if (cart.length === 0) {
     return (
       <div className="max-w-xl mx-auto text-center py-40 px-5">
-        <p className="font-display italic text-7xl text-gold-light">Fabima</p>
+        <p className="font-script text-8xl text-gold-light">Fabima</p>
         <h1 className="font-display text-5xl mt-6">Votre panier est vide</h1>
         <p className="text-ink/60 mt-4">Nos nouveautés n'attendent que vous.</p>
         <Link to="/boutique?tri=nouveautes" className="btn-dark mt-10">Découvrir les nouveautés</Link>
@@ -67,7 +67,7 @@ export const Cart: React.FC = () => {
             const stock = product?.stock ?? item.quantity;
             return (
               <li key={item.key} className="flex gap-5 sm:gap-8 py-7 first:pt-0">
-                <Link to={product ? `/produit/${product.slug}` : '#'} className="shrink-0"><ProductImage src={item.image} alt={item.name} label="" className="w-28 h-36 sm:w-36 sm:h-48" /></Link>
+                <Link to={product ? `/produit/${product.slug}` : '#'} className="shrink-0"><ProductImage src={item.image} alt={item.name} label="" className="w-28 h-36 sm:w-36 sm:h-48 rounded-3xl" /></Link>
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between gap-4">
                     <div>
@@ -78,7 +78,7 @@ export const Cart: React.FC = () => {
                     <span className="font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
                   </div>
                   <div className="mt-auto flex items-center justify-between pt-4">
-                    <div className="flex items-center border border-ink/15 h-10">
+                    <div className="flex items-center border border-ink/15 h-10 rounded-full overflow-hidden">
                       <button onClick={() => updateQuantity(item.key, item.quantity - 1)} aria-label="Diminuer" className="w-10 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3.5 h-3.5" /></button>
                       <span className="w-8 text-center text-sm">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.key, item.quantity + 1)} disabled={item.quantity >= stock} aria-label="Augmenter" className="w-10 h-full grid place-items-center hover:bg-ink/5 disabled:opacity-25"><Plus className="w-3.5 h-3.5" /></button>
@@ -91,7 +91,7 @@ export const Cart: React.FC = () => {
           })}
         </ul>
 
-        <aside className="bg-white border border-ink/[0.06] p-7 sm:p-9 space-y-6 lg:sticky lg:top-36">
+        <aside className="bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-9 space-y-6 lg:sticky lg:top-36">
           <h2 className="font-display text-3xl">Récapitulatif</h2>
           <GiftWrapOption />
           <PromoBox />

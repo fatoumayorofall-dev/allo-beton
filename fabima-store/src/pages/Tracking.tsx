@@ -43,7 +43,7 @@ export const Tracking: React.FC = () => {
       {notFound && <p className="mt-8 text-center text-sm text-wine">Aucune commande ne correspond. Vérifiez vos informations ou écrivez-nous sur WhatsApp.</p>}
 
       {order && (
-        <div className="mt-10 bg-white border border-ink/[0.06] p-7 sm:p-10 animate-fade-up">
+        <div className="mt-10 bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10 animate-fade-up">
           <div className="flex flex-wrap justify-between gap-6 pb-8 border-b border-ink/10">
             <div><p className="field-label">Commande</p><p className="font-display text-4xl">{order.id}</p><p className="text-xs text-ink/50 mt-1">{formatDate(order.createdAt)}</p></div>
             <div className="sm:text-right"><p className="field-label">Total</p><p className="font-display text-3xl">{formatPrice(order.total)}</p>

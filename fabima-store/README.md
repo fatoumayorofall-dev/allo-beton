@@ -13,6 +13,13 @@ npm run dev        # http://localhost:5174
 npm run build      # vérification TypeScript + build de production dans dist/
 ```
 
+## Thème
+
+Thème **féminin** : rose poudré, vieux rose, prune et rose doré ; logo et accents en calligraphie (*Pinyon Script*),
+titres en *Cormorant Garamond*, texte en *Manrope* ; formes arrondies et arches, ornements floraux.
+Les couleurs sont centralisées dans `tailwind.config.js` (jetons `ink`, `ivory`, `gold`, `wine`, `blush`, `mauve`) :
+modifier une teinte à cet endroit la change sur tout le site.
+
 ## Fonctionnalités
 
 | Côté client | Côté gérant (`/admin`, PIN démo : `2026`) |

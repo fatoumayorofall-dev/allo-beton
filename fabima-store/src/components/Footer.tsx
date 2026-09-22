@@ -26,11 +26,11 @@ export const Footer: React.FC = () => {
   const lnk = 'link-luxe text-sm text-ivory/65 hover:text-ivory transition-colors';
 
   return (
-    <footer className="bg-ink text-ivory mt-32 print:hidden">
+    <footer className="relative bg-ink text-ivory mt-32 rounded-t-[3rem] overflow-hidden print:hidden">
       {/* Newsletter */}
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-end border-b border-ivory/10">
         <div>
-          <p className={col}>Le cercle Fabima</p>
+          <p className={col}>Le cercle des Fabima Girls</p>
           <h3 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.02]">Recevez nos nouveautés<br /><em className="text-gold-light">en avant-première</em></h3>
         </div>
         <form onSubmit={subscribe} className="w-full">
@@ -47,8 +47,8 @@ export const Footer: React.FC = () => {
 
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-16 grid gap-12 grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div className="col-span-2 lg:col-span-1 space-y-6">
-          <p className="font-display text-4xl tracking-[0.18em] uppercase">Fabima</p>
-          <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures, maroquinerie, bijoux et prêt-à-porter choisis avec exigence. Maison dakaroise, élégance sans frontières.</p>
+          <p className="font-script text-6xl text-gold-light leading-none">Fabima</p>
+          <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures, sacs, bijoux et tenues choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
           <div className="flex gap-2">
             {[
               { Icon: Instagram, href: SITE_CONFIG.social.instagram, label: 'Instagram' },

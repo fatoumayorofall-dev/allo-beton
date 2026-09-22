@@ -35,7 +35,7 @@ export const Admin: React.FC = () => {
         <form onSubmit={e => {
           e.preventDefault();
           if (pin === SITE_CONFIG.adminPin) { try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ } setAuthed(true); } else setError(true);
-        }} className="bg-white border border-ink/[0.06] p-8 text-center">
+        }} className="bg-white border border-ink/[0.06] rounded-[2rem] p-8 text-center">
           <h1 className="font-display text-3xl">Espace gérant</h1>
           <p className="text-sm text-ink/60 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
           <input value={pin} onChange={e => { setPin(e.target.value); setError(false); }} type="password" inputMode="numeric" placeholder="••••" aria-label="Code PIN"
@@ -102,7 +102,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(({ label, value, Icon }) => (
-          <div key={label} className="bg-white border border-ink/[0.06] p-5">
+          <div key={label} className="bg-white border border-ink/[0.06] rounded-[2rem] p-5">
             <Icon className="w-5 h-5 text-gold-dark" />
             <p className="text-xs text-ink/50 mt-3">{label}</p>
             <p className="font-display text-2xl sm:text-3xl mt-1">{value}</p>
@@ -110,7 +110,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
         ))}
       </div>
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-ink/[0.06] p-6">
+        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <h2 className="font-display text-xl mb-5">Ventes par catégorie</h2>
           <ul className="space-y-4">
             {byCategory.map(c => (
@@ -122,7 +122,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
           </ul>
           {valid.length === 0 && <p className="text-sm text-ink/50 mt-4">Aucune vente pour le moment. Passez une commande test depuis la boutique.</p>}
         </div>
-        <div className="bg-white border border-ink/[0.06] p-6">
+        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <div className="flex justify-between items-center mb-5">
             <h2 className="font-display text-xl">Stock faible</h2>
             <button onClick={() => onGoto('products')} className="text-sm underline underline-offset-4">Gérer</button>
@@ -141,7 +141,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
         </div>
       </div>
       {orders.length > 0 && (
-        <div className="bg-white border border-ink/[0.06] p-6">
+        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-display text-xl">Dernières commandes</h2>
             <button onClick={() => onGoto('orders')} className="text-sm underline underline-offset-4">Tout voir</button>
@@ -205,7 +205,7 @@ const Orders: React.FC = () => {
         ))}
       </div>
       {list.length === 0 ? (
-        <p className="bg-white border border-ink/[0.06] p-10 text-center text-ink/50">Aucune commande.</p>
+        <p className="bg-white border border-ink/[0.06] rounded-[2rem] p-10 text-center text-ink/50">Aucune commande.</p>
       ) : (
         <div className="bg-white border border-ink/[0.06] overflow-x-auto">
           <table className="w-full text-sm min-w-[720px]">

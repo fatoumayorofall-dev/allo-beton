@@ -13,8 +13,10 @@ import { ProductImage } from './ProductImage';
 
 const ANNOUNCEMENTS = [
   `Livraison offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}`,
+  'Nouvelle collection pour elle ✿ Automne 2026',
   'Paiement Wave, Orange Money ou à la livraison',
   'Code BIENVENUE : -10 % sur votre première commande',
+  'Emballage cadeau avec votre mot doux',
   'Échange gratuit sous 7 jours',
 ];
 
@@ -111,7 +113,7 @@ export const Navbar: React.FC = () => {
 
         {/* Méga-menu */}
         {mega && (
-          <div className="hidden lg:block absolute inset-x-0 top-full bg-ivory border-t border-ink/[0.06] shadow-luxe animate-fade-in">
+          <div className="hidden lg:block absolute inset-x-0 top-full bg-ivory border-t border-ink/[0.06] shadow-luxe rounded-b-[2.5rem] animate-fade-in">
             <div className="max-w-[1440px] mx-auto px-12 py-10 grid grid-cols-[1fr_1fr_1.3fr] gap-12">
               <div>
                 <p className="eyebrow mb-5">{CATEGORIES.find(c => c.id === mega)?.name}</p>
@@ -136,11 +138,11 @@ export const Navbar: React.FC = () => {
               </div>
               {megaData[mega].featured && (
                 <Link to={`/produit/${megaData[mega].featured!.slug}`} className="group grid grid-cols-[1fr_1.1fr] gap-6 items-center">
-                  <div className="aspect-[3/4] overflow-hidden">
+                  <div className="aspect-[3/4] overflow-hidden arch">
                     <ProductImage src={megaData[mega].featured!.images[0]} alt={megaData[mega].featured!.name} className="w-full h-full group-hover:scale-105 transition-transform duration-[1.2s]" />
                   </div>
                   <div>
-                    <p className="eyebrow">La pièce iconique</p>
+                    <p className="font-script text-2xl text-gold-dark">Notre coup de cœur</p>
                     <p className="font-display text-3xl mt-3 leading-tight">{megaData[mega].featured!.name}</p>
                     <p className="text-sm mt-2 text-ink/60">{formatPrice(megaData[mega].featured!.price)}</p>
                     <span className="mt-5 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold">Découvrir <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
@@ -156,7 +158,7 @@ export const Navbar: React.FC = () => {
       {mobileOpen && (
         <div className="fixed inset-0 z-[75] lg:hidden">
           <div className="absolute inset-0 bg-ink/50 animate-fade-in" onClick={() => setMobileOpen(false)} />
-          <nav className="absolute left-0 top-0 h-full w-[88%] max-w-sm bg-ivory flex flex-col animate-slide-in-left" aria-label="Menu mobile">
+          <nav className="absolute left-0 top-0 h-full w-[88%] max-w-sm bg-ivory flex flex-col rounded-r-[2rem] overflow-hidden animate-slide-in-left" aria-label="Menu mobile">
             <div className="flex items-center justify-between px-6 h-[72px] border-b border-ink/10">
               <Logo />
               <button onClick={() => setMobileOpen(false)} aria-label="Fermer le menu" className="w-10 h-10 grid place-items-center"><X className="w-5 h-5" strokeWidth={1.5} /></button>

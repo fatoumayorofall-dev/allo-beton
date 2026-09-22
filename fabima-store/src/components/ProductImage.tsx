@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 
 const TONES = [
-  'from-[#efe4d6] via-[#e6d3c0] to-[#d7bf9f]',
-  'from-[#ece6df] via-[#ddd0c3] to-[#c9b7a4]',
-  'from-[#f1e6de] via-[#e5cfc4] to-[#d1b2a3]',
-  'from-[#e9e4da] via-[#d8cdb9] to-[#bfae90]',
+  'from-[#fbe9e7] via-[#f5d5d6] to-[#e8b4b8]',
+  'from-[#f8ecf2] via-[#ecd3e2] to-[#cfa9c6]',
+  'from-[#fdf0ea] via-[#f6d9cc] to-[#e7b7a6]',
+  'from-[#f6ecef] via-[#ead5dc] to-[#d4b0bd]',
 ];
 
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -21,12 +21,12 @@ export const ProductImage: React.FC<{ src?: string; alt: string; className?: str
     return (
       <div role={alt ? 'img' : undefined} aria-label={alt || undefined}
         className={`relative overflow-hidden bg-gradient-to-br ${tone} ${className}`}>
-        <span aria-hidden className="absolute -right-[8%] -bottom-[18%] font-display italic text-[14rem] leading-none text-white/35 select-none">F</span>
+        <span aria-hidden className="absolute -right-[6%] -bottom-[14%] font-script text-[13rem] leading-none text-white/45 select-none">F</span>
         <span aria-hidden className="absolute inset-4 border border-white/40" />
         {text && (
           <span aria-hidden className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-            <span className="text-[9px] uppercase tracking-luxe text-ink/45">Fabima</span>
-            <span className="font-display italic text-lg sm:text-xl text-ink/70 leading-tight line-clamp-3">{text}</span>
+            <span className="font-script text-2xl text-ink/45 leading-none">Fabima</span>
+            <span className="font-display italic text-lg sm:text-xl text-ink/75 leading-tight line-clamp-3">{text}</span>
           </span>
         )}
       </div>

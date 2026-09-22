@@ -156,7 +156,7 @@ export const Checkout: React.FC = () => {
                   <span className="field-label">Zone de livraison *</span>
                   <div className="grid sm:grid-cols-2 gap-2">
                     {DELIVERY_ZONES.map(z => (
-                      <label key={z.name} className={`flex items-center justify-between gap-3 px-4 h-14 border cursor-pointer transition-colors ${form.zone === z.name ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
+                      <label key={z.name} className={`flex items-center justify-between gap-3 px-4 h-14 border rounded-2xl cursor-pointer transition-colors ${form.zone === z.name ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
                         <span className="flex items-center gap-3">
                           <input type="radio" name="zone" value={z.name} checked={form.zone === z.name} onChange={set('zone')} className="accent-ink" />
                           <span className="text-sm">{z.name}<span className="block text-[11px] text-ink/45">{z.delay}</span></span>
@@ -180,7 +180,7 @@ export const Checkout: React.FC = () => {
             </form>
           ) : (
             <div className="space-y-8 animate-fade-in">
-              <div className="flex items-start justify-between gap-4 p-5 border border-ink/10 bg-white">
+              <div className="flex items-start justify-between gap-4 p-5 border border-ink/10 bg-white rounded-2xl">
                 <div className="text-sm">
                   <p className="field-label !mb-1.5">Livraison à</p>
                   <p className="font-semibold">{form.firstName} {form.lastName} · {form.phone}</p>
@@ -193,7 +193,7 @@ export const Checkout: React.FC = () => {
                 <legend className="font-display text-3xl mb-6">Mode de paiement</legend>
                 <div className="grid sm:grid-cols-2 gap-2">
                   {PAYMENT_METHODS.map(m => (
-                    <label key={m.id} className={`flex items-center gap-4 p-4 border cursor-pointer transition-colors ${method === m.id ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
+                    <label key={m.id} className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-colors ${method === m.id ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
                       <input type="radio" name="payment" checked={method === m.id} onChange={() => setMethod(m.id)} className="sr-only" />
                       <span className="w-11 h-11 rounded-full grid place-items-center text-white shrink-0" style={{ background: m.color }}><m.Icon className="w-5 h-5" strokeWidth={1.5} /></span>
                       <span className="flex-1"><strong className="block text-sm font-semibold">{m.name}</strong><span className="text-xs text-ink/55">{m.desc}</span></span>
@@ -221,7 +221,7 @@ export const Checkout: React.FC = () => {
                 </div>
               )}
               {method === 'cash' && (
-                <p className="text-sm p-5 bg-emerald-50 border border-emerald-100 text-emerald-900 animate-fade-in">
+                <p className="text-sm p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-900 animate-fade-in">
                   Préparez <strong>{formatPrice(t.total)}</strong>. Notre livreur vous remettra un reçu ; vous pouvez aussi régler par Wave à la réception.
                 </p>
               )}
@@ -236,13 +236,13 @@ export const Checkout: React.FC = () => {
         </div>
 
         {/* Récapitulatif */}
-        <aside className="bg-white border border-ink/[0.06] p-7 sm:p-8 space-y-6 lg:sticky lg:top-36">
+        <aside className="bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-8 space-y-6 lg:sticky lg:top-36">
           <h2 className="font-display text-3xl">Votre sélection</h2>
           <ul className="space-y-4 max-h-72 overflow-y-auto pr-1">
             {cart.map(i => (
               <li key={i.key} className="flex gap-4">
                 <div className="relative shrink-0">
-                  <ProductImage src={i.image} alt={i.name} label="" className="w-16 h-20" />
+                  <ProductImage src={i.image} alt={i.name} label="" className="w-16 h-20 rounded-xl" />
                   <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-ink text-ivory text-[10px] grid place-items-center">{i.quantity}</span>
                 </div>
                 <div className="flex-1 min-w-0 text-sm">
