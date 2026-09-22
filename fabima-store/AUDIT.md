@@ -46,7 +46,27 @@ Chaque correction a été vérifiée par un test automatisé dans un navigateur 
 - Accueil éditorial : visuel plein écran avec effet de zoom lent, grain photo et barre de progression ; manifeste ; univers en mosaïque ; atelier Teranga ; bandeau défilant ; avis en carrousel ; grille #FabimaStyle.
 - Apparition des sections au défilement, transitions adoucies, visuel de remplacement élégant si une photo ne charge pas.
 
-## 5. Restent à traiter avant la mise en ligne
+## 5. Deuxième passe : fond, forme, contenu
+
+**Contenu**
+- Catalogue recentré sur la femme (30 pièces) : les articles homme sont remplacés par des ballerines, sandales perlées, compensées en raphia, sac seau, capeline, robe de soirée, grand boubou femme…
+- Chaque pièce a désormais ses occasions, sa matière, ses conseils d'entretien et un conseil de style.
+- Le journal : 4 articles (invitée de mariage, foulard, Tabaski & Korité, entretien du cuir) reliés aux produits.
+- FAQ enrichie (commander pour offrir, alerte de retour en stock).
+
+**Fond**
+- Navigation par occasion (filtre du catalogue, section d'accueil, méga-menu, menu mobile, recherche).
+- Alerte « Victime de son succès » sur les pièces épuisées, visible par la gérante.
+- « Ajouter tout le look » avec choix des tailles, idées cadeaux par budget.
+- Référencement : description et aperçu de partage propres à chaque page, données structurées produit (prix, stock, note) pour Google.
+- Migration automatique des navigateurs qui gardaient l'ancien catalogue (`CATALOG_VERSION`).
+
+**Forme**
+- Sections d'accueil « Une tenue pour chaque moment », « Idées cadeaux pour elle », « Le journal ».
+- Fiche produit : pastilles d'occasion, encart « Le conseil de Fabima », onglet matière & entretien.
+- Pages journal éditoriales (article, astuce, produits cités, « À lire aussi »).
+
+## 6. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

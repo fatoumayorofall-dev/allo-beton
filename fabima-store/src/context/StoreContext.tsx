@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { INITIAL_PRODUCTS } from '../data/catalog';
-import type { CartItem, CustomerInfo, Order, OrderStatus, Product, Review } from '../data/types';
+import { CATALOG_VERSION, INITIAL_PRODUCTS } from '../data/catalog';
+import type { CartItem, CustomerInfo, Order, OrderStatus, Product, Review, StockAlert } from '../data/types';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
 
@@ -17,7 +17,18 @@ const KEYS = {
   promo: 'fabima_promo',
   gift: 'fabima_gift',
   customer: 'fabima_customer',
+  catalogVersion: 'fabima_catalog_version',
+  stockAlerts: 'fabima_stock_alerts',
 };
+
+/** Catalogue mémorisé, sauf s'il date d'une version antérieure du catalogue initial. */
+function loadProducts(): Product[] {
+  if (load<number>(KEYS.catalogVersion, 0) !== CATALOG_VERSION) {
+    save(KEYS.catalogVersion, CATALOG_VERSION);
+    return INITIAL_PRODUCTS;
+  }
+  return load(KEYS.products, INITIAL_PRODUCTS);
+}
 
 function load<T>(key: string, fallback: T): T {
   try {
@@ -99,6 +110,10 @@ interface StoreContextValue {
   savedCustomer: CustomerInfo | null;
   saveCustomer: (c: CustomerInfo | null) => void;
 
+  stockAlerts: StockAlert[];
+  addStockAlert: (productId: string, contact: string) => void;
+  removeStockAlerts: (productId: string) => void;
+
   orders: Order[];
   placeOrder: (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'history'>) => Order;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
@@ -116,7 +131,7 @@ const StoreContext = createContext<StoreContextValue | null>(null);
 /* ------------------------------------------------------------------ */
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [products, setProducts] = useState<Product[]>(() => load(KEYS.products, INITIAL_PRODUCTS));
+  const [products, setProducts] = useState<Product[]>(loadProducts);
   const [cart, setCart] = useState<CartItem[]>(() => load(KEYS.cart, []));
   const [wishlist, setWishlist] = useState<string[]>(() => load(KEYS.wishlist, []));
   const [orders, setOrders] = useState<Order[]>(() => load(KEYS.orders, []));
@@ -127,6 +142,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   });
   const [giftWrap, setGiftWrap] = useState<GiftWrap>(() => load(KEYS.gift, { enabled: false, message: '' }));
   const [savedCustomer, setSavedCustomer] = useState<CustomerInfo | null>(() => load(KEYS.customer, null));
+  const [stockAlerts, setStockAlerts] = useState<StockAlert[]>(() => load(KEYS.stockAlerts, []));
   const [cartOpen, setCartOpen] = useState(false);
   const [quickView, setQuickView] = useState<Product | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -139,6 +155,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => save(KEYS.promo, promoCode), [promoCode]);
   useEffect(() => save(KEYS.gift, giftWrap), [giftWrap]);
   useEffect(() => save(KEYS.customer, savedCustomer), [savedCustomer]);
+  useEffect(() => save(KEYS.stockAlerts, stockAlerts), [stockAlerts]);
 
   const notify = useCallback((message: string, type: Toast['type'] = 'success') => {
     const id = Date.now() + Math.random();
@@ -180,6 +197,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const deleteProduct = useCallback((id: string) => setProducts(list => list.filter(p => p.id !== id)), []);
   const resetCatalog = useCallback(() => setProducts(INITIAL_PRODUCTS), []);
+
+  const addStockAlert = useCallback((productId: string, contact: string) => {
+    setStockAlerts(list => (list.some(a => a.productId === productId && a.contact === contact)
+      ? list : [...list, { productId, contact, createdAt: new Date().toISOString() }]));
+  }, []);
+  const removeStockAlerts = useCallback((productId: string) => setStockAlerts(list => list.filter(a => a.productId !== productId)), []);
 
   const addReview = useCallback((productId: string, review: Omit<Review, 'date'>) => {
     setProducts(list => list.map(p => {
@@ -319,11 +342,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     recentlyViewed, markViewed,
     quickView, openQuickView: setQuickView,
     savedCustomer, saveCustomer: setSavedCustomer,
+    stockAlerts, addStockAlert, removeStockAlerts,
     orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder,
     toasts, notify,
   }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
     cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, isInWishlist, recentlyViewed, markViewed,
-    quickView, savedCustomer, orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder, toasts, notify]);
+    quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder, toasts, notify]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };

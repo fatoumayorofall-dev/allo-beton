@@ -67,7 +67,8 @@ export const Footer: React.FC = () => {
           <p className={col}>La boutique</p>
           <ul className="space-y-3">
             {CATEGORIES.map(c => <li key={c.id}><Link to={`/boutique/${c.id}`} className={lnk}>{c.name}</Link></li>)}
-            <li><Link to="/boutique?promo=1" className={lnk}>Soldes</Link></li>
+            <li><Link to="/boutique?promo=1" className={lnk}>Offres</Link></li>
+            <li><Link to="/journal" className={lnk}>Le journal</Link></li>
           </ul>
         </div>
 

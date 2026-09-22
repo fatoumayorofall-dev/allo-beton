@@ -1,8 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Instagram, Plus, RefreshCw, ShieldCheck, Smartphone, Truck } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Gift, Instagram, Plus, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { CATEGORIES } from '../data/catalog';
+import { CATEGORIES, OCCASIONS } from '../data/catalog';
+import { ARTICLES } from '../data/journal';
+import type { Product } from '../data/types';
+import { ArticleCard } from './Journal';
 import { SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePrefersReducedMotion } from '../utils/hooks';
@@ -161,6 +164,32 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
+      {/* ───────────── OCCASIONS ───────────── */}
+      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
+        <Reveal className="text-center mb-12">
+          <p className="eyebrow">Shopping par occasion</p>
+          <h2 className="font-display text-5xl sm:text-6xl mt-3">Une tenue pour <span className="font-script text-gold-dark text-[1.15em]">chaque moment</span></h2>
+        </Reveal>
+        <div className="flex lg:grid lg:grid-cols-6 gap-4 overflow-x-auto no-scrollbar snap-x -mx-5 px-5 sm:mx-0 sm:px-0 pb-2">
+          {OCCASIONS.map((o, i) => {
+            const count = products.filter(p => p.occasions.includes(o.id)).length;
+            return (
+              <Reveal key={o.id} delay={i * 70} className="shrink-0 w-[46%] sm:w-[30%] lg:w-auto snap-start">
+                <Link to={`/boutique?occasion=${o.id}`} className="group block text-center">
+                  <div className="relative arch aspect-[3/4] overflow-hidden">
+                    <ProductImage src={o.image} alt={o.name} label="" className="w-full h-full group-hover:scale-110 transition-transform duration-[1.4s] ease-luxe" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-ink/55 to-transparent" />
+                    <span className="absolute bottom-4 inset-x-0 text-ivory text-[10px] uppercase tracking-[0.22em]">{count} pièces</span>
+                  </div>
+                  <p className="font-display text-xl mt-4 leading-tight group-hover:text-gold-dark transition-colors">{o.name}</p>
+                  <p className="font-script text-xl text-gold-dark leading-none mt-1">{o.tagline}</p>
+                </Link>
+              </Reveal>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ───────────── SÉLECTION ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
         <Reveal className="text-center mb-12">
@@ -255,11 +284,53 @@ export const Home: React.FC = () => {
                   </li>
                 ))}
               </ul>
-              <p className="mt-5 text-sm text-ink/50">Le look complet : <strong className="text-ink">{formatPrice(look.reduce((s, p) => s + p.price, 0))}</strong></p>
+              <LookAdder look={look} />
             </Reveal>
           </div>
         </section>
       )}
+
+      {/* ───────────── IDÉES CADEAUX ───────────── */}
+      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
+        <div className="rounded-[3rem] bg-ink text-ivory px-6 sm:px-12 lg:px-16 py-16 relative overflow-hidden grain">
+          <div className="grid lg:grid-cols-[1fr_1.4fr] gap-10 items-center relative">
+            <Reveal>
+              <p className="font-script text-4xl text-gold-light">Faire plaisir</p>
+              <h2 className="font-display text-5xl sm:text-6xl mt-2 leading-[1]">Idées cadeaux<br />pour elle</h2>
+              <p className="mt-5 text-ivory/65 text-sm max-w-sm leading-relaxed">Anniversaire, fête des mères, Saint-Valentin ou simple attention : choisissez un budget, nous nous occupons de l'emballage et du petit mot.</p>
+              <p className="mt-6 inline-flex items-center gap-2 text-xs text-gold-light"><Gift className="w-4 h-4" strokeWidth={1.5} /> Emballage cadeau signature disponible au panier</p>
+            </Reveal>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'lt15', label: 'Moins de 15 000', hint: 'Créoles, foulards, lunettes' },
+                { id: '15-30', label: '15 000 – 30 000', hint: 'Colliers, sandales, sacs wax' },
+                { id: '30-50', label: '30 000 – 50 000', hint: 'Sacs à main, escarpins, robes' },
+                { id: 'gt50', label: 'Plus de 50 000', hint: 'Boubou brodé, pièces d\'exception' },
+              ].map((b, i) => (
+                <Reveal key={b.id} delay={i * 80}>
+                  <Link to={`/boutique?prix=${b.id}&tri=note`} className="group block h-full p-6 rounded-[2rem] bg-ivory/[0.06] border border-ivory/10 hover:bg-ivory hover:text-ink transition-colors duration-500">
+                    <p className="text-[10px] uppercase tracking-[0.22em] text-gold-light group-hover:text-gold-dark">FCFA</p>
+                    <p className="font-display text-2xl sm:text-3xl mt-2 leading-tight">{b.label}</p>
+                    <p className="text-xs mt-3 opacity-60">{b.hint}</p>
+                    <ArrowUpRight className="w-4 h-4 mt-4 group-hover:rotate-45 transition-transform" />
+                  </Link>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────── JOURNAL ───────────── */}
+      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
+        <Reveal className="flex items-end justify-between gap-6 mb-10">
+          <div><p className="font-script text-4xl text-gold-dark">Le journal</p><h2 className="font-display text-5xl sm:text-6xl mt-1">Conseils & inspirations</h2></div>
+          <Link to="/journal" className="hidden sm:inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe">Tous les articles <ArrowRight className="w-3.5 h-3.5" /></Link>
+        </Reveal>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {ARTICLES.slice(0, 3).map((a, i) => <Reveal key={a.slug} delay={i * 90}><ArticleCard article={a} /></Reveal>)}
+        </div>
+      </section>
 
       {/* ───────────── SERVICES ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
@@ -347,3 +418,41 @@ const CategoryTile: React.FC<{ id: string; name: string; description: string; im
     </div>
   </Link>
 );
+
+/** Ajoute toutes les pièces du look au panier, en demandant les tailles quand il en faut. */
+const LookAdder: React.FC<{ look: Product[] }> = ({ look }) => {
+  const { addToCart, setCartOpen, notify } = useStore();
+  const [sizes, setSizes] = useState<Record<string, string>>({});
+  const sized = look.filter(p => p.sizes.length > 0 && p.stock > 0);
+  const total = look.reduce((s, p) => s + p.price, 0);
+
+  const addAll = () => {
+    const missing = sized.find(p => !sizes[p.id]);
+    if (missing) { notify(`Choisissez la taille : ${missing.name}`, 'error'); return; }
+    let added = 0;
+    look.forEach(p => { if (p.stock > 0 && addToCart(p, { size: sizes[p.id], color: p.colors[0]?.name, silent: true })) added += 1; });
+    if (added) { notify(`${added} pièces du look ajoutées au panier`); setCartOpen(true); }
+  };
+
+  return (
+    <div className="mt-8 p-6 rounded-[2rem] bg-white border border-ink/[0.06]">
+      {sized.length > 0 && (
+        <div className="grid sm:grid-cols-2 gap-3 mb-5">
+          {sized.map(p => (
+            <label key={p.id} className="text-xs">
+              <span className="field-label">Taille · {p.subcategory}</span>
+              <select value={sizes[p.id] ?? ''} onChange={e => setSizes(s => ({ ...s, [p.id]: e.target.value }))} className="field !h-11">
+                <option value="">Choisir</option>
+                {p.sizes.map(sz => <option key={sz} value={sz}>{sz}</option>)}
+              </select>
+            </label>
+          ))}
+        </div>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-ink/60">Le look complet<br /><strong className="font-display text-3xl text-ink">{formatPrice(total)}</strong></p>
+        <button onClick={addAll} className="btn-dark"><ShoppingBag className="w-4 h-4" strokeWidth={1.5} /> Ajouter tout le look</button>
+      </div>
+    </div>
+  );
+};

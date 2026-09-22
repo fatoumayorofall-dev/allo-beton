@@ -28,6 +28,10 @@ modifier une teinte à cet endroit la change sur tout le site.
 | Catalogue filtrable (catégorie, femme/homme, type, prix, couleur, stock, promo) et triable | Commandes : filtre par statut, changement de statut, paiement reçu, contact WhatsApp |
 | Fiche produit : galerie, couleurs, tailles, stock, avis, guide des tailles, commande WhatsApp | Produits : ajout, modification, suppression, restauration du catalogue |
 | Recherche plein écran, méga-menu, aperçu rapide, ajout rapide avec taille depuis la carte | Export CSV des commandes |
+| Shopping par occasion (mariage, Tabaski & Korité, soirée, bureau, quotidien, vacances) | Occasions, matière, entretien et conseil de style par produit |
+| Fiche produit : conseil de style, matière & entretien, alerte de retour en stock | Liste des clientes à prévenir au retour en stock |
+| Idées cadeaux par budget, « Ajouter tout le look » en un clic | |
+| Le journal : guides de style et conseils d'entretien reliés aux produits | |
 | Favoris, articles vus récemment, avis clients, « Complétez le look », Shop the look | Remise en stock automatique à l'annulation |
 | Panier latéral, codes promo, emballage cadeau avec message, livraison offerte dès 50 000 FCFA | |
 | Commande en 2 étapes, coordonnées mémorisées, validation du numéro sénégalais | |
@@ -41,15 +45,21 @@ Codes promo de démonstration : `BIENVENUE` (-10 %), `FABIMA5000` (-5 000 FCFA d
 ```
 src/
 ├── config/site.ts         # Coordonnées, WhatsApp, zones & frais de livraison, codes promo, emballage cadeau, PIN admin
-├── data/catalog.ts        # Catégories et catalogue initial (30 articles)
+├── data/catalog.ts        # Catégories, occasions et catalogue initial (30 pièces pour femme)
+├── data/journal.ts        # Articles du journal (blocs texte, astuces, produits cités)
 ├── data/types.ts          # Types Produit, Panier, Commande
 ├── context/StoreContext   # État global : produits, panier, favoris, commandes, avis, notifications
 ├── utils/hooks.ts         # Échap, blocage du défilement, apparition au défilement
 ├── components/            # Navbar, Footer, panier latéral, carte produit, recherche…
-└── pages/                 # Accueil, Boutique, Produit, Panier, Commande, Confirmation, Suivi, Mes commandes, Favoris, FAQ, Maison, Admin
+└── pages/                 # Accueil, Boutique, Produit, Panier, Commande, Confirmation, Suivi, Mes commandes, Favoris, Journal, FAQ, Maison, Admin
 ```
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
+
+## Modifier le catalogue
+
+Le catalogue de départ est dans `src/data/catalog.ts`. Si vous changez sa structure, augmentez `CATALOG_VERSION` :
+les navigateurs qui gardaient l'ancienne version repartent automatiquement du nouveau catalogue.
 
 ## Mise en ligne
 

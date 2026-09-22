@@ -19,8 +19,9 @@ import { MyOrders } from './pages/MyOrders';
 import { About } from './pages/About';
 import { FAQ } from './pages/FAQ';
 import { NotFound } from './pages/NotFound';
+import { ArticlePage, Journal } from './pages/Journal';
 
-// L'espace gérant n'est chargé que lorsqu'on y accède : les clientes et clients ne téléchargent pas son code.
+// L'espace gérant n'est chargé que lorsqu'on y accède : la clientèle ne télécharge pas son code.
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
 
 /** Remonte en haut de page à chaque changement de route (ou vers l'ancre demandée). */
@@ -61,6 +62,8 @@ export default function App() {
                 <Route path="/suivi" element={<Tracking />} />
                 <Route path="/favoris" element={<Wishlist />} />
                 <Route path="/mes-commandes" element={<MyOrders />} />
+                <Route path="/journal" element={<Journal />} />
+                <Route path="/journal/:slug" element={<ArticlePage />} />
                 <Route path="/a-propos" element={<About />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/admin" element={<Admin />} />

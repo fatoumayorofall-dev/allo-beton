@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, BarChart3, Download, LogOut, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { CATEGORIES } from '../data/catalog';
-import type { CategoryId, Order, OrderStatus, Product } from '../data/types';
+import { CATEGORIES, OCCASIONS } from '../data/catalog';
+import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { formatDate, formatPrice, slugify } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -75,7 +75,7 @@ export const Admin: React.FC = () => {
 /* ------------------------------------------------------------------ */
 
 const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ onGoto }) => {
-  const { orders, products } = useStore();
+  const { orders, products, stockAlerts, removeStockAlerts } = useStore();
   const valid = orders.filter(o => o.status !== 'annulee');
   const revenue = valid.reduce((s, o) => s + o.total, 0);
   const pending = orders.filter(o => o.status === 'en_attente').length;
@@ -140,6 +140,25 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
           )}
         </div>
       </div>
+      {stockAlerts.length > 0 && (
+        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
+          <h2 className="font-display text-xl">Alertes de retour en stock</h2>
+          <p className="text-xs text-ink/50 mt-1 mb-4">Clientes à prévenir quand la pièce revient. Réapprovisionnez, contactez-les, puis marquez l'alerte comme traitée.</p>
+          <ul className="divide-y divide-ink/5 text-sm">
+            {[...new Set(stockAlerts.map(a => a.productId))].map(id => {
+              const product = products.find(p => p.id === id);
+              const contacts = stockAlerts.filter(a => a.productId === id).map(a => a.contact);
+              return (
+                <li key={id} className="flex flex-wrap items-center gap-3 py-3">
+                  <span className="flex-1 min-w-[160px] font-medium">{product?.name ?? id} <span className="text-ink/50 font-normal">· stock {product?.stock ?? 0}</span></span>
+                  <span className="text-xs text-ink/60 flex-[2] min-w-[200px]">{contacts.join(' · ')}</span>
+                  <button onClick={() => removeStockAlerts(id)} className="text-xs px-3 py-1.5 rounded-full bg-ink/5 hover:bg-ink hover:text-ivory">Traitée ({contacts.length})</button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       {orders.length > 0 && (
         <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <div className="flex justify-between items-center mb-4">
@@ -268,7 +287,7 @@ const Orders: React.FC = () => {
 
 const emptyProduct = (): Product => ({
   id: `FAB-${Date.now().toString(36).toUpperCase()}`,
-  slug: '', name: '', category: 'chaussures', subcategory: '', gender: 'femme', price: 0, images: [''], colors: [], sizes: [],
+  slug: '', name: '', category: 'chaussures', subcategory: '', occasions: ['quotidien'], material: '', care: '', styleTip: '', price: 0, images: [''], colors: [], sizes: [],
   stock: 10, description: '', details: [], rating: 5, reviewCount: 0, isNew: true, createdAt: new Date().toISOString(),
 });
 
@@ -360,14 +379,25 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
         <label>Prix (FCFA) *<input required type="number" min={1} value={p.price || ''} onChange={e => setP({ ...p, price: Number(e.target.value) })} className={field} /></label>
         <label>Ancien prix<input type="number" min={0} value={p.oldPrice ?? ''} onChange={e => setP({ ...p, oldPrice: e.target.value ? Number(e.target.value) : undefined })} className={field} /></label>
         <label>Stock<input type="number" min={0} value={p.stock} onChange={e => setP({ ...p, stock: Number(e.target.value) })} className={field} /></label>
-        <label>Pour
-          <select value={p.gender} onChange={e => setP({ ...p, gender: e.target.value as Product['gender'] })} className={field}>
-            <option value="femme">Femme</option><option value="homme">Homme</option><option value="unisexe">Unisexe</option>
-          </select>
-        </label>
+        <fieldset className="col-span-2">
+          <legend>Occasions</legend>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {OCCASIONS.map(o => {
+              const on = p.occasions.includes(o.id);
+              return (
+                <button type="button" key={o.id} aria-pressed={on}
+                  onClick={() => setP({ ...p, occasions: on ? p.occasions.filter(x => x !== o.id) : [...p.occasions, o.id as OccasionId] })}
+                  className={`px-3 py-1.5 rounded-full text-xs border ${on ? 'bg-ink text-ivory border-ink' : 'border-ink/15'}`}>{o.name}</button>
+              );
+            })}
+          </div>
+        </fieldset>
         <label className="col-span-2">Images (une URL par ligne)<textarea rows={2} value={imagesText} onChange={e => setImagesText(e.target.value)} className={field} /></label>
         <label className="col-span-2">Tailles (séparées par des virgules)<input value={sizesText} onChange={e => setSizesText(e.target.value)} placeholder="38, 39, 40 — vide si taille unique" className={field} /></label>
         <label className="col-span-2">Couleurs (nom:code, …)<input value={colorsText} onChange={e => setColorsText(e.target.value)} placeholder="Noir:#111111, Camel:#b5835a" className={field} /></label>
+        <label className="col-span-2">Matière<input value={p.material} onChange={e => setP({ ...p, material: e.target.value })} placeholder="Ex : cuir grainé, doublure suédine" className={field} /></label>
+        <label className="col-span-2">Entretien<input value={p.care} onChange={e => setP({ ...p, care: e.target.value })} className={field} /></label>
+        <label className="col-span-2">Conseil de style<textarea rows={2} value={p.styleTip} onChange={e => setP({ ...p, styleTip: e.target.value })} placeholder="Comment le porter ?" className={field} /></label>
         <label className="col-span-2">Description<textarea rows={3} value={p.description} onChange={e => setP({ ...p, description: e.target.value })} className={field} /></label>
         <label className="col-span-2">Détails (un par ligne)<textarea rows={3} value={detailsText} onChange={e => setDetailsText(e.target.value)} className={field} /></label>
         <div className="col-span-2 flex gap-5">

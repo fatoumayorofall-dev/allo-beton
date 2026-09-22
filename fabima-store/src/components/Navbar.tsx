@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { ArrowRight, Heart, Menu, Package, Search, ShoppingBag, User, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { CATEGORIES } from '../data/catalog';
+import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId } from '../data/types';
 import { SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
@@ -106,7 +106,7 @@ export const Navbar: React.FC = () => {
               {c.name}
             </NavLink>
           ))}
-          <NavLink to="/a-propos" onMouseEnter={() => setMega(null)} className="link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap">La maison</NavLink>
+          <NavLink to="/journal" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap ${isActive ? 'is-active' : ''}`}>Le journal</NavLink>
           <NavLink to="/boutique?promo=1" onMouseEnter={() => setMega(null)}
             className={`link-luxe text-[11px] uppercase tracking-[0.2em] font-semibold py-2 ${transparent ? 'text-gold-light' : 'text-wine'}`}>Offres</NavLink>
         </nav>
@@ -128,8 +128,7 @@ export const Navbar: React.FC = () => {
                 <ul className="space-y-3 text-sm">
                   <li><Link to={`/boutique/${mega}?tri=nouveautes`} className="link-luxe">Nouveautés</Link></li>
                   <li><Link to={`/boutique/${mega}?tri=note`} className="link-luxe">Les mieux notés</Link></li>
-                  <li><Link to={`/boutique/${mega}?genre=femme`} className="link-luxe">Pour elle</Link></li>
-                  <li><Link to={`/boutique/${mega}?genre=homme`} className="link-luxe">Pour lui</Link></li>
+                  {OCCASIONS.slice(0, 3).map(o => <li key={o.id}><Link to={`/boutique/${mega}?occasion=${o.id}`} className="link-luxe">{o.name}</Link></li>)}
                   <li><Link to={`/boutique/${mega}?promo=1`} className="link-luxe text-wine">En promotion</Link></li>
                 </ul>
                 <Link to={`/boutique/${mega}`} className="mt-8 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe">
@@ -168,7 +167,12 @@ export const Navbar: React.FC = () => {
               {CATEGORIES.map(c => (
                 <Link key={c.id} to={`/boutique/${c.id}`} className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">{c.name} <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
               ))}
-              <Link to="/boutique?promo=1" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl text-wine">Soldes <ArrowRight className="w-4 h-4" /></Link>
+              <Link to="/boutique?promo=1" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl text-wine">Offres <ArrowRight className="w-4 h-4" /></Link>
+              <p className="eyebrow mt-8 mb-3">Par occasion</p>
+              <div className="flex flex-wrap gap-2">
+                {OCCASIONS.map(o => <Link key={o.id} to={`/boutique?occasion=${o.id}`} className="px-3.5 h-9 inline-flex items-center rounded-full bg-blush/60 text-xs">{o.name}</Link>)}
+              </div>
+              <Link to="/journal" className="flex items-center justify-between py-4 mt-6 border-y border-ink/10 font-display text-2xl">Le journal <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
               <div className="mt-8 space-y-4 text-sm">
                 <Link to="/mes-commandes" className="flex items-center gap-3"><User className="w-4 h-4" strokeWidth={1.5} /> Mes commandes</Link>
                 <Link to="/suivi" className="flex items-center gap-3"><Package className="w-4 h-4" strokeWidth={1.5} /> Suivre une commande</Link>

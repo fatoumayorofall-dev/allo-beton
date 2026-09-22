@@ -7,7 +7,7 @@ import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
 
 const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-const SUGGESTIONS = ['Escarpins', 'Sac à main', 'Sneakers', 'Wax', 'Montre', 'Collier', 'Boubou', 'Mocassins'];
+const SUGGESTIONS = ['Escarpins', 'Sac à main', 'Mariage', 'Wax', 'Pochette', 'Collier', 'Kaftan', 'Sandales'];
 
 export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = ({ open, onClose }) => {
   const { products } = useStore();
@@ -27,7 +27,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
   const results = useMemo(() => {
     const term = normalize(q.trim());
     if (term.length < 2) return [];
-    return products.filter(p => normalize(`${p.name} ${p.subcategory} ${p.category} ${p.description} ${p.colors.map(c => c.name).join(' ')}`).includes(term));
+    return products.filter(p => normalize(`${p.name} ${p.subcategory} ${p.category} ${p.description} ${p.material} ${p.colors.map(c => c.name).join(' ')} ${p.occasions.join(' ')}`).includes(term));
   }, [q, products]);
   const trending = useMemo(() => products.filter(p => p.isBestseller).slice(0, 4), [products]);
 

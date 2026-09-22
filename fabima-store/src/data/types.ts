@@ -1,5 +1,14 @@
 export type CategoryId = 'chaussures' | 'sacs' | 'accessoires' | 'bijoux' | 'vetements';
 
+export type OccasionId = 'mariage' | 'soiree' | 'bureau' | 'quotidien' | 'ceremonie' | 'vacances';
+
+export interface Occasion {
+  id: OccasionId;
+  name: string;
+  tagline: string;
+  image: string;
+}
+
 export interface Category {
   id: CategoryId;
   name: string;
@@ -25,7 +34,13 @@ export interface Product {
   name: string;
   category: CategoryId;
   subcategory: string;
-  gender: 'femme' | 'homme' | 'unisexe';
+  occasions: OccasionId[];
+  /** Matière et composition */
+  material: string;
+  /** Conseils d'entretien */
+  care: string;
+  /** Conseil de style de l'équipe */
+  styleTip: string;
   price: number;
   oldPrice?: number;
   images: string[];
@@ -61,6 +76,12 @@ export interface CustomerInfo {
   zone: string;
   address: string;
   notes?: string;
+}
+
+export interface StockAlert {
+  productId: string;
+  contact: string;
+  createdAt: string;
 }
 
 export type PaymentMethod = 'wave' | 'orange_money' | 'free_money' | 'card' | 'cash';

@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { CATEGORIES } from '../data/catalog';
+import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, Product } from '../data/types';
 import { ProductCard } from '../components/ProductCard';
 import { ColorSwatch } from '../components/ColorSwatch';
@@ -46,13 +46,15 @@ export const Catalog: React.FC = () => {
   const q = params.get('q') ?? '';
   const promoOnly = params.get('promo') === '1';
   const sort = (params.get('tri') as SortKey) in SORTS ? (params.get('tri') as SortKey) : 'pertinence';
-  const gender = params.get('genre') ?? '';
+  const occasionId = params.get('occasion') ?? '';
+  const occasion = OCCASIONS.find(o => o.id === occasionId);
   const sub = params.get('type') ?? '';
   const price = params.get('prix') ?? '';
   const color = params.get('couleur') ?? '';
   const inStock = params.get('stock') === '1';
 
-  usePageTitle(cat?.name ?? (q ? `Recherche « ${q} »` : promoOnly ? 'Soldes' : 'Boutique'));
+  usePageTitle(cat?.name ?? occasion?.name ?? (q ? `Recherche « ${q} »` : promoOnly ? 'Offres' : 'Boutique'),
+    cat ? `${cat.description} pour femme chez Fabima Store, livraison 24h à Dakar.` : undefined);
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
@@ -72,9 +74,9 @@ export const Catalog: React.FC = () => {
     const term = normalize(q.trim());
     const range = PRICE_RANGES.find(r => r.id === price);
     const list = base.filter(p =>
-      (!term || normalize(`${p.name} ${p.subcategory} ${p.category} ${p.description} ${p.colors.map(c => c.name).join(' ')}`).includes(term)) &&
+      (!term || normalize(`${p.name} ${p.subcategory} ${p.category} ${p.description} ${p.material} ${p.colors.map(c => c.name).join(' ')} ${p.occasions.map(o => OCCASIONS.find(x => x.id === o)?.name).join(' ')}`).includes(term)) &&
       (!promoOnly || !!p.oldPrice) &&
-      (!gender || p.gender === gender || p.gender === 'unisexe') &&
+      (!occasion || p.occasions.includes(occasion.id)) &&
       (!sub || p.subcategory === sub) &&
       (!range || range.test(p.price)) &&
       (!color || p.colors.some(c => c.name === color)) &&
@@ -87,9 +89,9 @@ export const Catalog: React.FC = () => {
     if (sort === 'note') sorted.sort((a, b) => b.rating - a.rating);
     if (sort === 'pertinence') sorted.sort((a, b) => Number(!!b.isBestseller) - Number(!!a.isBestseller));
     return sorted;
-  }, [base, q, promoOnly, gender, sub, price, color, inStock, sort]);
+  }, [base, q, promoOnly, occasion, sub, price, color, inStock, sort]);
 
-  const activeCount = [gender, sub, price, color, inStock ? '1' : '', promoOnly ? '1' : ''].filter(Boolean).length;
+  const activeCount = [occasionId, sub, price, color, inStock ? '1' : '', promoOnly ? '1' : ''].filter(Boolean).length;
   const reset = () => setParams(q ? { q } : {}, { replace: true });
 
   const filters = (
@@ -101,10 +103,9 @@ export const Catalog: React.FC = () => {
           ))}
         </FilterGroup>
       )}
-      <FilterGroup title="Pour">
-        {[['', 'Tous'], ['femme', 'Femme'], ['homme', 'Homme']].map(([v, l]) => (
-          <Radio name="genre" key={v} checked={gender === v} onChange={() => setParam('genre', v || null)} label={l} />
-        ))}
+      <FilterGroup title="Occasion">
+        <Radio name="occasion" checked={!occasion} onChange={() => setParam('occasion', null)} label="Toutes" />
+        {OCCASIONS.map(o => <Radio name="occasion" key={o.id} checked={occasion?.id === o.id} onChange={() => setParam('occasion', o.id)} label={o.name} />)}
       </FilterGroup>
       {subcategories.length > 1 && (
         <FilterGroup title="Type">
@@ -141,7 +142,7 @@ export const Catalog: React.FC = () => {
     <div>
       {/* Bannière */}
       <section className="relative h-[42vh] min-h-[320px] max-h-[460px] overflow-hidden bg-ink grain rounded-b-[3rem] mx-0 sm:mx-4">
-        <ProductImage src={cat?.image ?? CATEGORIES[1].image} alt="" className="absolute inset-0 w-full h-full opacity-70 animate-kenburns" />
+        <ProductImage src={cat?.image ?? occasion?.image ?? CATEGORIES[1].image} alt="" className="absolute inset-0 w-full h-full opacity-70 animate-kenburns" />
         <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/30 to-ink/20" />
         <div className="relative h-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-end pb-10 text-ivory">
           <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ivory/60 mb-5" aria-label="Fil d'Ariane">
@@ -149,8 +150,10 @@ export const Catalog: React.FC = () => {
             <Link to="/boutique" className="hover:text-ivory">Boutique</Link>
             {cat && <><ChevronRight className="w-3 h-3" /><span className="text-ivory">{cat.name}</span></>}
           </nav>
-          <h1 className="font-display text-5xl sm:text-7xl leading-none">{cat?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em>{q}</em> »</> : 'La boutique')}</h1>
-          <p className="mt-3 text-ivory/70 text-sm max-w-md">{cat?.description ?? (promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : 'Chaussures, sacs, accessoires, bijoux et prêt-à-porter.')}</p>
+          {occasion && !cat && <p className="font-script text-3xl text-gold-light mb-1">{occasion.tagline}</p>}
+          <h1 className="font-display text-5xl sm:text-7xl leading-none">{cat?.name ?? occasion?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em>{q}</em> »</> : 'La boutique')}</h1>
+          <p className="mt-3 text-ivory/70 text-sm max-w-md">{cat?.description ?? (occasion ? `Notre sélection de pièces pour « ${occasion.name.toLowerCase()} ».` : promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : 'Chaussures, sacs, accessoires, bijoux et prêt-à-porter pour elle.')}</p>
+          {occasion && cat && <p className="mt-2 text-xs text-gold-light">Occasion : {occasion.name}</p>}
         </div>
       </section>
 

@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ChevronDown, ChevronRight, Heart, MessageCircle, Minus, Plus, RefreshCw, Ruler, Share2, ShieldCheck, Truck } from 'lucide-react';
+import { Bell, ChevronDown, ChevronRight, Heart, MessageCircle, Minus, Plus, RefreshCw, Ruler, Share2, ShieldCheck, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { CATEGORIES } from '../data/catalog';
+import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { SITE_CONFIG, buildProductWhatsAppMessage, buildWhatsAppLink } from '../config/site';
 import { discountPercent, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -12,6 +12,7 @@ import { ColorSwatch } from '../components/ColorSwatch';
 import { Stars } from '../components/Stars';
 import { ProductCard } from '../components/ProductCard';
 import { Reveal } from '../components/Reveal';
+import { Flower } from '../components/Decor';
 
 /** Image principale avec zoom qui suit le curseur (desktop). */
 const ZoomImage: React.FC<{ src?: string; alt: string }> = ({ src, alt }) => {
@@ -63,10 +64,28 @@ const ReviewForm: React.FC<{ onSubmit: (r: { author: string; rating: number; com
   );
 };
 
+/** Formulaire « Me prévenir du retour en stock » pour une pièce épuisée. */
+const StockAlertForm: React.FC<{ onSubmit: (contact: string) => void }> = ({ onSubmit }) => {
+  const [contact, setContact] = useState('');
+  const [done, setDone] = useState(false);
+  const valid = /^\S+@\S+\.\S+$/.test(contact.trim()) || /^(\+?221)?\s?7[05678](\s?\d){7}$/.test(contact.trim());
+  if (done) return <p className="mt-5 p-4 rounded-2xl bg-blush/50 text-sm flex items-center gap-3"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> C'est noté ! Nous vous prévenons dès son retour.</p>;
+  return (
+    <form className="mt-5 p-5 rounded-3xl bg-white border border-ink/[0.06]" onSubmit={e => { e.preventDefault(); if (valid) { onSubmit(contact.trim()); setDone(true); } }}>
+      <p className="text-sm font-semibold flex items-center gap-2"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Victime de son succès</p>
+      <p className="text-xs text-ink/60 mt-1">Laissez votre WhatsApp ou votre e-mail : nous vous prévenons dès son retour.</p>
+      <div className="flex gap-2 mt-4">
+        <input value={contact} onChange={e => setContact(e.target.value)} placeholder="77 123 45 67 ou e-mail" aria-label="Téléphone ou e-mail" className="field !h-11" />
+        <button disabled={!valid} className="btn-dark !h-11 !px-5 shrink-0">M'alerter</button>
+      </div>
+    </form>
+  );
+};
+
 export const ProductDetail: React.FC = () => {
   const { slug = '' } = useParams();
   const navigate = useNavigate();
-  const { getProduct, products, addToCart, toggleWishlist, isInWishlist, markViewed, setCartOpen, notify, addReview } = useStore();
+  const { getProduct, products, addToCart, toggleWishlist, isInWishlist, markViewed, setCartOpen, notify, addReview, addStockAlert } = useStore();
   const product = getProduct(slug);
 
   const [imageIdx, setImageIdx] = useState(0);
@@ -79,7 +98,7 @@ export const ProductDetail: React.FC = () => {
   const { ref: buyRef, inView: buyVisible } = useInView<HTMLDivElement>('0px');
   const [pastBuy, setPastBuy] = useState(false);
 
-  usePageTitle(product?.name);
+  usePageTitle(product?.name, product ? `${product.name} — ${product.description}` : undefined);
 
   useEffect(() => {
     if (!product) return;
@@ -101,11 +120,29 @@ export const ProductDetail: React.FC = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, [buyRef]);
 
+  // « Complétez le look » : d'autres univers partageant au moins une occasion
   const complete = useMemo(() => {
     if (!product) return [];
-    return products.filter(p => p.category !== product.category && p.stock > 0 && (p.gender === product.gender || p.gender === 'unisexe' || product.gender === 'unisexe'))
-      .sort((a, b) => b.rating - a.rating).slice(0, 4);
+    const shared = (p: typeof product) => p.occasions.filter(o => product.occasions.includes(o)).length;
+    return products.filter(p => p.category !== product.category && p.stock > 0 && shared(p) > 0)
+      .sort((a, b) => shared(b) - shared(a) || b.rating - a.rating).slice(0, 4);
   }, [products, product]);
+
+  // Données structurées schema.org (fiches enrichies dans Google : prix, stock, note)
+  useEffect(() => {
+    if (!product) return;
+    const el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.text = JSON.stringify({
+      '@context': 'https://schema.org', '@type': 'Product', name: product.name, description: product.description,
+      image: product.images, sku: product.id, brand: { '@type': 'Brand', name: 'Fabima Store' }, material: product.material,
+      aggregateRating: { '@type': 'AggregateRating', ratingValue: product.rating, reviewCount: product.reviewCount },
+      offers: { '@type': 'Offer', priceCurrency: 'XOF', price: product.price, url: window.location.href,
+        availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' },
+    });
+    document.head.appendChild(el);
+    return () => el.remove();
+  }, [product]);
 
   if (!product) {
     return (
@@ -190,7 +227,7 @@ export const ProductDetail: React.FC = () => {
           {/* Informations */}
           <div className="lg:sticky lg:top-36 lg:self-start">
             <div className="flex items-start justify-between gap-4">
-              <p className="eyebrow">{product.subcategory} · {product.gender === 'unisexe' ? 'Mixte' : product.gender === 'femme' ? 'Femme' : 'Homme'}</p>
+              <p className="eyebrow">{category?.name} · {product.subcategory}</p>
               <button onClick={share} aria-label="Partager" className="w-9 h-9 -mt-2 grid place-items-center rounded-full hover:bg-ink/5"><Share2 className="w-4 h-4" strokeWidth={1.5} /></button>
             </div>
             <h1 className="font-display text-5xl sm:text-6xl mt-3 leading-[0.98]">{product.name}</h1>
@@ -206,6 +243,21 @@ export const ProductDetail: React.FC = () => {
             <p className="text-[11px] text-ink/45 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
 
             <p className="mt-7 text-[15px] text-ink/70 leading-relaxed">{product.description}</p>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {product.occasions.map(o => {
+                const occ = OCCASIONS.find(x => x.id === o);
+                return occ && <Link key={o} to={`/boutique?occasion=${o}`} className="px-3.5 h-8 inline-flex items-center rounded-full bg-blush/60 text-[11px] text-ink/80 hover:bg-blush transition-colors">{occ.name}</Link>;
+              })}
+            </div>
+
+            <figure className="mt-7 p-5 rounded-3xl bg-gradient-to-br from-ivory-deep to-blush/40 flex gap-4">
+              <Flower className="w-5 h-5 text-gold shrink-0 mt-1" />
+              <div>
+                <figcaption className="font-script text-2xl text-gold-dark leading-none">Le conseil de Fabima</figcaption>
+                <blockquote className="mt-2 text-sm text-ink/75 leading-relaxed">{product.styleTip}</blockquote>
+              </div>
+            </figure>
 
             <div className="hairline my-8" />
 
@@ -249,7 +301,9 @@ export const ProductDetail: React.FC = () => {
                 <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
               </button>
             </div>
-            <button onClick={handleBuyNow} disabled={outOfStock} className="btn-gold w-full mt-2">Acheter maintenant</button>
+            {outOfStock
+              ? <StockAlertForm onSubmit={c => { addStockAlert(product.id, c); notify('Alerte enregistrée'); }} />
+              : <button onClick={handleBuyNow} className="btn-gold w-full mt-2">Acheter maintenant</button>}
             <a href={waLink} target="_blank" rel="noopener noreferrer"
               className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#1f8f4e] hover:text-[#1f8f4e] transition-colors">
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Commander sur WhatsApp
@@ -272,12 +326,16 @@ export const ProductDetail: React.FC = () => {
                   <li className="flex gap-3 text-ink/45"><span className="text-gold">—</span>Référence {product.id}</li>
                 </ul>
               </Accordion>
+              <Accordion title="Matière & entretien" open={openSection === 'matiere'} onToggle={() => toggle('matiere')}>
+                <p><strong className="text-ink">Matière</strong> : {product.material}</p>
+                <p className="mt-2"><strong className="text-ink">Entretien</strong> : {product.care}</p>
+              </Accordion>
               <Accordion title="Livraison & échanges" open={openSection === 'livraison'} onToggle={() => toggle('livraison')}>
                 <p><strong className="text-ink">Dakar</strong> : livraison en 24h, de 1 500 à 2 000 FCFA selon le quartier.</p>
                 <p className="mt-2"><strong className="text-ink">Régions</strong> : de 48h à 5 jours selon la destination.</p>
                 <p className="mt-2">Livraison <strong className="text-ink">offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</strong>. Échange gratuit sous 7 jours pour toute pièce non portée.</p>
               </Accordion>
-              <Accordion id="avis" title={`Avis clients (${product.reviewCount})`} open={openSection === 'avis'} onToggle={() => toggle('avis')}>
+              <Accordion id="avis" title={`Avis clientes (${product.reviewCount})`} open={openSection === 'avis'} onToggle={() => toggle('avis')}>
                 <div className="flex items-center gap-4 mb-5">
                   <span className="font-display text-5xl text-ink">{product.rating.toFixed(1)}</span>
                   <span><Stars rating={product.rating} size={15} /><span className="block text-xs mt-1">{product.reviewCount} avis vérifiés</span></span>
