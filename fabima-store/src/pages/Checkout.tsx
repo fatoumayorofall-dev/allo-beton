@@ -8,6 +8,7 @@ import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { PromoBox } from './Cart';
+import { notifyOrder } from '../services/api';
 
 const PAYMENT_METHODS: { id: PaymentMethod; name: string; desc: string; color: string; Icon: typeof Smartphone }[] = [
   { id: 'wave', name: 'Wave', desc: 'Instantané, sans frais', color: '#1dc4ff', Icon: Smartphone },
@@ -31,7 +32,7 @@ interface FormState {
 
 export const Checkout: React.FC = () => {
   usePageTitle('Commande');
-  const { cart, computeTotals, placeOrder, clearCart, promoCode, notify, savedCustomer, saveCustomer, giftWrap } = useStore();
+  const { cart, computeTotals, placeOrder, clearCart, promoCode, notify, savedCustomer, saveCustomer, giftWrap, logNotification } = useStore();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -101,6 +102,13 @@ export const Checkout: React.FC = () => {
       promoCode: t.discount > 0 || (promoCode && t.promoShortfall === 0) ? promoCode ?? undefined : undefined,
       paymentMethod: method,
       paymentStatus: method === 'cash' ? 'en_attente' : 'paye',
+    });
+    // Messages WhatsApp automatiques (gérante + cliente) si le serveur est configuré ; sinon la page
+    // de confirmation propose l'envoi manuel du récapitulatif.
+    notifyOrder(order).then(r => {
+      if (!r) return;
+      if (!r.owner.simulated) logNotification(order.id, { event: 'nouvelle', to: 'gerante', channel: r.owner.ok ? 'auto' : 'echec' });
+      if (!r.customer.simulated) logNotification(order.id, { event: 'nouvelle', to: 'cliente', channel: r.customer.ok ? 'auto' : 'echec' });
     });
     navigate(`/confirmation/${order.id}`, { replace: true });
     clearCart();

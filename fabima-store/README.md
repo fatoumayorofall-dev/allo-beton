@@ -9,9 +9,47 @@ même pile technique (React + TypeScript + Tailwind + Vite), même logique comme
 ```bash
 cd fabima-store
 npm install
-npm run dev        # http://localhost:5174
+npm run dev        # site : http://localhost:5174
+npm run server     # (2e terminal) assistante IA + WhatsApp : http://localhost:8787
 npm run build      # vérification TypeScript + build de production dans dist/
 ```
+
+Le site fonctionne sans le serveur : l'assistante répond alors en mode « réponses rapides » (sans IA)
+et les messages WhatsApp se font en un clic, avec un texte prérempli.
+
+## Assistante IA « Fabi » et notifications WhatsApp
+
+Copiez `server/.env.example` en `server/.env`, puis renseignez :
+
+| Variable | Rôle |
+|---|---|
+| `ANTHROPIC_API_KEY` | Active l'assistante IA (Claude). Clé à créer sur console.anthropic.com. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` | Active l'envoi automatique des messages WhatsApp (même fournisseur qu'Allô Béton). |
+| `OWNER_WHATSAPP` | Votre numéro : vous y recevez chaque nouvelle commande. |
+| `ADMIN_PIN` | Même code que l'espace gérant, exigé pour envoyer les messages de suivi aux clientes. |
+| `SITE_URL` | Adresse publique du site, utilisée dans les liens de suivi envoyés sur WhatsApp. |
+
+**Ce qui se passe à chaque commande**
+
+| Moment | Avec Twilio configuré | Sans configuration |
+|---|---|---|
+| La cliente valide sa commande | Vous recevez le récapitulatif complet sur WhatsApp, la cliente reçoit un accusé de réception avec son lien de suivi | La page de confirmation invite la cliente à vous envoyer le récapitulatif sur WhatsApp en un clic |
+| Vous changez le statut (confirmée, en préparation, en route, livrée, annulée) | La cliente reçoit le message correspondant automatiquement | Un bouton vert « Prévenir … » ouvre WhatsApp avec le message prêt |
+| Une pièce épuisée revient en stock | « Prévenir sur WhatsApp » écrit à toutes les clientes en attente | Un bouton par cliente ouvre WhatsApp avec le message prêt |
+
+Chaque envoi est noté dans le détail de la commande (auto, manuel ou échec).
+
+**Bon à savoir sur WhatsApp** : pour tester, le bac à sable Twilio suffit (chaque numéro doit d'abord envoyer
+le mot-clé du bac à sable). En production, WhatsApp n'autorise à écrire à une personne qui ne vous a pas écrit
+dans les dernières 24 h qu'avec des **modèles de messages approuvés par Meta** : créez-les dans Twilio
+(Content Template Builder) et indiquez leurs identifiants dans `TWILIO_TPL_*`.
+
+**Coût de l'assistante** : chaque question envoie le catalogue à Claude ; il est mis en cache (environ 10 fois
+moins cher à la relecture) et les réponses sont limitées en longueur. Le serveur limite aussi le nombre de
+questions par visiteuse. Le modèle se change avec `CLAUDE_MODEL`.
+
+**Mise en ligne** : `npm start` compile le site puis lance le serveur, qui sert à la fois le site et l'API
+(un seul service à héberger, par exemple sur Railway comme Allô Béton).
 
 ## Thème
 
@@ -48,11 +86,15 @@ src/
 ├── data/catalog.ts        # Catégories, occasions et catalogue initial (30 pièces pour femme)
 ├── data/journal.ts        # Articles du journal (blocs texte, astuces, produits cités)
 ├── data/types.ts          # Types Produit, Panier, Commande
+├── services/api.ts        # Appels au serveur (assistante, WhatsApp), avec repli si absent
 ├── context/StoreContext   # État global : produits, panier, favoris, commandes, avis, notifications
 ├── utils/hooks.ts         # Échap, blocage du défilement, apparition au défilement
 ├── components/            # Navbar, Footer, panier latéral, carte produit, recherche…
 └── pages/                 # Accueil, Boutique, Produit, Panier, Commande, Confirmation, Suivi, Mes commandes, Favoris, Journal, FAQ, Maison, Admin
 ```
+
+Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
+`whatsapp.js` (Twilio et textes des messages).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
 
@@ -72,6 +114,8 @@ et `vercel.json` renvoient toutes les adresses vers l'application (sinon un rafr
   Pour une vraie boutique multi-appareils, brancher `StoreContext` sur une API (le backend Express/MySQL d'Allô Béton peut servir de base).
 - **Paiement** : la passerelle est simulée dans `pages/Checkout.tsx` (fonction `pay`). À remplacer par l'API Wave Business,
   Orange Money ou un agrégateur (PayDunya, CinetPay…).
+- **Notifications** : sans base de données, le serveur reçoit la commande depuis le navigateur de la cliente ;
+  il vérifie le format et limite les envois, mais une vraie base de commandes côté serveur reste l'étape suivante.
 - **Espace gérant** : le PIN est vérifié côté navigateur, il ne protège donc qu'une démo. Une authentification serveur est nécessaire en production.
 - **Coordonnées** : le téléphone, le WhatsApp, l'e-mail et les réseaux sociaux de `config/site.ts` sont des valeurs d'exemple à remplacer.
 - **Photos** : les images proviennent de Pexels ; si une image ne charge pas, un visuel de remplacement s'affiche.

@@ -7,6 +7,7 @@ import { CartDrawer } from './components/CartDrawer';
 import { QuickView } from './components/QuickView';
 import { Toasts } from './components/Toasts';
 import { FloatingActions } from './components/FloatingActions';
+import { Assistant } from './components/Assistant';
 import { Home } from './pages/Home';
 import { Catalog } from './pages/Catalog';
 import { ProductDetail } from './pages/ProductDetail';
@@ -77,6 +78,7 @@ export default function App() {
         <QuickView />
         <Toasts />
         <FloatingActions />
+        <Assistant />
       </StoreProvider>
     </BrowserRouter>
   );

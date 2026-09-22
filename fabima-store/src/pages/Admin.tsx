@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BarChart3, Download, LogOut, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
@@ -8,6 +8,20 @@ import { formatDate, formatPrice, slugify } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
 import { ProductImage } from '../components/ProductImage';
+import { getServerStatus, notifyRestock, notifyStatus, type ServerStatus } from '../services/api';
+import { restockLink, statusLink } from '../utils/whatsappMessages';
+
+const PIN_KEY = 'fabima_admin_pin';
+const adminPin = () => { try { return sessionStorage.getItem(PIN_KEY) ?? ''; } catch { return ''; } };
+
+/** État du serveur (assistant IA, WhatsApp automatique) pour l'espace gérant. */
+function useServerStatus() {
+  const [status, setStatus] = useState<ServerStatus | null>(null);
+  useEffect(() => { getServerStatus().then(setStatus); }, []);
+  return status;
+}
+
+const EVENT_LABELS: Record<string, string> = { nouvelle: 'Nouvelle commande', ...STATUS_LABELS };
 
 const SESSION_KEY = 'fabima_admin';
 
@@ -34,7 +48,7 @@ export const Admin: React.FC = () => {
       <div className="max-w-sm mx-auto px-4 pt-24">
         <form onSubmit={e => {
           e.preventDefault();
-          if (pin === SITE_CONFIG.adminPin) { try { sessionStorage.setItem(SESSION_KEY, '1'); } catch { /* ignore */ } setAuthed(true); } else setError(true);
+          if (pin === SITE_CONFIG.adminPin) { try { sessionStorage.setItem(SESSION_KEY, '1'); sessionStorage.setItem(PIN_KEY, pin); } catch { /* ignore */ } setAuthed(true); } else setError(true);
         }} className="bg-white border border-ink/[0.06] rounded-[2rem] p-8 text-center">
           <h1 className="font-display text-3xl">Espace gérant</h1>
           <p className="text-sm text-ink/60 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
@@ -52,7 +66,7 @@ export const Admin: React.FC = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div><p className="eyebrow">Fabima Store</p><h1 className="font-display text-5xl mt-2">Espace gérant</h1></div>
-        <button onClick={() => { try { sessionStorage.removeItem(SESSION_KEY); } catch { /* ignore */ } setAuthed(false); }}
+        <button onClick={() => { try { sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(PIN_KEY); } catch { /* ignore */ } setAuthed(false); }}
           className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
       <div className="flex gap-2 mb-8 overflow-x-auto">
@@ -75,7 +89,9 @@ export const Admin: React.FC = () => {
 /* ------------------------------------------------------------------ */
 
 const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ onGoto }) => {
-  const { orders, products, stockAlerts, removeStockAlerts } = useStore();
+  const { orders, products, stockAlerts, removeStockAlerts, notify } = useStore();
+  const server = useServerStatus();
+  const autoWhatsApp = !!(server?.whatsapp && server.adminApi);
   const valid = orders.filter(o => o.status !== 'annulee');
   const revenue = valid.reduce((s, o) => s + o.total, 0);
   const pending = orders.filter(o => o.status === 'en_attente').length;
@@ -100,6 +116,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
 
   return (
     <div className="space-y-6">
+      <ServicesCard server={server} />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map(({ label, value, Icon }) => (
           <div key={label} className="bg-white border border-ink/[0.06] rounded-[2rem] p-5">
@@ -152,6 +169,15 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
                 <li key={id} className="flex flex-wrap items-center gap-3 py-3">
                   <span className="flex-1 min-w-[160px] font-medium">{product?.name ?? id} <span className="text-ink/50 font-normal">· stock {product?.stock ?? 0}</span></span>
                   <span className="text-xs text-ink/60 flex-[2] min-w-[200px]">{contacts.join(' · ')}</span>
+                  {product && product.stock > 0 && (autoWhatsApp ? (
+                    <button onClick={async () => {
+                      const r = await notifyRestock(product, contacts, adminPin());
+                      notify(r ? `${r.sent}/${r.total} cliente(s) prévenue(s) sur WhatsApp` : 'Envoi impossible, utilisez l\'envoi manuel', r ? 'success' : 'error');
+                    }} className="text-xs px-3 py-1.5 rounded-full bg-[#1f8f4e] text-white">Prévenir sur WhatsApp</button>
+                  ) : contacts.map(c => {
+                    const href = restockLink(product.name, product.slug, c);
+                    return href && <a key={c} href={href} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 rounded-full bg-[#1f8f4e] text-white">Prévenir {c}</a>;
+                  }))}
                   <button onClick={() => removeStockAlerts(id)} className="text-xs px-3 py-1.5 rounded-full bg-ink/5 hover:bg-ink hover:text-ivory">Traitée ({contacts.length})</button>
                 </li>
               );
@@ -204,7 +230,19 @@ function exportOrdersCsv(orders: Order[]) {
 }
 
 const Orders: React.FC = () => {
-  const { orders, updateOrderStatus, markOrderPaid } = useStore();
+  const { orders, updateOrderStatus, markOrderPaid, logNotification, notify } = useStore();
+  const server = useServerStatus();
+  const autoWhatsApp = !!(server?.whatsapp && server.adminApi);
+  const [lastChange, setLastChange] = useState<{ id: string; status: OrderStatus } | null>(null);
+
+  const changeStatus = async (order: Order, status: OrderStatus) => {
+    updateOrderStatus(order.id, status);
+    setLastChange({ id: order.id, status });
+    if (!autoWhatsApp || status === 'en_attente') return;
+    const r = await notifyStatus(order, status, adminPin());
+    logNotification(order.id, { event: status, to: 'cliente', channel: r?.ok ? 'auto' : 'echec' });
+    notify(r?.ok ? `${order.customer.firstName} a été prévenue sur WhatsApp` : 'Message WhatsApp non envoyé : utilisez l\'envoi manuel', r?.ok ? 'success' : 'error');
+  };
   const [filter, setFilter] = useState<OrderStatus | ''>('');
   const [selected, setSelected] = useState<Order | null>(null);
   const list = filter ? orders.filter(o => o.status === filter) : orders;
@@ -266,13 +304,40 @@ const Orders: React.FC = () => {
             <div className="flex justify-between font-semibold text-base border-t border-ink/10 pt-3"><span>Total</span><span>{formatPrice(current.total)}</span></div>
             <label className="block">
               <span className="font-medium">Statut</span>
-              <select value={current.status} onChange={e => updateOrderStatus(current.id, e.target.value as OrderStatus)}
+              <select value={current.status} onChange={e => changeStatus(current, e.target.value as OrderStatus)}
                 className="mt-1.5 w-full px-4 py-3 rounded-xl border border-ink/15 outline-none focus:border-ink">
                 {(Object.keys(STATUS_LABELS) as OrderStatus[]).map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
               </select>
             </label>
+            {(() => {
+              // Envoi manuel proposé après un changement de statut quand l'envoi automatique n'a pas eu lieu
+              const autoSent = current.notifications?.some(n => n.event === current.status && n.to === 'cliente' && n.channel === 'auto');
+              const href = statusLink(current, current.status);
+              if (!href || autoSent || (autoWhatsApp && lastChange?.id !== current.id)) return null;
+              return (
+                <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => logNotification(current.id, { event: current.status, to: 'cliente', channel: 'manuel' })}
+                  className={`w-full py-3 rounded-full inline-flex items-center justify-center gap-2 font-semibold ${lastChange?.id === current.id ? 'bg-[#1f8f4e] text-white animate-pulse' : 'border border-[#1f8f4e] text-[#1f8f4e]'}`}>
+                  <MessageCircle className="w-4 h-4" /> Prévenir {current.customer.firstName} : « {STATUS_LABELS[current.status]} »
+                </a>
+              );
+            })()}
             {current.paymentStatus !== 'paye' && (
               <button onClick={() => markOrderPaid(current.id)} className="w-full py-3 rounded-full bg-emerald-700 text-white font-semibold">Marquer comme payée</button>
+            )}
+            {!!current.notifications?.length && (
+              <div>
+                <p className="font-medium mb-2">Messages WhatsApp</p>
+                <ul className="space-y-1.5 text-xs">
+                  {current.notifications.map((n, i) => (
+                    <li key={i} className="flex items-center justify-between gap-3">
+                      <span>{EVENT_LABELS[n.event]} → {n.to === 'gerante' ? 'boutique' : 'cliente'}</span>
+                      <span className={`px-2 py-0.5 rounded-full ${n.channel === 'auto' ? 'bg-emerald-100 text-emerald-800' : n.channel === 'manuel' ? 'bg-sky-100 text-sky-800' : 'bg-red-100 text-red-800'}`}>
+                        {n.channel === 'auto' ? 'envoyé auto' : n.channel === 'manuel' ? 'ouvert manuellement' : 'échec'} · {new Date(n.date).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </Modal>
@@ -425,3 +490,25 @@ const Modal: React.FC<{ title: string; onClose: () => void; children: React.Reac
     </div>
   </div>
 );
+
+/** Carte d'état : assistant IA et notifications WhatsApp. */
+const ServicesCard: React.FC<{ server: ServerStatus | null }> = ({ server }) => {
+  const rows = [
+    { label: 'Assistante IA « Fabi »', on: !!server?.assistant, onText: 'Claude activé : réponses personnalisées', offText: 'Réponses rapides sans IA (ajoutez ANTHROPIC_API_KEY au serveur)' },
+    { label: 'Alerte WhatsApp nouvelle commande', on: !!server?.ownerNotifications, onText: 'Vous recevez chaque commande sur WhatsApp', offText: 'Manuel : la cliente vous envoie son récapitulatif (configurez Twilio + OWNER_WHATSAPP)' },
+    { label: 'Messages de suivi aux clientes', on: !!(server?.whatsapp && server.adminApi), onText: 'Envoyés automatiquement à chaque changement de statut', offText: 'En un clic depuis chaque commande (configurez Twilio + ADMIN_PIN)' },
+  ];
+  return (
+    <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
+      <h2 className="font-display text-xl mb-4">Assistante & WhatsApp</h2>
+      <ul className="grid md:grid-cols-3 gap-3">
+        {rows.map(r => (
+          <li key={r.label} className={`p-4 rounded-2xl text-sm ${r.on ? 'bg-emerald-50' : 'bg-ivory-deep/60'}`}>
+            <p className="font-semibold flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${r.on ? 'bg-emerald-500' : 'bg-gold'}`} />{r.label}</p>
+            <p className="text-xs text-ink/60 mt-1.5">{server ? (r.on ? r.onText : r.offText) : 'Vérification…'}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};

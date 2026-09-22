@@ -1,19 +1,12 @@
 import React, { useState } from 'react';
-import { MessageCircle, Plus } from 'lucide-react';
+import { MessageCircle, Plus, Sparkles } from 'lucide-react';
+import { openAssistant } from '../components/Assistant';
 import { DELIVERY_ZONES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
+import { FAQ_ITEMS as QUESTIONS } from '../data/faq';
 
-const QUESTIONS = [
-  { q: 'Quels sont les délais de livraison ?', a: 'Nous livrons en 24h à Dakar et en 48h à 5 jours dans les autres régions du Sénégal. Vous êtes appelé(e) avant chaque livraison.' },
-  { q: 'Quels moyens de paiement acceptez-vous ?', a: 'Wave, Orange Money, Free Money, carte bancaire (Visa, Mastercard) et paiement en espèces à la livraison.' },
-  { q: 'Puis-je échanger ou retourner un article ?', a: 'Oui : vous disposez de 7 jours après réception pour échanger un article (taille, couleur) gratuitement, à condition qu\'il n\'ait pas été porté et soit dans son emballage d\'origine. Contactez-nous sur WhatsApp pour organiser l\'échange.' },
-  { q: 'Comment suivre ma commande ?', a: 'Rendez-vous sur la page « Suivre ma commande » avec votre numéro de commande (reçu à la confirmation) et votre numéro de téléphone.' },
-  { q: 'Les articles sont-ils authentiques et de qualité ?', a: 'Chaque article est sélectionné et contrôlé par notre équipe avant expédition. Nos créations en wax sont confectionnées à Dakar.' },
-  { q: 'Puis-je commander pour offrir ?', a: 'Bien sûr : cochez « Emballage cadeau signature » dans le panier (2 000 FCFA) et écrivez votre mot doux, nous le recopions à la main sur une carte. Le prix n\'apparaît sur aucun document glissé dans le colis.' },
-  { q: 'Comment être prévenue du retour d\'une pièce épuisée ?', a: 'Sur la fiche de la pièce, laissez votre numéro WhatsApp ou votre e-mail dans « Victime de son succès » : nous vous écrivons dès qu\'elle revient.' },
-  { q: 'Puis-je retirer ma commande en boutique ?', a: 'Oui, choisissez « Dakar Plateau » ou « Sacré-Cœur » et précisez « retrait en boutique » dans les instructions : nous vous rembourserons les frais de livraison.' },
-];
+
 
 const SHOE_SIZES = [['36', '23 cm'], ['37', '23,7 cm'], ['38', '24,3 cm'], ['39', '25 cm'], ['40', '25,7 cm'], ['41', '26,3 cm'], ['42', '27 cm'], ['43', '27,7 cm'], ['44', '28,3 cm'], ['45', '29 cm']];
 const CLOTHES_SIZES = [['S', '36–38', '84–88 cm'], ['M', '40–42', '88–96 cm'], ['L', '44–46', '96–104 cm'], ['XL', '48–50', '104–112 cm']];
@@ -74,7 +67,8 @@ export const FAQ: React.FC = () => {
       <div className="mt-24 text-center bg-ink text-ivory px-6 py-16 grain relative overflow-hidden">
         <p className="eyebrow !text-gold-light">Conseil personnalisé</p>
         <h2 className="font-display text-4xl sm:text-5xl mt-4">Une autre question ?</h2>
-        <p className="text-ivory/65 mt-3 text-sm">Notre équipe vous répond sur WhatsApp, 7 jours sur 7.</p>
+        <p className="text-ivory/65 mt-3 text-sm">Fabi, notre conseillère virtuelle, vous répond tout de suite. Notre équipe est aussi sur WhatsApp, 7 jours sur 7.</p>
+        <button onClick={() => openAssistant()} className="btn-gold mt-8 mr-2"><Sparkles className="w-4 h-4" strokeWidth={1.5} /> Demander à Fabi</button>
         <a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai une question :')} target="_blank" rel="noopener noreferrer" className="btn-light mt-8"><MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Écrire sur WhatsApp</a>
       </div>
     </div>

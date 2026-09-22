@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { CATALOG_VERSION, INITIAL_PRODUCTS } from '../data/catalog';
-import type { CartItem, CustomerInfo, Order, OrderStatus, Product, Review, StockAlert } from '../data/types';
+import type { CartItem, CustomerInfo, Order, OrderNotification, OrderStatus, Product, Review, StockAlert } from '../data/types';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
 
@@ -118,6 +118,7 @@ interface StoreContextValue {
   placeOrder: (order: Omit<Order, 'id' | 'createdAt' | 'status' | 'history'>) => Order;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
   markOrderPaid: (id: string) => void;
+  logNotification: (id: string, entry: Omit<OrderNotification, 'date'>) => void;
   findOrder: (id: string, phone: string) => Order | undefined;
 
   toasts: Toast[];
@@ -329,6 +330,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setOrders(list => list.map(o => (o.id === id ? { ...o, paymentStatus: 'paye' } : o)));
   }, []);
 
+  const logNotification = useCallback((id: string, entry: Omit<OrderNotification, 'date'>) => {
+    setOrders(list => list.map(o => (o.id === id
+      ? { ...o, notifications: [...(o.notifications ?? []), { ...entry, date: new Date().toISOString() }] }
+      : o)));
+  }, []);
+
   const findOrder = useCallback((id: string, phone: string) => {
     const digits = (s: string) => s.replace(/\D/g, '').slice(-9);
     return orders.find(o => o.id.toUpperCase() === id.trim().toUpperCase() && digits(o.customer.phone) === digits(phone));
@@ -343,11 +350,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     quickView, openQuickView: setQuickView,
     savedCustomer, saveCustomer: setSavedCustomer,
     stockAlerts, addStockAlert, removeStockAlerts,
-    orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder,
+    orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder,
     toasts, notify,
   }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
     cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, isInWishlist, recentlyViewed, markViewed,
-    quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, findOrder, toasts, notify]);
+    quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, toasts, notify]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };

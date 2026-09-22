@@ -104,4 +104,15 @@ export interface Order {
   paymentStatus: 'en_attente' | 'paye';
   status: OrderStatus;
   history: { status: OrderStatus; date: string }[];
+  /** Journal des messages WhatsApp liés à la commande */
+  notifications?: OrderNotification[];
+}
+
+export interface OrderNotification {
+  date: string;
+  /** Événement notifié : nouvelle commande ou changement de statut */
+  event: 'nouvelle' | OrderStatus;
+  to: 'gerante' | 'cliente';
+  /** auto = envoyé par le serveur ; manuel = ouvert dans WhatsApp par la gérante ; echec = envoi automatique raté */
+  channel: 'auto' | 'manuel' | 'echec';
 }
