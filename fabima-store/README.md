@@ -145,6 +145,21 @@ Sans carte (serveur absent, GPS refusé), la cliente peut toujours écrire son a
 | À moins de 400 m | La cliente reçoit « votre livreur arrive » |
 | « Colis remis » | Commande livrée et payée, message de remerciement |
 
+**Livraison en relais (longue distance)** : pour une cliente à Kédougou, Tambacounda, Ziguinchor…, la gérante
+touche **« 🔁 En relais »** et prépare les étapes, par exemple :
+
+1. 🛵 Modou (moto) apporte le colis jusqu'à la **gare routière** ;
+2. 🚌 Ousmane (car / 7 places) l'emmène jusqu'à la **gare de Kédougou** ;
+3. 🛵 Awa (moto à Kédougou) le livre **chez la cliente**.
+
+Chaque point de relais se cherche sur la carte (ou s'écrit simplement). Chaque livreur reçoit **son propre lien**, avec
+seulement sa mission : de qui il reçoit le colis, à qui il le remet. Celui qui attend voit le livreur précédent
+arriver sur la carte, et il est prévenu sur WhatsApp au départ du colis puis à moins de 1 km du relais. Le relais
+est validé par l'un ou l'autre : « J'ai reçu le colis » (celui qui reçoit) ou « Colis remis à … » (celui qui donne).
+La cliente voit les étapes, le véhicule en cours et le temps d'arrivée ; elle reçoit un message à chaque passage de relais.
+Seul le dernier livreur voit le téléphone de la cliente et le montant à encaisser. Sur la route, la position est envoyée
+toutes les 15 s (4 s à moto) pour ménager la batterie ; les livreurs et points de relais déjà utilisés sont proposés en un clic.
+
 Les commandes sont maintenant **enregistrées sur le serveur** : la gérante voit celles de toutes les clientes, depuis n'importe quel appareil.
 
 **Cartes utilisées** : OpenStreetMap (gratuit, sans clé, très complet à Dakar) avec Leaflet pour l'affichage,

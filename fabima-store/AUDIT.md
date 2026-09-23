@@ -71,6 +71,7 @@ Chaque correction a été vérifiée par un test automatisé dans un navigateur 
 - À la commande, la cliente touche « Je suis ici » (GPS), cherche un lieu connu ou fait glisser la carte : elle n'a plus à expliquer le chemin. La zone et les frais se règlent tout seuls.
 - La gérante voit le point sur la carte (lien Google Maps) et confie la livraison à un livreur, qui reçoit un lien secret.
 - Le livreur démarre la course ; sa position est envoyée toutes les 4 secondes. La cliente reçoit un WhatsApp « en route » avec le lien de suivi, puis « il arrive » à moins de 400 m, puis « livrée ».
+- Livraison en relais (jusqu'à 6 étapes : moto → car longue distance → moto…) : un lien par livreur, rendez-vous au point de relais sur la carte, passage de relais validé par celui qui donne ou celui qui reçoit, messages WhatsApp à chaque étape.
 - Limite : la position n'est envoyée que tant que la page du livreur reste ouverte (l'écran est maintenu allumé).
 
 ## 7. Restent à traiter avant la mise en ligne

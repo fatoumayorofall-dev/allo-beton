@@ -130,34 +130,66 @@ export function buildRestockMessage(product) {
   return [`Bonjour 🌸`, ``, `Bonne nouvelle : *${product.name}* est de retour chez Fabima Store !`, `Les pièces partent vite : ${SITE_URL}/produit/${product.slug}`].join('\n');
 }
 
-/* ---------- Livraison suivie en direct ---------- */
+/* ---------- Livraison suivie en direct (un livreur ou plusieurs en relais) ---------- */
 
-export function buildDriverMessage(order, link) {
+export const VEHICLES = { moto: '🛵 moto', voiture: '🚗 voiture / 7 places', car: '🚌 car / bus' };
+const who = l => `${l.driverName} (${VEHICLES[l.vehicle] || VEHICLES.moto})`;
+
+/**
+ * Message envoyé à chaque livreur avec son lien secret.
+ * `ctx` = { index, total, leg, prev, next } (prev/next : étapes voisines en cas de relais).
+ */
+export function buildDriverMessage(order, link, ctx = {}) {
   const c = order.customer;
-  return [
-    `🛵 *Livraison ${order.id}* — Fabima Store`,
-    ``,
-    `Cliente : ${c.firstName} ${c.lastName} — ${c.phone}`,
-    `Quartier : ${c.zone}${c.address ? ` — ${c.address}` : ''}`,
-    order.paymentStatus === 'paye' ? `Déjà payé ✅` : `À encaisser : *${fcfa(order.total)}*`,
-    ``,
-    `1. Ouvrez ce lien et touchez « Démarrer la course » :`,
-    link,
-    `2. Gardez la page ouverte pendant le trajet (la cliente vous voit sur la carte).`,
-    `3. Touchez « Colis remis » à l'arrivée.`,
-  ].join('\n');
+  const { index = 0, total = 1, leg = {}, prev, next } = ctx;
+  const final = !next;
+  const lines = [`🛵 *Livraison ${order.id}* — Fabima Store`];
+  if (total > 1) lines.push(`🔁 Relais : étape ${index + 1} sur ${total}`);
+  lines.push('');
+  if (prev) lines.push(`📦 Vous recevez le colis de ${prev.driverName} (${prev.driverPhone})${prev.to?.label ? ` à : ${prev.to.label}` : ''}.`);
+  else if (total > 1) lines.push('📦 Vous prenez le colis à la boutique.');
+  if (final) {
+    lines.push(`Cliente : ${c.firstName} ${c.lastName} — ${c.phone}`, `Quartier : ${c.location?.label || c.zone}${c.address ? ` — ${c.address}` : ''}`,
+      order.paymentStatus === 'paye' ? 'Déjà payé ✅' : `À encaisser : *${fcfa(order.total)}*`);
+  } else {
+    lines.push(`🤝 Vous le remettez à ${next.driverName} (${next.driverPhone}) à : *${leg.to?.label}*.`);
+  }
+  lines.push('', '1. Ouvrez ce lien :', link,
+    `2. Touchez « ${prev ? 'J\'ai reçu le colis' : 'Démarrer la course'} » et gardez la page ouverte pendant le trajet (la cliente vous suit sur la carte).`,
+    '3. Touchez « Colis remis » à l\'arrivée.');
+  return lines.join('\n');
 }
 
-export function buildOnTheWayMessage(order, driverName) {
-  return [
+export function buildOnTheWayMessage(order, driverName, legs = []) {
+  const lines = [
     `Bonjour ${order.customer.firstName} 🌸`,
     ``,
     `Votre commande *${order.id}* est en route 🛵${driverName ? ` avec ${driverName}` : ''}.`,
-    `Suivez votre livreur en direct sur la carte, comme un taxi :`,
-    trackingUrl(order),
+  ];
+  if (legs.length > 1) lines.push(`Elle voyage en relais jusqu'à vous : ${legs.map(who).join(' → ')}.`);
+  lines.push(`Suivez-la en direct sur la carte, comme un taxi :`, trackingUrl(order), ``,
+    legs.length > 1 ? `Vous recevrez un message à chaque passage de relais.` : `Il vient à l'endroit que vous avez indiqué sur la carte, pas besoin d'expliquer le chemin.`);
+  return lines.join('\n');
+}
+
+/** La cliente est prévenue à chaque passage de relais. */
+export function buildHandoverMessage(order, leg, index, total) {
+  const final = index === total - 1;
+  return [
+    `Bonjour ${order.customer.firstName} 🌸`,
     ``,
-    `Il vient à l'endroit que vous avez indiqué sur la carte, pas besoin d'expliquer le chemin.`,
+    `🔁 Votre colis *${order.id}* a passé le relais (étape ${index + 1} sur ${total}) :`,
+    final ? `il est maintenant avec ${who(leg)}, qui vous l'apporte jusqu'à chez vous.` : `il est maintenant avec ${who(leg)}, en route vers ${leg.to?.label}.`,
+    ``,
+    `Suivez-le : ${trackingUrl(order)}`,
   ].join('\n');
+}
+
+/** Messages au livreur suivant : départ du colis, arrivée proche, colis remis. */
+export function buildRelayMessage(kind, order, prev, link, minutes) {
+  if (kind === 'depart') return `🔁 *Relais ${order.id}* — ${prev.driverName} a le colis et part vers ${prev.to?.label}. Suivez-le sur la carte pour le retrouver :\n${link}`;
+  if (kind === 'proche') return `🔁 *Relais ${order.id}* — ${prev.driverName} arrive au point de relais (${prev.to?.label}) dans ${minutes <= 1 ? 'une minute' : `environ ${minutes} minutes`}. Préparez-vous !\n${link}`;
+  return `🔁 *Relais ${order.id}* — ${prev.driverName} indique vous avoir remis le colis. Ouvrez votre lien pour que la cliente vous suive :\n${link}`;
 }
 
 export function buildArrivingMessage(order, minutes) {

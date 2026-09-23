@@ -12,8 +12,10 @@ const ATTRIBUTION = (import.meta.env.VITE_MAP_ATTRIBUTION as string | undefined)
 export interface LatLng { lat: number; lng: number }
 export interface MapMarker extends LatLng {
   id: string;
-  kind: 'home' | 'driver' | 'shop';
+  kind: 'home' | 'driver' | 'shop' | 'relay';
   label?: string;
+  /** Emoji du véhicule du livreur (🛵 par défaut) */
+  icon?: string;
 }
 
 const ICONS: Record<MapMarker['kind'], (m: MapMarker) => L.DivIcon> = {
@@ -21,9 +23,13 @@ const ICONS: Record<MapMarker['kind'], (m: MapMarker) => L.DivIcon> = {
     className: 'fabima-pin', iconSize: [44, 52], iconAnchor: [22, 50],
     html: '<span class="fabima-pin-home"><span>🏠</span></span>',
   }),
-  driver: () => L.divIcon({
+  driver: m => L.divIcon({
     className: 'fabima-pin', iconSize: [52, 52], iconAnchor: [26, 26],
-    html: '<span class="fabima-pin-driver"><span class="fabima-pin-pulse"></span><span class="fabima-pin-scooter">🛵</span></span>',
+    html: '<span class="fabima-pin-driver"><span class="fabima-pin-pulse"></span><span class="fabima-pin-scooter">' + (m.icon ?? '🛵') + '</span></span>',
+  }),
+  relay: () => L.divIcon({
+    className: 'fabima-pin', iconSize: [40, 40], iconAnchor: [20, 20],
+    html: '<span class="fabima-pin-relay">🔁</span>',
   }),
   shop: () => L.divIcon({
     className: 'fabima-pin', iconSize: [40, 40], iconAnchor: [20, 20],

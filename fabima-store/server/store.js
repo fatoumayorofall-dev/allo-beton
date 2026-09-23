@@ -112,11 +112,34 @@ export function saveShopOrder(order) {
   return order;
 }
 
-/* ---------- Livraisons (livreur + position GPS) ---------- */
-export const getDelivery = orderId => state.deliveries[orderId] ?? null;
-export const findDeliveryByToken = token => (token ? Object.values(state.deliveries).find(d => d.driverToken === token) ?? null : null);
-export function saveDelivery(orderId, patch) {
-  state.deliveries[orderId] = { orderId, ...state.deliveries[orderId], ...patch };
+/* ---------- Livraisons : une ou plusieurs étapes (relais), chacune avec son livreur ---------- */
+
+/** Anciennes livraisons à un seul livreur → une livraison à une étape. */
+function upgrade(d) {
+  if (!d || Array.isArray(d.legs)) return d;
+  const leg = d.driverToken ? [{
+    driverName: d.driverName, driverPhone: d.driverPhone, driverToken: d.driverToken, vehicle: 'moto', to: null,
+    assignedAt: d.assignedAt, startedAt: d.startedAt ?? null, doneAt: d.deliveredAt ?? null, position: d.position ?? null,
+    nearNotified: !!d.nearNotified, customerNotified: !!d.onTheWayNotified,
+  }] : [];
+  return { orderId: d.orderId, legs: leg };
+}
+
+export const getDelivery = orderId => upgrade(state.deliveries[orderId]) ?? null;
+
+/** Étape correspondant au lien secret d'un livreur : { delivery, index }. */
+export function findLegByToken(token) {
+  if (!token) return null;
+  for (const raw of Object.values(state.deliveries)) {
+    const d = upgrade(raw);
+    const index = d.legs.findIndex(l => l.driverToken === token);
+    if (index >= 0) return { delivery: d, index };
+  }
+  return null;
+}
+
+export function saveDelivery(orderId, delivery) {
+  state.deliveries[orderId] = { ...delivery, orderId };
   persist();
   return state.deliveries[orderId];
 }

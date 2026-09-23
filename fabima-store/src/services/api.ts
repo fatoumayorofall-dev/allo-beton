@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { DeliveryInfo, DeliveryLocation, Order, OrderStatus, Product } from '../data/types';
+import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, Order, OrderStatus, Product, RelayPoint, Vehicle } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -205,8 +205,11 @@ export const lookupOrder = (id: string, phone: string) =>
 export const fetchAdminOrders = (pin: string) => getJson<{ orders: Order[] }>('/api/admin/orders', pin).then(r => r?.orders ?? null);
 export const patchAdminOrder = (id: string, patch: { status?: OrderStatus; paymentStatus?: 'paye' | 'en_attente' }, pin: string) =>
   call<{ order: Order; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
-export const assignDriver = (id: string, driver: { name: string; phone: string }, pin: string) =>
-  call<{ delivery: DeliveryInfo; driverMessage: string; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(id)}/driver`, { method: 'POST', body: JSON.stringify(driver), headers: { 'x-admin-pin': pin } });
+export interface PlanLeg { name: string; phone: string; vehicle: Vehicle; to?: RelayPoint | null }
+/** Plan de livraison : un livreur (direct) ou plusieurs à la suite (relais). Chaque nouveau livreur reçoit son lien. */
+export const saveDeliveryPlan = (id: string, legs: PlanLeg[], pin: string) =>
+  call<{ delivery: DeliveryInfo; messages: { leg: number; driverPhone: string; text: string }[]; sent: SendResult | null; sentAll: { leg: number; result: SendResult | null }[] }>(
+    `/api/admin/orders/${encodeURIComponent(id)}/relay`, { method: 'PUT', body: JSON.stringify({ legs }), headers: { 'x-admin-pin': pin } });
 
 /* Livreur (lien secret) */
 export interface DriverJob {
@@ -214,6 +217,12 @@ export interface DriverJob {
     id: string; status: OrderStatus; total: number; paymentMethod: Order['paymentMethod']; paymentStatus: Order['paymentStatus']; items: number;
     customer: { firstName: string; lastName: string; phone: string; zone: string; address: string; notes?: string; location: DeliveryLocation | null };
   };
+  /** Mon étape : où je récupère le colis (pickup) et où je l'amène (target) */
+  leg: { index: number; total: number; final: boolean; vehicle: Vehicle; to: RelayPoint | null; state: DeliveryLeg['state']; target: { lat: number; lng: number; label?: string } | null; pickup: RelayPoint | null };
+  /** Livreur précédent (qui m'apporte le colis) */
+  prev: (Omit<DeliveryLeg, 'startedAt' | 'doneAt'> & { position: { lat: number; lng: number } | null; etaMin: number | null }) | null;
+  /** Livreur suivant (à qui je remets le colis) */
+  next: Omit<DeliveryLeg, 'startedAt' | 'doneAt'> | null;
   delivery: DeliveryInfo;
 }
 export interface GpsFix { lat: number; lng: number; accuracy?: number; heading?: number | null; speed?: number | null }

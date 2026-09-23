@@ -71,9 +71,13 @@ export function distanceM(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-/** Temps d'arrivée estimé en minutes (trajet ~1,4 × la ligne droite, ~18 km/h en ville). */
-export function etaMinutes(from, to) {
-  return Math.max(1, Math.round(((distanceM(from, to) * 1.4) / 1000 / 18) * 60));
+/** Vitesse moyenne (km/h) et détour de la route par rapport à la ligne droite, selon le véhicule. */
+const SPEEDS = { moto: [18, 1.4], voiture: [55, 1.3], car: [50, 1.3] };
+
+/** Temps d'arrivée estimé en minutes (moto en ville ~18 km/h ; voiture ou car sur la route ~50-55 km/h). */
+export function etaMinutes(from, to, vehicle = 'moto') {
+  const [kmh, detour] = SPEEDS[vehicle] ?? SPEEDS.moto;
+  return Math.max(1, Math.round(((distanceM(from, to) * detour) / 1000 / kmh) * 60));
 }
 
 export const validPoint = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;

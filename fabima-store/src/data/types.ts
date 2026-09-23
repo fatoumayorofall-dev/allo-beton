@@ -92,10 +92,30 @@ export interface DeliveryLocation {
   source?: 'gps' | 'recherche' | 'carte';
 }
 
-/** Livraison suivie en direct (renvoyée par le serveur) */
+export type Vehicle = 'moto' | 'voiture' | 'car';
+
+/** Point de relais (gare routière, station…) où un livreur passe le colis au suivant */
+export interface RelayPoint { label: string; lat?: number; lng?: number }
+
+/** Une étape de la livraison, avec son livreur */
+export interface DeliveryLeg {
+  driverName: string;
+  driverPhone: string;
+  vehicle: Vehicle;
+  /** Point de relais ; `null` = jusqu'à la cliente (dernière étape) */
+  to: RelayPoint | null;
+  state: 'attente' | 'en_route' | 'remis';
+  startedAt: string | null;
+  doneAt: string | null;
+  /** Lien secret du livreur (vue gérante uniquement) */
+  driverLink?: string;
+}
+
+/** Livraison suivie en direct (renvoyée par le serveur) — le livreur affiché est celui de l'étape en cours */
 export interface DeliveryInfo {
   driverName: string;
   driverPhone: string;
+  vehicle?: Vehicle;
   state: 'assignee' | 'en_route' | 'livree';
   assignedAt: string;
   startedAt: string | null;
@@ -103,8 +123,17 @@ export interface DeliveryInfo {
   position: { lat: number; lng: number; accuracy: number | null; heading: number | null; speed: number | null; at: string; stale: boolean } | null;
   distanceM: number | null;
   etaMin: number | null;
-  /** Lien secret du livreur (vue gérante uniquement) */
+  /** Lien secret du livreur de l'étape en cours (vue gérante uniquement) */
   driverLink?: string;
+  /** Livraison en plusieurs étapes (relais) */
+  relay?: boolean;
+  /** Numéro de l'étape en cours (0 = première) */
+  current?: number;
+  /** L'étape en cours va jusqu'à la cliente */
+  final?: boolean;
+  /** Point de relais visé par l'étape en cours */
+  target?: RelayPoint | null;
+  legs?: DeliveryLeg[];
 }
 
 export interface StockAlert {

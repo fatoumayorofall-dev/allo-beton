@@ -101,5 +101,9 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9999px; background: #fff; border: 2px solid #3a1f2d;
   font-family: 'Pinyon Script', cursive; font-size: 24px; color: #3a1f2d; box-shadow: 0 4px 12px rgba(58,31,45,.25);
 }
+.fabima-pin-relay {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #fff; border: 2px solid #b03a64;
+  font-size: 18px; box-shadow: 0 4px 12px rgba(58,31,45,.25);
+}
 .leaflet-container { font-family: inherit; }
 .leaflet-control-attribution { font-size: 9px; }

@@ -298,7 +298,7 @@ const Orders: React.FC = () => {
               {list.map(o => (
                 <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-ink/5 hover:bg-ivory cursor-pointer">
                   <td className="p-4"><strong>{o.id}</strong><br /><span className="text-xs text-ink/50">{formatDate(o.createdAt)}</span></td>
-                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.customer.location && <span title="Point GPS">📍 </span>}{o.customer.zone}{o.delivery?.state === 'en_route' && <span className="text-wine"> · 🛵 en route</span>}</span></td>
+                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.customer.location && <span title="Point GPS">📍 </span>}{o.customer.zone}{o.delivery?.relay && <span title="Livraison en relais"> · 🔁</span>}{o.delivery?.state === 'en_route' && <span className="text-wine"> · 🛵 en route</span>}</span></td>
                   <td className="p-4">{PAYMENT_LABELS[o.paymentMethod]}<br /><span className={`text-xs ${o.paymentStatus === 'paye' ? 'text-emerald-700' : 'text-amber-700'}`}>{o.paymentStatus === 'paye' ? 'Payé' : 'En attente'}</span></td>
                   <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span></td>
                   <td className="p-4 text-right font-semibold">{formatPrice(o.total)}</td>
