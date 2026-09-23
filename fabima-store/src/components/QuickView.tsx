@@ -8,6 +8,7 @@ import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
 import { ColorSwatch } from './ColorSwatch';
 import { Stars } from './Stars';
+import { sparkleBurst } from './Magic';
 
 export const QuickView: React.FC = () => {
   const { quickView: product, openQuickView, addToCart, toggleWishlist, isInWishlist, setCartOpen } = useStore();
@@ -27,9 +28,9 @@ export const QuickView: React.FC = () => {
   if (!product) return null;
   const off = discountPercent(product.price, product.oldPrice);
 
-  const add = () => {
+  const add = (e: React.MouseEvent<HTMLElement>) => {
     if (product.sizes.length && !size) { setSizeError(true); return; }
-    if (addToCart(product, { size, color, silent: true })) { close(); setCartOpen(true); }
+    if (addToCart(product, { size, color, silent: true })) { sparkleBurst(e.currentTarget, { count: 18 }); close(); setCartOpen(true); }
   };
 
   return (
@@ -69,7 +70,7 @@ export const QuickView: React.FC = () => {
 
           <div className="mt-8 flex gap-2">
             <button onClick={add} disabled={!canBuy(product)} className="btn-dark flex-1">{!canBuy(product) ? 'Épuisé' : isPreorder(product) ? `Commander · sous ${product.preorderDays} j` : 'Ajouter au panier'}</button>
-            <button onClick={() => toggleWishlist(product.id)} aria-label="Favoris" className="w-[52px] h-[52px] rounded-full border border-ink/20 grid place-items-center hover:border-ink">
+            <button onClick={e => { if (!isInWishlist(product.id)) sparkleBurst(e.currentTarget, { hearts: true, count: 12, power: 0.8 }); toggleWishlist(product.id); }} aria-label="Favoris" className="w-[52px] h-[52px] rounded-full border border-ink/20 grid place-items-center hover:border-ink">
               <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
             </button>
           </div>

@@ -66,6 +66,11 @@ La charte complète (construction, couleurs, typographie, maquettes de l'accueil
 Les couleurs sont centralisées dans `tailwind.config.js` (jetons `ink`, `ivory`, `gold`, `wine`, `blush`, `mauve`) :
 modifier une teinte à cet endroit la change sur tout le site.
 
+**Touche féerique** (`src/components/Magic.tsx`) : `MagicLayer` (calque unique des étincelles, monté une fois dans `App`),
+`sparkleBurst()` / `sparkleRain()` (gerbe d'étoiles sur un bouton, pluie d'étoiles), `GoldDust` (poussière de lumière dans une photo),
+`Twinkles` (ciel étoilé en CSS, étoiles filantes en option). Reflets de bijou sur les mots en italique : classes `text-magic`
+(fond clair) et `text-magic-light` (fond sombre) ; `BrandMark shine` fait briller l'écrin. Tout s'arrête si le téléphone demande moins d'animations.
+
 ## Fonctionnalités
 
 | Côté client | Côté gérant (`/admin`, PIN démo : `2026`) |

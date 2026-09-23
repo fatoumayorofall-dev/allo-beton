@@ -14,6 +14,7 @@ import { Catalog } from './pages/Catalog';
 import { ProductDetail } from './pages/ProductDetail';
 import { InstallBanner } from './components/InstallApp';
 import { BrandMark } from './components/Logo';
+import { MagicLayer } from './components/Magic';
 
 /*
  * Découpage du code : l'accueil, la boutique et les fiches produit arrivent tout de suite ;
@@ -67,7 +68,7 @@ const ScrollToTop: React.FC = () => {
 };
 
 const PageFallback: React.FC = () => (
-  <div className="min-h-[100svh] grid place-items-center" role="status" aria-busy="true" aria-label="Chargement"><BrandMark className="h-16 w-auto motion-safe:animate-pulse" /></div>
+  <div className="min-h-[100svh] grid place-items-center" role="status" aria-busy="true" aria-label="Chargement"><BrandMark shine className="h-16 w-auto" /></div>
 );
 
 /** Fondu doux à chaque changement de page. */
@@ -130,7 +131,7 @@ export default function App() {
         <CartDrawer />
         <QuickView />
         <Toasts />
-        <Chrome><FloatingActions /><AssistantHost /><InstallBanner /></Chrome>
+        <Chrome><FloatingActions /><AssistantHost /><InstallBanner /><MagicLayer /></Chrome>
         </AccountProvider>
       </StoreProvider>
     </BrowserRouter>

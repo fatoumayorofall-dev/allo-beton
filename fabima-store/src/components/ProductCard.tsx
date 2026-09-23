@@ -6,6 +6,8 @@ import { useStore } from '../context/StoreContext';
 import { discountPercent, formatPrice } from '../utils/format';
 import { ProductImage } from './ProductImage';
 import { flyToCart } from '../utils/flyToCart';
+import { sparkleBurst } from './Magic';
+import { Sparkle } from './Decor';
 import { ColorSwatch } from './ColorSwatch';
 import { canBuy, isPreorder } from '../utils/stock';
 
@@ -34,6 +36,13 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
           )}
         </Link>
 
+        {/* Reflets de lumière qui s'allument au survol (ordinateur) */}
+        <span className="hidden lg:block motion-reduce:!hidden pointer-events-none" aria-hidden>
+          <Sparkle className="absolute top-[22%] left-[16%] w-4 h-4 text-white opacity-0 drop-shadow-[0_0_6px_rgba(255,244,236,.9)] group-hover:animate-twinkle" />
+          <Sparkle className="absolute top-[48%] right-[14%] w-2.5 h-2.5 text-white opacity-0 drop-shadow-[0_0_5px_rgba(255,244,236,.9)] group-hover:animate-twinkle" style={{ animationDelay: '.6s' }} />
+          <Sparkle className="absolute top-[64%] left-[30%] w-3 h-3 text-gold-light opacity-0 drop-shadow-[0_0_5px_rgba(255,244,236,.9)] group-hover:animate-twinkle" style={{ animationDelay: '1.2s' }} />
+        </span>
+
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 pointer-events-none">
           {outOfStock && <span className="px-2.5 py-1 bg-white text-ink/75 text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Épuisé</span>}
@@ -46,7 +55,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
 
         {/* Actions */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
-          <button onClick={() => toggleWishlist(product.id)} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          <button onClick={e => { if (!liked) sparkleBurst(e.currentTarget, { hearts: true, count: 12, power: 0.8 }); toggleWishlist(product.id); }} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             className="w-9 h-9 rounded-full bg-white/90 backdrop-blur grid place-items-center transition-transform hover:scale-110">
             <Heart key={String(liked)} className={`w-4 h-4 ${liked ? 'fill-wine text-wine animate-heart-pop' : 'text-ink'}`} strokeWidth={1.5} />
           </button>

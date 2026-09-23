@@ -41,7 +41,7 @@ export const StyleStories: React.FC = () => {
 
   return (
     <section className="relative max-w-[1440px] mx-auto pt-16 sm:pt-20" aria-label="Styles">
-      <h2 className="px-5 sm:px-8 lg:px-12 font-display text-3xl sm:text-4xl">Trouvez votre <em className="text-gold-dark">style</em></h2>
+      <h2 className="px-5 sm:px-8 lg:px-12 font-display text-3xl sm:text-4xl">Trouvez votre <em className="text-gold-dark text-magic">style</em></h2>
       <div className="relative mt-6">
       <div ref={scroller} onScroll={measure} className="overflow-x-auto no-scrollbar snap-x lg:snap-none">
       <ul className="flex w-max mx-auto gap-5 sm:gap-7 px-5 sm:px-8 lg:px-12 pb-2" data-testid="style-stories">

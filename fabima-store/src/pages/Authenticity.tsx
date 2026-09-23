@@ -41,7 +41,7 @@ export const Authenticity: React.FC = () => {
       <div className="grid lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-16 items-start">
         <div>
           <p className="eyebrow inline-flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Anti-contrefaçon</p>
-          <h1 className="font-display text-5xl sm:text-6xl leading-[1] mt-4">Vérifier <em className="text-gold-dark">l'authenticité</em></h1>
+          <h1 className="font-display text-5xl sm:text-6xl leading-[1] mt-4">Vérifier <em className="text-gold-dark text-magic">l'authenticité</em></h1>
           <p className="mt-5 text-ink/75 leading-relaxed max-w-lg">Chaque pièce Fabima porte une étiquette numérotée avec un QR code. Scannez-le avec l'appareil photo de votre téléphone, ou saisissez le code imprimé dessous.</p>
 
           <form onSubmit={submit} className="mt-8 flex flex-col sm:flex-row gap-3 max-w-lg">

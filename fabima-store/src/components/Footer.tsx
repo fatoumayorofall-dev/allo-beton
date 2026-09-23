@@ -5,6 +5,7 @@ import { SITE_CONFIG } from '../config/site';
 import { CATEGORIES } from '../data/catalog';
 import { useStore } from '../context/StoreContext';
 import { BrandMark, Wordmark } from './Logo';
+import { Twinkles, sparkleBurst } from './Magic';
 
 const NEWSLETTER_KEY = 'fabima_newsletter';
 
@@ -20,6 +21,7 @@ export const Footer: React.FC = () => {
       if (!list.includes(email)) localStorage.setItem(NEWSLETTER_KEY, JSON.stringify([...list, email]));
     } catch { /* ignore */ }
     setEmail('');
+    sparkleBurst((e.currentTarget as HTMLFormElement).querySelector('button'), { count: 18 });
     notify('Bienvenue dans le cercle Fabima');
   };
 
@@ -31,12 +33,14 @@ export const Footer: React.FC = () => {
       {/* Halos rosés et grande signature en filigrane */}
       <span className="pointer-events-none absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-wine/25 blur-[120px]" aria-hidden />
       <span className="pointer-events-none absolute -bottom-48 right-0 w-[32rem] h-[32rem] rounded-full bg-gold/15 blur-[120px]" aria-hidden />
+      {/* Ciel étoilé : points de lumière qui scintillent et, de temps en temps, une étoile filante */}
+      <Twinkles count={46} seed={3} shooting />
       <Wordmark tagline={false} className="pointer-events-none select-none absolute -bottom-[3%] left-1/2 -translate-x-1/2 w-[92%] max-w-[1300px] h-auto text-ivory/[0.035]" />
       {/* Newsletter */}
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-end border-b border-ivory/10">
         <div>
           <p className={col}>Le cercle des Fabima Girls</p>
-          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.02]">Recevez nos nouveautés<br /><em className="text-gold-light">en avant-première</em></h2>
+          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.02]">Recevez nos nouveautés<br /><em className="text-gold-light text-magic-light">en avant-première</em></h2>
         </div>
         <form onSubmit={subscribe} className="w-full">
           <label htmlFor="nl-email" className="text-sm text-ivory/60">Ventes privées, lancements de collection et conseils de style — une fois par mois, jamais plus.</label>
@@ -53,7 +57,7 @@ export const Footer: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-16 grid gap-12 grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div className="col-span-2 lg:col-span-1 space-y-6">
           <Link to="/" aria-label="Fabima Store — accueil" className="group inline-flex items-center gap-4">
-            <BrandMark light className="h-16 w-auto transition-transform duration-500 ease-luxe group-hover:-translate-y-0.5" />
+            <BrandMark light shine className="h-16 w-auto transition-transform duration-500 ease-luxe group-hover:-translate-y-0.5" />
             <Wordmark className="h-9 w-auto text-ivory" tagClassName="fill-gold-light stroke-gold-light" />
           </Link>
           <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures et sacs choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>

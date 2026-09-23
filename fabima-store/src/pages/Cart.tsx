@@ -49,7 +49,7 @@ export const Cart: React.FC = () => {
   if (cart.length === 0) {
     return (
       <div className="max-w-xl mx-auto text-center py-40 px-5">
-        <BrandMark className="h-28 w-auto mx-auto motion-safe:animate-hover" />
+        <BrandMark shine className="h-28 w-auto mx-auto motion-safe:animate-hover" />
         <h1 className="font-display text-5xl mt-6">Votre panier est vide</h1>
         <p className="text-ink/75 mt-4">Nos nouveautés n'attendent que vous.</p>
         <Link to="/boutique?tri=nouveautes" className="btn-dark mt-10">Découvrir les nouveautés</Link>

@@ -166,7 +166,17 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 - Photos : apparition en fondu doux une fois chargées ; visuel de remplacement signé de l'écrin si une photo manque.
 - Journal : article vedette en mise en page magazine ; plus de colonnes vides quand il y a peu d'articles.
 
-## 12. Restent à traiter avant la mise en ligne
+## 12. Touche féerique : la magie dans chaque détail
+
+- Accueil : de la poussière de lumière (étoiles, points et reflets flous) flotte dans la photo en arche, un halo pastel respire derrière elle, des éclats scintillent autour ; le mot en italique du titre reçoit un reflet de bijou juste après son apparition.
+- Titres : les mots en italique or rose (« de cœur », « d'honneur », « Teranga », « boutique »…) sont traversés de temps en temps par un reflet ; leur couleur de base reste l'or rose foncé, donc la lecture ne change pas.
+- Logo : un reflet traverse l'écrin (une fois dans l'en-tête, puis à chaque survol ; en boucle dans le pied de page, le chargement et le panier vide) et la clé de voûte s'allume comme un bijou.
+- Gestes : ajout au panier (la photo s'envole en laissant une traînée de poussière d'or, le sac scintille à l'arrivée), favoris (petits cœurs et étoiles), inscription à la lettre, confirmation de commande (pluie d'étoiles et halo autour de la coche), notifications de réussite (petite étoile).
+- Pied de page et bandeau du Marché : ciel étoilé qui scintille, avec une étoile filante de temps en temps.
+- Cartes produit (ordinateur) : des reflets de lumière s'allument sur la photo au survol ; une fine poussière d'or suit le curseur (pas dans l'espace gérant).
+- Légèreté : un seul calque de dessin pour tout le site, qui ne travaille que lorsqu'il y a des étincelles ; la poussière de l'accueil s'arrête hors de l'écran et quand l'onglet est caché. Tout s'éteint si le téléphone demande moins d'animations.
+
+## 13. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

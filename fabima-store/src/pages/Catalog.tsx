@@ -13,6 +13,8 @@ import { formatPrice } from '../utils/format';
 import { SITE_CONFIG } from '../config/site';
 import { ProductImage } from '../components/ProductImage';
 import { useEscape, useLockBody } from '../utils/hooks';
+import { GoldDust } from '../components/Magic';
+import { Sparkle } from '../components/Decor';
 
 const PAGE_SIZE = 12;
 
@@ -157,7 +159,7 @@ export const Catalog: React.FC = () => {
               {cat && <><ChevronRight className="w-3 h-3" /><span className="text-ink">{cat.name}</span></>}
             </nav>
             {occasion && !cat && <p className="eyebrow mb-2">{occasion.tagline}</p>}
-            <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl leading-[0.92]">{cat?.name ?? occasion?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em className="text-gold-dark">{q}</em> »</> : <>La <em className="text-gold-dark">boutique</em></>)}</h1>
+            <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl leading-[0.92]">{cat?.name ?? occasion?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em className="text-gold-dark">{q}</em> »</> : <>La <em className="text-gold-dark text-magic">boutique</em></>)}</h1>
             <p className="mt-4 text-ink/75 max-w-lg leading-relaxed">{cat?.description ?? (occasion ? `Notre sélection de pièces pour « ${occasion.name.toLowerCase()} ».` : promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : soon ? `${soon.name} : bientôt chez Fabima ! En attendant, découvrez nos ${CATEGORIES.map(c => c.name.toLowerCase()).join(' et nos ')}.` : `${CATEGORIES.map(c => c.name).join(', ').replace(/, ([^,]*)$/, ' et $1')} pour elle.`)}</p>
             {occasion && cat && <p className="mt-2 text-xs text-gold-dark">Occasion : {occasion.name}</p>}
             {/* Univers : sélecteur en pilule */}
@@ -168,8 +170,13 @@ export const Catalog: React.FC = () => {
               ))}
             </div>
           </div>
-          <div className="hidden md:block w-[200px] lg:w-[250px] aspect-[4/5] overflow-hidden rounded-t-[999px] rounded-b-[2rem] shadow-luxe bg-ivory-deep">
-            <ProductImage src={cat?.image ?? occasion?.image ?? CATEGORIES[1].image} alt="" className="w-full h-full animate-kenburns" sizes="250px" priority />
+          <div className="hidden md:block relative">
+            <div className="relative w-[200px] lg:w-[250px] aspect-[4/5] overflow-hidden rounded-t-[999px] rounded-b-[2rem] shadow-luxe bg-ivory-deep">
+              <ProductImage src={cat?.image ?? occasion?.image ?? CATEGORIES[1].image} alt="" className="w-full h-full animate-kenburns" sizes="250px" priority />
+              <GoldDust className="mix-blend-screen" density={0.8} />
+            </div>
+            <Sparkle className="absolute -top-2 -right-3 w-6 h-6 text-gold animate-twinkle pointer-events-none" />
+            <Sparkle className="absolute top-[38%] -left-4 w-3 h-3 text-mauve animate-twinkle pointer-events-none" style={{ animationDelay: '1.6s' }} />
           </div>
         </div>
       </section>

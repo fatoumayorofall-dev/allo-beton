@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Check, Gift, MessageCircle, Printer } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
@@ -7,12 +7,20 @@ import { usePageTitle } from '../utils/usePageTitle';
 import { PAYMENT_LABELS } from '../components/OrderTimeline';
 import { ProductImage } from '../components/ProductImage';
 import { customerOrderSummaryLink } from '../utils/whatsappMessages';
+import { SparkleTrio, sparkleRain } from '../components/Magic';
 
 export const OrderSuccess: React.FC = () => {
   usePageTitle('Commande confirmée');
   const { id = '' } = useParams();
   const { orders, logNotification } = useStore();
   const order = orders.find(o => o.id === id);
+  const found = !!order;
+  // Une pluie d'étoiles pour fêter la commande (une seule fois, à l'arrivée sur la page)
+  useEffect(() => {
+    if (!found) return;
+    const t = setTimeout(() => sparkleRain(80), 350);
+    return () => clearTimeout(t);
+  }, [found]);
 
   if (!order) {
     return (
@@ -30,9 +38,13 @@ export const OrderSuccess: React.FC = () => {
   return (
     <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-16">
       <div className="text-center">
-        <span className="w-20 h-20 rounded-full bg-gradient-to-br from-blush to-gold-light grid place-items-center mx-auto animate-fade-up"><Check className="w-8 h-8 text-gold-dark" strokeWidth={1.3} /></span>
+        <span className="relative w-20 h-20 mx-auto grid animate-fade-up">
+          <span className="absolute -inset-3 rounded-full bg-gold-light/50 blur-xl motion-safe:animate-pulse" aria-hidden />
+          <span className="relative w-20 h-20 rounded-full bg-gradient-to-br from-blush to-gold-light grid place-items-center shadow-soft"><Check className="w-8 h-8 text-gold-dark" strokeWidth={1.3} /></span>
+          <SparkleTrio className="text-gold" />
+        </span>
         <p className="eyebrow mt-8 animate-fade-up" style={{ animationDelay: '100ms' }}>Commande {order.id}</p>
-        <h1 className="font-display text-5xl sm:text-7xl mt-4 animate-fade-up" style={{ animationDelay: '200ms' }}>Merci, <span className="font-script text-gold-dark text-[1.15em]">{order.customer.firstName}</span></h1>
+        <h1 className="font-display text-5xl sm:text-7xl mt-4 animate-fade-up" style={{ animationDelay: '200ms' }}>Merci, <span className="font-script text-gold-dark text-magic text-[1.15em]">{order.customer.firstName}</span></h1>
         <p className="mt-5 text-ink/75 max-w-lg mx-auto animate-fade-up" style={{ animationDelay: '300ms' }}>
           Votre commande est entre de bonnes mains. Nous vous appelons très vite au <strong className="text-ink">{order.customer.phone}</strong> pour convenir de la livraison.
         </p>

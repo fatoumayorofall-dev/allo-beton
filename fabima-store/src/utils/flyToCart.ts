@@ -1,6 +1,9 @@
+import { sparkleBurst, sparkleTrail } from '../components/Magic';
+
 /**
- * Micro-animation d'ajout au panier : la photo de la pièce s'envole jusqu'au sac de l'en-tête,
- * qui rebondit à l'arrivée. Rien ne bouge si la cliente a demandé moins d'animations.
+ * Micro-animation d'ajout au panier : la photo de la pièce s'envole jusqu'au sac de l'en-tête
+ * en laissant une traînée de poussière d'or ; le sac rebondit et scintille à l'arrivée.
+ * Rien ne bouge si la cliente a demandé moins d'animations.
  */
 export function flyToCart(from: Element | null | undefined, src?: string) {
   if (!from || !src || typeof Element.prototype.animate !== 'function') return;
@@ -27,8 +30,17 @@ export function flyToCart(from: Element | null | undefined, src?: string) {
     { transform: `translate(${dx * 0.45}px, ${dy * 0.45 - 90}px) scale(.6)`, opacity: 1, offset: 0.55 },
     { transform: `translate(${dx}px, ${dy}px) scale(.14)`, opacity: 0.5 },
   ], { duration: 800, easing: 'cubic-bezier(.55,0,.35,1)' });
+  sparkleBurst({ x: a.left + a.width / 2, y: a.top + a.height / 2 }, { count: 10, power: 0.8 });
+  let raf = 0, tick = 0;
+  const dust = () => {
+    if (tick++ > 3) { const r = img.getBoundingClientRect(); sparkleTrail(r.left + r.width / 2, r.top + r.height / 2); }
+    raf = requestAnimationFrame(dust);
+  };
+  raf = requestAnimationFrame(dust);
   flight.onfinish = flight.oncancel = () => {
+    cancelAnimationFrame(raf);
     img.remove();
+    sparkleBurst(target, { count: 16, power: 0.9 });
     target.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(1)' }], { duration: 480, easing: 'cubic-bezier(.22,1,.36,1)' });
   };
 }

@@ -14,6 +14,7 @@ import { Stars } from '../components/Stars';
 import { ProductCard } from '../components/ProductCard';
 import { Reveal } from '../components/Reveal';
 import { Flower } from '../components/Decor';
+import { sparkleBurst } from '../components/Magic';
 import { ListenButton } from '../components/ListenButton';
 import { shortLink } from '../utils/share';
 
@@ -169,7 +170,11 @@ export const ProductDetail: React.FC = () => {
     }
     return true;
   };
-  const handleAdd = () => { if (validate() && addToCart(product, { size, color, quantity: qty, silent: true })) setCartOpen(true); };
+  const handleAdd = (e?: React.MouseEvent<HTMLElement>) => {
+    if (!validate() || !addToCart(product, { size, color, quantity: qty, silent: true })) return;
+    sparkleBurst(e?.currentTarget, { count: 18 });
+    setCartOpen(true);
+  };
   const handleBuyNow = () => { if (validate() && addToCart(product, { size, color, quantity: qty, silent: true })) navigate('/commande'); };
 
   const share = async () => {
@@ -275,7 +280,7 @@ export const ProductDetail: React.FC = () => {
                 <button onClick={() => setQty(q => Math.min(Math.max(1, maxQty(product)), q + 1))} aria-label="Augmenter" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Plus className="w-3.5 h-3.5" /></button>
               </div>
               <button onClick={handleAdd} disabled={outOfStock} className="btn-dark flex-1">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter au panier'}</button>
-              <button onClick={() => toggleWishlist(product.id)} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+              <button onClick={e => { if (!liked) sparkleBurst(e.currentTarget, { hearts: true, count: 12, power: 0.8 }); toggleWishlist(product.id); }} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                 className="w-[52px] h-[52px] rounded-full border border-ink/15 grid place-items-center hover:border-ink transition-colors shrink-0">
                 <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
               </button>

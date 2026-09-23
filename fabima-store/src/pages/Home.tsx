@@ -15,6 +15,8 @@ import { useMarket } from '../utils/market';
 import { StyleStories } from '../components/StyleStories';
 import { CountUp } from '../components/CountUp';
 import { MarketCard } from '../components/MarketCard';
+import { GoldDust, Twinkles } from '../components/Magic';
+import { Sparkle } from '../components/Decor';
 
 const px = (id: number, w = 1600) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
@@ -91,7 +93,9 @@ export const Home: React.FC = () => {
             <p className="eyebrow animate-fade-up">{current.kicker}</p>
             <h1 className="font-display font-medium text-[3.6rem] sm:text-7xl xl:text-[7.4rem] leading-[0.9] mt-4 sm:mt-6">
               {current.title.map((line, i) => (
-                <span key={i} className={`block animate-fade-up ${i === current.accent ? 'italic text-gold-dark' : ''}`} style={{ animationDelay: `${80 + i * 90}ms` }}>{line}</span>
+                <span key={i} className={`block animate-fade-up ${i === current.accent ? 'italic text-gold-dark' : ''}`} style={{ animationDelay: `${80 + i * 90}ms` }}>
+                  {i === current.accent ? <span className="text-magic" style={{ animationDelay: '-3.2s' }}>{line}</span> : line}
+                </span>
               ))}
             </h1>
             <p className="mt-6 text-ink/75 text-base sm:text-lg leading-relaxed max-w-lg animate-fade-up" style={{ animationDelay: '360ms' }}>{current.text}</p>
@@ -121,6 +125,10 @@ export const Home: React.FC = () => {
           </div>
 
           <div className="relative order-1 lg:order-2 lg:pl-16">
+            {/* Halo pastel qui respire derrière l'arche */}
+            <div className="pointer-events-none absolute -inset-[8%] lg:left-[4%] grid place-items-center" aria-hidden>
+              <div className="aurora w-full aspect-square rounded-full blur-[40px] opacity-70 will-change-transform" />
+            </div>
             <div className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] max-h-[78svh] mx-auto overflow-hidden rounded-t-[999px] rounded-b-[2.25rem] bg-ivory-deep shadow-luxe">
               {HERO_SLIDES.map((s, i) => (
                 <div key={i} className={`absolute inset-0 transition-opacity duration-[1.2s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}>
@@ -130,8 +138,13 @@ export const Home: React.FC = () => {
                 </div>
               ))}
               <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-ink/35 to-transparent" />
+              {/* Poussière de lumière qui flotte dans la photo */}
+              <GoldDust className="mix-blend-screen" />
             </div>
-            <p className="hidden lg:block absolute left-0 top-[16%] -rotate-6 font-script text-5xl text-gold-dark pointer-events-none" aria-hidden>le coup de cœur</p>
+            <Sparkle className="absolute -top-3 right-[14%] w-7 h-7 text-gold animate-twinkle pointer-events-none" />
+            <Sparkle className="absolute top-[9%] right-[6%] w-3.5 h-3.5 text-gold-dark animate-twinkle pointer-events-none" style={{ animationDelay: '1.4s' }} />
+            <Sparkle className="absolute top-[30%] left-2 lg:left-12 w-4 h-4 text-mauve animate-twinkle pointer-events-none" style={{ animationDelay: '2.3s' }} />
+            <p className="hidden lg:block absolute left-0 top-[16%] -rotate-6 font-script text-5xl text-gold-dark text-magic pointer-events-none" aria-hidden>le coup de cœur</p>
             {/* La pièce du moment */}
             {featured && (
               <Link key={`f-${slide}`} to={`/produit/${featured.slug}`} data-testid="hero-featured"
@@ -231,7 +244,7 @@ export const Home: React.FC = () => {
             </Reveal>
             <Reveal delay={120}>
               <p className="eyebrow">Shop the look · mariage & baptême</p>
-              <h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">Invitée <em className="text-gold-dark">d'honneur</em></h2>
+              <h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">Invitée <em className="text-gold-dark text-magic">d'honneur</em></h2>
               <p className="mt-5 text-ink/75 max-w-md">Un sac structuré, une pochette perlée et des souliers qui brillent à chaque pas.</p>
               <ul className="mt-8 divide-y divide-ink/10 border-y border-ink/10">
                 {look.map(p => (
@@ -258,7 +271,7 @@ export const Home: React.FC = () => {
           </Reveal>
           <Reveal className="lg:col-span-6 lg:col-start-7" delay={120}>
             <p className="eyebrow">Fait main à Dakar</p>
-            <h2 className="font-display text-5xl sm:text-6xl leading-[0.95] mt-4">L'atelier <em className="text-gold-dark">Teranga</em></h2>
+            <h2 className="font-display text-5xl sm:text-6xl leading-[0.95] mt-4">L'atelier <em className="text-gold-dark text-magic">Teranga</em></h2>
             <p className="mt-6 text-ink/75 leading-relaxed max-w-lg">
               Au cœur de la Médina, nos artisanes façonnent des cabas en wax et des sacs aux imprimés vibrants, cousus main.
               Chaque pièce est coupée à la main, numérotée et ne sera jamais tout à fait identique à une autre.
@@ -299,10 +312,11 @@ export const Home: React.FC = () => {
       {market.length > 0 && (
         <section className="relative mt-20 sm:mt-28 mx-3 sm:mx-6 rounded-[3rem] overflow-hidden bg-ink text-ivory" data-testid="home-market">
           <span className="pointer-events-none absolute -top-32 -left-24 w-[30rem] h-[30rem] rounded-full bg-wine/40 blur-[110px]" aria-hidden />
+          <Twinkles count={26} seed={11} />
           <div className="relative max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-14 sm:py-16 grid lg:grid-cols-[0.8fr_1.2fr] gap-10 items-center">
             <Reveal>
               <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light"><Globe2 className="w-4 h-4" /> Nouveau · Le Marché</p>
-              <h2 className="font-display text-4xl sm:text-5xl mt-4 leading-[1.02]">Encore plus de modèles, <em className="text-gold-light">livrés du monde entier</em></h2>
+              <h2 className="font-display text-4xl sm:text-5xl mt-4 leading-[1.02]">Encore plus de modèles, <em className="text-gold-light text-magic-light">livrés du monde entier</em></h2>
               <p className="mt-5 text-ivory/70 max-w-md leading-relaxed">Commandés pour vous chez nos partenaires et suivis à chaque étape jusqu'à votre porte.</p>
               <Link to="/marche" className="btn-light mt-8">Découvrir le Marché <ArrowRight className="w-4 h-4" /></Link>
             </Reveal>
@@ -328,7 +342,7 @@ export const Home: React.FC = () => {
 /** En-tête de section : sur-titre, titre (fin en italique) et lien « voir tout ». */
 const SectionHead: React.FC<{ eyebrow: string; title: string; accent: string; link?: { to: string; label: string } }> = ({ eyebrow, title, accent, link }) => (
   <Reveal className="flex items-end justify-between gap-6 mb-10">
-    <div><p className="eyebrow">{eyebrow}</p><h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">{title} <em className="text-gold-dark">{accent}</em></h2></div>
+    <div><p className="eyebrow">{eyebrow}</p><h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">{title} <em className="text-gold-dark text-magic">{accent}</em></h2></div>
     {link && <Link to={link.to} className="hidden sm:inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe shrink-0">{link.label} <ArrowRight className="w-3.5 h-3.5" /></Link>}
   </Reveal>
 );

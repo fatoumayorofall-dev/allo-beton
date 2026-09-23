@@ -25,9 +25,11 @@ export const ROSE_GOLD = ['#e9bcb1', '#f8e2da', '#b77a6f'] as const;
 
 /**
  * Monogramme seul. `light` : écrin or rose pour les fonds sombres ;
- * `compact` : version pour les petites tailles (moins de ~60 px de haut).
+ * `compact` : version pour les petites tailles (moins de ~60 px de haut) ;
+ * `shine` : un reflet de lumière traverse l'écrin (en boucle, ou une seule fois avec 'once') et,
+ * sur la grande version, la clé de voûte s'allume comme un bijou. Immobile si la cliente préfère moins d'animations.
  */
-export const BrandMark: React.FC<{ light?: boolean; compact?: boolean; className?: string }> = ({ light, compact, className = '' }) => {
+export const BrandMark: React.FC<{ light?: boolean; compact?: boolean; className?: string; shine?: boolean | 'once' }> = ({ light, compact, className = '', shine }) => {
   const id = useId().replace(/:/g, '');
   const gold = `url(#${id}g)`;
   const body = light ? gold : `url(#${id}p)`;
@@ -41,6 +43,15 @@ export const BrandMark: React.FC<{ light?: boolean; compact?: boolean; className
         <linearGradient id={`${id}p`} x1="0" y1="0" x2=".7" y2="1">
           <stop offset="0" stopColor="#5e2d46" /><stop offset="1" stopColor="#2a1420" />
         </linearGradient>
+        {shine && (
+          <>
+            <linearGradient id={`${id}s`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stopColor="#fff" stopOpacity="0" /><stop offset=".5" stopColor="#fff" stopOpacity={light ? 0.75 : 0.32} /><stop offset="1" stopColor="#fff" stopOpacity="0" />
+            </linearGradient>
+            <clipPath id={`${id}c`}><path d={BRAND_PATHS.arch} /></clipPath>
+            <radialGradient id={`${id}k`}><stop offset="0" stopColor="#fff" stopOpacity=".95" /><stop offset=".45" stopColor="#fff3ec" stopOpacity=".35" /><stop offset="1" stopColor="#fff" stopOpacity="0" /></radialGradient>
+          </>
+        )}
       </defs>
       <path d={BRAND_PATHS.arch} fill={body} />
       {compact ? <path d={BRAND_PATHS.fSmall} fill={ink} /> : (
@@ -50,6 +61,19 @@ export const BrandMark: React.FC<{ light?: boolean; compact?: boolean; className
           <path d={BRAND_PATHS.f} fill={ink} />
           <path d={BRAND_PATHS.swash} fill={ink} />
         </>
+      )}
+      {shine && (
+        <g clipPath={`url(#${id}c)`}>
+          <rect className={`brand-shine ${shine === 'once' ? 'brand-shine-once' : ''}`} x="17" y="0" width="22" height="100" fill={`url(#${id}s)`} />
+        </g>
+      )}
+      {shine && !compact && (
+        <g transform="translate(44.2 5.4) scale(.483)">
+          <g className="brand-glint">
+            <circle cx="12" cy="12" r="10" fill={`url(#${id}k)`} />
+            <path d="M12 0c.6 5.6 2.8 9.4 12 12-9.2 2.6-11.4 6.4-12 12-.6-5.6-2.8-9.4-12-12C9.2 9.4 11.4 5.6 12 0z" fill="#fffaf6" />
+          </g>
+        </g>
       )}
     </svg>
   );
@@ -73,7 +97,7 @@ export const Wordmark: React.FC<{ className?: string; tagline?: boolean; tagClas
 export const Logo: React.FC<{ light?: boolean; className?: string }> = ({ light, className = '' }) => (
   <Link to="/" className={`group flex items-center gap-2 sm:gap-3 transition-colors ${light ? 'text-ivory' : 'text-ink'} ${className}`} aria-label="Fabima Store — accueil">
     {/* Très petits écrans (< 360 px) : le nom seul, pour ne pas pousser les icônes */}
-    <BrandMark light={light} compact className="hidden min-[360px]:block h-[34px] sm:h-[42px] w-auto shrink-0 origin-bottom transition-transform duration-500 ease-luxe group-hover:-translate-y-0.5" />
+    <BrandMark light={light} compact shine="once" className="hidden min-[360px]:block h-[34px] sm:h-[42px] w-auto shrink-0 origin-bottom transition-transform duration-500 ease-luxe group-hover:-translate-y-0.5" />
     <Wordmark className="h-[22px] min-[360px]:h-[25px] sm:h-[31px] w-auto" tagClassName={light ? 'fill-gold-light stroke-gold-light' : 'fill-gold-dark stroke-gold-dark'} />
   </Link>
 );

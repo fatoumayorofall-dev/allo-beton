@@ -46,7 +46,7 @@ export const Journal: React.FC = () => {
               <BrandMark light className="absolute -top-10 right-10 h-[70%] w-auto opacity-[0.12] rotate-[8deg] pointer-events-none" />
               <span className="pointer-events-none absolute -bottom-24 -left-16 w-80 h-80 rounded-full bg-wine/40 blur-[90px]" aria-hidden />
               <p className="relative eyebrow !text-gold-light">Le cercle des Fabima Girls</p>
-              <p className="relative font-display text-4xl sm:text-5xl leading-[1.05] mt-4">Nos prochains conseils, <em className="text-gold-light">directement chez vous</em></p>
+              <p className="relative font-display text-4xl sm:text-5xl leading-[1.05] mt-4">Nos prochains conseils, <em className="text-gold-light text-magic-light">directement chez vous</em></p>
               <p className="relative text-ivory/75 mt-4 max-w-md">Guides d'occasion, soins du cuir et nouveautés : une lettre par mois, jamais plus. Inscription en bas de page.</p>
               <Link to="/boutique?tri=nouveautes" className="relative btn-light mt-8 self-start">Voir les nouveautés <ArrowRight className="w-4 h-4" /></Link>
             </Reveal>

@@ -65,7 +65,7 @@ export const CartDrawer: React.FC = () => {
 
         {cart.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-5 px-10 text-center">
-            <BrandMark className="h-24 w-auto motion-safe:animate-hover" />
+            <BrandMark shine className="h-24 w-auto motion-safe:animate-hover" />
             <p className="font-display text-2xl">Votre panier attend sa première pièce</p>
             <p className="text-sm text-ink/75">Laissez-vous inspirer par nos nouveautés de la saison.</p>
             <button onClick={() => { close(); navigate('/boutique?tri=nouveautes'); }} className="btn-dark mt-2">Découvrir les nouveautés</button>
