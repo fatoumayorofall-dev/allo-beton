@@ -42,12 +42,12 @@ export const QuickView: React.FC = () => {
         <div className="p-7 sm:p-10 flex flex-col">
           <p className="eyebrow">{product.subcategory}</p>
           <h2 className="font-display text-4xl mt-3 leading-[1.05]">{product.name}</h2>
-          <div className="mt-3 flex items-center gap-2 text-xs text-ink/55"><Stars rating={product.rating} /> {product.reviewCount} avis</div>
+          <div className="mt-3 flex items-center gap-2 text-xs text-ink/70"><Stars rating={product.rating} /> {product.reviewCount} avis</div>
           <div className="mt-5 flex items-baseline gap-3">
             <span className={`text-xl font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
-            {product.oldPrice && <span className="text-ink/40 line-through text-sm">{formatPrice(product.oldPrice)}</span>}
+            {product.oldPrice && <span className="text-ink/70 line-through text-sm">{formatPrice(product.oldPrice)}</span>}
           </div>
-          <p className="mt-5 text-sm text-ink/65 leading-relaxed line-clamp-3">{product.description}</p>
+          <p className="mt-5 text-sm text-ink/75 leading-relaxed line-clamp-3">{product.description}</p>
 
           {product.colors.length > 0 && (
             <div className="mt-6">

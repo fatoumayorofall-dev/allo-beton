@@ -83,7 +83,7 @@ export const StatusTab: React.FC = () => {
             </li>
           ))}
         </ol>
-        <p className="text-xs text-ink/55 mt-4">Vos clientes touchent le lien sous la photo et arrivent sur une page très simple : photo, prix en gros, couleurs, 🔊 votre voix et un gros bouton « Commander sur WhatsApp ».</p>
+        <p className="text-xs text-ink/70 mt-4">Vos clientes touchent le lien sous la photo et arrivent sur une page très simple : photo, prix en gros, couleurs, 🔊 votre voix et un gros bouton « Commander sur WhatsApp ».</p>
         {!serverOk && <p className="mt-3 text-xs p-3 rounded-xl bg-amber-50 text-amber-900">Serveur non démarré : l'image et le lien fonctionnent, mais la vitrine du jour, les notes vocales et les compteurs de visites demandent le serveur (npm run server).</p>}
       </div>
 
@@ -91,8 +91,8 @@ export const StatusTab: React.FC = () => {
       <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="font-display text-xl">Vitrine du jour <span className="text-ink/40 text-base">({showcaseProducts.length})</span></h2>
-            <p className="text-xs text-ink/55 mt-1">Un seul lien pour toutes vos pièces du statut : <a href="/s" target="_blank" className="underline">{window.location.host}/s</a> · {totalStatusVisits} visite(s) depuis vos statuts</p>
+            <h2 className="font-display text-xl">Vitrine du jour <span className="text-ink/70 text-base">({showcaseProducts.length})</span></h2>
+            <p className="text-xs text-ink/70 mt-1">Un seul lien pour toutes vos pièces du statut : <a href="/s" target="_blank" className="underline">{window.location.host}/s</a> · {totalStatusVisits} visite(s) depuis vos statuts</p>
           </div>
           <button onClick={shareShowcase} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1f8f4e] text-white text-sm font-semibold"><Share2 className="w-4 h-4" /> Partager la vitrine</button>
         </div>
@@ -106,7 +106,7 @@ export const StatusTab: React.FC = () => {
               </li>
             ))}
           </ul>
-        ) : <p className="text-sm text-ink/50 mt-4">Aucune pièce pour l'instant. Ouvrez une pièce et touchez « Ajouter à la vitrine ».</p>}
+        ) : <p className="text-sm text-ink/70 mt-4">Aucune pièce pour l'instant. Ouvrez une pièce et touchez « Ajouter à la vitrine ».</p>}
       </div>
 
       {/* Pièces */}
@@ -130,7 +130,7 @@ export const StatusTab: React.FC = () => {
                     {!!v && <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-ink/80 text-ivory text-[10px] inline-flex items-center gap-1"><Eye className="w-3 h-3" /> {v.statut + v.vitrine + v.partage}</span>}
                   </div>
                   <p className="text-sm mt-2 line-clamp-1">{p.name}</p>
-                  <p className="text-xs text-ink/55">{formatPrice(p.price)} · lien /p/{productCode(p)}</p>
+                  <p className="text-xs text-ink/70">{formatPrice(p.price)} · lien /p/{productCode(p)}</p>
                 </button>
               </li>
             );
@@ -190,7 +190,7 @@ const StatusStudio: React.FC<{
       <div role="dialog" aria-label={`Statut : ${product.name}`} className="relative bg-ivory w-full max-w-4xl max-h-[94vh] overflow-y-auto rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-7 animate-fade-up">
         <button onClick={onClose} aria-label="Fermer" className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white grid place-items-center shadow-sm"><X className="w-5 h-5" /></button>
         <h2 className="font-display text-3xl pr-12">{product.name}</h2>
-        <p className="text-sm text-ink/55 mt-1">Lien court : <a href={`/p/${productCode(product)}`} target="_blank" className="underline font-semibold">{displayLink(product)}</a>
+        <p className="text-sm text-ink/70 mt-1">Lien court : <a href={`/p/${productCode(product)}`} target="_blank" className="underline font-semibold">{displayLink(product)}</a>
           {visits && <> · <Eye className="inline w-3.5 h-3.5" /> {visits.statut} depuis le statut, {visits.vitrine} depuis la vitrine</>}</p>
 
         <div className="mt-5 grid md:grid-cols-[280px_1fr] gap-6">
@@ -223,11 +223,11 @@ const StatusStudio: React.FC<{
 
             <div className="p-4 rounded-2xl bg-white border border-ink/[0.06]">
               <p className="text-sm font-semibold">Une cliente répond à votre statut ?</p>
-              <p className="text-xs text-ink/55 mt-1">Envoyez-lui cette réponse toute prête avec le lien.</p>
+              <p className="text-xs text-ink/70 mt-1">Envoyez-lui cette réponse toute prête avec le lien.</p>
               <button onClick={async () => notify(await copy(statusReply(product)) ? 'Réponse copiée : collez-la dans la discussion' : statusReply(product), 'info')}
                 className="mt-3 h-10 px-4 rounded-full bg-blush/60 text-sm inline-flex items-center gap-2"><Copy className="w-4 h-4" /> Copier la réponse</button>
             </div>
-            <p className="text-[11px] text-ink/45">Astuce : le lien <strong>{shortLink(product).replace(/^https?:\/\//, '')}</strong> est aussi écrit en grand sur l'image, pour celles qui préfèrent le taper.</p>
+            <p className="text-[11px] text-ink/70">Astuce : le lien <strong>{shortLink(product).replace(/^https?:\/\//, '')}</strong> est aussi écrit en grand sur l'image, pour celles qui préfèrent le taper.</p>
           </div>
         </div>
       </div>
@@ -300,9 +300,9 @@ const VoiceRecorder: React.FC<{ product: Product; serverOk: boolean; hasVoice: b
   return (
     <div className="p-4 rounded-2xl bg-gradient-to-br from-ivory-deep to-blush/40">
       <p className="text-sm font-semibold">🎙 Votre voix pour cette pièce</p>
-      <p className="text-xs text-ink/60 mt-1">Présentez la pièce en wolof ou en français (1 minute maximum) : vos clientes l'écoutent en touchant 🔊.</p>
+      <p className="text-xs text-ink/75 mt-1">Présentez la pièce en wolof ou en français (1 minute maximum) : vos clientes l'écoutent en touchant 🔊.</p>
       {!supported || !serverOk ? (
-        <p className="text-xs text-ink/50 mt-3">{!serverOk ? 'Disponible quand le serveur est démarré.' : 'Enregistrement non pris en charge par ce navigateur.'}</p>
+        <p className="text-xs text-ink/70 mt-3">{!serverOk ? 'Disponible quand le serveur est démarré.' : 'Enregistrement non pris en charge par ce navigateur.'}</p>
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {recording ? (

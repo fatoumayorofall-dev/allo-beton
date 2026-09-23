@@ -1,6 +1,6 @@
 // Service worker Fabima Store : ouverture rapide et consultation même avec une connexion faible.
-const VERSION = 'fabima-v1';
-const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png'];
+const VERSION = 'fabima-v2'; // v2 : nouveau logo et nouvelles icônes
+const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/fonts/manrope-latin.woff2', '/fonts/cormorant-garamond-latin.woff2'];
 const RUNTIME = `${VERSION}-runtime`;
 
 self.addEventListener('install', event => {
@@ -41,7 +41,7 @@ self.addEventListener('fetch', event => {
   }
 
   // Fichiers du site (noms versionnés) : la mémoire d'abord
-  if (url.origin === self.location.origin && (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/'))) {
+  if (url.origin === self.location.origin && (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/fonts/'))) {
     event.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
       const copy = res.clone();
       caches.open(VERSION).then(c => c.put(req, copy));

@@ -8,6 +8,7 @@ import { formatPrice } from '../utils/format';
 import { SITE_CONFIG } from '../config/site';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
+import { BrandMark } from './Logo';
 
 export const GiftWrapOption: React.FC = () => {
   const { giftWrap, setGiftWrap } = useStore();
@@ -17,13 +18,13 @@ export const GiftWrapOption: React.FC = () => {
         <input type="checkbox" checked={giftWrap.enabled} onChange={e => setGiftWrap({ ...giftWrap, enabled: e.target.checked })} className="accent-ink w-4 h-4" />
         <Gift className="w-4 h-4 text-gold-dark" strokeWidth={1.5} />
         <span className="flex-1 text-sm">Emballage cadeau signature</span>
-        <span className="text-xs text-ink/55">+{formatPrice(SITE_CONFIG.giftWrapFee)}</span>
+        <span className="text-xs text-ink/70">+{formatPrice(SITE_CONFIG.giftWrapFee)}</span>
       </label>
       {giftWrap.enabled && (
         <div className="px-4 pb-4 animate-fade-in">
           <textarea value={giftWrap.message} maxLength={180} rows={2} onChange={e => setGiftWrap({ ...giftWrap, message: e.target.value })}
             placeholder="Votre mot doux (facultatif), écrit à la main sur une carte" aria-label="Message cadeau" className="field text-sm resize-none" />
-          <p className="text-[10px] text-ink/40 text-right mt-1">{giftWrap.message.length}/180</p>
+          <p className="text-[10px] text-ink/70 text-right mt-1">{giftWrap.message.length}/180</p>
         </div>
       )}
     </div>
@@ -55,15 +56,15 @@ export const CartDrawer: React.FC = () => {
       <div className="absolute inset-0 bg-ink/50 backdrop-blur-[2px] animate-fade-in" onClick={close} />
       <aside role="dialog" aria-modal="true" aria-label="Panier" className="absolute right-0 top-0 h-full w-full max-w-[460px] bg-ivory sm:rounded-l-[2rem] overflow-hidden flex flex-col animate-slide-in shadow-luxe">
         <header className="flex items-center justify-between px-6 sm:px-8 h-20 border-b border-ink/10 shrink-0">
-          <h2 className="font-display text-3xl">Votre panier <sup className="text-sm font-sans text-ink/40">{t.itemCount}</sup></h2>
+          <h2 className="font-display text-3xl">Votre panier <sup className="text-sm font-sans text-ink/70">{t.itemCount}</sup></h2>
           <button onClick={close} aria-label="Fermer le panier" className="w-10 h-10 grid place-items-center hover:rotate-90 transition-transform duration-500"><X className="w-5 h-5" strokeWidth={1.5} /></button>
         </header>
 
         {cart.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-5 px-10 text-center">
-            <p className="font-script text-7xl text-gold-light">Fabima</p>
+            <BrandMark className="h-24 w-auto motion-safe:animate-hover" />
             <p className="font-display text-2xl">Votre panier attend sa première pièce</p>
-            <p className="text-sm text-ink/60">Laissez-vous inspirer par nos nouveautés de la saison.</p>
+            <p className="text-sm text-ink/75">Laissez-vous inspirer par nos nouveautés de la saison.</p>
             <button onClick={() => { close(); navigate('/boutique?tri=nouveautes'); }} className="btn-dark mt-2">Découvrir les nouveautés</button>
           </div>
         ) : (
@@ -92,7 +93,7 @@ export const CartDrawer: React.FC = () => {
                           <p className="font-display text-lg leading-tight line-clamp-2">{item.name}</p>
                           <span className="text-sm font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
                         </div>
-                        <p className="text-xs text-ink/50 mt-1">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
+                        <p className="text-xs text-ink/70 mt-1">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
 {item.market && <p className="text-[11px] text-wine mt-1" data-testid="cart-market">🌍 Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
 {item.preorder && <p className="text-[11px] text-wine mt-1" data-testid="cart-preorder">⏳ Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
                         <div className="mt-auto flex items-center justify-between pt-3">
@@ -101,7 +102,7 @@ export const CartDrawer: React.FC = () => {
                             <span className="w-7 text-center text-sm" aria-live="polite">{item.quantity}</span>
                             <button onClick={() => updateQuantity(item.key, item.quantity + 1)} disabled={item.quantity >= stock} aria-label="Augmenter" className="w-9 h-full grid place-items-center hover:bg-ink/5 disabled:opacity-25"><Plus className="w-3 h-3" /></button>
                           </div>
-                          <button onClick={() => removeFromCart(item.key)} className="text-[10px] uppercase tracking-[0.2em] text-ink/45 hover:text-wine link-luxe">Retirer</button>
+                          <button onClick={() => removeFromCart(item.key)} className="text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Retirer</button>
                         </div>
                       </div>
                     </li>
@@ -121,7 +122,7 @@ export const CartDrawer: React.FC = () => {
                             className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white grid place-items-center shadow-soft hover:bg-ink hover:text-ivory transition-colors"><Plus className="w-3.5 h-3.5" /></button>
                         </div>
                         <p className="text-xs mt-2 leading-tight line-clamp-1">{p.name}</p>
-                        <p className="text-[11px] text-ink/50">{formatPrice(p.price)}</p>
+                        <p className="text-[11px] text-ink/70">{formatPrice(p.price)}</p>
                       </li>
                     ))}
                   </ul>
@@ -136,7 +137,7 @@ export const CartDrawer: React.FC = () => {
                 <span className="font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span>
               </div>
               <button onClick={() => { close(); navigate('/commande'); }} className="btn-dark w-full">Commander</button>
-              <Link to="/panier" onClick={close} className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/60 hover:text-ink">Voir le panier détaillé</Link>
+              <Link to="/panier" onClick={close} className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Voir le panier détaillé</Link>
             </footer>
           </>
         )}

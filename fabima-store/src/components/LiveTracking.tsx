@@ -21,9 +21,9 @@ export const RelaySteps: React.FC<{ delivery: DeliveryInfo; admin?: boolean }> =
               {l.state === 'remis' ? '✓' : VEHICLE_ICONS[l.vehicle]}
             </span>
             <div className="text-sm min-w-0">
-              <p className="font-semibold">Étape {k + 1} · {l.driverName}{admin && <span className="font-normal text-ink/55"> · {l.driverPhone}</span>}</p>
-              <p className="text-ink/60">{l.to ? `jusqu'à ${l.to.label}` : 'jusqu\'à la cliente'}</p>
-              <p className={`text-xs mt-0.5 ${l.state === 'remis' ? 'text-emerald-800' : active ? 'text-wine font-semibold' : 'text-ink/45'}`}>
+              <p className="font-semibold">Étape {k + 1} · {l.driverName}{admin && <span className="font-normal text-ink/70"> · {l.driverPhone}</span>}</p>
+              <p className="text-ink/75">{l.to ? `jusqu'à ${l.to.label}` : 'jusqu\'à la cliente'}</p>
+              <p className={`text-xs mt-0.5 ${l.state === 'remis' ? 'text-emerald-800' : active ? 'text-wine font-semibold' : 'text-ink/70'}`}>
                 {l.state === 'remis' ? (l.to ? 'Relais passé' : 'Colis remis') : active ? 'A le colis, en route' : 'En attente du colis'}
               </p>
             </div>
@@ -68,7 +68,7 @@ export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delive
                       ? (delivery.final ? (delivery.etaMin <= 1 ? 'Arrive dans 1 minute' : `Arrive dans ~${formatEta(delivery.etaMin)}`) : `Au relais${where} dans ~${formatEta(delivery.etaMin)}`)
                       : delivery.final ? 'Votre livreur est en route' : `En route vers le relais${where}`}
                   </p>
-                  <p className="text-sm text-ink/60">
+                  <p className="text-sm text-ink/75">
                     {delivery.relay && `Étape ${(delivery.current ?? 0) + 1} sur ${delivery.legs?.length} · `}
                     {delivery.driverName}{delivery.distanceM != null && ` · à ${formatDistance(delivery.distanceM)}`}
                     {driver?.stale && ` · position d'il y a ${minutesAgo(driver.at)} min`}
@@ -76,7 +76,7 @@ export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delive
                   </p>
                 </>
               )}
-              {delivery.state === 'assignee' && <><p className="font-display text-2xl leading-tight">{delivery.relay ? 'Livraison en relais prévue' : `Livreur choisi : ${delivery.driverName}`}</p><p className="text-sm text-ink/60">Vous pourrez suivre votre colis ici dès son départ.</p></>}
+              {delivery.state === 'assignee' && <><p className="font-display text-2xl leading-tight">{delivery.relay ? 'Livraison en relais prévue' : `Livreur choisi : ${delivery.driverName}`}</p><p className="text-sm text-ink/75">Vous pourrez suivre votre colis ici dès son départ.</p></>}
               {delivery.state === 'livree' && <p className="font-display text-2xl leading-tight">Colis remis 🌸</p>}
             </div>
             {delivery.state !== 'livree' && (

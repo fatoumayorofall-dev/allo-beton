@@ -138,14 +138,14 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
           className="field !pl-11 !pr-10" />
         {searching && <Loader2 className="w-4 h-4 absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-ink/40" />}
         {!searching && query && (
-          <button type="button" onClick={() => { setQuery(''); setResults(null); }} aria-label="Effacer" className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center text-ink/40">
+          <button type="button" onClick={() => { setQuery(''); setResults(null); }} aria-label="Effacer" className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 grid place-items-center text-ink/70">
             <X className="w-4 h-4" />
           </button>
         )}
         {results && (
           <ul className="absolute z-[600] left-0 right-0 mt-2 bg-white rounded-2xl shadow-luxe border border-ink/[0.06] overflow-hidden max-h-72 overflow-y-auto" role="listbox">
             {results.length === 0 && (
-              <li className="px-4 py-3 text-sm text-ink/55">{searchDown ? 'Recherche indisponible : déplacez la carte jusqu\'à votre maison.' : 'Aucun lieu trouvé. Essayez le nom du quartier.'}</li>
+              <li className="px-4 py-3 text-sm text-ink/70">{searchDown ? 'Recherche indisponible : déplacez la carte jusqu\'à votre maison.' : 'Aucun lieu trouvé. Essayez le nom du quartier.'}</li>
             )}
             {results.map(r => (
               <li key={`${r.lat},${r.lng},${r.label}`}>
@@ -176,7 +176,7 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
           {value ? (
             <>
               <p className="font-semibold">{value.label || (resolving ? 'Recherche de l\'adresse…' : 'Point choisi sur la carte')}</p>
-              <p className="text-xs text-ink/55 mt-0.5">
+              <p className="text-xs text-ink/70 mt-0.5">
                 {value.source === 'gps' ? `Position GPS${value.accuracy ? ` (précision ± ${value.accuracy} m)` : ''}` : value.source === 'recherche' ? 'Lieu trouvé' : 'Point placé à la main'}
                 {' · '}Faites glisser la carte pour corriger.
               </p>
@@ -185,7 +185,7 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
               )}
             </>
           ) : (
-            <p className="text-ink/55">Aucun point choisi pour l'instant.</p>
+            <p className="text-ink/70">Aucun point choisi pour l'instant.</p>
           )}
         </div>
       </div>

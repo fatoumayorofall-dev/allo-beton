@@ -7,6 +7,7 @@ import { VEHICLE_ICONS, VEHICLE_LABELS, formatDistance, formatEta, formatPrice }
 import { usePageTitle } from '../utils/usePageTitle';
 import { waNumber } from '../utils/whatsappMessages';
 import type { MapMarker } from '../components/MapView';
+import { BrandMark, Wordmark } from '../components/Logo';
 
 const MapView = lazy(() => import('../components/MapView'));
 
@@ -136,7 +137,7 @@ export const Driver: React.FC = () => {
   }, [state, target?.lat, target?.lng, pickup?.lat, pickup?.lng, prevPos?.lat, prevPos?.lng, me?.lat, me?.lng, driving]);
 
   if (error && !job) {
-    return <div className="min-h-screen grid place-items-center p-6 text-center"><div><p className="text-5xl">🛵</p><p className="font-display text-3xl mt-4">{error}</p><p className="text-ink/60 mt-2">Demandez un nouveau lien à la boutique.</p></div></div>;
+    return <div className="min-h-screen grid place-items-center p-6 text-center"><div><p className="text-5xl">🛵</p><p className="font-display text-3xl mt-4">{error}</p><p className="text-ink/75 mt-2">Demandez un nouveau lien à la boutique.</p></div></div>;
   }
   if (!job) return <div className="min-h-screen grid place-items-center"><Loader2 className="w-8 h-8 animate-spin text-ink/40" /></div>;
 
@@ -156,14 +157,14 @@ export const Driver: React.FC = () => {
   return (
     <div className="min-h-screen bg-ivory pb-10" data-testid="driver-page">
       <header className="bg-ink text-ivory px-5 py-4 flex items-center justify-between">
-        <span className="font-script text-3xl">Fabima</span>
+        <span className="flex items-center gap-2.5"><BrandMark light className="h-8 w-auto" /><Wordmark tagline={false} className="h-4 w-auto" /></span>
         <span className="text-sm text-right">Livraison {job.order.id}{relay && <><br />🔁 Étape {leg.index + 1} sur {leg.total}</>}</span>
       </header>
 
       <div className="max-w-lg mx-auto px-4 pt-4 space-y-4">
         {relay && (
           <div className="bg-white rounded-[1.5rem] p-5 shadow-soft space-y-3" data-testid="driver-mission">
-            <p className="text-sm text-ink/55">Votre mission · {VEHICLE_LABELS[leg.vehicle]}</p>
+            <p className="text-sm text-ink/70">Votre mission · {VEHICLE_LABELS[leg.vehicle]}</p>
             <p className="text-lg"><span className="text-2xl">📦</span> {prev ? <>Recevoir le colis de <strong>{prev.driverName}</strong>{leg.pickup && <> à <strong>{leg.pickup.label}</strong></>}</> : <>Prendre le colis <strong>à la boutique</strong></>}</p>
             <p className="text-lg"><span className="text-2xl">{leg.final ? '🏠' : '🤝'}</span> {leg.final ? <>Le livrer à <strong>{c.firstName} {c.lastName}</strong></> : <>Le remettre à <strong>{next?.driverName}</strong> à <strong>{leg.to?.label}</strong></>}</p>
           </div>
@@ -172,16 +173,16 @@ export const Driver: React.FC = () => {
         {leg.final && (
           <>
             <div className="bg-white rounded-[1.5rem] p-5 shadow-soft">
-              <p className="text-sm text-ink/55">Cliente</p>
+              <p className="text-sm text-ink/70">Cliente</p>
               <p className="font-display text-3xl leading-tight">{c.firstName} {c.lastName}</p>
               <p className="mt-1">{c.location?.label || c.zone}</p>
               {c.location?.landmark && <p className="mt-1 font-semibold">🔎 Repère : {c.location.landmark}</p>}
               {c.address && <p className="mt-1 text-ink/70">{c.address}</p>}
-              {c.notes && <p className="mt-2 italic text-ink/60">« {c.notes} »</p>}
+              {c.notes && <p className="mt-2 italic text-ink/75">« {c.notes} »</p>}
               <p className={`mt-3 inline-flex px-4 py-2 rounded-full text-lg font-bold ${toCollect ? 'bg-amber-100 text-amber-900' : 'bg-emerald-100 text-emerald-900'}`}>
                 {toCollect ? `💰 À encaisser : ${formatPrice(job.order.total)}` : '✅ Déjà payé'}
               </p>
-              <p className="text-sm text-ink/55 mt-2">{job.order.items} article(s)</p>
+              <p className="text-sm text-ink/70 mt-2">{job.order.items} article(s)</p>
             </div>
             {state !== 'remis' && call(c.phone, 'Appeler')}
           </>
@@ -191,7 +192,7 @@ export const Driver: React.FC = () => {
         {state === 'attente' && prev && (
           <div className="bg-white rounded-[1.5rem] p-5 border border-ink/10 space-y-3" data-testid="driver-waiting">
             <p className="font-semibold text-lg">{VEHICLE_ICONS[prev.vehicle]} {prev.driverName} {prev.state === 'en_route' ? 'arrive avec le colis' : 'n\'est pas encore parti'}</p>
-            {prev.state === 'en_route' && prev.etaMin != null && <p className="text-ink/60">Au point de relais dans ~{formatEta(prev.etaMin)}</p>}
+            {prev.state === 'en_route' && prev.etaMin != null && <p className="text-ink/75">Au point de relais dans ~{formatEta(prev.etaMin)}</p>}
             {call(prev.driverPhone, `Appeler ${prev.driverName}`)}
           </div>
         )}
@@ -227,9 +228,9 @@ export const Driver: React.FC = () => {
                 <span className={`w-3 h-3 rounded-full ${secondsAgo !== null && secondsAgo < every / 1000 + 30 ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                 {secondsAgo !== null && secondsAgo < every / 1000 + 30 ? 'La cliente vous voit sur la carte' : 'En attente du GPS…'}
               </p>
-              {live?.distanceM != null && live.etaMin != null && <p className="mt-1 text-ink/60">Encore {formatDistance(live.distanceM)} · ~{formatEta(live.etaMin)}</p>}
+              {live?.distanceM != null && live.etaMin != null && <p className="mt-1 text-ink/75">Encore {formatDistance(live.distanceM)} · ~{formatEta(live.etaMin)}</p>}
               {gpsError && <p className="mt-1 text-amber-800">{gpsError}</p>}
-              <p className="mt-1 text-ink/45 text-xs">Gardez cette page ouverte pendant le trajet{leg.vehicle !== 'moto' && ' (téléphone branché si le trajet est long)'}.</p>
+              <p className="mt-1 text-ink/70 text-xs">Gardez cette page ouverte pendant le trajet{leg.vehicle !== 'moto' && ' (téléphone branché si le trajet est long)'}.</p>
             </div>
             {next && call(next.driverPhone, `Appeler ${next.driverName}`)}
             <button onClick={delivered} disabled={!!busy} className="w-full flex items-center justify-center gap-3 h-20 rounded-[1.5rem] bg-emerald-700 text-white text-xl font-bold active:scale-[.98] transition-transform">

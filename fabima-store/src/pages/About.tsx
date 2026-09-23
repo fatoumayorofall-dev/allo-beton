@@ -39,7 +39,7 @@ export const About: React.FC = () => {
           <Reveal key={t} delay={i * 90} className={`py-10 sm:pr-8 ${i > 0 ? 'sm:pl-8 sm:border-l' : ''} border-ink/10`}>
             <p className="font-script text-gold-dark text-4xl">{n}</p>
             <h3 className="font-display text-3xl mt-4">{t}</h3>
-            <p className="text-sm text-ink/60 mt-3 leading-relaxed">{d}</p>
+            <p className="text-sm text-ink/75 mt-3 leading-relaxed">{d}</p>
           </Reveal>
         ))}
       </section>
@@ -54,7 +54,7 @@ export const About: React.FC = () => {
 
       <section className="text-center pt-24 px-5">
         <h2 className="font-display text-4xl sm:text-5xl">Venez nous rendre visite</h2>
-        <p className="text-ink/60 mt-3">Sacré-Cœur 3, Dakar — ou découvrez la boutique en ligne.</p>
+        <p className="text-ink/75 mt-3">Sacré-Cœur 3, Dakar — ou découvrez la boutique en ligne.</p>
         <Link to="/boutique" className="btn-dark mt-8">Entrer dans la boutique <ArrowRight className="w-4 h-4" /></Link>
       </section>
     </div>

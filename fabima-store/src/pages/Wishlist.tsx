@@ -18,7 +18,7 @@ export const Wishlist: React.FC = () => {
       {items.length === 0 ? (
         <div className="text-center py-28">
           <p className="font-display text-3xl">Votre liste d'envies est vide</p>
-          <p className="text-ink/60 mt-3 text-sm">Touchez le cœur d'une pièce pour la retrouver ici, à tout moment.</p>
+          <p className="text-ink/75 mt-3 text-sm">Touchez le cœur d'une pièce pour la retrouver ici, à tout moment.</p>
           <Link to="/boutique" className="btn-dark mt-10">Explorer la boutique</Link>
         </div>
       ) : (

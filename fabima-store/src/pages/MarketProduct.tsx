@@ -15,7 +15,7 @@ export const MarketProduct: React.FC = () => {
   const { products, loading } = useMarket();
   const { addToCart, setCartOpen } = useStore();
   const product = products?.find(p => p.slug === slug) ?? null;
-  usePageTitle(product?.name ?? 'Le Marché', product ? `${product.name} — ${formatPrice(product.price)}, livré chez vous en ${delayLabel(product.delayMin, product.delayMax)}.` : undefined);
+  usePageTitle(product?.name ?? 'Le Marché', product ? `${product.name} — ${formatPrice(product.price)}, livré chez vous en ${delayLabel(product.delayMin, product.delayMax)}.` : undefined, { image: product?.images[0] });
   const [img, setImg] = useState(0);
   const [choice, setChoice] = useState<Record<string, string>>({});
   const [qty, setQty] = useState(1);
@@ -29,7 +29,7 @@ export const MarketProduct: React.FC = () => {
       <div className="text-center py-32 px-5">
         <Globe2 className="w-10 h-10 mx-auto text-gold" strokeWidth={1.2} />
         <h1 className="font-display text-4xl mt-4">Article introuvable</h1>
-        <p className="text-ink/55 mt-2">Il n'est peut-être plus proposé au Marché.</p>
+        <p className="text-ink/70 mt-2">Il n'est peut-être plus proposé au Marché.</p>
         <Link to="/marche" className="btn-dark mt-8">Retour au Marché</Link>
       </div>
     );
@@ -47,7 +47,7 @@ export const MarketProduct: React.FC = () => {
 
   return (
     <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-8">
-      <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ink/45 mb-6" aria-label="Fil d'Ariane">
+      <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ink/70 mb-6" aria-label="Fil d'Ariane">
         <Link to="/" className="hover:text-ink">Accueil</Link><ChevronRight className="w-3 h-3" />
         <Link to="/marche" className="hover:text-ink">Le Marché</Link><ChevronRight className="w-3 h-3" />
         <span className="text-ink/70 truncate">{product.name}</span>
@@ -78,7 +78,7 @@ export const MarketProduct: React.FC = () => {
           <h1 className="font-display text-4xl sm:text-5xl leading-[1.05] mt-3">{product.name}</h1>
           <p className="flex items-baseline gap-3 mt-5">
             <span className={`font-display text-4xl ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
-            {product.oldPrice && <span className="text-ink/35 line-through">{formatPrice(product.oldPrice)}</span>}
+            {product.oldPrice && <span className="text-ink/70 line-through">{formatPrice(product.oldPrice)}</span>}
           </p>
           <p className="mt-4 inline-flex items-center gap-2 px-4 h-10 rounded-full bg-blush/50 text-sm" data-testid="market-delay">
             <Truck className="w-4 h-4 text-wine" /> Livré chez vous en <strong>{delayLabel(product.delayMin, product.delayMax)}</strong>
@@ -86,7 +86,7 @@ export const MarketProduct: React.FC = () => {
 
           {product.options.map(o => (
             <div key={o.name} className="mt-7">
-              <p className="field-label">{o.name}{choice[o.name] && <span className="normal-case tracking-normal font-normal text-ink/60"> — {choice[o.name]}</span>}</p>
+              <p className="field-label">{o.name}{choice[o.name] && <span className="normal-case tracking-normal font-normal text-ink/75"> — {choice[o.name]}</span>}</p>
               <div className="flex flex-wrap gap-2">
                 {o.values.map(v => (
                   <button key={v} onClick={() => { setChoice(c => ({ ...c, [o.name]: v })); setMissing(''); }}
@@ -117,7 +117,7 @@ export const MarketProduct: React.FC = () => {
             ].map(({ Icon, t, d }) => (
               <li key={t} className="flex gap-3 p-4 rounded-2xl bg-white border border-ink/[0.06]">
                 <Icon className="w-5 h-5 text-wine shrink-0" strokeWidth={1.5} />
-                <span><strong className="font-semibold">{t}</strong><span className="block text-ink/55">{d}</span></span>
+                <span><strong className="font-semibold">{t}</strong><span className="block text-ink/70">{d}</span></span>
               </li>
             ))}
           </ul>

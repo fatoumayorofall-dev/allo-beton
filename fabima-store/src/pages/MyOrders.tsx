@@ -21,14 +21,14 @@ export const MyOrders: React.FC = () => {
       <div className="text-center pb-10 border-b border-ink/10">
         <p className="eyebrow">Mon espace</p>
         <h1 className="font-display text-5xl sm:text-6xl mt-4">{savedCustomer ? <>Bonjour, <em>{savedCustomer.firstName}</em></> : 'Mes commandes'}</h1>
-        <p className="text-sm text-ink/55 mt-4">{user ? 'Toutes vos commandes, sur tous vos téléphones.' : 'Retrouvez les commandes passées depuis cet appareil.'}</p>
+        <p className="text-sm text-ink/70 mt-4">{user ? 'Toutes vos commandes, sur tous vos téléphones.' : 'Retrouvez les commandes passées depuis cet appareil.'}</p>
         {status === 'guest' && <Link to="/compte" className="mt-4 inline-flex items-center gap-2 px-5 h-11 rounded-full bg-ink text-ivory text-sm font-semibold">📱 Retrouver toutes mes commandes avec mon numéro</Link>}
       </div>
 
       {orders.length === 0 ? (
         <div className="text-center py-24">
           <p className="font-display text-3xl">Aucune commande pour le moment</p>
-          <p className="text-sm text-ink/60 mt-3">Une commande passée depuis un autre appareil ? <Link to="/suivi" className="link-luxe text-ink">Suivez-la ici</Link>.</p>
+          <p className="text-sm text-ink/75 mt-3">Une commande passée depuis un autre appareil ? <Link to="/suivi" className="link-luxe text-ink">Suivez-la ici</Link>.</p>
           <Link to="/boutique" className="btn-dark mt-10">Découvrir la boutique</Link>
         </div>
       ) : (
@@ -41,7 +41,7 @@ export const MyOrders: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-[160px]">
                   <p className="font-display text-2xl">{o.id}</p>
-                  <p className="text-xs text-ink/50">{formatDate(o.createdAt)} · {o.items.reduce((s, i) => s + i.quantity, 0)} pièce(s)</p>
+                  <p className="text-xs text-ink/70">{formatDate(o.createdAt)} · {o.items.reduce((s, i) => s + i.quantity, 0)} pièce(s)</p>
                 </div>
                 <span className={`text-[10px] uppercase tracking-[0.2em] font-semibold px-3 py-1.5 border ${o.status === 'annulee' ? 'border-wine/30 text-wine' : o.status === 'livree' ? 'border-emerald-700/30 text-emerald-800' : 'border-ink/20'}`}>{STATUS_LABELS[o.status]}</span>
                 <span className="font-semibold w-28 text-right">{formatPrice(o.total)}</span>
@@ -57,9 +57,9 @@ export const MyOrders: React.FC = () => {
           <div>
             <p className="field-label">Coordonnées mémorisées</p>
             <p>{savedCustomer.firstName} {savedCustomer.lastName} · {savedCustomer.phone}</p>
-            <p className="text-ink/55">{savedCustomer.address}, {savedCustomer.zone}</p>
+            <p className="text-ink/70">{savedCustomer.address}, {savedCustomer.zone}</p>
           </div>
-          <button onClick={() => { saveCustomer(null); notify('Coordonnées effacées de cet appareil', 'info'); }} className="text-[11px] uppercase tracking-[0.2em] link-luxe text-ink/60">Effacer</button>
+          <button onClick={() => { saveCustomer(null); notify('Coordonnées effacées de cet appareil', 'info'); }} className="text-[11px] uppercase tracking-[0.2em] link-luxe text-ink/75">Effacer</button>
         </div>
       )}
     </div>

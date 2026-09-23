@@ -5,7 +5,7 @@ import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { ARTICLES } from '../data/journal';
 import type { Product } from '../data/types';
-import { ArticleCard } from './Journal';
+import { ArticleCard } from '../components/ArticleCard';
 import { SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePrefersReducedMotion } from '../utils/hooks';
@@ -113,7 +113,7 @@ export const Home: React.FC = () => {
           <div key={i} className={`absolute inset-0 transition-opacity duration-[1.4s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}
             style={{ transform: 'translate3d(0, calc(var(--py, 0) * 0.35px), 0) scale(1.04)' }}>
             <div className={`absolute inset-0 ${i === slide ? 'animate-kenburns' : ''}`}>
-              <ProductImage src={s.image} alt="" className="w-full h-full" />
+              <ProductImage src={s.image} alt="" className="w-full h-full" sizes="100vw" priority={i === 0} />
             </div>
           </div>
         ))}
@@ -167,9 +167,11 @@ export const Home: React.FC = () => {
             <div className="flex gap-2 flex-1 max-w-xs">
               {HERO_SLIDES.map((_, i) => (
                 <button key={i} onClick={() => setSlide(i)} aria-label={`Afficher la diapositive ${i + 1}`} aria-current={i === slide}
-                  className="relative h-[2px] flex-1 bg-ivory/25 overflow-hidden">
-                  {i < slide && <span className="absolute inset-0 bg-ivory" />}
-                  {i === slide && <span key={`${slide}-${paused}`} className={`absolute inset-0 bg-ivory origin-left ${paused || reduced ? '' : 'animate-progress'}`} style={{ animationDuration: `${DURATION}ms` }} />}
+                  className="h-6 flex-1 flex items-center">
+                  <span className="relative block w-full h-[2px] bg-ivory/25 overflow-hidden">
+                    {i < slide && <span className="absolute inset-0 bg-ivory" />}
+                    {i === slide && <span key={`${slide}-${paused}`} className={`absolute inset-0 bg-ivory origin-left ${paused || reduced ? '' : 'animate-progress'}`} style={{ animationDuration: `${DURATION}ms` }} />}
+                  </span>
                 </button>
               ))}
             </div>
@@ -252,7 +254,7 @@ export const Home: React.FC = () => {
           <div className="mt-8 inline-flex gap-1 p-1 rounded-full bg-white border border-ink/[0.06] shadow-soft" role="tablist">
             {([['bestsellers', 'Coups de cœur'], ['nouveautes', 'Nouveautés'], ['promos', 'Petits prix']] as const).map(([id, label]) => (
               <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-                className={`px-5 h-10 rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold transition-colors ${tab === id ? 'bg-ink text-ivory' : 'text-ink/50 hover:text-ink hover:bg-blush/60'}`}>{label}</button>
+                className={`px-5 h-10 rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold transition-colors ${tab === id ? 'bg-ink text-ivory' : 'text-ink/70 hover:text-ink hover:bg-blush/60'}`}>{label}</button>
             ))}
           </div>
         </Reveal>
@@ -273,13 +275,13 @@ export const Home: React.FC = () => {
           <Reveal className="lg:col-span-6 lg:col-start-7" delay={120}>
             <p className="eyebrow">Fait main à Dakar</p>
             <h2 className="font-display text-5xl sm:text-7xl leading-[0.95] mt-4">L'atelier<br /><span className="font-script text-gold-dark text-[1.2em]">Teranga</span></h2>
-            <p className="mt-8 text-ink/65 leading-relaxed max-w-lg">
+            <p className="mt-8 text-ink/75 leading-relaxed max-w-lg">
               Au cœur de la Médina, nos artisanes façonnent des cabas en wax et des sacs aux imprimés vibrants, cousus main.
               Chaque pièce est coupée à la main, numérotée et ne sera jamais tout à fait identique à une autre.
             </p>
             <dl className="mt-10 grid grid-cols-3 gap-6 max-w-md">
               {[['12', 'artisanes'], ['100 %', 'coton wax'], ['1', 'pièce unique']].map(([n, l]) => (
-                <div key={l}><dt className="font-display text-4xl text-gold-dark"><CountUp value={n} /></dt><dd className="text-xs text-ink/55 mt-1">{l}</dd></div>
+                <div key={l}><dt className="font-display text-4xl text-gold-dark"><CountUp value={n} /></dt><dd className="text-xs text-ink/70 mt-1">{l}</dd></div>
               ))}
             </dl>
             <Link to="/boutique?q=wax" className="btn-outline mt-10">Découvrir la collection <ArrowRight className="w-4 h-4" /></Link>
@@ -343,13 +345,13 @@ export const Home: React.FC = () => {
             <Reveal delay={120}>
               <p className="eyebrow">Shop the look</p>
               <h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">Invitée <em>d'honneur</em></h2>
-              <p className="mt-5 text-ink/60 max-w-md">Pour les mariages et baptêmes : un sac structuré, une pochette perlée et des souliers qui brillent à chaque pas.</p>
+              <p className="mt-5 text-ink/75 max-w-md">Pour les mariages et baptêmes : un sac structuré, une pochette perlée et des souliers qui brillent à chaque pas.</p>
               <ul className="mt-10 divide-y divide-ink/10 border-y border-ink/10">
                 {look.map(p => (
                   <li key={p.id}>
                     <Link to={`/produit/${p.slug}`} className="group flex items-center gap-5 py-4">
                       <ProductImage src={p.images[0]} alt={p.name} label="" className="w-16 h-20 shrink-0 rounded-2xl" />
-                      <span className="flex-1"><span className="eyebrow !text-ink/40">{p.subcategory}</span><span className="block font-display text-xl mt-1 group-hover:text-gold-dark transition-colors">{p.name}</span></span>
+                      <span className="flex-1"><span className="eyebrow !text-ink/70">{p.subcategory}</span><span className="block font-display text-xl mt-1 group-hover:text-gold-dark transition-colors">{p.name}</span></span>
                       <span className="text-sm">{formatPrice(p.price)}</span>
                       <ArrowUpRight className="w-4 h-4 text-ink/30 group-hover:text-ink group-hover:rotate-45 transition-all" />
                     </Link>
@@ -424,7 +426,7 @@ export const Home: React.FC = () => {
                 <Icon className="w-6 h-6 text-wine" strokeWidth={1.4} />
               </span>
               <p className="relative font-display text-xl sm:text-[1.7rem] mt-4 sm:mt-6 leading-tight">{t}</p>
-              <p className="relative text-[13px] sm:text-sm text-ink/55 mt-2 leading-snug sm:leading-relaxed">{d}</p>
+              <p className="relative text-[13px] sm:text-sm text-ink/70 mt-2 leading-snug sm:leading-relaxed">{d}</p>
             </Reveal>
           ))}
         </div>
@@ -439,16 +441,18 @@ export const Home: React.FC = () => {
             {TESTIMONIALS.map((t, i) => (
               <figure key={t.name} className={`absolute inset-0 transition-all duration-1000 ease-luxe ${i === quote ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`} aria-hidden={i !== quote}>
                 <blockquote className="font-display text-2xl sm:text-4xl leading-snug">« {t.text} »</blockquote>
-                <figcaption className="mt-8 text-[11px] uppercase tracking-[0.25em]"><strong>{t.name}</strong> <span className="text-ink/45">— {t.city}</span></figcaption>
+                <figcaption className="mt-8 text-[11px] uppercase tracking-[0.25em]"><strong>{t.name}</strong> <span className="text-ink/70">— {t.city}</span></figcaption>
               </figure>
             ))}
           </div>
-          <div className="flex justify-center gap-2 mt-8">
+          <div className="flex justify-center mt-6">
             {TESTIMONIALS.map((t, i) => (
-              <button key={t.name} onClick={() => setQuote(i)} aria-label={`Témoignage ${i + 1}`} className={`h-2 rounded-full transition-all duration-500 ${i === quote ? 'w-8 bg-gold' : 'w-2 bg-ink/20'}`} />
+              <button key={t.name} onClick={() => setQuote(i)} aria-label={`Témoignage ${i + 1}`} aria-current={i === quote} className="h-6 min-w-6 px-1 grid place-items-center">
+                <span className={`block h-2 rounded-full transition-all duration-500 ${i === quote ? 'w-8 bg-gold' : 'w-2 bg-ink/20'}`} />
+              </button>
             ))}
           </div>
-          <p className="mt-12 text-sm text-ink/55">Note moyenne <strong className="text-ink">4,8/5</strong> sur plus de 800 avis vérifiés</p>
+          <p className="mt-12 text-sm text-ink/70">Note moyenne <strong className="text-ink">4,8/5</strong> sur plus de 800 avis vérifiés</p>
         </div>
       </section>
 
@@ -457,7 +461,7 @@ export const Home: React.FC = () => {
         <Reveal className="text-center mb-10 px-5">
           <p className="eyebrow">@fabimastore</p>
           <h2 className="font-display text-5xl sm:text-6xl mt-3">#FabimaStyle</h2>
-          <p className="text-ink/55 mt-3 text-sm">Partagez votre look avec le hashtag, les plus belles d'entre vous apparaissent ici.</p>
+          <p className="text-ink/70 mt-3 text-sm">Partagez votre look avec le hashtag, les plus belles d'entre vous apparaissent ici.</p>
         </Reveal>
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-6">
           {products.filter(p => p.images[0]).slice(0, 6).map((p, i) => (
@@ -485,7 +489,7 @@ export const Home: React.FC = () => {
 
 const CategoryTile: React.FC<{ id: string; name: string; description: string; image: string; tall?: boolean }> = ({ id, name, description, image, tall }) => (
   <Link to={`/boutique/${id}`} className={`group relative block overflow-hidden ${tall ? 'rounded-[2.5rem] aspect-[4/5] lg:aspect-auto lg:h-full lg:min-h-[640px]' : 'arch aspect-[3/4]'}`}>
-    <ProductImage src={image} alt={name} label="" className="absolute inset-0 w-full h-full transition-transform duration-[1.6s] ease-luxe group-hover:scale-[1.07]" />
+    <ProductImage src={image} alt="" label="" sizes={tall ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, 50vw'} className="absolute inset-0 w-full h-full transition-transform duration-[1.6s] ease-luxe group-hover:scale-[1.07]" />
     <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-wine/5 to-transparent" />
     <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 text-ivory flex items-end justify-between gap-4">
       <div>
@@ -530,7 +534,7 @@ const LookAdder: React.FC<{ look: Product[] }> = ({ look }) => {
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-ink/60">Le look complet<br /><strong className="font-display text-3xl text-ink">{formatPrice(total)}</strong></p>
+        <p className="text-sm text-ink/75">Le look complet<br /><strong className="font-display text-3xl text-ink">{formatPrice(total)}</strong></p>
         <button onClick={addAll} className="btn-dark"><ShoppingBag className="w-4 h-4" strokeWidth={1.5} /> Ajouter tout le look</button>
       </div>
     </div>

@@ -2,7 +2,7 @@ import React from 'react';
 import { Star } from 'lucide-react';
 
 export const Stars: React.FC<{ rating: number; size?: number; onRate?: (n: number) => void }> = ({ rating, size = 13, onRate }) => (
-  <span className="inline-flex items-center gap-0.5" role={onRate ? 'radiogroup' : undefined} aria-label={`Note : ${rating} sur 5`}>
+  <span className="inline-flex items-center gap-0.5" role={onRate ? 'radiogroup' : 'img'} aria-label={`Note : ${rating} sur 5`}>
     {[1, 2, 3, 4, 5].map(i => {
       const star = <Star style={{ width: size, height: size }} strokeWidth={1.4}
         className={i <= Math.round(rating) ? 'fill-gold text-gold' : 'text-ink/25'} />;

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUp, MessageCircle, RotateCcw, Sparkles, X } from 'lucide-react';
+import { ArrowUp, MessageCircle, RotateCcw, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { OCCASIONS, CATEGORIES } from '../data/catalog';
@@ -11,10 +11,8 @@ import { localAnswer } from '../utils/localAssistant';
 import { formatPrice } from '../utils/format';
 import { useEscape } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
+import { OPEN_ASSISTANT_EVENT } from './assistantBus';
 
-export const OPEN_ASSISTANT_EVENT = 'fabima:open-assistant';
-/** Ouvre l'assistante depuis n'importe où, avec éventuellement une question pré-remplie. */
-export const openAssistant = (question?: string) => window.dispatchEvent(new CustomEvent(OPEN_ASSISTANT_EVENT, { detail: question }));
 
 const STORAGE_KEY = 'fabima_assistant';
 const SUGGESTIONS = ['Une tenue pour un mariage', 'Délais et frais de livraison', 'Où en est ma commande ?', 'Une idée cadeau à moins de 20 000'];
@@ -77,10 +75,11 @@ const CitedProducts: React.FC<{ text: string; getProduct: (s: string) => Product
   );
 };
 
-export const Assistant: React.FC = () => {
+/** Panneau de l'assistante. Chargé à la première ouverture : `initial` porte cette première demande. */
+export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initial }) => {
   const { products, cart, orders, getProduct } = useStore();
   const location = useLocation();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!initial);
   const [mode, setMode] = useState<'ia' | 'local' | 'unknown'>('unknown');
   const [messages, setMessages] = useState<ChatTurn[]>(() => {
     try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
@@ -90,7 +89,7 @@ export const Assistant: React.FC = () => {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const pending = useRef<string | null>(null);
+  const pending = useRef<string | null>(initial?.question ?? null);
 
   useEscape(open, () => setOpen(false));
 
@@ -213,7 +212,7 @@ export const Assistant: React.FC = () => {
           <div key={i}>
             <Bubble role={m.role}>
               {m.role === 'assistant' && !m.content
-                ? <span className="inline-flex gap-1 py-1" aria-label="Fabi écrit"><Dot /><Dot d={150} /><Dot d={300} /></span>
+                ? <span className="inline-flex gap-1 py-1" role="status" aria-label="Fabi écrit"><Dot /><Dot d={150} /><Dot d={300} /></span>
                 : m.role === 'assistant' ? <RichText text={m.content} onNavigate={close} /> : m.content}
             </Bubble>
             {m.role === 'assistant' && m.content && <div className="pl-1"><CitedProducts text={m.content} getProduct={getProduct} onNavigate={close} /></div>}
@@ -234,10 +233,10 @@ export const Assistant: React.FC = () => {
           </button>
         </form>
         <div className="flex items-center justify-between mt-2 px-1">
-          <a href={handoff} target="_blank" rel="noopener noreferrer" className="text-[11px] text-ink/60 hover:text-[#1f8f4e] inline-flex items-center gap-1.5">
+          <a href={handoff} target="_blank" rel="noopener noreferrer" className="text-[11px] text-ink/75 hover:text-[#1f8f4e] inline-flex items-center gap-1.5">
             <MessageCircle className="w-3.5 h-3.5" /> Parler à une conseillère
           </a>
-          <span className="text-[10px] text-ink/35">{mode === 'ia' ? 'IA · peut se tromper' : ''}</span>
+          <span className="text-[10px] text-ink/70">{mode === 'ia' ? 'IA · peut se tromper' : ''}</span>
         </div>
       </div>
     </div>
@@ -256,34 +255,3 @@ const Bubble: React.FC<{ role: 'user' | 'assistant'; children: React.ReactNode }
 const Dot: React.FC<{ d?: number }> = ({ d = 0 }) => (
   <span className="w-1.5 h-1.5 rounded-full bg-gold animate-bounce" style={{ animationDelay: `${d}ms` }} />
 );
-
-/** Bouton flottant d'ouverture de l'assistante. */
-export const AssistantLauncher: React.FC = () => {
-  const [hint, setHint] = useState(false);
-  useEffect(() => {
-    let seen = false;
-    try { seen = sessionStorage.getItem('fabima_assistant_hint') === '1'; } catch { /* ignore */ }
-    if (seen) return;
-    const t = setTimeout(() => setHint(true), 6000);
-    // La bulle se retire seule pour ne pas gêner la lecture
-    const t2 = setTimeout(() => setHint(false), 18000);
-    return () => { clearTimeout(t); clearTimeout(t2); };
-  }, []);
-  const dismiss = () => { setHint(false); try { sessionStorage.setItem('fabima_assistant_hint', '1'); } catch { /* ignore */ } };
-
-  return (
-    <div className="relative">
-      {hint && (
-        <div className="assistant-hint absolute right-[4.25rem] bottom-1 w-44 sm:w-56 bg-white rounded-2xl rounded-br-md shadow-luxe p-3.5 text-xs animate-fade-up border border-ink/[0.06]">
-          <button onClick={dismiss} aria-label="Masquer" className="absolute top-1.5 right-1.5 p-1 text-ink/40"><X className="w-3 h-3" /></button>
-          <p className="font-script text-xl text-gold-dark leading-none">Fabi</p>
-          <p className="mt-1 text-ink/75 text-[11px] sm:text-xs">Une question ? Je vous réponds tout de suite<span className="hidden sm:inline"> : pièces, livraison, commande</span>.</p>
-        </div>
-      )}
-      <button onClick={() => { dismiss(); openAssistant(); }} aria-label="Poser une question à l'assistante"
-        className="w-14 h-14 rounded-full bg-gradient-to-br from-gold to-wine text-white grid place-items-center shadow-luxe hover:scale-105 transition-transform">
-        <Sparkles className="w-6 h-6" strokeWidth={1.6} />
-      </button>
-    </div>
-  );
-};

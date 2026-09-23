@@ -105,7 +105,7 @@ export const Catalog: React.FC = () => {
       {!cat && (
         <FilterGroup title="Catégorie">
           {CATEGORIES.map(c => (
-            <Link key={c.id} to={`/boutique/${c.id}?${params.toString()}`} className="block py-1 text-sm text-ink/60 hover:text-ink link-luxe">{c.name}</Link>
+            <Link key={c.id} to={`/boutique/${c.id}?${params.toString()}`} className="block py-1 text-sm text-ink/75 hover:text-ink link-luxe">{c.name}</Link>
           ))}
         </FilterGroup>
       )}
@@ -166,9 +166,9 @@ export const Catalog: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12">
         {/* Univers */}
         <div className="flex gap-7 overflow-x-auto no-scrollbar border-b border-ink/10 -mx-5 px-5 sm:mx-0 sm:px-0">
-          <Link to="/boutique" className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${!cat ? 'border-ink' : 'border-transparent text-ink/45 hover:text-ink'}`}>Tout</Link>
+          <Link to="/boutique" className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${!cat ? 'border-ink' : 'border-transparent text-ink/70 hover:text-ink'}`}>Tout</Link>
           {CATEGORIES.map(c => (
-            <Link key={c.id} to={`/boutique/${c.id}`} className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${cat?.id === c.id ? 'border-ink' : 'border-transparent text-ink/45 hover:text-ink'}`}>{c.name}</Link>
+            <Link key={c.id} to={`/boutique/${c.id}`} className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${cat?.id === c.id ? 'border-ink' : 'border-transparent text-ink/70 hover:text-ink'}`}>{c.name}</Link>
           ))}
         </div>
 
@@ -177,12 +177,12 @@ export const Catalog: React.FC = () => {
           <button onClick={() => setFiltersOpen(true)} className="lg:hidden inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold">
             <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} /> Filtrer {activeCount > 0 && <span className="w-5 h-5 rounded-full bg-ink text-ivory text-[10px] grid place-items-center">{activeCount}</span>}
           </button>
-          <p className="text-xs text-ink/55 hidden lg:block">{filtered.length} pièce{filtered.length > 1 ? 's' : ''}</p>
+          <p className="text-xs text-ink/70 hidden lg:block">{filtered.length} pièce{filtered.length > 1 ? 's' : ''}</p>
           <div className="flex items-center gap-3">
             {q && <button onClick={() => setParam('q', null)} className="hidden sm:inline-flex items-center gap-1.5 px-3 h-8 rounded-full border border-ink/15 text-xs">« {q} » <X className="w-3 h-3" /></button>}
             <label className="flex items-center gap-2 text-xs">
-              <span className="text-ink/55 hidden sm:inline uppercase tracking-[0.18em]">Trier</span>
-              <select value={sort} onChange={e => setParam('tri', e.target.value === 'pertinence' ? null : e.target.value)}
+              <span className="text-ink/70 hidden sm:inline uppercase tracking-[0.18em]">Trier</span>
+              <select value={sort} onChange={e => setParam('tri', e.target.value === 'pertinence' ? null : e.target.value)} aria-label="Trier les pièces"
                 className="h-10 pl-4 pr-8 rounded-full border border-ink/15 bg-transparent outline-none text-sm focus:border-ink">
                 {Object.entries(SORTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
@@ -191,13 +191,13 @@ export const Catalog: React.FC = () => {
         </div>
 
         <div className="grid lg:grid-cols-[240px_1fr] gap-12">
-          <aside className="hidden lg:block"><div className="sticky top-[210px] max-h-[calc(100vh-230px)] overflow-y-auto no-scrollbar pb-6">{filters}</div></aside>
+          <aside className="hidden lg:block" aria-labelledby="filtres-titre"><h2 id="filtres-titre" className="sr-only">Filtres</h2><div className="sticky top-[210px] max-h-[calc(100vh-230px)] overflow-y-auto no-scrollbar pb-6">{filters}</div></aside>
 
           <div>
             {filtered.length === 0 ? (
               <div className="text-center py-28 border border-ink/10 rounded-[2rem]">
                 <p className="font-display text-4xl">Aucune pièce ne correspond</p>
-                <p className="text-ink/60 mt-3 text-sm">Élargissez vos critères pour découvrir d'autres merveilles.</p>
+                <p className="text-ink/75 mt-3 text-sm">Élargissez vos critères pour découvrir d'autres merveilles.</p>
                 <button onClick={reset} className="btn-dark mt-8">Réinitialiser les filtres</button>
               </div>
             ) : (
@@ -206,7 +206,7 @@ export const Catalog: React.FC = () => {
                   {visible.map(p => <ProductCard key={p.id} product={p} />)}
                 </div>
                 <div className="mt-16 text-center">
-                  <p className="text-xs text-ink/50">{visible.length} sur {filtered.length} pièces</p>
+                  <p className="text-xs text-ink/70">{visible.length} sur {filtered.length} pièces</p>
                   <div className="w-48 h-[2px] bg-ink/10 mx-auto mt-3"><div className="h-full bg-ink transition-all duration-700" style={{ width: `${(visible.length / filtered.length) * 100}%` }} /></div>
                   {visible.length < filtered.length && (
                     <button onClick={() => setShown(n => n + PAGE_SIZE)} className="btn-outline mt-8">Voir plus de pièces</button>
@@ -226,7 +226,7 @@ export const Catalog: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10">{marketMore.slice(0, 4).map(p => <MarketCard key={p.id} product={p} />)}</div>
               </section>
             )}
-            <p className="text-[11px] text-ink/40 mt-12 text-center">Prix en FCFA, TTC · Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</p>
+            <p className="text-[11px] text-ink/70 mt-12 text-center">Prix en FCFA, TTC · Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</p>
           </div>
         </div>
       </div>
@@ -263,6 +263,6 @@ const Radio: React.FC<{ name: string; checked: boolean; onChange: () => void; la
     <span className={`w-3.5 h-3.5 rounded-full border grid place-items-center transition-colors peer-focus-visible:outline peer-focus-visible:outline-1 peer-focus-visible:outline-gold ${checked ? 'border-ink' : 'border-ink/30 group-hover:border-ink'}`}>
       {checked && <span className="w-1.5 h-1.5 rounded-full bg-ink" />}
     </span>
-    <span className={checked ? 'text-ink' : 'text-ink/60 group-hover:text-ink transition-colors'}>{label}</span>
+    <span className={checked ? 'text-ink' : 'text-ink/75 group-hover:text-ink transition-colors'}>{label}</span>
   </label>
 );

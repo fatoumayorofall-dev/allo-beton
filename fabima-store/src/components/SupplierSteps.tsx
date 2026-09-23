@@ -22,10 +22,10 @@ export const SupplierSteps: React.FC<{ supplier: OrderSupplier }> = ({ supplier 
           const done = i <= reached;
           const date = dateOf(s);
           return (
-            <li key={s} className={`relative p-4 rounded-2xl ${i === reached ? 'bg-blush/50' : done ? 'bg-ivory' : 'bg-ivory/50 text-ink/40'}`}>
+            <li key={s} className={`relative p-4 rounded-2xl ${i === reached ? 'bg-blush/50' : done ? 'bg-ivory' : 'bg-ivory/50 text-ink/70'}`}>
               <span className={`w-7 h-7 rounded-full grid place-items-center text-xs font-bold ${done ? 'bg-wine text-white' : 'bg-white border border-ink/10'}`}>{done ? '✓' : i + 1}</span>
               <p className="text-sm font-semibold mt-2 leading-snug">{SUPPLIER_LABELS[s]}</p>
-              {date && <p className="text-[11px] text-ink/50 mt-0.5">{new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</p>}
+              {date && <p className="text-[11px] text-ink/70 mt-0.5">{new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</p>}
             </li>
           );
         })}

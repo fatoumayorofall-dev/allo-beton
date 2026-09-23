@@ -56,7 +56,7 @@ const RelayPointField: React.FC<{ value: RelayPoint | null; onChange: (p: RelayP
       <input value={q} onChange={e => { setQ(e.target.value); onChange(e.target.value.trim() ? { label: e.target.value.trim() } : null); }}
         placeholder="Point de relais : gare routière, station…" aria-label={`Point de relais ${index + 1}`}
         className="w-full px-3 h-11 rounded-xl border border-ink/15 bg-white" />
-      {value?.label && <span className="text-[11px] text-ink/50">{value.lat != null ? '📍 point sur la carte' : 'nom seulement (pas de point sur la carte)'}</span>}
+      {value?.label && <span className="text-[11px] text-ink/70">{value.lat != null ? '📍 point sur la carte' : 'nom seulement (pas de point sur la carte)'}</span>}
       {!value && recent.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           {recent.map(p => <button key={p.label} type="button" onClick={() => pick(p)} className="px-3 h-7 rounded-full text-xs bg-white border border-ink/15">🔁 {p.label}</button>)}
@@ -125,27 +125,27 @@ export const DeliveryPanel: React.FC<{ order: Order; pin: string; onChanged: () 
             <Suspense fallback={<div className="h-56 rounded-[1.5rem] bg-blush/30 animate-pulse" />}>
               <LiveTracking location={loc} delivery={d?.state === 'en_route' ? d : null} compact />
             </Suspense>
-            <p className="mt-2">{loc.label || `${loc.lat}, ${loc.lng}`}{loc.accuracy ? <span className="text-ink/50"> · GPS ± {loc.accuracy} m</span> : null}</p>
+            <p className="mt-2">{loc.label || `${loc.lat}, ${loc.lng}`}{loc.accuracy ? <span className="text-ink/70"> · GPS ± {loc.accuracy} m</span> : null}</p>
             {loc.landmark && <p className="text-ink/70">🔎 {loc.landmark}</p>}
             <a href={googleMapsDirections(loc)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-1 text-[#1a73e8] font-semibold">
               <Navigation className="w-4 h-4" /> Ouvrir dans Google Maps
             </a>
           </>
         ) : (
-          <p className="text-ink/55">Pas de point sur la carte : adresse écrite uniquement.</p>
+          <p className="text-ink/70">Pas de point sur la carte : adresse écrite uniquement.</p>
         )}
       </div>
 
       <div className="p-4 rounded-2xl bg-ivory space-y-3">
         <p className="font-medium">🛵 Livraison{d?.relay && ' en relais'}</p>
-        {!onServer && <p className="text-xs text-ink/55">Commande gardée sur ce téléphone uniquement : le suivi du livreur demande le serveur.</p>}
+        {!onServer && <p className="text-xs text-ink/70">Commande gardée sur ce téléphone uniquement : le suivi du livreur demande le serveur.</p>}
 
         {d && !editing && (
           <>
             {d.relay ? <RelaySteps delivery={d} admin /> : (
               <p><strong>{d.driverName}</strong> · {d.driverPhone} · <span className="text-wine">{STATE_LABELS[legs[0]?.state ?? 'attente']}</span></p>
             )}
-            {d.state === 'en_route' && d.etaMin != null && <p className="text-ink/60">{d.final ? 'Chez la cliente' : `Au relais ${d.target?.label ?? ''}`} dans ~{formatEta(d.etaMin)}</p>}
+            {d.state === 'en_route' && d.etaMin != null && <p className="text-ink/75">{d.final ? 'Chez la cliente' : `Au relais ${d.target?.label ?? ''}`} dans ~{formatEta(d.etaMin)}</p>}
             {legs.map((l, k) => l.state !== 'remis' && l.driverLink && (
               <div key={k} className="flex flex-wrap items-center gap-2">
                 <a href={buildWhatsAppLink(driverText(order, legs, k), waNumber(l.driverPhone))} target="_blank" rel="noopener noreferrer"
@@ -176,7 +176,7 @@ export const DeliveryPanel: React.FC<{ order: Order; pin: string; onChanged: () 
                   <fieldset disabled={row.locked} className={`p-3 rounded-2xl border space-y-2 min-w-0 ${row.locked ? 'bg-white/50 border-ink/5 opacity-70' : 'bg-white border-ink/10'}`}>
                     <div className="flex items-center justify-between">
                       <legend className="text-sm font-semibold">{rows.length > 1 ? `Étape ${k + 1}` : 'Livreur'}{row.locked && ' · déjà en route'}</legend>
-                      {rows.length > 1 && !last && !row.locked && <button type="button" onClick={() => removeRow(k)} aria-label={`Retirer l'étape ${k + 1}`} className="w-8 h-8 grid place-items-center text-ink/40"><Trash2 className="w-4 h-4" /></button>}
+                      {rows.length > 1 && !last && !row.locked && <button type="button" onClick={() => removeRow(k)} aria-label={`Retirer l'étape ${k + 1}`} className="w-8 h-8 grid place-items-center text-ink/70"><Trash2 className="w-4 h-4" /></button>}
                     </div>
                     {!row.locked && drivers.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
@@ -193,7 +193,7 @@ export const DeliveryPanel: React.FC<{ order: Order; pin: string; onChanged: () 
                     <select value={row.vehicle} onChange={e => update(k, { vehicle: e.target.value as Vehicle })} aria-label={`Véhicule ${k + 1}`} className="w-full px-3 h-11 rounded-xl border border-ink/15 bg-white">
                       {(Object.keys(VEHICLE_LABELS) as Vehicle[]).map(v => <option key={v} value={v}>{VEHICLE_LABELS[v]}</option>)}
                     </select>
-                    {last ? <p className="text-xs text-ink/55">🏠 Jusqu'à la cliente ({loc?.label || order.customer.zone})</p>
+                    {last ? <p className="text-xs text-ink/70">🏠 Jusqu'à la cliente ({loc?.label || order.customer.zone})</p>
                       : row.locked ? <p className="text-xs">🔁 Jusqu'à {row.to?.label}</p>
                         : <RelayPointField value={row.to} onChange={to => update(k, { to })} index={k} />}
                   </fieldset>
@@ -208,7 +208,7 @@ export const DeliveryPanel: React.FC<{ order: Order; pin: string; onChanged: () 
               </button>
               <button type="button" onClick={() => setEditing(false)} className="px-4 h-11 rounded-full text-sm">Annuler</button>
             </div>
-            <p className="text-xs text-ink/50">Chaque livreur reçoit son lien. La cliente suit le colis de main en main et reçoit un message à chaque passage de relais.</p>
+            <p className="text-xs text-ink/70">Chaque livreur reçoit son lien. La cliente suit le colis de main en main et reçoit un message à chaque passage de relais.</p>
           </form>
         )}
       </div>

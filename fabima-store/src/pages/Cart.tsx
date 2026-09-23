@@ -9,6 +9,7 @@ import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { GiftWrapOption } from '../components/CartDrawer';
+import { BrandMark } from '../components/Logo';
 
 export const PromoBox: React.FC = () => {
   const { promoCode, applyPromo, removePromo, notify, computeTotals } = useStore();
@@ -48,9 +49,9 @@ export const Cart: React.FC = () => {
   if (cart.length === 0) {
     return (
       <div className="max-w-xl mx-auto text-center py-40 px-5">
-        <p className="font-script text-8xl text-gold-light">Fabima</p>
+        <BrandMark className="h-28 w-auto mx-auto motion-safe:animate-hover" />
         <h1 className="font-display text-5xl mt-6">Votre panier est vide</h1>
-        <p className="text-ink/60 mt-4">Nos nouveautés n'attendent que vous.</p>
+        <p className="text-ink/75 mt-4">Nos nouveautés n'attendent que vous.</p>
         <Link to="/boutique?tri=nouveautes" className="btn-dark mt-10">Découvrir les nouveautés</Link>
       </div>
     );
@@ -60,7 +61,7 @@ export const Cart: React.FC = () => {
     <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-12">
       <div className="flex items-end justify-between mb-10 pb-8 border-b border-ink/10">
         <div><p className="eyebrow">{t.itemCount} pièce{t.itemCount > 1 ? 's' : ''}</p><h1 className="font-display text-5xl sm:text-6xl mt-2">Votre panier</h1></div>
-        <button onClick={clearCart} className="text-[11px] uppercase tracking-[0.2em] text-ink/45 hover:text-wine link-luxe">Tout retirer</button>
+        <button onClick={clearCart} className="text-[11px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Tout retirer</button>
       </div>
       <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
         <ul className="divide-y divide-ink/10">
@@ -73,9 +74,9 @@ export const Cart: React.FC = () => {
                 <div className="flex-1 min-w-0 flex flex-col">
                   <div className="flex justify-between gap-4">
                     <div>
-                      {product && <p className="eyebrow !text-ink/40">{product.subcategory}</p>}
+                      {product && <p className="eyebrow !text-ink/70">{product.subcategory}</p>}
                       <Link to={product ? `/produit/${product.slug}` : '#'} className="font-display text-2xl leading-tight mt-1 block hover:text-gold-dark">{item.name}</Link>
-                      <p className="text-sm text-ink/55 mt-2">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
+                      <p className="text-sm text-ink/70 mt-2">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
 {item.market && <p className="text-[11px] text-wine mt-1" data-testid="cart-market">🌍 Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
 {item.preorder && <p className="text-[11px] text-wine mt-1" data-testid="cart-preorder">⏳ Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
                     </div>
@@ -87,7 +88,7 @@ export const Cart: React.FC = () => {
                       <span className="w-8 text-center text-sm">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.key, item.quantity + 1)} disabled={item.quantity >= stock} aria-label="Augmenter" className="w-10 h-full grid place-items-center hover:bg-ink/5 disabled:opacity-25"><Plus className="w-3.5 h-3.5" /></button>
                     </div>
-                    <button onClick={() => removeFromCart(item.key)} className="text-[10px] uppercase tracking-[0.2em] text-ink/45 hover:text-wine link-luxe">Retirer</button>
+                    <button onClick={() => removeFromCart(item.key)} className="text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Retirer</button>
                   </div>
                 </div>
               </li>
@@ -100,15 +101,15 @@ export const Cart: React.FC = () => {
           <GiftWrapOption />
           <PromoBox />
           <dl className="space-y-3 text-sm border-t border-ink/10 pt-6">
-            <div className="flex justify-between"><dt className="text-ink/65">Sous-total</dt><dd>{formatPrice(t.subtotal)}</dd></div>
+            <div className="flex justify-between"><dt className="text-ink/75">Sous-total</dt><dd>{formatPrice(t.subtotal)}</dd></div>
             {t.discount > 0 && <div className="flex justify-between text-emerald-800"><dt>Réduction</dt><dd>-{formatPrice(t.discount)}</dd></div>}
-            {t.giftFee > 0 && <div className="flex justify-between"><dt className="text-ink/65">Emballage cadeau</dt><dd>{formatPrice(t.giftFee)}</dd></div>}
-            <div className="flex justify-between"><dt className="text-ink/65">Livraison</dt><dd className="text-ink/65">{t.subtotal - t.discount >= SITE_CONFIG.freeShippingThreshold ? 'Offerte' : 'Selon votre zone'}</dd></div>
+            {t.giftFee > 0 && <div className="flex justify-between"><dt className="text-ink/75">Emballage cadeau</dt><dd>{formatPrice(t.giftFee)}</dd></div>}
+            <div className="flex justify-between"><dt className="text-ink/75">Livraison</dt><dd className="text-ink/75">{t.subtotal - t.discount >= SITE_CONFIG.freeShippingThreshold ? 'Offerte' : 'Selon votre zone'}</dd></div>
           </dl>
           <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span></div>
           <button onClick={() => navigate('/commande')} className="btn-dark w-full">Passer commande <ArrowRight className="w-4 h-4" /></button>
-          <p className="text-[11px] text-ink/45 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Free Money · Carte · Espèces</p>
-          <Link to="/boutique" className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/60 hover:text-ink">Continuer mes achats</Link>
+          <p className="text-[11px] text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Free Money · Carte · Espèces</p>
+          <Link to="/boutique" className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>
         </aside>
       </div>
     </div>

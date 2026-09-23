@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, Plus, Sparkles } from 'lucide-react';
-import { openAssistant } from '../components/Assistant';
+import { openAssistant } from '../components/assistantBus';
 import { DELIVERY_ZONES, SITE_CONFIG, buildWhatsAppLink, isOnSale } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -20,7 +20,7 @@ export const FAQ: React.FC = () => {
       <div className="text-center">
         <p className="eyebrow">Service client</p>
         <h1 className="font-display text-5xl sm:text-6xl mt-4">Aide & questions</h1>
-        <p className="text-ink/60 mt-4">Tout ce qu'il faut savoir pour commander l'esprit léger.</p>
+        <p className="text-ink/75 mt-4">Tout ce qu'il faut savoir pour commander l'esprit léger.</p>
       </div>
 
       <div className="mt-14 border-t border-ink/10">
@@ -31,7 +31,7 @@ export const FAQ: React.FC = () => {
               <span className={`w-8 h-8 rounded-full border border-ink/15 grid place-items-center shrink-0 transition-transform duration-500 ${open === i ? 'rotate-45 bg-ink text-ivory border-ink' : ''}`}><Plus className="w-3.5 h-3.5" /></span>
             </button>
             <div className={`grid transition-all duration-500 ease-luxe ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-              <div className="overflow-hidden"><p className="pb-6 text-ink/65 leading-relaxed pr-12">{item.a}</p></div>
+              <div className="overflow-hidden"><p className="pb-6 text-ink/75 leading-relaxed pr-12">{item.a}</p></div>
             </div>
           </div>
         ))}
@@ -41,26 +41,26 @@ export const FAQ: React.FC = () => {
       <table className="w-full text-sm">
         <thead><tr className="text-left border-b border-ink"><th className="field-label py-3">Zone</th><th className="field-label py-3">Délai</th><th className="field-label py-3 text-right">Frais</th></tr></thead>
         <tbody>
-          {DELIVERY_ZONES.map(z => <tr key={z.name} className="border-b border-ink/10"><td className="py-3.5">{z.name}</td><td className="py-3.5 text-ink/60">{z.delay}</td><td className="py-3.5 text-right">{formatPrice(z.fee)}</td></tr>)}
+          {DELIVERY_ZONES.map(z => <tr key={z.name} className="border-b border-ink/10"><td className="py-3.5">{z.name}</td><td className="py-3.5 text-ink/75">{z.delay}</td><td className="py-3.5 text-right">{formatPrice(z.fee)}</td></tr>)}
         </tbody>
       </table>
-      <p className="text-sm text-ink/60 mt-4">Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)} d'achat.</p>
+      <p className="text-sm text-ink/75 mt-4">Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)} d'achat.</p>
 
       <h2 id="tailles" className="font-display text-4xl mt-20 mb-6 scroll-mt-32">Guide des tailles</h2>
       <div className="grid sm:grid-cols-2 gap-10">
         <div>
           <h3 className="field-label">Chaussures · longueur du pied</h3>
           <table className="w-full text-sm"><tbody>
-            {SHOE_SIZES.map(([s, cm]) => <tr key={s} className="border-b border-ink/10"><td className="py-2.5">{s}</td><td className="py-2.5 text-right text-ink/60">{cm}</td></tr>)}
+            {SHOE_SIZES.map(([s, cm]) => <tr key={s} className="border-b border-ink/10"><td className="py-2.5">{s}</td><td className="py-2.5 text-right text-ink/75">{cm}</td></tr>)}
           </tbody></table>
         </div>
         {isOnSale('vetements') && <div>
           <h3 className="field-label">Prêt-à-porter</h3>
           <table className="w-full text-sm">
-            <thead><tr className="text-ink/50 border-b border-ink/10"><th className="text-left py-2.5 font-normal">Taille</th><th className="text-left font-normal">FR</th><th className="text-right font-normal">Poitrine</th></tr></thead>
-            <tbody>{CLOTHES_SIZES.map(([s, fr, p]) => <tr key={s} className="border-b border-ink/10"><td className="py-2.5">{s}</td><td>{fr}</td><td className="text-right text-ink/60">{p}</td></tr>)}</tbody>
+            <thead><tr className="text-ink/70 border-b border-ink/10"><th className="text-left py-2.5 font-normal">Taille</th><th className="text-left font-normal">FR</th><th className="text-right font-normal">Poitrine</th></tr></thead>
+            <tbody>{CLOTHES_SIZES.map(([s, fr, p]) => <tr key={s} className="border-b border-ink/10"><td className="py-2.5">{s}</td><td>{fr}</td><td className="text-right text-ink/75">{p}</td></tr>)}</tbody>
           </table>
-          <p className="text-xs text-ink/50 mt-4">Entre deux tailles ? Choisissez la plus grande, ou demandez conseil sur WhatsApp.</p>
+          <p className="text-xs text-ink/70 mt-4">Entre deux tailles ? Choisissez la plus grande, ou demandez conseil sur WhatsApp.</p>
         </div>}
       </div>
 

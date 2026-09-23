@@ -3,7 +3,7 @@
 //  - /api/chat      : assistant IA (Claude), réponse diffusée en direct (SSE)
 //  - /api/notify/*  : notifications WhatsApp (nouvelle commande, statut, retour en stock)
 //  - /api/orders, /api/driver/*, /api/geo/* : commandes, livreur suivi en direct, carte
-//  - sert aussi le site compilé (dist/) en production
+//  - sert aussi le site compilé (dist/) en production, avec robots.txt, sitemap.xml et aperçus de liens
 // ============================================================
 import express from 'express';
 import path from 'node:path';
@@ -19,6 +19,7 @@ const { registerAuthRoutes } = await import('./auth.js');
 const { registerOrderRoutes } = await import('./orders.js');
 const { registerMarketRoutes } = await import('./market.js');
 const { registerCatalogRoutes } = await import('./catalog.js');
+const { registerSeoRoutes } = await import('./seo.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -157,10 +158,14 @@ registerCatalogRoutes(app, { limit, isAdmin, store });
 /* ---------- Le Marché (dropshipping) ---------- */
 registerMarketRoutes(app, { limit, isAdmin, store, wa });
 
-/* ---------- Site compilé (production) ---------- */
+/* ---------- Site compilé (production) : robots.txt, sitemap.xml, fichiers, puis pages avec leurs balises de partage ---------- */
 const dist = path.join(here, '..', 'dist');
+const sendPage = registerSeoRoutes(app, { store, dist });
+// Fichiers au nom versionné (assets/…-hash.js) : gardés un an par le navigateur
+app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '1y' }), (_req, res) => res.status(404).end());
+app.use('/fonts', express.static(path.join(dist, 'fonts'), { immutable: true, maxAge: '30d' }));
 app.use(express.static(dist, { index: false, maxAge: '1h' }));
-app.get(/^(?!\/api\/).*/, (_req, res, next) => res.sendFile(path.join(dist, 'index.html'), err => err && next()));
+app.get(/^(?!\/api\/).*/, sendPage);
 
 const PORT = Number(process.env.PORT) || 8787;
 app.listen(PORT, () => {

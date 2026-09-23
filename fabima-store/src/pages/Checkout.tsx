@@ -170,7 +170,7 @@ export const Checkout: React.FC = () => {
 
   return (
     <div className="max-w-[1320px] mx-auto px-5 sm:px-8 lg:px-12 pt-10">
-      <Link to="/panier" className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] text-ink/55 hover:text-ink"><ChevronLeft className="w-3.5 h-3.5" /> Panier</Link>
+      <Link to="/panier" className="inline-flex items-center gap-1 text-[11px] uppercase tracking-[0.2em] text-ink/70 hover:text-ink"><ChevronLeft className="w-3.5 h-3.5" /> Panier</Link>
       <div className="flex flex-wrap items-end justify-between gap-6 mt-4 mb-12 pb-8 border-b border-ink/10">
         <h1 className="font-display text-5xl sm:text-6xl">Commande</h1>
         <ol className="flex items-center gap-4 text-[11px] uppercase tracking-[0.2em]">
@@ -178,10 +178,10 @@ export const Checkout: React.FC = () => {
             const n = i + 1;
             return (
               <li key={label} className="flex items-center gap-3">
-                <span className={`w-7 h-7 rounded-full grid place-items-center text-[11px] border ${step > n ? 'bg-ink border-ink text-ivory' : step === n ? 'border-ink' : 'border-ink/20 text-ink/35'}`}>
+                <span className={`w-7 h-7 rounded-full grid place-items-center text-[11px] border ${step > n ? 'bg-ink border-ink text-ivory' : step === n ? 'border-ink' : 'border-ink/20 text-ink/70'}`}>
                   {step > n ? <Check className="w-3.5 h-3.5" /> : n}
                 </span>
-                <span className={`hidden sm:inline ${step >= n ? 'font-semibold' : 'text-ink/35'}`}>{label}</span>
+                <span className={`hidden sm:inline ${step >= n ? 'font-semibold' : 'text-ink/70'}`}>{label}</span>
                 {n < 3 && <span className="w-6 sm:w-10 h-px bg-ink/20" />}
               </li>
             );
@@ -195,7 +195,7 @@ export const Checkout: React.FC = () => {
             <form onSubmit={goToPayment} className="space-y-10 animate-fade-in" noValidate>
               <fieldset className="space-y-5 min-w-0">
                 <legend className="font-display text-3xl mb-6">Vos coordonnées</legend>
-                {(savedCustomer || me?.firstName) && <p className="text-xs text-ink/55 -mt-3">Bon retour parmi nous, {savedCustomer?.firstName || me?.firstName} : vos coordonnées ont été préremplies.</p>}
+                {(savedCustomer || me?.firstName) && <p className="text-xs text-ink/70 -mt-3">Bon retour parmi nous, {savedCustomer?.firstName || me?.firstName} : vos coordonnées ont été préremplies.</p>}
                 {account.status === 'guest' && !savedCustomer && (
                   <Link to="/compte?retour=/commande" className="flex items-center gap-3 p-4 -mt-1 rounded-2xl bg-blush/40 text-sm">
                     <span className="text-2xl">📱</span><span><strong>Déjà cliente ?</strong> Connectez-vous avec votre numéro pour tout préremplir.</span>
@@ -219,7 +219,7 @@ export const Checkout: React.FC = () => {
                     className="w-full flex items-center justify-between gap-3 px-4 h-14 bg-white text-sm text-left">
                     <span className="flex items-center gap-2 min-w-0">
                       <MapPin className="w-4 h-4 text-ink/40 shrink-0" />
-                      <span className="truncate"><span className="text-ink/55">{zoneAuto ? 'Zone reconnue : ' : 'Zone : '}</span><strong>{zone.name}</strong> · {zone.delay}</span>
+                      <span className="truncate"><span className="text-ink/70">{zoneAuto ? 'Zone reconnue : ' : 'Zone : '}</span><strong>{zone.name}</strong> · {zone.delay}</span>
                     </span>
                     <span className="flex items-center gap-2 shrink-0 text-xs">
                       {t.deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(zone.fee)}
@@ -232,7 +232,7 @@ export const Checkout: React.FC = () => {
                         <label key={z.name} className={`flex items-center justify-between gap-3 px-4 h-14 border rounded-2xl cursor-pointer transition-colors ${form.zone === z.name ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
                           <span className="flex items-center gap-3">
                             <input type="radio" name="zone" value={z.name} checked={form.zone === z.name} onChange={e => { set('zone')(e); setZoneAuto(false); }} className="accent-ink" />
-                            <span className="text-sm">{z.name}<span className="block text-[11px] text-ink/45">{z.delay}</span></span>
+                            <span className="text-sm">{z.name}<span className="block text-[11px] text-ink/70">{z.delay}</span></span>
                           </span>
                           <span className="text-xs">{computeTotals(z.fee).deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(z.fee)}</span>
                         </label>
@@ -258,7 +258,7 @@ export const Checkout: React.FC = () => {
                 <div className="text-sm">
                   <p className="field-label !mb-1.5">Livraison à</p>
                   <p className="font-semibold">{form.firstName} {form.lastName} · {form.phone}</p>
-                  <p className="text-ink/60">{[form.location?.label, form.location?.landmark, form.address].filter(Boolean).join(' · ') || form.zone} — {form.zone}, {zone.delay}</p>
+                  <p className="text-ink/75">{[form.location?.label, form.location?.landmark, form.address].filter(Boolean).join(' · ') || form.zone} — {form.zone}, {zone.delay}</p>
                   {form.location && <p className="text-xs text-emerald-800 mt-1">📍 Point de livraison enregistré sur la carte : le livreur viendra directement.</p>}
                 </div>
                 <button onClick={() => setStep(1)} className="text-[11px] uppercase tracking-[0.2em] link-luxe shrink-0">Modifier</button>
@@ -277,7 +277,7 @@ export const Checkout: React.FC = () => {
                     <label key={m.id} className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-colors ${method === m.id ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
                       <input type="radio" name="payment" checked={method === m.id} onChange={() => setMethod(m.id)} className="sr-only" />
                       <span className="w-11 h-11 rounded-full grid place-items-center text-white shrink-0" style={{ background: m.color }}><m.Icon className="w-5 h-5" strokeWidth={1.5} /></span>
-                      <span className="flex-1"><strong className="block text-sm font-semibold">{m.name}</strong><span className="text-xs text-ink/55">{m.desc}</span></span>
+                      <span className="flex-1"><strong className="block text-sm font-semibold">{m.name}</strong><span className="text-xs text-ink/70">{m.desc}</span></span>
                       <span className={`w-4 h-4 rounded-full border grid place-items-center ${method === m.id ? 'border-ink' : 'border-ink/25'}`}>{method === m.id && <span className="w-2 h-2 rounded-full bg-ink" />}</span>
                     </label>
                   ))}
@@ -288,7 +288,7 @@ export const Checkout: React.FC = () => {
                 <label className="block animate-fade-in">
                   <span className="field-label">Numéro {PAYMENT_METHODS.find(m => m.id === method)?.name}</span>
                   <input value={payPhone} onChange={e => setPayPhone(e.target.value)} type="tel" placeholder="77 123 45 67" className="field" />
-                  <span className="text-xs text-ink/55 mt-2 block">Vous recevrez une demande de validation de {formatPrice(t.total)} sur votre téléphone.</span>
+                  <span className="text-xs text-ink/70 mt-2 block">Vous recevrez une demande de validation de {formatPrice(t.total)} sur votre téléphone.</span>
                 </label>
               )}
               {method === 'card' && (
@@ -311,7 +311,7 @@ export const Checkout: React.FC = () => {
                 {processing ? <><Loader2 className="w-4 h-4 animate-spin" /> {method === 'cash' ? 'Validation…' : 'En attente de validation…'}</>
                   : <><Lock className="w-3.5 h-3.5" /> {method === 'cash' ? 'Confirmer la commande' : `Payer ${formatPrice(t.total)}`}</>}
               </button>
-              <p className="text-[11px] text-center text-ink/45 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Paiement chiffré · Vos données bancaires ne sont jamais conservées</p>
+              <p className="text-[11px] text-center text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Paiement chiffré · Vos données bancaires ne sont jamais conservées</p>
             </div>
           )}
         </div>
@@ -328,7 +328,7 @@ export const Checkout: React.FC = () => {
                 </div>
                 <div className="flex-1 min-w-0 text-sm">
                   <p className="font-display text-lg leading-tight line-clamp-1">{i.name}</p>
-                  <p className="text-xs text-ink/50">{[i.color, i.size && `T. ${i.size}`].filter(Boolean).join(' · ')}</p>
+                  <p className="text-xs text-ink/70">{[i.color, i.size && `T. ${i.size}`].filter(Boolean).join(' · ')}</p>
                   {i.market && <p className="text-[11px] text-wine mt-0.5">🌍 Marché · {delayLabel(i.market.delayMin, i.market.delayMax)}</p>}
                   {i.preorder && <p className="text-[11px] text-wine mt-0.5">⏳ Sur commande · {delayLabel(i.preorder.days, i.preorder.days)}</p>}
                 </div>
@@ -338,10 +338,10 @@ export const Checkout: React.FC = () => {
           </ul>
           <PromoBox />
           <dl className="space-y-3 text-sm border-t border-ink/10 pt-5">
-            <div className="flex justify-between"><dt className="text-ink/65">Sous-total</dt><dd>{formatPrice(t.subtotal)}</dd></div>
+            <div className="flex justify-between"><dt className="text-ink/75">Sous-total</dt><dd>{formatPrice(t.subtotal)}</dd></div>
             {t.discount > 0 && <div className="flex justify-between text-emerald-800"><dt>Réduction</dt><dd>-{formatPrice(t.discount)}</dd></div>}
-            {t.giftFee > 0 && <div className="flex justify-between"><dt className="text-ink/65 flex items-center gap-1.5"><Gift className="w-3.5 h-3.5" strokeWidth={1.5} /> Emballage cadeau</dt><dd>{formatPrice(t.giftFee)}</dd></div>}
-            <div className="flex justify-between"><dt className="text-ink/65">Livraison · {zone.name}</dt><dd>{t.deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(t.deliveryFee)}</dd></div>
+            {t.giftFee > 0 && <div className="flex justify-between"><dt className="text-ink/75 flex items-center gap-1.5"><Gift className="w-3.5 h-3.5" strokeWidth={1.5} /> Emballage cadeau</dt><dd>{formatPrice(t.giftFee)}</dd></div>}
+            <div className="flex justify-between"><dt className="text-ink/75">Livraison · {zone.name}</dt><dd>{t.deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(t.deliveryFee)}</dd></div>
           </dl>
           <div className="flex justify-between items-baseline border-t border-ink/10 pt-5"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="font-display text-4xl">{formatPrice(t.total)}</span></div>
         </aside>

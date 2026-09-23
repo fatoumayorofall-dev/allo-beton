@@ -8,30 +8,49 @@ import { CartDrawer } from './components/CartDrawer';
 import { QuickView } from './components/QuickView';
 import { Toasts } from './components/Toasts';
 import { FloatingActions } from './components/FloatingActions';
-import { Assistant } from './components/Assistant';
+import { AssistantHost } from './components/AssistantLauncher';
 import { Home } from './pages/Home';
 import { Catalog } from './pages/Catalog';
 import { ProductDetail } from './pages/ProductDetail';
-import { Cart } from './pages/Cart';
-import { Checkout } from './pages/Checkout';
-import { OrderSuccess } from './pages/OrderSuccess';
-import { Tracking } from './pages/Tracking';
-import { Wishlist } from './pages/Wishlist';
-import { MyOrders } from './pages/MyOrders';
-import { About } from './pages/About';
-import { FAQ } from './pages/FAQ';
-import { NotFound } from './pages/NotFound';
-import { ArticlePage, Journal } from './pages/Journal';
-import { SimpleProduct } from './pages/SimpleProduct';
-import { Showcase } from './pages/Showcase';
-import { Account } from './pages/Account';
 import { InstallBanner } from './components/InstallApp';
+import { BrandMark } from './components/Logo';
 
-// L'espace gérant n'est chargé que lorsqu'on y accède : la clientèle ne télécharge pas son code.
+/*
+ * Découpage du code : l'accueil, la boutique et les fiches produit arrivent tout de suite ;
+ * les autres pages ne sont téléchargées que lorsqu'on y va (ou en avance, quand le téléphone est libre).
+ * L'espace gérant et la page livreur ne sont jamais chargés par la clientèle.
+ */
+const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, name: K) => {
+  const Comp = lazy(() => load().then(m => ({ default: m[name] })));
+  return Object.assign(Comp, { preload: load });
+};
+const Cart = page(() => import('./pages/Cart'), 'Cart');
+const Checkout = page(() => import('./pages/Checkout'), 'Checkout');
+const OrderSuccess = page(() => import('./pages/OrderSuccess'), 'OrderSuccess');
+const Tracking = page(() => import('./pages/Tracking'), 'Tracking');
+const Wishlist = page(() => import('./pages/Wishlist'), 'Wishlist');
+const MyOrders = page(() => import('./pages/MyOrders'), 'MyOrders');
+const Account = page(() => import('./pages/Account'), 'Account');
+const About = page(() => import('./pages/About'), 'About');
+const FAQ = page(() => import('./pages/FAQ'), 'FAQ');
+const NotFound = page(() => import('./pages/NotFound'), 'NotFound');
+const Journal = page(() => import('./pages/Journal'), 'Journal');
+const ArticlePage = page(() => import('./pages/Journal'), 'ArticlePage');
+const SimpleProduct = page(() => import('./pages/SimpleProduct'), 'SimpleProduct');
+const Showcase = page(() => import('./pages/Showcase'), 'Showcase');
+const Market = page(() => import('./pages/Market'), 'default');
+const MarketProduct = page(() => import('./pages/MarketProduct'), 'default');
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
 const Driver = lazy(() => import('./pages/Driver'));
-const Market = lazy(() => import('./pages/Market'));
-const MarketProduct = lazy(() => import('./pages/MarketProduct'));
+
+/** Pages les plus probables après l'arrivée : préchargées quand le navigateur n'a plus rien à faire. */
+const usePreloadLikelyPages = () => {
+  useEffect(() => {
+    const preload = () => { Cart.preload(); Checkout.preload(); Market.preload(); };
+    const t = window.setTimeout(() => ('requestIdleCallback' in window ? window.requestIdleCallback(preload) : preload()), 2500);
+    return () => clearTimeout(t);
+  }, []);
+};
 
 /** Remonte en haut de page à chaque changement de route (ou vers l'ancre demandée). */
 const ScrollToTop: React.FC = () => {
@@ -47,7 +66,7 @@ const ScrollToTop: React.FC = () => {
 };
 
 const PageFallback: React.FC = () => (
-  <div className="min-h-[60vh] grid place-items-center"><span className="font-script text-5xl text-gold animate-pulse">Fabima</span></div>
+  <div className="min-h-[100svh] grid place-items-center" role="status" aria-busy="true" aria-label="Chargement"><BrandMark className="h-16 w-auto motion-safe:animate-pulse" /></div>
 );
 
 /** Fondu doux à chaque changement de page. */
@@ -64,6 +83,7 @@ const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 export default function App() {
+  usePreloadLikelyPages();
   return (
     <BrowserRouter>
       <StoreProvider>
@@ -107,7 +127,7 @@ export default function App() {
         <CartDrawer />
         <QuickView />
         <Toasts />
-        <Chrome><FloatingActions /><Assistant /><InstallBanner /></Chrome>
+        <Chrome><FloatingActions /><AssistantHost /><InstallBanner /></Chrome>
         </AccountProvider>
       </StoreProvider>
     </BrowserRouter>

@@ -11,6 +11,7 @@ import { usePageTitle } from '../utils/usePageTitle';
 import { getShowcase, trackVisit, type VisitSource } from '../services/api';
 import { ProductImage } from '../components/ProductImage';
 import { ListenButton } from '../components/ListenButton';
+import { BrandMark, Wordmark } from '../components/Logo';
 
 /** En-tête minimal des pages « statut » : logo + retour à la boutique. */
 export const SimpleHeader: React.FC<{ back?: string }> = ({ back }) => (
@@ -19,7 +20,7 @@ export const SimpleHeader: React.FC<{ back?: string }> = ({ back }) => (
       {back
         ? <Link to={back} aria-label="Retour" className="w-12 h-12 rounded-full bg-white grid place-items-center shadow-sm"><ChevronLeft className="w-6 h-6" /></Link>
         : <span />}
-      <Link to="/" className="text-center font-script text-4xl leading-none" aria-label="Fabima Store">Fabima</Link>
+      <Link to="/" className="flex items-center justify-center gap-2 text-ink" aria-label="Fabima Store"><BrandMark className="h-8 w-auto" /><Wordmark className="h-6 w-auto" /></Link>
       <Link to="/" aria-label="Toute la boutique" className="w-12 h-12 rounded-full bg-white grid place-items-center shadow-sm"><Home className="w-5 h-5" /></Link>
     </div>
   </header>
@@ -53,7 +54,7 @@ export const SimpleProduct: React.FC = () => {
   const sizesRef = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
-  usePageTitle(product?.name, product ? `${product.name} — ${formatPrice(product.price)}. Voir les photos, les couleurs et commander sur WhatsApp.` : undefined);
+  usePageTitle(product?.name, product ? `${product.name} — ${formatPrice(product.price)}. Voir les photos, les couleurs et commander sur WhatsApp.` : undefined, { image: product?.images[0], canonicalPath: product ? `/produit/${product.slug}` : undefined });
 
   useEffect(() => {
     if (!product) return;
@@ -141,9 +142,9 @@ export const SimpleProduct: React.FC = () => {
         <h1 className="font-display text-3xl leading-tight mt-4 text-center">{product.name}</h1>
         <div className="mt-2 text-center">
           <p className={`text-5xl font-extrabold tracking-tight ${off ? 'text-wine' : 'text-ink'}`}>{formatPrice(product.price)}</p>
-          {product.oldPrice && <p className="text-lg text-ink/40 line-through mt-1">{formatPrice(product.oldPrice)}</p>}
+          {product.oldPrice && <p className="text-lg text-ink/70 line-through mt-1">{formatPrice(product.oldPrice)}</p>}
         </div>
-        <p className={`mt-3 mx-auto w-fit px-4 py-2 rounded-full text-base font-bold flex items-center gap-2 ${outOfStock ? 'bg-ink/10 text-ink/60' : 'bg-emerald-100 text-emerald-800'}`}>
+        <p className={`mt-3 mx-auto w-fit px-4 py-2 rounded-full text-base font-bold flex items-center gap-2 ${outOfStock ? 'bg-ink/10 text-ink/75' : 'bg-emerald-100 text-emerald-800'}`}>
           {outOfStock ? '❌ Épuisé' : isPreorder(product) ? <>⏳ Sur commande · {product.preorderDays} jours</> : <><Check className="w-5 h-5" /> Disponible</>}
         </p>
 
@@ -174,7 +175,7 @@ export const SimpleProduct: React.FC = () => {
                   className={`h-16 rounded-2xl text-2xl font-extrabold transition-colors ${size === s ? 'bg-ink text-ivory' : 'bg-ivory-deep text-ink'}`}>{s}</button>
               ))}
             </div>
-            <Link to="/faq#tailles" className="block text-center text-sm text-ink/55 mt-3 underline">Je ne connais pas ma taille</Link>
+            <Link to="/faq#tailles" className="block text-center text-sm text-ink/70 mt-3 underline">Je ne connais pas ma taille</Link>
           </section>
         )}
 

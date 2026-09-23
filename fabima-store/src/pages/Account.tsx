@@ -89,7 +89,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
           <div>
             <p className="text-4xl">📱</p>
             <h1 className="font-display text-4xl mt-2 leading-tight">Mon compte Fabima</h1>
-            <p className="text-ink/60 mt-2">Juste votre numéro. Pas de mot de passe.</p>
+            <p className="text-ink/75 mt-2">Juste votre numéro. Pas de mot de passe.</p>
           </div>
           <HelpVoice text={HELP_PHONE} />
         </div>
@@ -106,7 +106,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
             {busy ? <Loader2 className="w-6 h-6 animate-spin" /> : <MessageCircle className="w-6 h-6" />} Recevoir mon code sur WhatsApp
           </button>
         </form>
-        <ul className="mt-7 grid grid-cols-3 gap-3 text-center text-xs text-ink/65">
+        <ul className="mt-7 grid grid-cols-3 gap-3 text-center text-xs text-ink/75">
           <li className="p-3 rounded-2xl bg-ivory-deep/60"><span className="block text-2xl">📦</span>Suivre mes commandes</li>
           <li className="p-3 rounded-2xl bg-ivory-deep/60"><span className="block text-2xl">❤️</span>Garder mes favoris</li>
           <li className="p-3 rounded-2xl bg-ivory-deep/60"><span className="block text-2xl">⚡</span>Commander plus vite</li>
@@ -121,7 +121,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
         <div>
           <p className="text-4xl">💬</p>
           <h1 className="font-display text-3xl mt-2 leading-tight">Écrivez le code reçu sur WhatsApp</h1>
-          <p className="text-ink/60 mt-2">Envoyé au <strong className="text-ink">+221 {pretty(digits)}</strong></p>
+          <p className="text-ink/75 mt-2">Envoyé au <strong className="text-ink">+221 {pretty(digits)}</strong></p>
         </div>
         <HelpVoice text={HELP_CODE} />
       </div>
@@ -156,7 +156,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
         <button onClick={send} disabled={wait > 0 || busy} className="underline disabled:no-underline disabled:text-ink/40">
           {wait > 0 ? `Renvoyer le code dans ${wait} s` : 'Je n\'ai rien reçu : renvoyer le code'}
         </button>
-        <button onClick={() => { setStep('phone'); setError(''); }} className="text-ink/60">Changer de numéro</button>
+        <button onClick={() => { setStep('phone'); setError(''); }} className="text-ink/75">Changer de numéro</button>
       </div>
     </Card>
   );
@@ -173,12 +173,12 @@ const NameStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     <Card>
       <p className="text-4xl">🌸</p>
       <h1 className="font-display text-4xl mt-2">Bienvenue chez Fabima !</h1>
-      <p className="text-ink/60 mt-2">Comment vous appelez-vous ?</p>
+      <p className="text-ink/75 mt-2">Comment vous appelez-vous ?</p>
       <form onSubmit={async e => { e.preventDefault(); if (name.trim()) await saveProfile({ firstName: name.trim() }); onDone(); }} className="mt-6">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Votre prénom" aria-label="Votre prénom" autoFocus autoComplete="given-name"
           className="w-full h-16 px-5 rounded-2xl border-2 border-ink/15 focus:border-ink outline-none text-2xl" />
         <button className="mt-5 w-full h-16 rounded-full bg-ink text-ivory text-lg font-bold inline-flex items-center justify-center gap-2">Continuer <ArrowRight className="w-5 h-5" /></button>
-        <button type="button" onClick={onDone} className="mt-3 w-full text-sm text-ink/55">Plus tard</button>
+        <button type="button" onClick={onDone} className="mt-3 w-full text-sm text-ink/70">Plus tard</button>
       </form>
     </Card>
   );
@@ -232,7 +232,7 @@ const Dashboard: React.FC = () => {
       <Card>
         <p className="font-script text-4xl text-gold-dark leading-none">Bonjour</p>
         <h1 className="font-display text-4xl mt-1">{user.firstName || 'chère cliente'} 🌸</h1>
-        <p className="text-ink/60 mt-1">+221 {pretty(user.phone.replace(/^\+221/, ''))}</p>
+        <p className="text-ink/75 mt-1">+221 {pretty(user.phone.replace(/^\+221/, ''))}</p>
       </Card>
 
       <div className="grid grid-cols-2 gap-3">
@@ -241,7 +241,7 @@ const Dashboard: React.FC = () => {
             <>
               <span className="text-4xl">{t.emoji}</span>
               <span className="mt-3 block text-lg font-bold leading-tight">{t.label}</span>
-              <span className="text-sm text-ink/55">{t.hint}</span>
+              <span className="text-sm text-ink/70">{t.hint}</span>
             </>
           );
           const cls = 'block p-5 rounded-[1.75rem] bg-white shadow-sm border border-ink/[0.05] active:scale-[.98] transition-transform';
@@ -255,7 +255,7 @@ const Dashboard: React.FC = () => {
         <div className="flex items-start justify-between gap-3">
           <p className="flex items-start gap-3"><MapPin className="w-6 h-6 text-gold-dark shrink-0" />
             <span><strong className="block">Mon adresse de livraison</strong>
-              <span className="text-sm text-ink/60">{user.address ? `${user.address}, ${user.zone}` : 'Pas encore enregistrée'}</span></span>
+              <span className="text-sm text-ink/75">{user.address ? `${user.address}, ${user.zone}` : 'Pas encore enregistrée'}</span></span>
           </p>
           <button onClick={() => setEditing(e => !e)} aria-label="Modifier mon adresse" className="w-11 h-11 rounded-full bg-ivory-deep grid place-items-center shrink-0"><Pencil className="w-4 h-4" /></button>
         </div>
@@ -289,7 +289,7 @@ export const Account: React.FC = () => {
           <Card>
             <p className="text-4xl">📱</p>
             <h1 className="font-display text-3xl mt-2">Mon compte Fabima</h1>
-            <p className="text-ink/60 mt-2">La création de compte n'est pas disponible pour le moment. Vous pouvez tout de même commander et suivre vos commandes depuis ce téléphone.</p>
+            <p className="text-ink/75 mt-2">La création de compte n'est pas disponible pour le moment. Vous pouvez tout de même commander et suivre vos commandes depuis ce téléphone.</p>
             <div className="mt-6 flex flex-col gap-3">
               <Link to="/mes-commandes" className="h-14 rounded-full bg-ink text-ivory font-bold grid place-items-center">Mes commandes</Link>
               <InstallButton big />

@@ -4,6 +4,7 @@ import { ArrowRight, Facebook, Instagram, Music2 } from 'lucide-react';
 import { SITE_CONFIG } from '../config/site';
 import { CATEGORIES } from '../data/catalog';
 import { useStore } from '../context/StoreContext';
+import { BrandMark, Wordmark } from './Logo';
 
 const NEWSLETTER_KEY = 'fabima_newsletter';
 
@@ -30,12 +31,12 @@ export const Footer: React.FC = () => {
       {/* Halos rosés et grande signature en filigrane */}
       <span className="pointer-events-none absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-wine/25 blur-[120px]" aria-hidden />
       <span className="pointer-events-none absolute -bottom-48 right-0 w-[32rem] h-[32rem] rounded-full bg-gold/15 blur-[120px]" aria-hidden />
-      <span className="pointer-events-none select-none absolute -bottom-[0.28em] left-1/2 -translate-x-1/2 font-script text-[28vw] lg:text-[22rem] leading-none text-ivory/[0.035] whitespace-nowrap" aria-hidden>Fabima</span>
+      <Wordmark tagline={false} className="pointer-events-none select-none absolute -bottom-[3%] left-1/2 -translate-x-1/2 w-[92%] max-w-[1300px] h-auto text-ivory/[0.035]" />
       {/* Newsletter */}
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-end border-b border-ivory/10">
         <div>
           <p className={col}>Le cercle des Fabima Girls</p>
-          <h3 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.02]">Recevez nos nouveautés<br /><em className="text-gold-light">en avant-première</em></h3>
+          <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.02]">Recevez nos nouveautés<br /><em className="text-gold-light">en avant-première</em></h2>
         </div>
         <form onSubmit={subscribe} className="w-full">
           <label htmlFor="nl-email" className="text-sm text-ivory/60">Ventes privées, lancements de collection et conseils de style — une fois par mois, jamais plus.</label>
@@ -51,7 +52,10 @@ export const Footer: React.FC = () => {
 
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-16 grid gap-12 grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div className="col-span-2 lg:col-span-1 space-y-6">
-          <p className="font-script text-6xl text-gold-light leading-none">Fabima</p>
+          <Link to="/" aria-label="Fabima Store — accueil" className="group inline-flex items-center gap-4">
+            <BrandMark light className="h-14 w-auto origin-[50%_8%] motion-safe:group-hover:animate-swing" />
+            <Wordmark className="h-9 w-auto text-ivory" tagClassName="fill-gold-light" />
+          </Link>
           <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures et sacs choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
           <div className="flex gap-2">
             {[

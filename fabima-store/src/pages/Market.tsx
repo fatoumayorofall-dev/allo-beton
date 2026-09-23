@@ -39,7 +39,7 @@ export const Market: React.FC = () => {
           <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light"><Globe2 className="w-4 h-4" /> Fabima dans le monde</p>
           <h1 className="font-display text-5xl sm:text-7xl leading-[0.95] mt-5">Le Marché <span className="font-script text-gold-light text-[1.15em]">Fabima</span></h1>
           <p className="mt-5 text-ivory/70 max-w-xl leading-relaxed">Encore plus de chaussures et de sacs, dénichés pour vous chez nos partenaires dans le monde entier. Nous les commandons dès votre achat et vous les livrons chez vous, avec un suivi à chaque étape.</p>
-          <ol className="mt-10 flex sm:grid sm:grid-cols-3 gap-3 max-w-4xl overflow-x-auto no-scrollbar snap-x -mx-5 px-5 sm:mx-0 sm:px-0">
+          <ol tabIndex={0} aria-label="Comment ça marche" className="mt-10 flex sm:grid sm:grid-cols-3 gap-3 max-w-4xl overflow-x-auto no-scrollbar snap-x -mx-5 px-5 sm:mx-0 sm:px-0 rounded-[1.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-light">
             {[
               { Icon: ShoppingBag, t: '1. Vous commandez', d: 'Paiement sécurisé : Wave, Orange Money, Free Money ou carte.' },
               { Icon: PackageCheck, t: '2. Nous commandons', d: 'Chez notre partenaire, le jour même. Vous êtes prévenue sur WhatsApp.' },
@@ -71,7 +71,7 @@ export const Market: React.FC = () => {
               <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-ink/40" />
               <input value={q} onChange={e => setQ(e.target.value)} type="search" placeholder="Rechercher au Marché" aria-label="Rechercher au Marché" className="field !h-10 !pl-10" />
             </label>
-            <select value={sort} onChange={e => setSort(e.target.value as keyof typeof SORTS)} aria-label="Trier" className="h-10 px-3 rounded-full border border-ink/10 bg-white text-sm">
+            <select value={sort} onChange={e => setSort(e.target.value as keyof typeof SORTS)} aria-label="Trier les articles" className="h-10 px-3 rounded-full border border-ink/10 bg-white text-sm">
               {Object.entries(SORTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
           </div>
@@ -87,12 +87,12 @@ export const Market: React.FC = () => {
           <div className="text-center py-24">
             <Globe2 className="w-10 h-10 mx-auto text-gold" strokeWidth={1.2} />
             <p className="font-display text-3xl mt-4">{offline ? 'Le Marché est momentanément indisponible' : products?.length ? 'Aucun article ne correspond' : 'Le Marché ouvre très bientôt'}</p>
-            <p className="text-ink/55 mt-2">{offline ? 'Vérifiez votre connexion et réessayez.' : 'En attendant, découvrez nos chaussures et nos sacs.'}</p>
+            <p className="text-ink/70 mt-2">{offline ? 'Vérifiez votre connexion et réessayez.' : 'En attendant, découvrez nos chaussures et nos sacs.'}</p>
             <Link to="/boutique" className="btn-dark mt-8">Voir la boutique</Link>
           </div>
         )}
 
-        <p className="mt-16 flex items-start gap-3 max-w-2xl mx-auto text-sm text-ink/55 p-5 rounded-2xl bg-white border border-ink/[0.06]">
+        <p className="mt-16 flex items-start gap-3 max-w-2xl mx-auto text-sm text-ink/70 p-5 rounded-2xl bg-white border border-ink/[0.06]">
           <CreditCard className="w-5 h-5 text-wine shrink-0 mt-0.5" strokeWidth={1.5} />
           Les articles du Marché sont commandés spécialement pour vous : ils se règlent à la commande et le délai de livraison est indiqué sur chaque fiche. Une question ? Écrivez-nous sur WhatsApp.
         </p>

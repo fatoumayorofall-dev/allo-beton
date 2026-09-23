@@ -29,7 +29,7 @@ const InstallGuide: React.FC<{ ios: boolean; onClose: () => void }> = ({ ios, on
           <img src="/icons/icon-192.png" alt="" className="w-16 h-16 rounded-2xl shadow-soft shrink-0" />
           <div>
             <p className="font-display text-2xl leading-tight">Fabima sur votre téléphone</p>
-            <p className="text-sm text-ink/60">3 gestes, c'est gratuit</p>
+            <p className="text-sm text-ink/75">3 gestes, c'est gratuit</p>
           </div>
         </div>
         <button onClick={() => speak(steps.map((s, i) => `Étape ${i + 1} : ${s.text}.`).join(' '))}
@@ -43,7 +43,7 @@ const InstallGuide: React.FC<{ ios: boolean; onClose: () => void }> = ({ ios, on
             </li>
           ))}
         </ol>
-        <p className="mt-5 text-sm text-center text-ink/60">Ensuite, touchez l'icône <strong className="font-script text-xl text-ink">F</strong> Fabima sur votre écran pour ouvrir la boutique.</p>
+        <p className="mt-5 text-sm text-center text-ink/75">Ensuite, touchez l'icône <strong className="font-script text-xl text-ink">F</strong> Fabima sur votre écran pour ouvrir la boutique.</p>
       </div>
     </div>
   );
@@ -100,8 +100,8 @@ export const InstallBanner: React.FC = () => {
   return (
     <div className="fixed left-3 right-3 bottom-3 z-[60] animate-fade-up print:hidden">
       <div className="relative bg-white rounded-[1.75rem] shadow-luxe border border-ink/[0.06] p-3 pr-12">
-        <button onClick={dismiss} aria-label="Plus tard" className="absolute top-2 right-2 w-9 h-9 rounded-full grid place-items-center text-ink/50"><X className="w-4 h-4" /></button>
-        <InstallButton big className="!bg-transparent !text-ink !p-1 [&_span_.text-sm]:!text-ink/60" />
+        <button onClick={dismiss} aria-label="Plus tard" className="absolute top-2 right-2 w-9 h-9 rounded-full grid place-items-center text-ink/70"><X className="w-4 h-4" /></button>
+        <InstallButton big className="!bg-transparent !text-ink !p-1 [&_span_.text-sm]:!text-ink/75" />
       </div>
     </div>
   );

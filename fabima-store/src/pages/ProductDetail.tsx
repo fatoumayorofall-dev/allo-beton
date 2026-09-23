@@ -29,7 +29,7 @@ const ZoomImage: React.FC<{ src?: string; alt: string }> = ({ src, alt }) => {
         setOrigin(`${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`);
       }}>
       <div className="w-full h-full transition-transform duration-300 ease-out" style={{ transform: zoom ? 'scale(1.8)' : 'scale(1)', transformOrigin: origin }}>
-        <ProductImage src={src} alt={alt} className="w-full h-full" />
+        <ProductImage src={src} alt={alt} className="w-full h-full" sizes="(min-width: 1024px) 50vw, 100vw" priority />
       </div>
     </div>
   );
@@ -76,7 +76,7 @@ const StockAlertForm: React.FC<{ onSubmit: (contact: string) => void }> = ({ onS
   return (
     <form className="mt-5 p-5 rounded-3xl bg-white border border-ink/[0.06]" onSubmit={e => { e.preventDefault(); if (valid) { onSubmit(contact.trim()); setDone(true); } }}>
       <p className="text-sm font-semibold flex items-center gap-2"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Victime de son succès</p>
-      <p className="text-xs text-ink/60 mt-1">Laissez votre WhatsApp ou votre e-mail : nous vous prévenons dès son retour.</p>
+      <p className="text-xs text-ink/75 mt-1">Laissez votre WhatsApp ou votre e-mail : nous vous prévenons dès son retour.</p>
       <div className="flex gap-2 mt-4">
         <input value={contact} onChange={e => setContact(e.target.value)} placeholder="77 123 45 67 ou e-mail" aria-label="Téléphone ou e-mail" className="field !h-11" />
         <button disabled={!valid} className="btn-dark !h-11 !px-5 shrink-0">M'alerter</button>
@@ -101,7 +101,7 @@ export const ProductDetail: React.FC = () => {
   const { ref: buyRef, inView: buyVisible } = useInView<HTMLDivElement>('0px');
   const [pastBuy, setPastBuy] = useState(false);
 
-  usePageTitle(product?.name, product ? `${product.name} — ${product.description}` : undefined);
+  usePageTitle(product?.name, product ? `${product.name} — ${product.description}` : undefined, { image: product?.images[0] });
 
   useEffect(() => {
     if (!product) return;
@@ -152,7 +152,7 @@ export const ProductDetail: React.FC = () => {
       <div className="max-w-xl mx-auto text-center py-40 px-5">
         <p className="eyebrow">Article introuvable</p>
         <h1 className="font-display text-5xl mt-4">Cette pièce s'est envolée</h1>
-        <p className="text-ink/60 mt-4">Elle n'est plus disponible ou a été retirée de la boutique.</p>
+        <p className="text-ink/75 mt-4">Elle n'est plus disponible ou a été retirée de la boutique.</p>
         <Link to="/boutique" className="btn-dark mt-10">Retour à la boutique</Link>
       </div>
     );
@@ -194,7 +194,7 @@ export const ProductDetail: React.FC = () => {
   return (
     <div>
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-6">
-        <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ink/45 mb-6 flex-wrap" aria-label="Fil d'Ariane">
+        <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ink/70 mb-6 flex-wrap" aria-label="Fil d'Ariane">
           <Link to="/" className="hover:text-ink">Accueil</Link><ChevronRight className="w-3 h-3" />
           <Link to={`/boutique/${product.category}`} className="hover:text-ink">{category?.name}</Link><ChevronRight className="w-3 h-3" />
           <span className="text-ink line-clamp-1">{product.name}</span>
@@ -220,9 +220,11 @@ export const ProductDetail: React.FC = () => {
                 {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
               </div>
               {product.images.length > 1 && (
-                <div className="lg:hidden absolute bottom-4 inset-x-0 flex justify-center gap-2">
+                <div className="lg:hidden absolute bottom-2 inset-x-0 flex justify-center">
                   {product.images.map((img, i) => (
-                    <button key={img} onClick={() => setImageIdx(i)} aria-label={`Image ${i + 1}`} className={`h-[2px] transition-all ${i === imageIdx ? 'w-8 bg-ink' : 'w-4 bg-ink/30'}`} />
+                    <button key={img} onClick={() => setImageIdx(i)} aria-label={`Image ${i + 1}`} aria-current={i === imageIdx} className="h-6 min-w-6 px-1 grid place-items-center">
+                      <span className={`block h-[2px] transition-all ${i === imageIdx ? 'w-8 bg-ink' : 'w-4 bg-ink/30'}`} />
+                    </button>
                   ))}
                 </div>
               )}
@@ -237,15 +239,15 @@ export const ProductDetail: React.FC = () => {
             </div>
             <h1 className="font-display text-5xl sm:text-6xl mt-3 leading-[0.98]">{product.name}</h1>
             <button onClick={() => { setOpenSection('avis'); document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
-              className="mt-4 flex items-center gap-2 text-xs text-ink/55 hover:text-ink">
+              className="mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink">
               <Stars rating={product.rating} /> <span>{product.rating.toFixed(1)} · {product.reviewCount} avis</span>
             </button>
 
             <div className="mt-7 flex items-baseline gap-4">
               <span className={`text-2xl font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
-              {product.oldPrice && <span className="text-ink/35 line-through">{formatPrice(product.oldPrice)}</span>}
+              {product.oldPrice && <span className="text-ink/70 line-through">{formatPrice(product.oldPrice)}</span>}
             </div>
-            <p className="text-[11px] text-ink/45 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
+            <p className="text-[11px] text-ink/70 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
             <ListenButton product={product} className="mt-4" />
 
             <p className="mt-7 text-[15px] text-ink/70 leading-relaxed">{product.description}</p>
@@ -278,7 +280,7 @@ export const ProductDetail: React.FC = () => {
               <div className="mt-7" ref={sizeRef}>
                 <div className="flex items-center justify-between mb-2">
                   <p className={`field-label !mb-0 ${sizeError ? '!text-wine' : ''}`}>{sizeError ? 'Choisissez votre taille' : 'Taille'}</p>
-                  <Link to="/faq#tailles" className="text-[11px] flex items-center gap-1.5 link-luxe text-ink/60"><Ruler className="w-3.5 h-3.5" strokeWidth={1.5} /> Guide des tailles</Link>
+                  <Link to="/faq#tailles" className="text-[11px] flex items-center gap-1.5 link-luxe text-ink/75"><Ruler className="w-3.5 h-3.5" strokeWidth={1.5} /> Guide des tailles</Link>
                 </div>
                 <div className="grid grid-cols-6 gap-1.5">
                   {product.sizes.map(s => (
@@ -315,7 +317,7 @@ export const ProductDetail: React.FC = () => {
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Commander sur WhatsApp
             </a>
 
-            <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/65">
+            <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/75">
               {[
                 { Icon: Truck, t: `Offerte dès ${(SITE_CONFIG.freeShippingThreshold / 1000).toFixed(0)} 000 F` },
                 { Icon: RefreshCw, t: 'Échange 7 jours' },
@@ -329,7 +331,7 @@ export const ProductDetail: React.FC = () => {
               <Accordion title="Détails & composition" open={openSection === 'details'} onToggle={() => toggle('details')}>
                 <ul className="space-y-2">
                   {product.details.map(d => <li key={d} className="flex gap-3"><span className="text-gold">—</span>{d}</li>)}
-                  <li className="flex gap-3 text-ink/45"><span className="text-gold">—</span>Référence {product.id}</li>
+                  <li className="flex gap-3 text-ink/70"><span className="text-gold">—</span>Référence {product.id}</li>
                 </ul>
               </Accordion>
               <Accordion title="Matière & entretien" open={openSection === 'matiere'} onToggle={() => toggle('matiere')}>
@@ -352,7 +354,7 @@ export const ProductDetail: React.FC = () => {
                       <li key={r.author + r.date} className="pb-5 border-b border-ink/5 last:border-0">
                         <div className="flex items-center justify-between"><strong className="text-ink text-[13px]">{r.author}</strong><Stars rating={r.rating} size={11} /></div>
                         <p className="mt-2">{r.comment}</p>
-                        <p className="text-[11px] text-ink/40 mt-1.5">{new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <p className="text-[11px] text-ink/70 mt-1.5">{new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                       </li>
                     ))}
                   </ul>
@@ -381,7 +383,7 @@ export const ProductDetail: React.FC = () => {
       <div className={`lg:hidden fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/10 px-4 py-3 flex items-center gap-3 transition-transform duration-500 ease-luxe ${pastBuy && !buyVisible ? 'translate-y-0' : 'translate-y-full'}`}>
         <div className="flex-1 min-w-0">
           <p className="font-display text-lg leading-tight truncate">{product.name}</p>
-          <p className="text-xs text-ink/60">{formatPrice(product.price)}{size && ` · T. ${size}`}</p>
+          <p className="text-xs text-ink/75">{formatPrice(product.price)}{size && ` · T. ${size}`}</p>
         </div>
         <button onClick={handleAdd} disabled={outOfStock} className="btn-dark !h-12 !px-5 shrink-0">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter'}</button>
       </div>

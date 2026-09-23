@@ -68,7 +68,7 @@ export const Tracking: React.FC = () => {
       <div className="text-center">
         <p className="eyebrow">Service client</p>
         <h1 className="font-display text-5xl sm:text-6xl mt-4">Suivre une commande</h1>
-        <p className="text-ink/60 mt-4 max-w-md mx-auto">Saisissez votre numéro de commande (ex : FB-A1B2C3) et le téléphone utilisé lors de l'achat.</p>
+        <p className="text-ink/75 mt-4 max-w-md mx-auto">Saisissez votre numéro de commande (ex : FB-A1B2C3) et le téléphone utilisé lors de l'achat.</p>
       </div>
 
       <form onSubmit={search} className="mt-12 grid sm:grid-cols-[1fr_1fr_auto] gap-2">
@@ -94,12 +94,12 @@ export const Tracking: React.FC = () => {
           {order.supplier && order.status !== 'annulee' && order.status !== 'livree' && <SupplierSteps supplier={order.supplier} />}
           <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10">
             <div className="flex flex-wrap justify-between gap-6 pb-8 border-b border-ink/10">
-              <div><p className="field-label">Commande</p><p className="font-display text-4xl">{order.id}</p><p className="text-xs text-ink/50 mt-1">{formatDate(order.createdAt)}</p></div>
+              <div><p className="field-label">Commande</p><p className="font-display text-4xl">{order.id}</p><p className="text-xs text-ink/70 mt-1">{formatDate(order.createdAt)}</p></div>
               <div className="sm:text-right"><p className="field-label">Total</p><p className="font-display text-3xl">{formatPrice(order.total)}</p>
                 <p className="text-xs mt-1">{PAYMENT_LABELS[order.paymentMethod]} · <span className={order.paymentStatus === 'paye' ? 'text-emerald-800' : 'text-amber-800'}>{order.paymentStatus === 'paye' ? 'Payé' : 'À régler'}</span></p></div>
             </div>
             <div className="pt-8"><OrderTimeline order={order} /></div>
-            <p className="text-sm text-ink/60 border-t border-ink/10 pt-6">
+            <p className="text-sm text-ink/75 border-t border-ink/10 pt-6">
               {order.items.reduce((s, i) => s + i.quantity, 0)} pièce(s) · Livraison : {order.customer.location?.label || order.customer.zone}
             </p>
           </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ArrowUp, MessageCircle } from 'lucide-react';
 import { buildWhatsAppLink } from '../config/site';
-import { AssistantLauncher } from './Assistant';
+import { AssistantLauncher } from './AssistantLauncher';
 
 /** Bouton WhatsApp + retour en haut. */
 export const FloatingActions: React.FC = () => {
@@ -16,7 +16,7 @@ export const FloatingActions: React.FC = () => {
   }, []);
 
   return (
-    <div className={`floating-actions fixed right-5 z-40 ${onProduct ? 'bottom-24 lg:bottom-5' : 'bottom-5'} flex flex-col items-center gap-3 print:hidden`}>
+    <aside aria-label="Raccourcis" className={`floating-actions fixed right-5 z-40 ${onProduct ? 'bottom-24 lg:bottom-5' : 'bottom-5'} flex flex-col items-center gap-3 print:hidden`}>
       <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Revenir en haut"
         className={`w-11 h-11 rounded-full bg-ivory/90 backdrop-blur border border-ink/10 grid place-items-center shadow-soft transition-all duration-500 ${showTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}`}>
         <ArrowUp className="w-4 h-4" />
@@ -30,6 +30,6 @@ export const FloatingActions: React.FC = () => {
           Conseil personnalisé
         </span>
       </a>
-    </div>
+    </aside>
   );
 };

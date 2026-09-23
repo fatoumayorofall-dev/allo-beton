@@ -1,3 +1,5 @@
+@import './fonts.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -9,8 +11,13 @@
     font-feature-settings: 'ss01', 'cv11';
   }
   h1, h2, h3, .font-display { font-feature-settings: 'liga', 'dlig'; letter-spacing: -0.01em; }
+  /* Titres équilibrés sur plusieurs lignes, paragraphes sans mot orphelin */
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p, li, figcaption, blockquote { text-wrap: pretty; }
   ::selection { @apply bg-gold-light text-ink; }
-  :focus-visible { @apply outline outline-1 outline-offset-4 outline-gold; }
+  /* Contour de focus bien visible au clavier (framboise sur fond clair, rose doré sur fond sombre) */
+  :focus-visible { @apply outline outline-2 outline-offset-[3px] outline-wine; }
+  .bg-ink :focus-visible, footer :focus-visible, [data-dark] :focus-visible { @apply outline-gold-light; }
   input, select, textarea { @apply text-ink; }
 
   ::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -25,7 +32,7 @@
   .btn { @apply relative isolate overflow-hidden inline-flex items-center justify-center gap-2.5 px-8 h-[52px] rounded-full text-[11px] uppercase tracking-[0.22em] font-semibold transition-all duration-500 ease-luxe disabled:opacity-40 disabled:pointer-events-none; }
   .btn-dark { @apply btn bg-ink text-ivory hover:bg-gold-dark hover:shadow-soft; }
   .btn-light { @apply btn bg-ivory text-ink hover:bg-gold-light; }
-  .btn-gold { @apply btn bg-gradient-to-r from-gold to-wine/80 text-white hover:shadow-soft hover:brightness-105; }
+  .btn-gold { @apply btn bg-gradient-to-r from-gold-dark to-wine text-white hover:shadow-soft hover:brightness-110; }
   .btn-outline { @apply btn border border-ink/80 text-ink hover:bg-ink hover:text-ivory; }
   .btn-ghost-light { @apply btn border border-ivory/50 text-ivory hover:bg-ivory hover:text-ink; }
 

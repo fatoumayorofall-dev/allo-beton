@@ -33,7 +33,7 @@ export const Showcase: React.FC = () => {
         <div className="text-center">
           <p className="font-script text-4xl text-gold-dark leading-none">Nouveautés</p>
           <h1 className="font-display text-3xl mt-1">Vues sur mon statut</h1>
-          <p className="text-sm text-ink/55 mt-1 capitalize">{today}</p>
+          <p className="text-sm text-ink/70 mt-1 capitalize">{today}</p>
           <p className="mt-4 text-base">👇 Touchez une photo pour voir le prix, les couleurs et commander</p>
         </div>
         {items === null ? (

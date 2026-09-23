@@ -41,8 +41,8 @@ export const OrderTimeline: React.FC<{ order: Order }> = ({ order }) => {
               {i < FLOW.length - 1 && <span className={`w-px flex-1 min-h-8 ${i < currentIdx ? 'bg-ink' : 'bg-ink/15'}`} />}
             </div>
             <div className="pb-7">
-              <p className={`text-sm ${done ? 'font-semibold' : 'text-ink/40'}`}>{STATUS_LABELS[s]}</p>
-              {entry && <p className="text-xs text-ink/50 mt-0.5">{formatDate(entry.date)}</p>}
+              <p className={`text-sm ${done ? 'font-semibold' : 'text-ink/70'}`}>{STATUS_LABELS[s]}</p>
+              {entry && <p className="text-xs text-ink/70 mt-0.5">{formatDate(entry.date)}</p>}
             </div>
           </li>
         );

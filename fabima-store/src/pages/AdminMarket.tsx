@@ -13,7 +13,7 @@ const CURRENCIES: { id: Currency; label: string }[] = [
   { id: 'XOF', label: 'FCFA' }, { id: 'EUR', label: '€ Euro' }, { id: 'USD', label: '$ Dollar' }, { id: 'CNY', label: '¥ Yuan' },
 ];
 const input = 'w-full px-3 h-11 rounded-xl border border-ink/15 bg-white outline-none focus:border-ink';
-const label = 'block text-[11px] uppercase tracking-[0.16em] font-semibold text-ink/60 mb-1.5';
+const label = 'block text-[11px] uppercase tracking-[0.16em] font-semibold text-ink/75 mb-1.5';
 
 /** Montant des articles du Marché dans une commande (ce que la cliente a payé pour eux). */
 const marketRevenue = (o: Order) => o.items.filter(i => i.productId.startsWith('MK-')).reduce((s, i) => s + i.price * i.quantity, 0);
@@ -47,8 +47,8 @@ export const SupplierPanel: React.FC<{ order: Order; pin: string }> = ({ order, 
           <li key={i} className="flex items-start justify-between gap-3 p-3 rounded-xl bg-white">
             <span className="min-w-0">
               <strong className="block">{l.quantity} × {l.name}</strong>
-              {l.variant && <span className="block text-xs text-ink/55">{l.variant}</span>}
-              <span className="block text-xs text-ink/55">Coût ≈ {formatPrice(l.unitCost)} / pièce{l.supplierName && ` · ${l.supplierName}`}</span>
+              {l.variant && <span className="block text-xs text-ink/70">{l.variant}</span>}
+              <span className="block text-xs text-ink/70">Coût ≈ {formatPrice(l.unitCost)} / pièce{l.supplierName && ` · ${l.supplierName}`}</span>
             </span>
             {l.supplierUrl && (
               <a href={l.supplierUrl} target="_blank" rel="noopener noreferrer" className="shrink-0 inline-flex items-center gap-1 px-3 h-9 rounded-full bg-ink text-ivory text-xs font-semibold">
@@ -58,7 +58,7 @@ export const SupplierPanel: React.FC<{ order: Order; pin: string }> = ({ order, 
           </li>
         ))}
       </ul>
-      <p className="text-xs text-ink/60">Vendu {formatPrice(revenue)} · coût ≈ {formatPrice(sup.cost ?? 0)} · <strong className={profit >= 0 ? 'text-emerald-800' : 'text-wine'}>bénéfice ≈ {formatPrice(profit)}</strong></p>
+      <p className="text-xs text-ink/75">Vendu {formatPrice(revenue)} · coût ≈ {formatPrice(sup.cost ?? 0)} · <strong className={profit >= 0 ? 'text-emerald-800' : 'text-wine'}>bénéfice ≈ {formatPrice(profit)}</strong></p>
       <div className="grid grid-cols-2 gap-2">
         <label className="col-span-2"><span className={label}>Étape</span>
           <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as SupplierStatus }))} className={input} aria-label="Étape fournisseur">
@@ -72,7 +72,7 @@ export const SupplierPanel: React.FC<{ order: Order; pin: string }> = ({ order, 
       <button onClick={save} disabled={busy} className="w-full h-11 rounded-full bg-wine text-white font-semibold inline-flex items-center justify-center gap-2">
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Enregistrer {form.status !== sup.status && '· prévenir la cliente'}
       </button>
-      <p className="text-[11px] text-ink/50">Une fois arrivé à Dakar, confiez la livraison à un livreur ci-dessous comme d'habitude.</p>
+      <p className="text-[11px] text-ink/70">Une fois arrivé à Dakar, confiez la livraison à un livreur ci-dessous comme d'habitude.</p>
     </div>
   );
 };
@@ -153,7 +153,7 @@ const ProductEditor: React.FC<{ initial: Draft; settings: MarketSettings; pin: s
               {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />} Importer
             </button>
           </div>
-          <p className="text-xs text-ink/50 mt-2">Le nom, les photos et le prix sont lus sur la page quand le site le permet. Sinon, remplissez la fiche à la main.</p>
+          <p className="text-xs text-ink/70 mt-2">Le nom, les photos et le prix sont lus sur la page quand le site le permet. Sinon, remplissez la fiche à la main.</p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
@@ -188,7 +188,7 @@ const ProductEditor: React.FC<{ initial: Draft; settings: MarketSettings; pin: s
               <div key={i} className="grid grid-cols-[8rem_1fr_auto] gap-2">
                 <input value={o.name} onChange={e => set('optionsText', d.optionsText.map((x, k) => (k === i ? { ...x, name: e.target.value } : x)))} placeholder="Couleur" className={input} aria-label={`Nom du choix ${i + 1}`} />
                 <input value={o.values} onChange={e => set('optionsText', d.optionsText.map((x, k) => (k === i ? { ...x, values: e.target.value } : x)))} placeholder="Noir, Rose, Blanc" className={input} aria-label={`Valeurs du choix ${i + 1}`} />
-                <button type="button" onClick={() => set('optionsText', d.optionsText.filter((_, k) => k !== i))} aria-label="Retirer" className="w-11 h-11 grid place-items-center text-ink/40"><Trash2 className="w-4 h-4" /></button>
+                <button type="button" onClick={() => set('optionsText', d.optionsText.filter((_, k) => k !== i))} aria-label="Retirer" className="w-11 h-11 grid place-items-center text-ink/70"><Trash2 className="w-4 h-4" /></button>
               </div>
             ))}
             {d.optionsText.length < 3 && <button type="button" onClick={() => set('optionsText', [...d.optionsText, { name: '', values: '' }])} className="text-sm underline underline-offset-4">+ Ajouter un choix (taille, pointure…)</button>}
@@ -251,7 +251,7 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
   const toOrder = marketOrders.filter(o => o.supplier!.status === 'a_commander');
   const profit = marketOrders.reduce((s, o) => s + marketRevenue(o) - (o.supplier!.cost ?? 0), 0);
 
-  if (offline) return <p className="bg-white rounded-[2rem] p-10 text-center text-ink/60">Le Marché demande le serveur de la boutique (lancez <code>npm run server</code>).</p>;
+  if (offline) return <p className="bg-white rounded-[2rem] p-10 text-center text-ink/75">Le Marché demande le serveur de la boutique (lancez <code>npm run server</code>).</p>;
   if (!data || !settingsForm) return <div className="h-40 grid place-items-center"><Loader2 className="w-6 h-6 animate-spin text-ink/40" /></div>;
   const s = data.settings;
 
@@ -280,7 +280,7 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
           ['Commandes du Marché', String(marketOrders.length)],
           ['Bénéfice estimé', formatPrice(profit)],
         ].map(([l, v]) => (
-          <div key={l} className="p-5 rounded-[1.5rem] bg-white border border-ink/[0.06]"><p className="text-xs text-ink/55">{l}</p><p className="font-display text-3xl mt-1">{v}</p></div>
+          <div key={l} className="p-5 rounded-[1.5rem] bg-white border border-ink/[0.06]"><p className="text-xs text-ink/70">{l}</p><p className="font-display text-3xl mt-1">{v}</p></div>
         ))}
       </div>
 
@@ -302,7 +302,7 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
             </select>
           </label>
           <button className="h-11 rounded-xl bg-ink text-ivory text-sm font-semibold">Enregistrer</button>
-          <p className="sm:col-span-3 lg:col-span-6 text-xs text-ink/50">Prix conseillé = (prix fournisseur + port) × taux × (1 + marge), arrondi au palier supérieur. L'euro a une parité fixe avec le FCFA (655,957).</p>
+          <p className="sm:col-span-3 lg:col-span-6 text-xs text-ink/70">Prix conseillé = (prix fournisseur + port) × taux × (1 + marge), arrondi au palier supérieur. L'euro a une parité fixe avec le FCFA (655,957).</p>
         </form>
       )}
 
@@ -323,11 +323,11 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
       <section>
         <h3 className="font-display text-2xl mb-3">Produits du Marché ({data.products.length})</h3>
         {data.products.length === 0 ? (
-          <p className="bg-white rounded-[2rem] p-10 text-center text-ink/55">Aucun produit pour l'instant. Touchez « Ajouter un produit » et collez le lien d'un article trouvé chez un fournisseur.</p>
+          <p className="bg-white rounded-[2rem] p-10 text-center text-ink/70">Aucun produit pour l'instant. Touchez « Ajouter un produit » et collez le lien d'un article trouvé chez un fournisseur.</p>
         ) : (
           <div className="bg-white border border-ink/[0.06] rounded-[1.5rem] overflow-x-auto">
             <table className="w-full text-sm min-w-[760px]">
-              <thead className="text-left text-ink/50 border-b border-ink/10">
+              <thead className="text-left text-ink/70 border-b border-ink/10">
                 <tr><th className="p-4 font-medium">Produit</th><th className="p-4 font-medium">Prix</th><th className="p-4 font-medium">Coût</th><th className="p-4 font-medium">Bénéfice</th><th className="p-4 font-medium">Délai</th><th className="p-4 font-medium">En ligne</th><th className="p-4" /></tr>
               </thead>
               <tbody>
@@ -336,11 +336,11 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
                   return (
                     <tr key={p.id} className="border-b border-ink/5">
                       <td className="p-4"><span className="flex items-center gap-3"><ProductImage src={p.images[0]} alt="" label="" className="w-12 h-14 rounded-xl shrink-0" />
-                        <span className="min-w-0"><strong className="block line-clamp-1">{p.name}</strong><span className="text-xs text-ink/50">{p.category}{p.supplier?.name && ` · ${p.supplier.name}`}</span>{!marketCategoryOnSale(p.category) && <span className="block text-xs text-amber-800">Masqué : catégorie pas en vente</span>}</span></span></td>
+                        <span className="min-w-0"><strong className="block line-clamp-1">{p.name}</strong><span className="text-xs text-ink/70">{p.category}{p.supplier?.name && ` · ${p.supplier.name}`}</span>{!marketCategoryOnSale(p.category) && <span className="block text-xs text-amber-800">Masqué : catégorie pas en vente</span>}</span></span></td>
                       <td className="p-4 font-semibold">{formatPrice(p.price)}</td>
-                      <td className="p-4 text-ink/60">{formatPrice(c)}</td>
+                      <td className="p-4 text-ink/75">{formatPrice(c)}</td>
                       <td className={`p-4 font-semibold ${p.price - c > 0 ? 'text-emerald-800' : 'text-wine'}`}>{formatPrice(p.price - c)}</td>
-                      <td className="p-4 text-ink/60">{delayLabel(p.delayMin, p.delayMax)}</td>
+                      <td className="p-4 text-ink/75">{delayLabel(p.delayMin, p.delayMax)}</td>
                       <td className="p-4"><button onClick={() => toggle(p)} aria-label={p.active ? 'Mettre hors ligne' : 'Mettre en ligne'} className={`w-11 h-6 rounded-full relative transition-colors ${p.active ? 'bg-emerald-600' : 'bg-ink/20'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${p.active ? 'left-[22px]' : 'left-0.5'}`} /></button></td>
                       <td className="p-4 whitespace-nowrap text-right">
                         {p.supplier?.url && <a href={p.supplier.url} target="_blank" rel="noopener noreferrer" aria-label="Page fournisseur" className="inline-grid place-items-center w-9 h-9 rounded-full hover:bg-ink/5"><ExternalLink className="w-4 h-4" /></a>}

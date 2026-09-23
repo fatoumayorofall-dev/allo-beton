@@ -69,7 +69,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
                 {results.length > 4 && <button onClick={() => submit()} className="text-[11px] uppercase tracking-[0.2em] font-semibold link-luxe inline-flex items-center gap-1.5">Tout voir <ArrowRight className="w-3 h-3" /></button>}
               </div>
               {q.trim().length >= 2 && results.length === 0 ? (
-                <p className="text-ink/60">Aucun résultat pour « {q} ». Essayez « sac », « or » ou « sandales ».</p>
+                <p className="text-ink/75">Aucun résultat pour « {q} ». Essayez « sac », « or » ou « sandales ».</p>
               ) : (
                 <ul className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {list.map(p => (
@@ -77,7 +77,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
                       <Link to={`/produit/${p.slug}`} onClick={onClose} className="group block">
                         <div className="aspect-[3/4] overflow-hidden rounded-3xl"><ProductImage src={p.images[0]} alt={p.name} className="w-full h-full group-hover:scale-105 transition-transform duration-700" /></div>
                         <p className="font-display text-lg mt-2 leading-tight line-clamp-1">{p.name}</p>
-                        <p className="text-xs text-ink/55">{formatPrice(p.price)}</p>
+                        <p className="text-xs text-ink/70">{formatPrice(p.price)}</p>
                       </Link>
                     </li>
                   ))}

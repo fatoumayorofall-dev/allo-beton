@@ -83,7 +83,49 @@ Chaque correction a été vérifiée par un test automatisé dans un navigateur 
 - Le Marché limité aux chaussures et aux sacs, proposé en bas des pages Chaussures et Sacs.
 - Accueil plus vivant : bulles « Trouvez votre style », profondeur au défilement, chiffres animés, compteur du panier animé, badge « Plus que N ».
 
-## 8. Restent à traiter avant la mise en ligne
+## 8. Audit « site moderne 2026 » et nouveau logo
+
+Mesures faites sur 9 pages (accueil, chaussures, fiche sac, panier, Marché, suivi, compte, journal, FAQ), sur un téléphone Pixel 7 simulé, avec axe-core (le moteur d'accessibilité de Lighthouse). Décalage de mise en page (CLS) : 0 sur 8 pages, 0,08 sur la page de suivi (seuil « bon » : 0,1).
+
+| | Avant | Après |
+|---|---|---|
+| Problèmes d'accessibilité (axe) | 185 | 0 |
+| JavaScript au premier chargement (compressé) | 148 Ko | 123 Ko |
+| Grande photo d'accueil | chargement différé, taille unique 1600 px | prioritaire, taille adaptée à l'écran (affichée vers 0,3 s en local) |
+| Polices | Google Fonts (2 domaines externes, feuille bloquante) | hébergées par le site, préchargées |
+| robots.txt / sitemap.xml | absents (renvoyaient la page d'accueil) | générés par le serveur (26 adresses avec photos) |
+| Image d'aperçu des liens WhatsApp / Facebook | aucune | image dédiée + photo de la pièce sur chaque fiche |
+
+**Nouvelle identité**
+- Monogramme : un sac à main dont l'anse dessine une arche (le motif des photos du site), marqué d'un F calligraphié en or rose. Nom FABIMA en capitales Cormorant, « STORE · DAKAR » en dessous.
+- Entièrement vectorisé (`components/Logo.tsx`) : net sur tous les écrans, aucune police à attendre. Le sac se balance au survol.
+- Déclinaisons : favicon (version claire automatique si l'onglet est sombre), icônes de l'application (192, 512, masquable, Apple), image de partage 1200 × 630 (`public/og-image.jpg`), pied de page, panier vide, écran de chargement, page livreur, pages statut.
+- Fichiers prêts pour Instagram, flyers et étiquettes : `public/brand/` (logo fond clair, logo fond sombre, monogramme).
+
+**Accessibilité**
+- Contrastes : les textes gris trop pâles (2,1 à 4,0 : 1) passent à 5,2 : 1 ou plus ; le rose doré foncé des libellés est assombri (4,5 → 5,6 : 1) ; le bouton dégradé or est lisible en blanc.
+- Contour de focus au clavier bien visible (framboise sur fond clair, rose doré sur fond sombre).
+- Pastilles de couleur et étoiles lisibles par les lecteurs d'écran, note annoncée « 4,9 sur 5 », ancien prix annoncé « au lieu de ».
+- Tri du catalogue et du Marché étiquetés, ordre des titres corrigé, bandeau d'annonces et boutons flottants dans des zones repérables, défilement des étapes du Marché accessible au clavier.
+- Indicateurs de diaporama et de photos agrandis à 24 px de hauteur tactile (règle WCAG 2.2).
+
+**Vitesse**
+- Pages secondaires (panier, commande, compte, journal, FAQ…) et assistante chargées à la demande, puis préchargées quand le téléphone est libre.
+- Photo principale (accueil, fiche produit) téléchargée en priorité ; photos proposées en plusieurs tailles, le téléphone prend la plus légère.
+- Polices hébergées par le site ; fichiers versionnés gardés en cache un an.
+
+**Référencement et partage**
+- Chaque page reçoit du serveur son titre, sa description, son adresse de référence et son image : un lien de fiche envoyé sur WhatsApp montre la photo, le nom et le prix de la pièce.
+- Données structurées Google (boutique à Dakar, horaires, moyens de paiement, recherche dans le site) ; les liens courts `/p/…` renvoient vers la fiche produit comme adresse de référence.
+- Pages privées (espace gérant, livreur, commande, compte) exclues des moteurs de recherche.
+
+**Touches 2026**
+- En-tête « îlot » en verre dépoli qui flotte au défilement.
+- Ajout rapide : la photo de la pièce s'envole jusqu'au panier, qui rebondit.
+- Titres équilibrés sur plusieurs lignes, paragraphes sans mot orphelin.
+- Animations coupées si le téléphone demande moins de mouvement.
+
+## 9. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

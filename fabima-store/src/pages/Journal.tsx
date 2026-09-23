@@ -1,27 +1,16 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Clock } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 import { ARTICLES } from '../data/journal';
 import { useStore } from '../context/StoreContext';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
+import { ArticleCard } from '../components/ArticleCard';
 import { ProductCard } from '../components/ProductCard';
 import { Reveal } from '../components/Reveal';
 import { Flourish, Flower } from '../components/Decor';
 
 const formatDay = (iso: string) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
-
-export const ArticleCard: React.FC<{ article: (typeof ARTICLES)[number]; large?: boolean }> = ({ article, large }) => (
-  <Link to={`/journal/${article.slug}`} className="group block">
-    <div className={`overflow-hidden ${large ? 'rounded-[2.5rem] aspect-[16/10]' : 'arch aspect-[4/5]'}`}>
-      <ProductImage src={article.image} alt={article.title} label={article.category} className="w-full h-full group-hover:scale-105 transition-transform duration-[1.2s] ease-luxe" />
-    </div>
-    <p className="eyebrow mt-5">{article.category} · {article.readingTime} min</p>
-    <h3 className={`font-display leading-tight mt-2 group-hover:text-gold-dark transition-colors ${large ? 'text-4xl sm:text-5xl' : 'text-2xl'}`}>{article.title}</h3>
-    <p className="text-sm text-ink/60 mt-3 leading-relaxed line-clamp-2">{article.excerpt}</p>
-    <span className="mt-4 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold">Lire <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
-  </Link>
-);
 
 export const Journal: React.FC = () => {
   usePageTitle('Le journal', 'Conseils de style, guides d\'occasion et astuces d\'entretien par l\'équipe Fabima Store.');
@@ -31,12 +20,12 @@ export const Journal: React.FC = () => {
       <div className="text-center">
         <p className="font-script text-4xl text-gold-dark">Le journal</p>
         <h1 className="font-display text-5xl sm:text-7xl mt-2">Conseils & inspirations</h1>
-        <p className="text-ink/60 mt-4 max-w-lg mx-auto">Guides d'occasion, astuces de style et soins : tout ce que notre équipe aime partager avec vous.</p>
+        <p className="text-ink/75 mt-4 max-w-lg mx-auto">Guides d'occasion, astuces de style et soins : tout ce que notre équipe aime partager avec vous.</p>
         <Flourish className="mt-10" />
       </div>
-      <Reveal className="mt-16"><ArticleCard article={first} large /></Reveal>
+      <Reveal className="mt-16"><ArticleCard article={first} large level={2} /></Reveal>
       <div className="mt-20 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-        {rest.map((a, i) => <Reveal key={a.slug} delay={i * 90}><ArticleCard article={a} /></Reveal>)}
+        {rest.map((a, i) => <Reveal key={a.slug} delay={i * 90}><ArticleCard article={a} level={2} /></Reveal>)}
       </div>
     </div>
   );
@@ -46,7 +35,7 @@ export const ArticlePage: React.FC = () => {
   const { slug = '' } = useParams();
   const { getProduct } = useStore();
   const article = ARTICLES.find(a => a.slug === slug);
-  usePageTitle(article?.title, article?.excerpt);
+  usePageTitle(article?.title, article?.excerpt, { image: article?.image });
 
   if (!article) {
     return (
@@ -61,10 +50,10 @@ export const ArticlePage: React.FC = () => {
   return (
     <article>
       <header className="max-w-3xl mx-auto px-5 sm:px-8 pt-14 text-center">
-        <Link to="/journal" className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-ink/55 hover:text-ink"><ArrowLeft className="w-3.5 h-3.5" /> Le journal</Link>
+        <Link to="/journal" className="inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] text-ink/70 hover:text-ink"><ArrowLeft className="w-3.5 h-3.5" /> Le journal</Link>
         <p className="eyebrow mt-8">{article.category}</p>
         <h1 className="font-display text-4xl sm:text-6xl leading-[1.05] mt-4">{article.title}</h1>
-        <p className="mt-6 text-xs text-ink/50 flex items-center justify-center gap-3">
+        <p className="mt-6 text-xs text-ink/70 flex items-center justify-center gap-3">
           <span>{formatDay(article.date)}</span><span>·</span><span className="inline-flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {article.readingTime} min de lecture</span>
         </p>
       </header>

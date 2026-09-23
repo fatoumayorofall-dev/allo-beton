@@ -60,6 +60,8 @@ export const Navbar: React.FC = () => {
   })) as Record<CategoryId, { subs: string[]; featured?: typeof products[number] }>, [products]);
 
   const transparent = isHome && !scrolled && !mega;
+  // Au défilement, l'en-tête devient un îlot flottant en verre dépoli
+  const floating = scrolled && !mega;
   const tone = transparent ? 'text-ivory' : 'text-ink';
   const iconBtn = `relative w-10 h-10 grid place-items-center rounded-full transition-colors ${transparent ? 'hover:bg-ivory/10' : 'hover:bg-ink/5'}`;
   const badge = 'absolute top-1 right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold grid place-items-center';
@@ -67,13 +69,15 @@ export const Navbar: React.FC = () => {
   return (
     <>
       {/* Bandeau d'annonces */}
-      <div className="bg-ink text-ivory/90 h-9 flex items-center justify-center overflow-hidden relative z-[51]">
+      <aside aria-label="Annonces" className="bg-ink text-ivory/90 h-9 flex items-center justify-center overflow-hidden relative z-[51]">
         <p key={announce} className="text-[10px] tracking-[0.28em] uppercase animate-fade-up px-4 text-center truncate">{ANNOUNCEMENTS[announce]}</p>
-      </div>
+      </aside>
 
-      <header onMouseLeave={() => setMega(null)}
-        className={`${isHome ? 'fixed top-9' : 'sticky top-0'} inset-x-0 z-50 transition-all duration-500 ease-luxe ${
-          transparent ? 'bg-transparent' : 'bg-ivory/95 backdrop-blur-md shadow-[0_1px_0_rgba(22,18,15,.08)]'} ${isHome && scrolled ? '!top-0' : ''}`}>
+      <header onMouseLeave={() => setMega(null)} data-floating={floating || undefined}
+        className={`${isHome ? 'fixed top-9' : 'sticky top-0'} inset-x-0 z-50 transition-[background-color,box-shadow,border-radius,margin,transform] duration-500 ease-luxe ${
+          transparent ? 'bg-transparent'
+            : floating ? 'mx-2 sm:mx-4 translate-y-2 rounded-full lg:rounded-[2rem] bg-ivory/[0.88] backdrop-blur-xl backdrop-saturate-150 shadow-[0_18px_40px_-22px_rgba(58,31,45,.45)] ring-1 ring-ink/[0.06]'
+            : 'bg-ivory/95 backdrop-blur-md shadow-[0_1px_0_rgba(22,18,15,.08)]'} ${isHome && scrolled ? '!top-0' : ''}`}>
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 h-16 lg:h-[72px] grid grid-cols-[1fr_auto_1fr] items-center">
           {/* Gauche */}
           <div className={`flex items-center gap-1 ${tone}`}>
@@ -95,7 +99,7 @@ export const Navbar: React.FC = () => {
               <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
               {wishlist.length > 0 && <span className={`${badge} bg-gold text-white`}>{wishlist.length}</span>}
             </Link>
-            <button onClick={() => setCartOpen(true)} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`} className={`${iconBtn} lg:-mr-2`}>
+            <button onClick={() => setCartOpen(true)} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`} className={`${iconBtn} lg:-mr-2`} data-cart-target>
               <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.5} />
               {count > 0 && <span key={count} className={`${badge} animate-heart-pop ${transparent ? 'bg-ivory text-ink' : 'bg-ink text-ivory'}`} data-testid="cart-count">{count}</span>}
             </button>
@@ -151,7 +155,7 @@ export const Navbar: React.FC = () => {
                   <div>
                     <p className="font-script text-2xl text-gold-dark">Notre coup de cœur</p>
                     <p className="font-display text-3xl mt-3 leading-tight">{megaData[mega].featured!.name}</p>
-                    <p className="text-sm mt-2 text-ink/60">{formatPrice(megaData[mega].featured!.price)}</p>
+                    <p className="text-sm mt-2 text-ink/75">{formatPrice(megaData[mega].featured!.price)}</p>
                     <span className="mt-5 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold">Découvrir <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
                   </div>
                 </Link>
@@ -191,7 +195,7 @@ export const Navbar: React.FC = () => {
                 <Link to="/favoris" className="flex items-center gap-3"><Heart className="w-4 h-4" strokeWidth={1.5} /> Mes favoris ({wishlist.length})</Link>
               </div>
             </div>
-            <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/60 flex justify-between">
+            <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/75 flex justify-between">
               <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>
             </div>
           </nav>

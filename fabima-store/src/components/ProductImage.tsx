@@ -13,7 +13,22 @@ const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >
  * Image produit. Si l'URL ne répond pas, affiche un visuel éditorial de remplacement
  * (dégradé ton sur ton + monogramme) plutôt qu'une image cassée.
  */
-export const ProductImage: React.FC<{ src?: string; alt: string; className?: string; label?: string }> = ({ src, alt, className = '', label }) => {
+/** Tailles proposées au navigateur pour les photos Pexels : il choisit la plus légère adaptée à l'écran. */
+const WIDTHS = [480, 720, 1080, 1440, 2000];
+export function srcSetFor(src?: string): string | undefined {
+  if (!src || !src.includes('images.pexels.com')) return undefined;
+  const m = /[?&]w=(\d+)/.exec(src);
+  if (!m) return undefined;
+  const max = Number(m[1]);
+  const widths = [...WIDTHS.filter(w => w < max), max];
+  return widths.map(w => `${src.replace(/([?&]w=)\d+/, `$1${w}`)} ${w}w`).join(', ');
+}
+
+/**
+ * `sizes` : largeur affichée (active le choix de résolution) ;
+ * `priority` : image principale de la page (téléchargée en premier, jamais différée).
+ */
+export const ProductImage: React.FC<{ src?: string; alt: string; className?: string; label?: string; sizes?: string; priority?: boolean }> = ({ src, alt, className = '', label, sizes, priority }) => {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
     const tone = TONES[hash(src || alt || 'f') % TONES.length];
@@ -25,12 +40,18 @@ export const ProductImage: React.FC<{ src?: string; alt: string; className?: str
         <span aria-hidden className="absolute inset-4 border border-white/40" />
         {text && (
           <span aria-hidden className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-            <span className="font-script text-2xl text-ink/45 leading-none">Fabima</span>
+            <span className="font-script text-2xl text-ink/70 leading-none">Fabima</span>
             <span className="font-display italic text-lg sm:text-xl text-ink/75 leading-tight line-clamp-3">{text}</span>
           </span>
         )}
       </div>
     );
   }
-  return <img src={src} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(true)} className={`object-cover ${className}`} />;
+  const srcSet = sizes ? srcSetFor(src) : undefined;
+  return (
+    <img src={src} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt}
+      loading={priority ? 'eager' : 'lazy'} decoding={priority ? 'sync' : 'async'}
+      {...(priority ? { fetchpriority: 'high' } : {})}
+      onError={() => setFailed(true)} className={`object-cover ${className}`} />
+  );
 };

@@ -27,7 +27,7 @@ Copiez `server/.env.example` en `server/.env`, puis renseignez :
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` | Active l'envoi automatique des messages WhatsApp (même fournisseur qu'Allô Béton). |
 | `OWNER_WHATSAPP` | Votre numéro : vous y recevez chaque nouvelle commande. |
 | `ADMIN_PIN` | Même code que l'espace gérant, exigé pour envoyer les messages de suivi aux clientes. |
-| `SITE_URL` | Adresse publique du site, utilisée dans les liens de suivi envoyés sur WhatsApp. |
+| `SITE_URL` | Adresse publique du site (ex. `https://fabimastore.sn`) : liens de suivi envoyés sur WhatsApp, aperçus de liens, sitemap. |
 
 **Ce qui se passe à chaque commande**
 
@@ -53,8 +53,14 @@ questions par visiteuse. Le modèle se change avec `CLAUDE_MODEL`.
 
 ## Thème
 
-Thème **féminin** : rose poudré, vieux rose, prune et rose doré ; logo et accents en calligraphie (*Pinyon Script*),
-titres en *Cormorant Garamond*, texte en *Manrope* ; formes arrondies et arches, ornements floraux.
+Thème **féminin** : rose poudré, vieux rose, prune et rose doré ; accents en calligraphie (*Pinyon Script*),
+titres en *Cormorant Garamond*, texte en *Manrope* (polices hébergées dans `public/fonts/`) ; formes arrondies et arches, ornements floraux.
+
+**Logo** (`src/components/Logo.tsx`) : un sac à main dont l'anse dessine une arche, marqué d'un F calligraphié en or rose,
+et le nom FABIMA / STORE · DAKAR. `BrandMark` (le sac seul) et `Wordmark` (le nom) se réutilisent partout.
+Favicon, icônes de l'application et image de partage sont dans `public/` (`favicon.svg`, `icons/`, `og-image.jpg`).
+Fichiers du logo à utiliser ailleurs (Instagram, flyers, étiquettes, sacs) : `public/brand/` — `fabima-logo.svg` (fond clair),
+`fabima-logo-clair.svg` (fond sombre) et `fabima-monogramme.svg` (le sac seul) ; `public/icons/icon-512.png` convient comme photo de profil.
 Les couleurs sont centralisées dans `tailwind.config.js` (jetons `ink`, `ivory`, `gold`, `wine`, `blush`, `mauve`) :
 modifier une teinte à cet endroit la change sur tout le site.
 
@@ -97,7 +103,7 @@ src/
 ```
 
 Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
-`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `market.js` (le Marché : produits fournisseurs, import par lien, suivi fournisseur), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
+`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `market.js` (le Marché : produits fournisseurs, import par lien, suivi fournisseur), `catalog.js` (catalogue partagé, stock, avis), `seo.js` (robots.txt, sitemap, aperçus de liens), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
 
@@ -256,6 +262,11 @@ les navigateurs qui gardaient l'ancienne version repartent automatiquement du no
 
 `npm run build` produit le dossier `dist/`, déployable sur Netlify ou Vercel : les fichiers `public/_redirects`
 et `vercel.json` renvoient toutes les adresses vers l'application (sinon un rafraîchissement sur `/boutique/sacs` donnerait une 404).
+
+Avec le serveur Fabima (`npm start`), chaque page reçoit son titre, sa description et son image de partage
+(aperçus WhatsApp et Facebook), et `/robots.txt` et `/sitemap.xml` sont générés à partir du catalogue.
+Définissez `SITE_URL` (ex. `https://fabimastore.sn`) pour que les liens de partage et le sitemap utilisent votre nom de domaine,
+puis déclarez `https://votre-domaine/sitemap.xml` dans Google Search Console.
 
 ## À savoir avant la mise en production
 

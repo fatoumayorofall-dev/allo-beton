@@ -20,11 +20,11 @@ export const MarketCard: React.FC<{ product: MarketProduct }> = ({ product: p })
         {off > 0 && <span className="absolute top-3 right-3 px-2.5 py-1 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
       </div>
       <div className="pt-4">
-        <p className="text-[9px] uppercase tracking-[0.25em] text-ink/45">{p.category}</p>
+        <p className="text-[9px] uppercase tracking-[0.25em] text-ink/70">{p.category}</p>
         <p className="font-display text-[19px] leading-tight mt-1 line-clamp-2 group-hover:text-gold-dark transition-colors">{p.name}</p>
         <p className="flex items-baseline gap-2.5 text-[13px] mt-1.5">
           <span className={`font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(p.price)}</span>
-          {p.oldPrice && <span className="text-ink/35 line-through">{formatPrice(p.oldPrice)}</span>}
+          {p.oldPrice && <span className="text-ink/70 line-through">{formatPrice(p.oldPrice)}</span>}
         </p>
       </div>
     </Link>

@@ -57,12 +57,12 @@ export const Admin: React.FC = () => {
           if (pin === SITE_CONFIG.adminPin) { try { sessionStorage.setItem(SESSION_KEY, '1'); sessionStorage.setItem(PIN_KEY, pin); } catch { /* ignore */ } setAuthed(true); } else setError(true);
         }} className="bg-white border border-ink/[0.06] rounded-[2rem] p-8 text-center">
           <h1 className="font-display text-3xl">Espace gérant</h1>
-          <p className="text-sm text-ink/60 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
+          <p className="text-sm text-ink/75 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
           <input value={pin} onChange={e => { setPin(e.target.value); setError(false); }} type="password" inputMode="numeric" placeholder="••••" aria-label="Code PIN"
             className={`mt-6 w-full text-center tracking-[0.5em] text-2xl px-4 py-3 rounded-xl border outline-none ${error ? 'border-wine' : 'border-ink/15 focus:border-ink'}`} />
           {error && <p className="text-xs text-wine mt-2">Code incorrect</p>}
           <button className="mt-5 w-full py-3.5 rounded-full bg-ink text-ivory font-semibold">Se connecter</button>
-          <p className="text-xs text-ink/40 mt-4">Code de démonstration : {SITE_CONFIG.adminPin}</p>
+          <p className="text-xs text-ink/70 mt-4">Code de démonstration : {SITE_CONFIG.adminPin}</p>
         </form>
       </div>
     );
@@ -73,7 +73,7 @@ export const Admin: React.FC = () => {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div><p className="eyebrow">Fabima Store</p><h1 className="font-display text-5xl mt-2">Espace gérant</h1></div>
         <button onClick={() => { try { sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(PIN_KEY); } catch { /* ignore */ } setAuthed(false); }}
-          className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
+          className="inline-flex items-center gap-2 text-sm text-ink/75 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
       <div className="flex gap-2 mb-8 overflow-x-auto">
         {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ['market', 'Le Marché', Globe2], ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send]] as const).map(([id, label, Icon]) => (
@@ -142,7 +142,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
         {kpis.map(({ label, value, Icon }) => (
           <div key={label} className="bg-white border border-ink/[0.06] rounded-[2rem] p-5">
             <Icon className="w-5 h-5 text-gold-dark" />
-            <p className="text-xs text-ink/50 mt-3">{label}</p>
+            <p className="text-xs text-ink/70 mt-3">{label}</p>
             <p className="font-display text-2xl sm:text-3xl mt-1">{value}</p>
           </div>
         ))}
@@ -158,14 +158,14 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
               </li>
             ))}
           </ul>
-          {valid.length === 0 && <p className="text-sm text-ink/50 mt-4">Aucune vente pour le moment. Passez une commande test depuis la boutique.</p>}
+          {valid.length === 0 && <p className="text-sm text-ink/70 mt-4">Aucune vente pour le moment. Passez une commande test depuis la boutique.</p>}
         </div>
         <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <div className="flex justify-between items-center mb-5">
             <h2 className="font-display text-xl">Stock faible</h2>
             <button onClick={() => onGoto('products')} className="text-sm underline underline-offset-4">Gérer</button>
           </div>
-          {lowStock.length === 0 ? <p className="text-sm text-ink/50">Tous les stocks sont suffisants.</p> : (
+          {lowStock.length === 0 ? <p className="text-sm text-ink/70">Tous les stocks sont suffisants.</p> : (
             <ul className="divide-y divide-ink/5">
               {lowStock.slice(0, 6).map(p => (
                 <li key={p.id} className="flex items-center gap-3 py-2.5">
@@ -181,15 +181,15 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
       {stockAlerts.length > 0 && (
         <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <h2 className="font-display text-xl">Alertes de retour en stock</h2>
-          <p className="text-xs text-ink/50 mt-1 mb-4">Clientes à prévenir quand la pièce revient. Réapprovisionnez, contactez-les, puis marquez l'alerte comme traitée.</p>
+          <p className="text-xs text-ink/70 mt-1 mb-4">Clientes à prévenir quand la pièce revient. Réapprovisionnez, contactez-les, puis marquez l'alerte comme traitée.</p>
           <ul className="divide-y divide-ink/5 text-sm">
             {[...new Set(stockAlerts.map(a => a.productId))].map(id => {
               const product = products.find(p => p.id === id);
               const contacts = stockAlerts.filter(a => a.productId === id).map(a => a.contact);
               return (
                 <li key={id} className="flex flex-wrap items-center gap-3 py-3">
-                  <span className="flex-1 min-w-[160px] font-medium">{product?.name ?? id} <span className="text-ink/50 font-normal">· stock {product?.stock ?? 0}</span></span>
-                  <span className="text-xs text-ink/60 flex-[2] min-w-[200px]">{contacts.join(' · ')}</span>
+                  <span className="flex-1 min-w-[160px] font-medium">{product?.name ?? id} <span className="text-ink/70 font-normal">· stock {product?.stock ?? 0}</span></span>
+                  <span className="text-xs text-ink/75 flex-[2] min-w-[200px]">{contacts.join(' · ')}</span>
                   {product && product.stock > 0 && (autoWhatsApp ? (
                     <button onClick={async () => {
                       const r = await notifyRestock(product, contacts, adminPin());
@@ -303,18 +303,18 @@ const Orders: React.FC = () => {
         ))}
       </div>
       {list.length === 0 ? (
-        <p className="bg-white border border-ink/[0.06] rounded-[2rem] p-10 text-center text-ink/50">Aucune commande.</p>
+        <p className="bg-white border border-ink/[0.06] rounded-[2rem] p-10 text-center text-ink/70">Aucune commande.</p>
       ) : (
         <div className="bg-white border border-ink/[0.06] overflow-x-auto">
           <table className="w-full text-sm min-w-[720px]">
-            <thead className="text-left text-ink/50 border-b border-ink/10">
+            <thead className="text-left text-ink/70 border-b border-ink/10">
               <tr><th className="p-4 font-medium">Commande</th><th className="p-4 font-medium">Client</th><th className="p-4 font-medium">Paiement</th><th className="p-4 font-medium">Statut</th><th className="p-4 font-medium text-right">Total</th></tr>
             </thead>
             <tbody>
               {list.map(o => (
                 <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-ink/5 hover:bg-ivory cursor-pointer">
-                  <td className="p-4"><strong>{o.id}</strong><br /><span className="text-xs text-ink/50">{formatDate(o.createdAt)}</span></td>
-                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.supplier && <span title="Article du Marché" className="text-wine">🌍 {o.supplier.status === 'a_commander' ? 'à commander · ' : ''}</span>}{o.customer.location && <span title="Point GPS">📍 </span>}{o.customer.zone}{o.delivery?.relay && <span title="Livraison en relais"> · 🔁</span>}{o.delivery?.state === 'en_route' && <span className="text-wine"> · 🛵 en route</span>}</span></td>
+                  <td className="p-4"><strong>{o.id}</strong><br /><span className="text-xs text-ink/70">{formatDate(o.createdAt)}</span></td>
+                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/70">{o.supplier && <span title="Article du Marché" className="text-wine">🌍 {o.supplier.status === 'a_commander' ? 'à commander · ' : ''}</span>}{o.customer.location && <span title="Point GPS">📍 </span>}{o.customer.zone}{o.delivery?.relay && <span title="Livraison en relais"> · 🔁</span>}{o.delivery?.state === 'en_route' && <span className="text-wine"> · 🛵 en route</span>}</span></td>
                   <td className="p-4">{PAYMENT_LABELS[o.paymentMethod]}<br /><span className={`text-xs ${o.paymentStatus === 'paye' ? 'text-emerald-700' : 'text-amber-700'}`}>{o.paymentStatus === 'paye' ? 'Payé' : 'En attente'}</span></td>
                   <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span></td>
                   <td className="p-4 text-right font-semibold">{formatPrice(o.total)}</td>
@@ -331,15 +331,15 @@ const Orders: React.FC = () => {
             <div className="p-4 rounded-2xl bg-ivory">
               <p className="font-semibold">{current.customer.firstName} {current.customer.lastName}</p>
               <p>{current.customer.phone}{current.customer.email && ` · ${current.customer.email}`}</p>
-              <p className="text-ink/60">{[current.customer.address, current.customer.zone].filter(Boolean).join(', ')}</p>
-              {current.customer.notes && <p className="mt-2 italic text-ink/60">« {current.customer.notes} »</p>}
+              <p className="text-ink/75">{[current.customer.address, current.customer.zone].filter(Boolean).join(', ')}</p>
+              {current.customer.notes && <p className="mt-2 italic text-ink/75">« {current.customer.notes} »</p>}
               {current.giftFee > 0 && <p className="mt-2 text-gold-dark">🎁 Emballage cadeau{current.giftMessage && ` — « ${current.giftMessage} »`}</p>}
               <a href={buildWhatsAppLink(`Bonjour ${current.customer.firstName}, ici Fabima Store concernant votre commande ${current.id}.`, current.customer.phone.replace(/\D/g, '').replace(/^(?!221)/, '221'))}
                 target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 mt-3 text-[#128C7E] font-semibold"><MessageCircle className="w-4 h-4" /> Contacter sur WhatsApp</a>
             </div>
             <ul className="divide-y divide-ink/5">
               {current.items.map(i => (
-                <li key={i.key} className="flex justify-between py-2"><span>{i.name} <span className="text-ink/50">{[i.color, i.size].filter(Boolean).join(' / ')} × {i.quantity}</span>{i.preorder && <span className="ml-1 text-xs text-wine font-semibold">⏳ sur commande · {i.preorder.days} j</span>}{i.market && <span className="ml-1 text-xs text-wine font-semibold">🌍 Marché</span>}</span><span>{formatPrice(i.price * i.quantity)}</span></li>
+                <li key={i.key} className="flex justify-between py-2"><span>{i.name} <span className="text-ink/70">{[i.color, i.size].filter(Boolean).join(' / ')} × {i.quantity}</span>{i.preorder && <span className="ml-1 text-xs text-wine font-semibold">⏳ sur commande · {i.preorder.days} j</span>}{i.market && <span className="ml-1 text-xs text-wine font-semibold">🌍 Marché</span>}</span><span>{formatPrice(i.price * i.quantity)}</span></li>
               ))}
             </ul>
             <div className="flex justify-between font-semibold text-base border-t border-ink/10 pt-3"><span>Total</span><span>{formatPrice(current.total)}</span></div>
@@ -452,15 +452,15 @@ const Products: React.FC = () => {
       </div>
       <div className="bg-white border border-ink/[0.06] overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
-          <thead className="text-left text-ink/50 border-b border-ink/10">
+          <thead className="text-left text-ink/70 border-b border-ink/10">
             <tr><th className="p-4 font-medium">Produit</th><th className="p-4 font-medium">Catégorie</th><th className="p-4 font-medium">Prix</th><th className="p-4 font-medium">Stock</th><th className="p-4" /></tr>
           </thead>
           <tbody>
             {list.map(p => (
               <tr key={p.id} className="border-b border-ink/5">
-                <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} label="" className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}</p><p className="text-xs text-ink/50">{p.id}</p></div></div></td>
-                <td className="p-4">{CATEGORIES.find(c => c.id === p.category)?.name}<br /><span className="text-xs text-ink/50">{p.subcategory}</span></td>
-                <td className="p-4">{formatPrice(p.price)}{p.oldPrice && <><br /><span className="text-xs text-ink/40 line-through">{formatPrice(p.oldPrice)}</span></>}</td>
+                <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} label="" className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}</p><p className="text-xs text-ink/70">{p.id}</p></div></div></td>
+                <td className="p-4">{CATEGORIES.find(c => c.id === p.category)?.name}<br /><span className="text-xs text-ink/70">{p.subcategory}</span></td>
+                <td className="p-4">{formatPrice(p.price)}{p.oldPrice && <><br /><span className="text-xs text-ink/70 line-through">{formatPrice(p.oldPrice)}</span></>}</td>
                 <td className="p-4"><span className={p.stock === 0 ? 'text-red-700 font-semibold' : p.stock <= 5 ? 'text-amber-700 font-semibold' : ''}>{p.stock}</span>
                   {p.preorderDays ? <span className="block text-xs text-wine">sur commande · {p.preorderDays} j</span> : null}</td>
                 <td className="p-4 text-right whitespace-nowrap">
@@ -525,7 +525,7 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
         <label className="col-span-2 p-3 rounded-2xl bg-blush/30">Si épuisé : vendre sur commande
           <span className="flex items-center gap-2 mt-1">
             <input type="number" min={0} max={90} value={p.preorderDays ?? 0} onChange={e => setP({ ...p, preorderDays: Number(e.target.value) || undefined })} className={`${field} !mt-0 w-24`} aria-label="Délai sur commande (jours)" />
-            <span className="text-xs text-ink/60">jours de délai (0 = non). La cliente peut commander et paie à la commande ; vous vous réapprovisionnez.</span>
+            <span className="text-xs text-ink/75">jours de délai (0 = non). La cliente peut commander et paie à la commande ; vous vous réapprovisionnez.</span>
           </span>
         </label>
         <fieldset className="col-span-2">
@@ -589,7 +589,7 @@ const ServicesCard: React.FC<{ server: ServerStatus | null }> = ({ server }) => 
         {rows.map(r => (
           <li key={r.label} className={`p-4 rounded-2xl text-sm ${r.on ? 'bg-emerald-50' : 'bg-ivory-deep/60'}`}>
             <p className="font-semibold flex items-center gap-2"><span className={`w-2 h-2 rounded-full ${r.on ? 'bg-emerald-500' : 'bg-gold'}`} />{r.label}</p>
-            <p className="text-xs text-ink/60 mt-1.5">{server ? (r.on ? r.onText : r.offText) : 'Vérification…'}</p>
+            <p className="text-xs text-ink/75 mt-1.5">{server ? (r.on ? r.onText : r.offText) : 'Vérification…'}</p>
           </li>
         ))}
       </ul>
