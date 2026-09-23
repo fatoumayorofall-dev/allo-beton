@@ -95,6 +95,11 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
 
 @media print {
   header, footer, .print\:hidden { display: none !important; }
+  /* Étiquettes d'authenticité : seule la planche s'imprime, en vraies couleurs */
+  body.print-labels * { visibility: hidden; }
+  body.print-labels .label-sheet, body.print-labels .label-sheet * { visibility: visible; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.print-labels .label-sheet { position: absolute; left: 0; top: 0; width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; }
+  body.print-labels .auth-label { break-inside: avoid; }
 }
 
 /* ---------- Carte : épingles Fabima (cliente, livreur, boutique) ---------- */

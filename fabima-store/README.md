@@ -28,6 +28,7 @@ Copiez `server/.env.example` en `server/.env`, puis renseignez :
 | `OWNER_WHATSAPP` | Votre numéro : vous y recevez chaque nouvelle commande. |
 | `ADMIN_PIN` | Même code que l'espace gérant, exigé pour envoyer les messages de suivi aux clientes. |
 | `SITE_URL` | Adresse publique du site (ex. `https://fabimastore.sn`) : liens de suivi envoyés sur WhatsApp, aperçus de liens, sitemap. |
+| `AUTH_SECRET` | Clé des marques secrètes des étiquettes d'authenticité (longue chaîne aléatoire). Sans elle, une clé est tirée au hasard au premier démarrage et gardée dans `DATA_DIR/auth-secret` : ne la perdez pas, sinon les marques des nouvelles étiquettes changent. |
 
 **Ce qui se passe à chaque commande**
 
@@ -56,12 +57,11 @@ questions par visiteuse. Le modèle se change avec `CLAUDE_MODEL`.
 Thème **féminin** : rose poudré, vieux rose, prune et rose doré ; accents en calligraphie (*Pinyon Script*),
 titres en *Cormorant Garamond*, texte en *Manrope* (polices hébergées dans `public/fonts/`) ; formes arrondies et arches, ornements floraux.
 
-**Logo** (`src/components/Logo.tsx`) : un sac à main dont l'anse dessine une arche, marqué d'un F calligraphié en or rose,
-et le nom FABIMA / STORE · DAKAR. `BrandMark` (le sac seul) et `Wordmark` (le nom) se réutilisent partout.
-Favicon, icônes de l'application et image de partage sont dans `public/` (`favicon.svg`, `icons/`, `og-image.jpg`).
-Fichiers du logo à utiliser ailleurs (Instagram, flyers, étiquettes, sacs) : `public/brand/` — `fabima-logo.svg` (fond clair),
-`fabima-logo-clair.svg` (fond sombre), `fabima-logo-empile*.svg` (format carré), `fabima-monogramme.svg` (le sac seul)
-et `fabima-monogramme-une-couleur.svg` (gravure, tampon, marquage cuir) ; `public/icons/icon-512.png` convient comme photo de profil.
+**Logo « L'Écrin »** (`src/components/Logo.tsx`) : une arche (la porte de la maison, le motif du site) traitée comme un écrin à bijou —
+filet or rose, clé de voûte en losange, F italique et paraphe — et le nom FABIMA / STORE ◆ DAKAR. `BrandMark` (l'écrin, `compact` pour les petites tailles,
+`light` pour les fonds sombres) et `Wordmark` (le nom) se réutilisent partout. Favicon, icônes et image de partage sont dans `public/`.
+Fichiers pour l'impression et les réseaux dans `public/brand/` : logo horizontal (fond clair / sombre), logo empilé, monogramme (prune, or, une couleur),
+cachet rond, et l'**édition sécurisée** (`fabima-monogramme-securise.svg` : guilloché + micro-texte, sans les marques secrètes).
 La charte complète (construction, couleurs, typographie, maquettes de l'accueil) est dans le fichier Figma « Fabima Store — Identité & Accueil 2026 ».
 Les couleurs sont centralisées dans `tailwind.config.js` (jetons `ink`, `ivory`, `gold`, `wine`, `blush`, `mauve`) :
 modifier une teinte à cet endroit la change sur tout le site.
@@ -105,7 +105,7 @@ src/
 ```
 
 Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
-`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `market.js` (le Marché : produits fournisseurs, import par lien, suivi fournisseur), `catalog.js` (catalogue partagé, stock, avis), `seo.js` (robots.txt, sitemap, aperçus de liens), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
+`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `market.js` (le Marché : produits fournisseurs, import par lien, suivi fournisseur), `catalog.js` (catalogue partagé, stock, avis), `seo.js` (robots.txt, sitemap, aperçus de liens), `authenticity.js` et `brandSecurity.js` (étiquettes d'authenticité, marques secrètes), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
 
@@ -241,6 +241,24 @@ proposent en bas « Encore plus de chaussures / sacs » avec les pièces du Marc
 | « Arrivée à Dakar » | WhatsApp, puis vous confiez la livraison à un livreur comme d'habitude (suivi GPS, relais) |
 
 Les clientes ne voient jamais le fournisseur, son lien ni votre coût d'achat.
+
+## Authenticité : étiquettes anti-contrefaçon
+
+Pour qu'une copie de vos sacs ou de vos chaussures ne puisse pas passer pour une pièce Fabima :
+
+1. **Espace gérant → Authenticité** : choisissez la pièce et le nombre d'étiquettes, puis « Imprimer ».
+   Chaque étiquette porte l'écrin sécurisé, un code unique (ex. `K7QM-2HXD-9RP`, impossible à deviner, avec une clé de contrôle contre les fautes de frappe)
+   et un QR code. Glissez-en une dans chaque sac ou collez-la sur la boîte.
+2. **La cliente scanne le QR** (ou tape le code sur `/authentique`) : le site confirme la pièce et la date d'émission.
+   Un code inconnu signale une contrefaçon ; un code vérifié plus de 5 fois signale une étiquette photocopiée.
+3. **Trois niveaux de sécurité dans le logo imprimé** : guilloché tissé (comme un billet), micro-texte « FABIMA STORE · DAKAR · AUTHENTIQUE »
+   lisible seulement à la loupe, et **marques secrètes** (une ligne du guilloché interrompue, trois micro-points, le cœur de la clé de voûte),
+   placées d'après votre clé `AUTH_SECRET`. Leurs emplacements exacts ne s'affichent que dans l'espace gérant : ne les communiquez jamais.
+
+Conseils : imprimez les étiquettes sur papier épais ou autocollant mat, idéalement en dorure à chaud chez un imprimeur de Dakar
+(la dorure et le guilloché fin sont très difficiles à photocopier). Côté juridique, déposez la marque « Fabima » (nom et logo)
+à l'**OAPI** — l'office qui protège les marques au Sénégal et dans 16 autres pays d'Afrique — par l'intermédiaire de l'**ASPIT** à Dakar :
+c'est ce dépôt qui vous permet de faire saisir les contrefaçons.
 
 ## Catégories en vente
 

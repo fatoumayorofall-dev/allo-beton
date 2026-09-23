@@ -53,7 +53,7 @@ export const Footer: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-16 grid gap-12 grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div className="col-span-2 lg:col-span-1 space-y-6">
           <Link to="/" aria-label="Fabima Store — accueil" className="group inline-flex items-center gap-4">
-            <BrandMark light className="h-14 w-auto origin-[50%_8%] motion-safe:group-hover:animate-swing" />
+            <BrandMark light className="h-16 w-auto transition-transform duration-500 ease-luxe group-hover:-translate-y-0.5" />
             <Wordmark className="h-9 w-auto text-ivory" tagClassName="fill-gold-light stroke-gold-light" />
           </Link>
           <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures et sacs choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
@@ -87,6 +87,7 @@ export const Footer: React.FC = () => {
             <li><Link to="/compte" className={lnk}>Mon compte</Link></li>
             <li><Link to="/mes-commandes" className={lnk}>Mes commandes</Link></li>
             <li><Link to="/suivi" className={lnk}>Suivre une commande</Link></li>
+            <li><Link to="/authentique" className={lnk}>Vérifier l'authenticité</Link></li>
             <li><Link to="/faq" className={lnk}>Livraison & échanges</Link></li>
             <li><Link to="/faq#tailles" className={lnk}>Guide des tailles</Link></li>
             <li><Link to="/a-propos" className={lnk}>Notre maison</Link></li>

@@ -16,7 +16,7 @@ fs.mkdirSync(VOICE_DIR, { recursive: true });
 const SLUG_RE = /^[a-z0-9-]{2,80}$/;
 export const validSlug = s => typeof s === 'string' && SLUG_RE.test(s);
 
-let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, market: { products: {}, settings: null }, catalog: null, catalogUpdatedAt: null, stockAlerts: [] };
+let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, market: { products: {}, settings: null }, catalog: null, catalogUpdatedAt: null, stockAlerts: [], authCodes: {} };
 try { state = { ...state, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { /* premier démarrage */ }
 
 let timer = null;
@@ -172,3 +172,14 @@ export function addStockAlert(productId, contact) {
   persist();
 }
 export function removeStockAlerts(productId) { state.stockAlerts = state.stockAlerts.filter(a => a.productId !== productId); persist(); }
+
+/* ---------- Étiquettes d'authenticité (un code unique par pièce vendue) ---------- */
+export const getAuthCode = code => state.authCodes[code] ?? null;
+export const listAuthCodes = () => Object.values(state.authCodes).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export function saveAuthCodes(list) { for (const c of list) state.authCodes[c.code] = c; persist(); return list; }
+export function recordAuthScan(code) {
+  const c = state.authCodes[code]; if (!c) return null;
+  const now = new Date().toISOString();
+  c.scans = (c.scans || 0) + 1; c.firstScanAt ||= now; c.lastScanAt = now;
+  persist(); return c;
+}

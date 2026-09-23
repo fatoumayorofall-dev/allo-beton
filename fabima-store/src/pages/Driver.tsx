@@ -157,7 +157,7 @@ export const Driver: React.FC = () => {
   return (
     <div className="min-h-screen bg-ivory pb-10" data-testid="driver-page">
       <header className="bg-ink text-ivory px-5 py-4 flex items-center justify-between">
-        <span className="flex items-center gap-2.5"><BrandMark light className="h-8 w-auto" /><Wordmark tagline={false} className="h-4 w-auto" /></span>
+        <span className="flex items-center gap-2.5"><BrandMark light compact className="h-8 w-auto" /><Wordmark tagline={false} className="h-4 w-auto" /></span>
         <span className="text-sm text-right">Livraison {job.order.id}{relay && <><br />🔁 Étape {leg.index + 1} sur {leg.total}</>}</span>
       </header>
 

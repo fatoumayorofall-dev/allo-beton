@@ -288,3 +288,14 @@ export const postStockAlert = (productId: string, contact: string) => post<{ ok:
 export const fetchStockAlerts = (pin: string) => getJson<{ alerts: StockAlert[] }>('/api/admin/stock-alerts', pin).then(r => r?.alerts ?? null);
 export const clearStockAlerts = (productId: string, pin: string) =>
   call<null>(`/api/admin/stock-alerts/${encodeURIComponent(productId)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
+
+/* ---------- Authenticité (étiquettes numérotées anti-contrefaçon) ---------- */
+
+export interface AuthCode { code: string; productId?: string; productSlug?: string; productName: string; orderId?: string; createdAt: string; scans: number; firstScanAt?: string; lastScanAt?: string }
+export interface AuthCheck { status: 'authentique' | 'deja-verifie' | 'suspect' | 'inconnu' | 'invalide'; code?: string; productName?: string; productSlug?: string; issuedAt?: string; scans?: number; firstScanAt?: string }
+export const createAuthCodes = (input: { productId?: string; productSlug?: string; productName: string; quantity: number; orderId?: string }, pin: string) =>
+  call<{ codes: AuthCode[] }>('/api/admin/authenticite', { method: 'POST', body: JSON.stringify(input), headers: { 'x-admin-pin': pin } });
+export const fetchAuthCodes = (pin: string) => getJson<{ codes: AuthCode[] }>('/api/admin/authenticite', pin).then(r => r?.codes ?? null);
+export const verifyAuthCode = (code: string) => call<AuthCheck>(`/api/authentique/${encodeURIComponent(code)}`);
+/** Écrin sécurisé avec les marques secrètes de la boutique (espace gérant seulement). */
+export const fetchSecureMark = (pin: string) => getJson<{ svg: string; marks: string[] }>('/api/admin/marque-securisee', pin);

@@ -20,7 +20,7 @@ export const SimpleHeader: React.FC<{ back?: string }> = ({ back }) => (
       {back
         ? <Link to={back} aria-label="Retour" className="w-12 h-12 rounded-full bg-white grid place-items-center shadow-sm"><ChevronLeft className="w-6 h-6" /></Link>
         : <span />}
-      <Link to="/" className="flex items-center justify-center gap-2 text-ink" aria-label="Fabima Store"><BrandMark className="h-8 w-auto" /><Wordmark className="h-6 w-auto" /></Link>
+      <Link to="/" className="flex items-center justify-center gap-2 text-ink" aria-label="Fabima Store"><BrandMark compact className="h-9 w-auto" /><Wordmark className="h-6 w-auto" /></Link>
       <Link to="/" aria-label="Toute la boutique" className="w-12 h-12 rounded-full bg-white grid place-items-center shadow-sm"><Home className="w-5 h-5" /></Link>
     </div>
   </header>

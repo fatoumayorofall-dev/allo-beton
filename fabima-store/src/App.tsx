@@ -38,6 +38,7 @@ const Journal = page(() => import('./pages/Journal'), 'Journal');
 const ArticlePage = page(() => import('./pages/Journal'), 'ArticlePage');
 const SimpleProduct = page(() => import('./pages/SimpleProduct'), 'SimpleProduct');
 const Showcase = page(() => import('./pages/Showcase'), 'Showcase');
+const Authenticity = page(() => import('./pages/Authenticity'), 'Authenticity');
 const Market = page(() => import('./pages/Market'), 'default');
 const MarketProduct = page(() => import('./pages/MarketProduct'), 'default');
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
@@ -113,6 +114,8 @@ export default function App() {
                 <Route path="/journal/:slug" element={<ArticlePage />} />
                 <Route path="/a-propos" element={<About />} />
                 <Route path="/faq" element={<FAQ />} />
+                <Route path="/authentique" element={<Authenticity />} />
+                <Route path="/authentique/:code" element={<Authenticity />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/livreur/:token" element={<Driver />} />
                 <Route path="/marche" element={<Market />} />

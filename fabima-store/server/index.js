@@ -20,6 +20,8 @@ const { registerOrderRoutes } = await import('./orders.js');
 const { registerMarketRoutes } = await import('./market.js');
 const { registerCatalogRoutes } = await import('./catalog.js');
 const { registerSeoRoutes } = await import('./seo.js');
+const { registerAuthenticityRoutes } = await import('./authenticity.js');
+const { registerBrandSecurityRoutes } = await import('./brandSecurity.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -155,12 +157,16 @@ registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder });
 /* ---------- Catalogue partagé, avis et alertes de retour en stock ---------- */
 registerCatalogRoutes(app, { limit, isAdmin, store });
 
+/* ---------- Étiquettes d'authenticité (anti-contrefaçon) ---------- */
+registerAuthenticityRoutes(app, { limit, isAdmin, store });
+
 /* ---------- Le Marché (dropshipping) ---------- */
 registerMarketRoutes(app, { limit, isAdmin, store, wa });
 
 /* ---------- Site compilé (production) : robots.txt, sitemap.xml, fichiers, puis pages avec leurs balises de partage ---------- */
 const dist = path.join(here, '..', 'dist');
 const sendPage = registerSeoRoutes(app, { store, dist });
+registerBrandSecurityRoutes(app, { isAdmin, dist });
 // Fichiers au nom versionné (assets/…-hash.js) : gardés un an par le navigateur
 app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '1y' }), (_req, res) => res.status(404).end());
 app.use('/fonts', express.static(path.join(dist, 'fonts'), { immutable: true, maxAge: '30d' }));

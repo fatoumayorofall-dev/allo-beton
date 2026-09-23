@@ -143,7 +143,21 @@ Fichier Figma : « Fabima Store — Identité & Accueil 2026 » (page 01 · Logo
 - Retirés : manifeste, bandeau défilant, occasions en double avec le menu, journal, section #FabimaStyle vide (aucune photo), services en double.
 - Une seule écriture calligraphique par écran ; titres en Cormorant avec fin en italique.
 
-## 10. Restent à traiter avant la mise en ligne
+## 10. Logo « L'Écrin » (v3) et protection anti-contrefaçon
+
+**Pourquoi changer encore ?** Le sac dessiné de la v2 restait littéral : il évoque une icône de panier d'application plus qu'une maison de mode. Les grandes maisons signent d'un emblème abstrait.
+Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écrin l'emporte : silhouette reconnaissable même à 16 px, lien direct avec les arches du site, et il reste juste si la boutique élargit son offre.
+
+- Arche 64 × 88 (proportion d'une porte), filet or rose intérieur, clé de voûte en losange (écho du ◆ de la signature), F italique Cormorant 700 centré optiquement, paraphe calligraphié effilé.
+- Version compacte (en-tête, favicon) : l'arche et un F plus grand, sans filet ni paraphe, pour rester net.
+- Déclinaisons : or rose sur fond prune, une couleur (tampon, marquage cuir), logo empilé, cachet rond « FABIMA STORE · DAKAR · SÉNÉGAL ».
+
+**Anti-contrefaçon**
+- Édition sécurisée pour les étiquettes et emballages : guilloché tissé (24 lignes sinusoïdales), micro-texte le long de l'arche, marques secrètes calculées par le serveur d'après une clé propre à la boutique (jamais dans le code ni dans les fichiers publics).
+- Étiquettes numérotées avec QR code (espace gérant → Authenticité) et page publique `/authentique` : pièce authentique, code inconnu (contrefaçon) ou étiquette photocopiée (plus de 5 vérifications).
+- Reste à faire hors du site : dépôt de la marque à l'OAPI via l'ASPIT, et impression des étiquettes en dorure à chaud.
+
+## 11. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

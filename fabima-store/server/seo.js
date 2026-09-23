@@ -23,6 +23,7 @@ const STATIC_PAGES = [
   { path: '/a-propos', priority: '0.4', freq: 'monthly' },
   { path: '/faq', priority: '0.4', freq: 'monthly' },
   { path: '/suivi', priority: '0.3', freq: 'monthly' },
+  { path: '/authentique', priority: '0.3', freq: 'monthly' },
 ];
 
 /** Lit un fichier et le garde en mémoire tant qu'il ne change pas. */
@@ -90,6 +91,7 @@ export function registerSeoRoutes(app, { store, dist }) {
     if (pathname === '/a-propos') return titled('Notre maison');
     if (pathname === '/faq') return titled('Aide & FAQ');
     if (pathname === '/suivi') return titled('Suivre ma commande');
+    if (pathname.startsWith('/authentique')) return { ...titled('Vérifier l\'authenticité', 'Scannez l\'étiquette de votre pièce Fabima ou saisissez son code : nous vous confirmons qu\'elle est authentique.'), canonical: '/authentique' };
     return base;
   }
 
