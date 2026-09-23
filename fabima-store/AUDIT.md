@@ -125,7 +125,25 @@ Mesures faites sur 9 pages (accueil, chaussures, fiche sac, panier, Marché, sui
 - Titres équilibrés sur plusieurs lignes, paragraphes sans mot orphelin.
 - Animations coupées si le téléphone demande moins de mouvement.
 
-## 9. Restent à traiter avant la mise en ligne
+## 9. Logo v2 et accueil repensé (maquette Figma)
+
+Fichier Figma : « Fabima Store — Identité & Accueil 2026 » (page 01 · Logo : charte ; page 02 · Accueil : maquettes ordinateur et mobile, composants Bouton et Carte produit).
+
+**Logo v2**
+- Monogramme reconstruit sur une grille de 100 : anse en demi-cercle parfait, corps trapèze à 8°, couture maroquinerie, F renforcé pour rester lisible en petit.
+- Nom en Cormorant plus présent (graisse 650) avec espacement optique ; ligne STORE ◆ DAKAR justifiée sur la largeur exacte du nom.
+- Nouvelles déclinaisons : logo empilé (format carré), monogramme une couleur (gravure, tampon, marquage cuir), favicon renforcé.
+
+**Accueil**
+- Page 45 % plus courte (6 150 px au lieu de 11 160 sur ordinateur) : 15 sections → 9, sans perdre de contenu utile.
+- Héros en deux colonnes sur fond clair : titre, deux boutons (chaussures / sacs), preuve sociale (4,8/5), photo en arche et « pièce du moment ».
+- Barre de confiance juste sous le héros (livraison 24 h, suivi, Wave / Orange Money, échange 7 jours) au lieu d'une section en bas de page.
+- Univers en grille « bento » : Chaussures, Sacs, Nouveautés et Petits prix (qui remplace le bloc idées cadeaux).
+- Avis en trois cartes lisibles d'un coup d'œil au lieu d'un carrousel.
+- Retirés : manifeste, bandeau défilant, occasions en double avec le menu, journal, section #FabimaStyle vide (aucune photo), services en double.
+- Une seule écriture calligraphique par écran ; titres en Cormorant avec fin en italique.
+
+## 10. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

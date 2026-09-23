@@ -1,5 +1,5 @@
 // Service worker Fabima Store : ouverture rapide et consultation même avec une connexion faible.
-const VERSION = 'fabima-v2'; // v2 : nouveau logo et nouvelles icônes
+const VERSION = 'fabima-v3'; // v3 : logo v2 et nouvelles icônes
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/fonts/manrope-latin.woff2', '/fonts/cormorant-garamond-latin.woff2'];
 const RUNTIME = `${VERSION}-runtime`;
 

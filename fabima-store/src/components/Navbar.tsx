@@ -25,7 +25,6 @@ export const Navbar: React.FC = () => {
   const { cart, wishlist, setCartOpen, products } = useStore();
   const account = useAccount();
   const location = useLocation();
-  const isHome = location.pathname === '/';
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -59,11 +58,10 @@ export const Navbar: React.FC = () => {
     }];
   })) as Record<CategoryId, { subs: string[]; featured?: typeof products[number] }>, [products]);
 
-  const transparent = isHome && !scrolled && !mega;
   // Au défilement, l'en-tête devient un îlot flottant en verre dépoli
   const floating = scrolled && !mega;
-  const tone = transparent ? 'text-ivory' : 'text-ink';
-  const iconBtn = `relative w-10 h-10 grid place-items-center rounded-full transition-colors ${transparent ? 'hover:bg-ivory/10' : 'hover:bg-ink/5'}`;
+  const tone = 'text-ink';
+  const iconBtn = `relative w-10 h-10 grid place-items-center rounded-full transition-colors hover:bg-ink/5`;
   const badge = 'absolute top-1 right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold grid place-items-center';
 
   return (
@@ -74,10 +72,9 @@ export const Navbar: React.FC = () => {
       </aside>
 
       <header onMouseLeave={() => setMega(null)} data-floating={floating || undefined}
-        className={`${isHome ? 'fixed top-9' : 'sticky top-0'} inset-x-0 z-50 transition-[background-color,box-shadow,border-radius,margin,transform] duration-500 ease-luxe ${
-          transparent ? 'bg-transparent'
-            : floating ? 'mx-2 sm:mx-4 translate-y-2 rounded-full lg:rounded-[2rem] bg-ivory/[0.88] backdrop-blur-xl backdrop-saturate-150 shadow-[0_18px_40px_-22px_rgba(58,31,45,.45)] ring-1 ring-ink/[0.06]'
-            : 'bg-ivory/95 backdrop-blur-md shadow-[0_1px_0_rgba(22,18,15,.08)]'} ${isHome && scrolled ? '!top-0' : ''}`}>
+        className={`sticky top-0 inset-x-0 z-50 transition-[background-color,box-shadow,border-radius,margin,transform] duration-500 ease-luxe ${
+          floating ? 'mx-2 sm:mx-4 translate-y-2 rounded-full lg:rounded-[2rem] bg-ivory/[0.88] backdrop-blur-xl backdrop-saturate-150 shadow-[0_18px_40px_-22px_rgba(58,31,45,.45)] ring-1 ring-ink/[0.06]'
+            : 'bg-ivory/95 backdrop-blur-md shadow-[0_1px_0_rgba(22,18,15,.08)]'}`}>
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 h-16 lg:h-[72px] grid grid-cols-[1fr_auto_1fr] items-center">
           {/* Gauche */}
           <div className={`flex items-center gap-1 ${tone}`}>
@@ -87,7 +84,7 @@ export const Navbar: React.FC = () => {
           </div>
 
           {/* Centre */}
-          <Logo light={transparent} />
+          <Logo />
 
           {/* Droite */}
           <div className={`flex items-center justify-end gap-0.5 sm:gap-1 ${tone}`}>
@@ -101,7 +98,7 @@ export const Navbar: React.FC = () => {
             </Link>
             <button onClick={() => setCartOpen(true)} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`} className={`${iconBtn} lg:-mr-2`} data-cart-target>
               <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.5} />
-              {count > 0 && <span key={count} className={`${badge} animate-heart-pop ${transparent ? 'bg-ivory text-ink' : 'bg-ink text-ivory'}`} data-testid="cart-count">{count}</span>}
+              {count > 0 && <span key={count} className={`${badge} animate-heart-pop bg-ink text-ivory`} data-testid="cart-count">{count}</span>}
             </button>
           </div>
         </div>
@@ -116,11 +113,11 @@ export const Navbar: React.FC = () => {
             </NavLink>
           ))}
           <NavLink to="/marche" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap inline-flex items-center gap-1.5 ${isActive ? 'is-active' : ''}`}>
-            Le Marché <span className={`px-1.5 py-0.5 rounded-full text-[8px] tracking-[0.1em] ${transparent ? 'bg-ivory/20' : 'bg-blush text-wine'}`}>MONDE</span>
+            Le Marché <span className={`px-1.5 py-0.5 rounded-full text-[8px] tracking-[0.1em] bg-blush text-wine`}>MONDE</span>
           </NavLink>
           <NavLink to="/journal" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap ${isActive ? 'is-active' : ''}`}>Le journal</NavLink>
           <NavLink to="/boutique?promo=1" onMouseEnter={() => setMega(null)}
-            className={`link-luxe text-[11px] uppercase tracking-[0.2em] font-semibold py-2 ${transparent ? 'text-gold-light' : 'text-wine'}`}>Offres</NavLink>
+            className={`link-luxe text-[11px] uppercase tracking-[0.2em] font-semibold py-2 text-wine`}>Offres</NavLink>
         </nav>
 
         {/* Méga-menu */}

@@ -54,7 +54,7 @@ export const Footer: React.FC = () => {
         <div className="col-span-2 lg:col-span-1 space-y-6">
           <Link to="/" aria-label="Fabima Store — accueil" className="group inline-flex items-center gap-4">
             <BrandMark light className="h-14 w-auto origin-[50%_8%] motion-safe:group-hover:animate-swing" />
-            <Wordmark className="h-9 w-auto text-ivory" tagClassName="fill-gold-light" />
+            <Wordmark className="h-9 w-auto text-ivory" tagClassName="fill-gold-light stroke-gold-light" />
           </Link>
           <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures et sacs choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
           <div className="flex gap-2">

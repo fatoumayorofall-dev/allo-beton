@@ -60,7 +60,9 @@ titres en *Cormorant Garamond*, texte en *Manrope* (polices hébergées dans `pu
 et le nom FABIMA / STORE · DAKAR. `BrandMark` (le sac seul) et `Wordmark` (le nom) se réutilisent partout.
 Favicon, icônes de l'application et image de partage sont dans `public/` (`favicon.svg`, `icons/`, `og-image.jpg`).
 Fichiers du logo à utiliser ailleurs (Instagram, flyers, étiquettes, sacs) : `public/brand/` — `fabima-logo.svg` (fond clair),
-`fabima-logo-clair.svg` (fond sombre) et `fabima-monogramme.svg` (le sac seul) ; `public/icons/icon-512.png` convient comme photo de profil.
+`fabima-logo-clair.svg` (fond sombre), `fabima-logo-empile*.svg` (format carré), `fabima-monogramme.svg` (le sac seul)
+et `fabima-monogramme-une-couleur.svg` (gravure, tampon, marquage cuir) ; `public/icons/icon-512.png` convient comme photo de profil.
+La charte complète (construction, couleurs, typographie, maquettes de l'accueil) est dans le fichier Figma « Fabima Store — Identité & Accueil 2026 ».
 Les couleurs sont centralisées dans `tailwind.config.js` (jetons `ink`, `ivory`, `gold`, `wine`, `blush`, `mauve`) :
 modifier une teinte à cet endroit la change sur tout le site.
 
