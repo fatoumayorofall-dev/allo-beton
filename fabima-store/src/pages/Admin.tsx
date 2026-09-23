@@ -10,7 +10,9 @@ import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
 import { ProductImage } from '../components/ProductImage';
 import { StatusTab } from './AdminStatus';
 import { CustomersTab } from './AdminCustomers';
-import { fetchAdminOrders, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, type ServerStatus } from '../services/api';
+import { clearStockAlerts, fetchAdminOrders, fetchCatalog, fetchStockAlerts, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, publishCatalog, removeCatalogProduct, saveCatalogProduct, type ServerStatus } from '../services/api';
+import { INITIAL_PRODUCTS } from '../data/catalog';
+import type { StockAlert } from '../data/types';
 import { DeliveryPanel } from './AdminDelivery';
 import { MarketTab, SupplierPanel } from './AdminMarket';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
@@ -96,9 +98,21 @@ export const Admin: React.FC = () => {
 /* ------------------------------------------------------------------ */
 
 const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ onGoto }) => {
-  const { orders, products, stockAlerts, removeStockAlerts, notify } = useStore();
+  const { orders, products, stockAlerts: localAlerts, removeStockAlerts: removeLocalAlerts, notify } = useStore();
   const server = useServerStatus();
   const autoWhatsApp = !!(server?.whatsapp && server.adminApi);
+  // Alertes laissées par les clientes sur leur téléphone (serveur) + celles de cet appareil
+  const [serverAlerts, setServerAlerts] = useState<StockAlert[]>([]);
+  useEffect(() => { fetchStockAlerts(adminPin()).then(a => a && setServerAlerts(a)); }, []);
+  const stockAlerts = useMemo(() => {
+    const all = [...serverAlerts, ...localAlerts];
+    return all.filter((a, i) => all.findIndex(b => b.productId === a.productId && b.contact === a.contact) === i);
+  }, [serverAlerts, localAlerts]);
+  const removeStockAlerts = (id: string) => {
+    removeLocalAlerts(id);
+    setServerAlerts(list => list.filter(a => a.productId !== id));
+    clearStockAlerts(id, adminPin());
+  };
   const valid = orders.filter(o => o.status !== 'annulee');
   const revenue = valid.reduce((s, o) => s + o.total, 0);
   const pending = orders.filter(o => o.status === 'en_attente').length;
@@ -325,7 +339,7 @@ const Orders: React.FC = () => {
             </div>
             <ul className="divide-y divide-ink/5">
               {current.items.map(i => (
-                <li key={i.key} className="flex justify-between py-2"><span>{i.name} <span className="text-ink/50">{[i.color, i.size].filter(Boolean).join(' / ')} × {i.quantity}</span></span><span>{formatPrice(i.price * i.quantity)}</span></li>
+                <li key={i.key} className="flex justify-between py-2"><span>{i.name} <span className="text-ink/50">{[i.color, i.size].filter(Boolean).join(' / ')} × {i.quantity}</span>{i.preorder && <span className="ml-1 text-xs text-wine font-semibold">⏳ sur commande · {i.preorder.days} j</span>}{i.market && <span className="ml-1 text-xs text-wine font-semibold">🌍 Marché</span>}</span><span>{formatPrice(i.price * i.quantity)}</span></li>
               ))}
             </ul>
             <div className="flex justify-between font-semibold text-base border-t border-ink/10 pt-3"><span>Total</span><span>{formatPrice(current.total)}</span></div>
@@ -386,20 +400,54 @@ const emptyProduct = (): Product => ({
 });
 
 const Products: React.FC = () => {
-  const { products, saveProduct, deleteProduct, resetCatalog, notify } = useStore();
+  const { products, saveProduct, deleteProduct, resetCatalog, notify, catalogLive, reloadCatalog } = useStore();
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<Product | null>(null);
   const list = products.filter(p => `${p.name} ${p.id} ${p.subcategory}`.toLowerCase().includes(q.toLowerCase()));
+  const server = useServerStatus();
+  const online = !!(server?.catalog && server.adminApi);
+
+  // Première fois : le catalogue de cet appareil devient le catalogue en ligne, visible par toutes les clientes
+  useEffect(() => {
+    if (!online || catalogLive) return;
+    fetchCatalog().then(async r => {
+      if (!r || r.products !== null) return;
+      const res = await publishCatalog(products, adminPin());
+      if (res.ok) { await reloadCatalog(); notify('Catalogue publié : toutes vos clientes voient les mêmes pièces', 'success'); }
+    });
+  }, [online, catalogLive]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const save = async (p: Product) => {
+    saveProduct(p);
+    setEditing(null);
+    if (!online) { notify('Produit enregistré sur cet appareil'); return; }
+    const r = await saveCatalogProduct(p, adminPin());
+    if (r.ok) { saveProduct(r.data.product); notify('Produit enregistré et visible par toutes vos clientes', 'success'); }
+    else notify(`Non publié : ${r.error}`, 'error');
+  };
+  const remove = async (p: Product) => {
+    deleteProduct(p.id);
+    if (online) await removeCatalogProduct(p.id, adminPin());
+    notify('Produit supprimé', 'info');
+  };
+  const reset = async () => {
+    resetCatalog();
+    if (online) { const r = await publishCatalog(INITIAL_PRODUCTS, adminPin()); if (r.ok) await reloadCatalog(); }
+    notify('Catalogue restauré', 'info');
+  };
 
   return (
     <div>
+      <p className={`mb-4 text-sm px-4 py-3 rounded-2xl ${catalogLive ? 'bg-emerald-50 text-emerald-900' : 'bg-amber-50 text-amber-900'}`} data-testid="catalog-status">
+        {catalogLive ? '✓ Catalogue en ligne : chaque modification est visible tout de suite par toutes vos clientes.' : '⚠ Catalogue hors ligne : les modifications restent sur cet appareil (serveur de la boutique injoignable).'}
+      </p>
       <div className="flex flex-wrap gap-3 mb-5">
         <div className="flex-1 min-w-[200px] flex items-center gap-2 px-4 rounded-full bg-white">
           <Search className="w-4 h-4 text-ink/40" />
           <input value={q} onChange={e => setQ(e.target.value)} placeholder="Rechercher un produit" aria-label="Rechercher un produit" className="flex-1 py-3 outline-none bg-transparent text-sm" />
         </div>
         <button onClick={() => setEditing(emptyProduct())} className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-ink text-ivory text-sm font-semibold"><Plus className="w-4 h-4" /> Nouveau produit</button>
-        <button onClick={() => { if (confirm('Restaurer le catalogue d\'origine ? Vos modifications de produits seront perdues.')) { resetCatalog(); notify('Catalogue restauré', 'info'); } }}
+        <button onClick={() => { if (confirm('Restaurer le catalogue d\'origine ? Vos modifications de produits seront perdues.')) reset(); }}
           className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white text-sm"><RotateCcw className="w-4 h-4" /> Restaurer</button>
       </div>
       <div className="bg-white border border-ink/[0.06] overflow-x-auto">
@@ -413,10 +461,11 @@ const Products: React.FC = () => {
                 <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} label="" className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}</p><p className="text-xs text-ink/50">{p.id}</p></div></div></td>
                 <td className="p-4">{CATEGORIES.find(c => c.id === p.category)?.name}<br /><span className="text-xs text-ink/50">{p.subcategory}</span></td>
                 <td className="p-4">{formatPrice(p.price)}{p.oldPrice && <><br /><span className="text-xs text-ink/40 line-through">{formatPrice(p.oldPrice)}</span></>}</td>
-                <td className="p-4"><span className={p.stock === 0 ? 'text-red-700 font-semibold' : p.stock <= 5 ? 'text-amber-700 font-semibold' : ''}>{p.stock}</span></td>
+                <td className="p-4"><span className={p.stock === 0 ? 'text-red-700 font-semibold' : p.stock <= 5 ? 'text-amber-700 font-semibold' : ''}>{p.stock}</span>
+                  {p.preorderDays ? <span className="block text-xs text-wine">sur commande · {p.preorderDays} j</span> : null}</td>
                 <td className="p-4 text-right whitespace-nowrap">
                   <button onClick={() => setEditing(p)} aria-label="Modifier" className="p-2 rounded-full hover:bg-ink/5"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => { if (confirm(`Supprimer « ${p.name} » ?`)) { deleteProduct(p.id); notify('Produit supprimé', 'info'); } }}
+                  <button onClick={() => { if (confirm(`Supprimer « ${p.name} » ?`)) remove(p); }}
                     aria-label="Supprimer" className="p-2 rounded-full hover:bg-red-50 text-red-700"><Trash2 className="w-4 h-4" /></button>
                 </td>
               </tr>
@@ -427,7 +476,7 @@ const Products: React.FC = () => {
 
       {editing && (
         <ProductForm product={editing} onClose={() => setEditing(null)}
-          onSave={p => { saveProduct(p); notify('Produit enregistré'); setEditing(null); }} />
+          onSave={save} />
       )}
     </div>
   );
@@ -473,6 +522,12 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
         <label>Prix (FCFA) *<input required type="number" min={1} value={p.price || ''} onChange={e => setP({ ...p, price: Number(e.target.value) })} className={field} /></label>
         <label>Ancien prix<input type="number" min={0} value={p.oldPrice ?? ''} onChange={e => setP({ ...p, oldPrice: e.target.value ? Number(e.target.value) : undefined })} className={field} /></label>
         <label>Stock<input type="number" min={0} value={p.stock} onChange={e => setP({ ...p, stock: Number(e.target.value) })} className={field} /></label>
+        <label className="col-span-2 p-3 rounded-2xl bg-blush/30">Si épuisé : vendre sur commande
+          <span className="flex items-center gap-2 mt-1">
+            <input type="number" min={0} max={90} value={p.preorderDays ?? 0} onChange={e => setP({ ...p, preorderDays: Number(e.target.value) || undefined })} className={`${field} !mt-0 w-24`} aria-label="Délai sur commande (jours)" />
+            <span className="text-xs text-ink/60">jours de délai (0 = non). La cliente peut commander et paie à la commande ; vous vous réapprovisionnez.</span>
+          </span>
+        </label>
         <fieldset className="col-span-2">
           <legend>Occasions</legend>
           <div className="mt-1 flex flex-wrap gap-2">

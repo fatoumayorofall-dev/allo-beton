@@ -1,4 +1,5 @@
 import { delayLabel } from '../utils/market';
+import { PREORDER_MAX } from '../utils/stock';
 import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Gift, Minus, Plus, X } from 'lucide-react';
@@ -80,7 +81,7 @@ export const CartDrawer: React.FC = () => {
               <ul className="px-6 sm:px-8 divide-y divide-ink/10">
                 {cart.map(item => {
                   const product = products.find(p => p.id === item.productId);
-                  const stock = product?.stock ?? item.quantity;
+                  const stock = item.market || item.preorder ? PREORDER_MAX : product?.stock ?? item.quantity;
                   return (
                     <li key={item.key} className="flex gap-4 py-5">
                       <Link to={product ? `/produit/${product.slug}` : '#'} onClick={close} className="shrink-0">
@@ -93,6 +94,7 @@ export const CartDrawer: React.FC = () => {
                         </div>
                         <p className="text-xs text-ink/50 mt-1">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
 {item.market && <p className="text-[11px] text-wine mt-1" data-testid="cart-market">🌍 Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
+{item.preorder && <p className="text-[11px] text-wine mt-1" data-testid="cart-preorder">⏳ Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
                         <div className="mt-auto flex items-center justify-between pt-3">
                           <div className="flex items-center border border-ink/15 h-9 rounded-full overflow-hidden">
                             <button onClick={() => updateQuantity(item.key, item.quantity - 1)} aria-label="Diminuer" className="w-9 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3 h-3" /></button>

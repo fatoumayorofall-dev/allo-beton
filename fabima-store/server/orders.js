@@ -11,6 +11,7 @@
 import crypto from 'node:crypto';
 import { distanceM, etaMinutes, reverseGeocode, searchPlaces, validPoint } from './geo.js';
 import { checkMarketItems } from './market.js';
+import { applyStock, checkStock } from './catalog.js';
 
 const STATUSES = new Set(['en_attente', 'confirmee', 'en_preparation', 'expediee', 'livree', 'annulee']);
 const NEAR_M = 400; // distance à laquelle la cliente est prévenue que le livreur arrive
@@ -124,16 +125,21 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     // Articles du Marché (dropshipping) : prix vérifiés et suivi fournisseur préparé
     const market = checkMarketItems(o, store);
     if (market.error) return res.status(409).json({ error: market.error });
+    // Pièces de la boutique : prix à jour, stock suffisant ou vente « sur commande »
+    const stock = checkStock(o, store);
+    if (stock.error) return res.status(409).json({ error: stock.error });
     const now = new Date().toISOString();
     const order = {
       ...o,
       supplier: market.supplier ?? undefined,
       customer: { ...o.customer, location: cleanLocation(o.customer.location) },
+      items: o.items.map(i => (stock.preorder.has(i.productId) ? { ...i, preorder: { days: stock.preorder.get(i.productId) } } : i)),
       createdAt: now,
       status: 'en_attente',
       history: [{ status: 'en_attente', date: now }],
       notifications: [],
     };
+    applyStock(order, store, -1);
     const sent = await wa.notifyNewOrder(order);
     logSend(order, 'nouvelle', 'gerante', sent.owner);
     logSend(order, 'nouvelle', 'cliente', sent.customer);
@@ -174,7 +180,13 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     let sent = null;
     if (status !== undefined) {
       if (!STATUSES.has(status)) return res.status(400).json({ error: 'Statut invalide' });
-      if (setStatus(order, status) && req.body.notify !== false) sent = await notifyCustomer(order, status);
+      const before = order.status;
+      if (setStatus(order, status)) {
+        // Annulation : les pièces reviennent en stock ; réactivation : elles repartent
+        if (status === 'annulee') applyStock(order, store, +1);
+        if (before === 'annulee') applyStock(order, store, -1);
+        if (req.body.notify !== false) sent = await notifyCustomer(order, status);
+      }
     }
     if (paymentStatus === 'paye' || paymentStatus === 'en_attente') order.paymentStatus = paymentStatus;
     store.saveShopOrder(order);

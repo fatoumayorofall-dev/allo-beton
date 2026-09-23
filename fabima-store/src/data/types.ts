@@ -47,6 +47,8 @@ export interface Product {
   colors: ColorOption[];
   sizes: string[];
   stock: number;
+  /** Épuisée mais vendue « sur commande » : délai de réapprovisionnement en jours (absent = non) */
+  preorderDays?: number;
   description: string;
   details: string[];
   rating: number;
@@ -68,6 +70,8 @@ export interface CartItem {
   quantity: number;
   /** Article du Marché (dropshipping) : commandé chez un fournisseur, délai en jours */
   market?: { delayMin: number; delayMax: number };
+  /** Pièce de la boutique épuisée, vendue « sur commande » (délai en jours) */
+  preorder?: { days: number };
 }
 
 export interface CustomerInfo {

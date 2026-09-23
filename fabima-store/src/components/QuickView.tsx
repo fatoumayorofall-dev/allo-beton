@@ -1,3 +1,4 @@
+import { canBuy, isPreorder } from '../utils/stock';
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Heart, X } from 'lucide-react';
@@ -67,7 +68,7 @@ export const QuickView: React.FC = () => {
           )}
 
           <div className="mt-8 flex gap-2">
-            <button onClick={add} disabled={product.stock <= 0} className="btn-dark flex-1">{product.stock <= 0 ? 'Épuisé' : 'Ajouter au panier'}</button>
+            <button onClick={add} disabled={!canBuy(product)} className="btn-dark flex-1">{!canBuy(product) ? 'Épuisé' : isPreorder(product) ? `Commander · sous ${product.preorderDays} j` : 'Ajouter au panier'}</button>
             <button onClick={() => toggleWishlist(product.id)} aria-label="Favoris" className="w-[52px] h-[52px] rounded-full border border-ink/20 grid place-items-center hover:border-ink">
               <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
             </button>

@@ -4,7 +4,8 @@ import type { Currency, MarketProduct, MarketSettings, Order, SupplierStatus } f
 import { useStore } from '../context/StoreContext';
 import { deleteMarketProduct, fetchAdminMarket, fetchAdminOrders, importMarketProduct, patchSupplier, saveMarketProduct, saveMarketSettings } from '../services/api';
 import { formatPrice } from '../utils/format';
-import { costInXof, delayLabel, refreshMarket, suggestedPrice } from '../utils/market';
+import { costInXof, delayLabel, marketCategoryOnSale, refreshMarket, suggestedPrice } from '../utils/market';
+import { CATEGORIES } from '../data/catalog';
 import { SUPPLIER_LABELS } from '../components/SupplierSteps';
 import { ProductImage } from '../components/ProductImage';
 
@@ -82,7 +83,7 @@ export const SupplierPanel: React.FC<{ order: Order; pin: string }> = ({ order, 
 type Draft = Omit<MarketProduct, 'id' | 'slug' | 'createdAt' | 'supplier'> & { id?: string; supplier: NonNullable<MarketProduct['supplier']>; imagesText: string; optionsText: { name: string; values: string }[] };
 
 const emptyDraft = (s: MarketSettings): Draft => ({
-  name: '', description: '', category: '', images: [], imagesText: '', price: 0, options: [], optionsText: [{ name: '', values: '' }],
+  name: '', description: '', category: CATEGORIES[0].name, images: [], imagesText: '', price: 0, options: [], optionsText: [{ name: '', values: '' }],
   delayMin: s.delayMin, delayMax: s.delayMax, active: true, supplier: { name: '', url: '', cost: 0, currency: 'USD', shipping: 0, note: '' },
 });
 const toDraft = (p: MarketProduct): Draft => ({
@@ -90,7 +91,7 @@ const toDraft = (p: MarketProduct): Draft => ({
   supplier: p.supplier ?? { name: '', url: '', cost: 0, currency: 'USD', shipping: 0, note: '' },
 });
 
-const ProductEditor: React.FC<{ initial: Draft; settings: MarketSettings; categories: string[]; pin: string; onClose: () => void; onSaved: () => void }> = ({ initial, settings, categories, pin, onClose, onSaved }) => {
+const ProductEditor: React.FC<{ initial: Draft; settings: MarketSettings; pin: string; onClose: () => void; onSaved: () => void }> = ({ initial, settings, pin, onClose, onSaved }) => {
   const { notify } = useStore();
   const [d, setD] = useState<Draft>(initial);
   const [link, setLink] = useState(initial.supplier.url);
@@ -158,8 +159,10 @@ const ProductEditor: React.FC<{ initial: Draft; settings: MarketSettings; catego
         <div className="grid sm:grid-cols-2 gap-4">
           <label className="sm:col-span-2"><span className={label}>Nom affiché *</span><input value={d.name} onChange={e => set('name', e.target.value)} required className={input} aria-label="Nom du produit" /></label>
           <label><span className={label}>Catégorie</span>
-            <input value={d.category} onChange={e => set('category', e.target.value)} list="market-cats" placeholder="Maison, Beauté, Montres…" className={input} aria-label="Catégorie" />
-            <datalist id="market-cats">{categories.map(c => <option key={c} value={c} />)}</datalist>
+            <select value={d.category} onChange={e => set('category', e.target.value)} className={input} aria-label="Catégorie">
+              {!marketCategoryOnSale(d.category) && d.category && <option value={d.category}>{d.category} (hors boutique)</option>}
+              {CATEGORIES.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+            </select>
           </label>
           <div className="grid grid-cols-2 gap-2">
             <label><span className={label}>Délai min (j)</span><input type="number" min={1} value={d.delayMin} onChange={e => set('delayMin', Number(e.target.value))} className={input} aria-label="Délai minimum" /></label>
@@ -247,7 +250,6 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
   const marketOrders = useMemo(() => orders.filter(o => o.supplier && o.status !== 'annulee'), [orders]);
   const toOrder = marketOrders.filter(o => o.supplier!.status === 'a_commander');
   const profit = marketOrders.reduce((s, o) => s + marketRevenue(o) - (o.supplier!.cost ?? 0), 0);
-  const categories = useMemo(() => [...new Set((data?.products ?? []).map(p => p.category))].sort(), [data]);
 
   if (offline) return <p className="bg-white rounded-[2rem] p-10 text-center text-ink/60">Le Marché demande le serveur de la boutique (lancez <code>npm run server</code>).</p>;
   if (!data || !settingsForm) return <div className="h-40 grid place-items-center"><Loader2 className="w-6 h-6 animate-spin text-ink/40" /></div>;
@@ -334,7 +336,7 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
                   return (
                     <tr key={p.id} className="border-b border-ink/5">
                       <td className="p-4"><span className="flex items-center gap-3"><ProductImage src={p.images[0]} alt="" label="" className="w-12 h-14 rounded-xl shrink-0" />
-                        <span className="min-w-0"><strong className="block line-clamp-1">{p.name}</strong><span className="text-xs text-ink/50">{p.category}{p.supplier?.name && ` · ${p.supplier.name}`}</span></span></span></td>
+                        <span className="min-w-0"><strong className="block line-clamp-1">{p.name}</strong><span className="text-xs text-ink/50">{p.category}{p.supplier?.name && ` · ${p.supplier.name}`}</span>{!marketCategoryOnSale(p.category) && <span className="block text-xs text-amber-800">Masqué : catégorie pas en vente</span>}</span></span></td>
                       <td className="p-4 font-semibold">{formatPrice(p.price)}</td>
                       <td className="p-4 text-ink/60">{formatPrice(c)}</td>
                       <td className={`p-4 font-semibold ${p.price - c > 0 ? 'text-emerald-800' : 'text-wine'}`}>{formatPrice(p.price - c)}</td>
@@ -354,7 +356,7 @@ export const MarketTab: React.FC<{ pin: string }> = ({ pin }) => {
         )}
       </section>
 
-      {editing && <ProductEditor initial={editing} settings={s} categories={categories} pin={pin} onClose={() => setEditing(null)} onSaved={saved} />}
+      {editing && <ProductEditor initial={editing} settings={s} pin={pin} onClose={() => setEditing(null)} onSaved={saved} />}
     </div>
   );
 };

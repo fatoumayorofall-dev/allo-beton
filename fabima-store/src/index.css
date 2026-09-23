@@ -117,3 +117,11 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
 }
 .leaflet-container { font-family: inherit; }
 .leaflet-control-attribution { font-size: 9px; }
+
+/* Bulles « style » : anneau dégradé qui tourne doucement au survol */
+.story-ring { background: conic-gradient(from 0deg, #c9a24d, #b03a64, #e8b4c1, #c9a24d); }
+.story-ring::before { content: ''; position: absolute; inset: 0; border-radius: 9999px; background: inherit; filter: blur(6px); opacity: 0; transition: opacity .5s; z-index: -1; }
+.group:hover .story-ring { animation: ring-spin 3s linear infinite; }
+.group:hover .story-ring::before { opacity: .55; }
+.group:hover .story-ring > span { animation: ring-spin 3s linear infinite reverse; }
+@keyframes ring-spin { to { transform: rotate(360deg); } }

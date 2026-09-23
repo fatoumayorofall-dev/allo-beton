@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { CreditCard, Globe2, PackageCheck, Search, ShoppingBag, Truck } from 'lucide-react';
 import { usePageTitle } from '../utils/usePageTitle';
 import { useMarket } from '../utils/market';
@@ -13,9 +13,10 @@ const SORTS = { recent: 'Nouveautés', prix_asc: 'Prix croissant', prix_desc: 'P
  * au moment de la commande puis livrés chez la cliente.
  */
 export const Market: React.FC = () => {
-  usePageTitle('Le Marché', 'Le Marché Fabima : des milliers d\'idées commandées pour vous chez nos partenaires et livrées chez vous au Sénégal.');
+  usePageTitle('Le Marché', 'Le Marché Fabima : encore plus de chaussures et de sacs, commandés pour vous chez nos partenaires et livrés chez vous au Sénégal.');
   const { products, loading, offline } = useMarket();
-  const [cat, setCat] = useState('');
+  const [params] = useSearchParams();
+  const [cat, setCat] = useState(params.get('categorie') ?? '');
   const [q, setQ] = useState('');
   const [sort, setSort] = useState<keyof typeof SORTS>('recent');
 
@@ -37,7 +38,7 @@ export const Market: React.FC = () => {
         <div className="relative max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-12 pb-10 sm:pt-24 sm:pb-20">
           <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light"><Globe2 className="w-4 h-4" /> Fabima dans le monde</p>
           <h1 className="font-display text-5xl sm:text-7xl leading-[0.95] mt-5">Le Marché <span className="font-script text-gold-light text-[1.15em]">Fabima</span></h1>
-          <p className="mt-5 text-ivory/70 max-w-xl leading-relaxed">Tout ce que vous aimez, trouvé pour vous chez nos partenaires dans le monde entier. Nous le commandons dès votre achat et vous le livrons chez vous, avec un suivi à chaque étape.</p>
+          <p className="mt-5 text-ivory/70 max-w-xl leading-relaxed">Encore plus de chaussures et de sacs, dénichés pour vous chez nos partenaires dans le monde entier. Nous les commandons dès votre achat et vous les livrons chez vous, avec un suivi à chaque étape.</p>
           <ol className="mt-10 flex sm:grid sm:grid-cols-3 gap-3 max-w-4xl overflow-x-auto no-scrollbar snap-x -mx-5 px-5 sm:mx-0 sm:px-0">
             {[
               { Icon: ShoppingBag, t: '1. Vous commandez', d: 'Paiement sécurisé : Wave, Orange Money, Free Money ou carte.' },

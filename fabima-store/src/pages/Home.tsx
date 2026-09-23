@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, Gift, Globe2, Instagram, MapPin, Plus, RefreshCw, ShoppingBag, Smartphone, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
@@ -15,6 +15,8 @@ import { ProductImage } from '../components/ProductImage';
 import { Reveal } from '../components/Reveal';
 import { FloatingPetals, Flourish, Flower } from '../components/Decor';
 import { useMarket } from '../utils/market';
+import { StyleStories } from '../components/StyleStories';
+import { CountUp } from '../components/CountUp';
 import { MarketCard } from '../components/MarketCard';
 
 const px = (id: number, w = 1600) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
@@ -65,6 +67,18 @@ export const Home: React.FC = () => {
   const [paused, setPaused] = useState(false);
   const [tab, setTab] = useState<'bestsellers' | 'nouveautes' | 'promos'>('bestsellers');
   const [quote, setQuote] = useState(0);
+  // Profondeur au défilement : la photo descend plus lentement que la page, le texte s'efface
+  const heroRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (reduced) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => heroRef.current?.style.setProperty('--py', String(Math.min(window.scrollY, 900))));
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => { window.removeEventListener('scroll', onScroll); cancelAnimationFrame(raf); };
+  }, [reduced]);
 
   useEffect(() => {
     if (paused || reduced) return;
@@ -93,10 +107,11 @@ export const Home: React.FC = () => {
   return (
     <div className="overflow-x-clip">
       {/* ───────────── HERO ───────────── */}
-      <section className="relative h-[calc(100svh-2.25rem)] min-h-[620px] overflow-hidden bg-ink grain" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      <section ref={heroRef} className="relative h-[calc(100svh-2.25rem)] min-h-[620px] overflow-hidden bg-ink grain" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         aria-roledescription="carrousel" aria-label="À la une">
         {HERO_SLIDES.map((s, i) => (
-          <div key={i} className={`absolute inset-0 transition-opacity duration-[1.4s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}>
+          <div key={i} className={`absolute inset-0 transition-opacity duration-[1.4s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}
+            style={{ transform: 'translate3d(0, calc(var(--py, 0) * 0.35px), 0) scale(1.04)' }}>
             <div className={`absolute inset-0 ${i === slide ? 'animate-kenburns' : ''}`}>
               <ProductImage src={s.image} alt="" className="w-full h-full" />
             </div>
@@ -106,7 +121,7 @@ export const Home: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent" />
 
         <div className="relative h-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-end pb-24 sm:pb-28">
-          <div key={slide} className="max-w-3xl text-ivory">
+          <div key={slide} className="max-w-3xl text-ivory" style={{ transform: 'translate3d(0, calc(var(--py, 0) * -0.12px), 0)', opacity: 'calc(1 - var(--py, 0) / 650)' }}>
             <p className="text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light animate-fade-up flex items-center gap-3"><Flower className="w-3.5 h-3.5" />{current.kicker}</p>
             <h1 className="font-display font-normal text-[3.4rem] sm:text-7xl lg:text-[7.5rem] leading-[0.92] mt-5">
               {current.title.map((line, i) => (
@@ -162,6 +177,9 @@ export const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* ───────────── STYLES (bulles façon stories) ───────────── */}
+      <StyleStories />
 
       {/* ───────────── MANIFESTE ───────────── */}
       <section className="relative">
@@ -261,7 +279,7 @@ export const Home: React.FC = () => {
             </p>
             <dl className="mt-10 grid grid-cols-3 gap-6 max-w-md">
               {[['12', 'artisanes'], ['100 %', 'coton wax'], ['1', 'pièce unique']].map(([n, l]) => (
-                <div key={l}><dt className="font-display text-4xl text-gold-dark">{n}</dt><dd className="text-xs text-ink/55 mt-1">{l}</dd></div>
+                <div key={l}><dt className="font-display text-4xl text-gold-dark"><CountUp value={n} /></dt><dd className="text-xs text-ink/55 mt-1">{l}</dd></div>
               ))}
             </dl>
             <Link to="/boutique?q=wax" className="btn-outline mt-10">Découvrir la collection <ArrowRight className="w-4 h-4" /></Link>
@@ -290,7 +308,7 @@ export const Home: React.FC = () => {
             <Reveal>
               <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light"><Globe2 className="w-4 h-4" /> Nouveau</p>
               <h2 className="font-display text-5xl sm:text-6xl mt-4 leading-[1]">Le Marché <span className="font-script text-gold-light text-[1.1em]">Fabima</span></h2>
-              <p className="mt-5 text-ivory/65 max-w-md leading-relaxed">Des idées du monde entier, commandées pour vous chez nos partenaires et livrées chez vous avec un suivi à chaque étape.</p>
+              <p className="mt-5 text-ivory/65 max-w-md leading-relaxed">Encore plus de chaussures et de sacs, commandés pour vous chez nos partenaires et livrés chez vous avec un suivi à chaque étape.</p>
               <Link to="/marche" className="btn-light mt-8">Découvrir le Marché <ArrowRight className="w-4 h-4" /></Link>
             </Reveal>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 [&_p]:text-ivory [&_.text-ink\/45]:!text-ivory/50">

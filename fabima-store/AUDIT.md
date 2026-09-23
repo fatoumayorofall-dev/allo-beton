@@ -74,11 +74,20 @@ Chaque correction a été vérifiée par un test automatisé dans un navigateur 
 - Livraison en relais (jusqu'à 6 étapes : moto → car longue distance → moto…) : un lien par livreur, rendez-vous au point de relais sur la carte, passage de relais validé par celui qui donne ou celui qui reçoit, messages WhatsApp à chaque étape.
 - Limite : la position n'est envoyée que tant que la page du livreur reste ouverte (l'écran est maintenu allumé).
 
-## 7. Restent à traiter avant la mise en ligne
+## 7. Boutique chaussures & sacs : passage « expert »
+
+- Catalogue publié sur le serveur : les modifications de la gérante sont vues par toutes les clientes (avant : seulement sur son appareil).
+- Stock partagé, vérifié avant paiement (plus de survente ni de prix modifié), rendu à l'annulation.
+- Vente « sur commande » des pièces épuisées, paiement à la commande.
+- Avis et alertes de retour en stock gardés par le serveur (avant : perdus sur le téléphone de la cliente).
+- Le Marché limité aux chaussures et aux sacs, proposé en bas des pages Chaussures et Sacs.
+- Accueil plus vivant : bulles « Trouvez votre style », profondeur au défilement, chiffres animés, compteur du panier animé, badge « Plus que N ».
+
+## 8. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 
-1. **Données locales** : ~~le gérant ne voit pas les commandes passées sur le téléphone d'un client~~ → réglé : les commandes sont enregistrées sur le serveur (`/api/orders`) et apparaissent dans l'espace gérant. Le stock et le catalogue restent dans le navigateur ; les montants envoyés par le navigateur ne sont pas recalculés par le serveur. → À terme, une vraie base de données (le backend Express/MySQL d'Allô Béton peut servir de base).
+1. **Données** : ~~commandes, catalogue et stock propres à chaque navigateur~~ → réglé : commandes, catalogue, stock, avis et alertes sont gardés par le serveur, qui vérifie prix et stock. Les frais de livraison et remises restent calculés par le navigateur. → À terme, une vraie base de données (le backend Express/MySQL d'Allô Béton peut servir de base).
 2. **Paiement simulé** : aucun débit réel. → Intégrer Wave Business, Orange Money ou un agrégateur (PayDunya, CinetPay).
 3. **Espace gérant** : le code PIN est vérifié dans le navigateur, il ne protège pas réellement. → Authentification côté serveur.
 4. **Avis clients** : publiés sans modération ni vérification d'achat. → À valider côté serveur.

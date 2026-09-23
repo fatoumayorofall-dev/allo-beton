@@ -97,7 +97,7 @@ export const Navbar: React.FC = () => {
             </Link>
             <button onClick={() => setCartOpen(true)} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`} className={`${iconBtn} lg:-mr-2`}>
               <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.5} />
-              {count > 0 && <span className={`${badge} ${transparent ? 'bg-ivory text-ink' : 'bg-ink text-ivory'}`}>{count}</span>}
+              {count > 0 && <span key={count} className={`${badge} animate-heart-pop ${transparent ? 'bg-ivory text-ink' : 'bg-ink text-ivory'}`} data-testid="cart-count">{count}</span>}
             </button>
           </div>
         </div>

@@ -1,4 +1,5 @@
 import { delayLabel } from '../utils/market';
+import { PREORDER_MAX } from '../utils/stock';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, Minus, Plus, Tag, X } from 'lucide-react';
@@ -65,7 +66,7 @@ export const Cart: React.FC = () => {
         <ul className="divide-y divide-ink/10">
           {cart.map(item => {
             const product = getProduct(item.productId);
-            const stock = product?.stock ?? item.quantity;
+            const stock = item.market || item.preorder ? PREORDER_MAX : product?.stock ?? item.quantity;
             return (
               <li key={item.key} className="flex gap-5 sm:gap-8 py-7 first:pt-0">
                 <Link to={product ? `/produit/${product.slug}` : '#'} className="shrink-0"><ProductImage src={item.image} alt={item.name} label="" className="w-28 h-36 sm:w-36 sm:h-48 rounded-3xl" /></Link>
@@ -76,6 +77,7 @@ export const Cart: React.FC = () => {
                       <Link to={product ? `/produit/${product.slug}` : '#'} className="font-display text-2xl leading-tight mt-1 block hover:text-gold-dark">{item.name}</Link>
                       <p className="text-sm text-ink/55 mt-2">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
 {item.market && <p className="text-[11px] text-wine mt-1" data-testid="cart-market">🌍 Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
+{item.preorder && <p className="text-[11px] text-wine mt-1" data-testid="cart-preorder">⏳ Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
                     </div>
                     <span className="font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
                   </div>

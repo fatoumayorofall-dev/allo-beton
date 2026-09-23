@@ -2,6 +2,10 @@
 import { useEffect, useState } from 'react';
 import type { Currency, MarketProduct, MarketSettings, Product } from '../data/types';
 import { fetchMarket } from '../services/api';
+import { CATEGORIES } from '../data/catalog';
+
+/** Le Marché suit la boutique : seules les catégories en vente (chaussures, sacs…) sont proposées. */
+export const marketCategoryOnSale = (category: string) => CATEGORIES.some(c => c.name.toLowerCase() === category.trim().toLowerCase());
 
 /** Coût d'achat en FCFA (produit + port du fournisseur). */
 export function costInXof(cost: number, shipping: number, currency: Currency, settings: MarketSettings): number {
@@ -38,7 +42,7 @@ export function useMarket() {
     cache.then(r => {
       if (!alive) return;
       if (!r) cache = null; // réessayer à la prochaine page
-      setState({ products: r?.products ?? [], loading: false, offline: !r });
+      setState({ products: (r?.products ?? []).filter(p => marketCategoryOnSale(p.category)), loading: false, offline: !r });
     });
     return () => { alive = false; };
   }, []);

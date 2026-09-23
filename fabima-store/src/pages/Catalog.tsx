@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
+import { ChevronRight, SlidersHorizontal, X, Globe2 } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { ALL_CATEGORIES, CATEGORIES, OCCASIONS } from '../data/catalog';
+import { useMarket } from '../utils/market';
+import { MarketCard } from '../components/MarketCard';
 import type { CategoryId, Product } from '../data/types';
 import { ProductCard } from '../components/ProductCard';
 import { ColorSwatch } from '../components/ColorSwatch';
@@ -43,6 +45,8 @@ export const Catalog: React.FC = () => {
   useEffect(() => setShown(PAGE_SIZE), [params, category]);
 
   const cat = CATEGORIES.find(c => c.id === category);
+  const market = useMarket().products ?? [];
+  const marketMore = cat ? market.filter(p => p.category.toLowerCase() === cat.name.toLowerCase()) : market;
   // Ancien lien vers une catégorie pas encore en vente (bijoux…) : on l'annonce et on montre le reste
   const soon = !cat && category ? ALL_CATEGORIES.find(c => c.id === category) : undefined;
   const q = params.get('q') ?? '';
@@ -209,6 +213,18 @@ export const Catalog: React.FC = () => {
                   )}
                 </div>
               </>
+            )}
+            {marketMore.length > 0 && (
+              <section className="mt-20 p-6 sm:p-8 rounded-[2rem] bg-white border border-ink/[0.06]" data-testid="catalog-market">
+                <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+                  <div>
+                    <p className="eyebrow inline-flex items-center gap-2"><Globe2 className="w-3.5 h-3.5" /> Le Marché · sur commande</p>
+                    <h2 className="font-display text-3xl sm:text-4xl mt-2">Encore plus de {cat ? cat.name.toLowerCase() : 'modèles'}</h2>
+                  </div>
+                  <Link to={`/marche${cat ? `?categorie=${encodeURIComponent(cat.name)}` : ''}`} className="text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe">Tout voir au Marché</Link>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10">{marketMore.slice(0, 4).map(p => <MarketCard key={p.id} product={p} />)}</div>
+              </section>
             )}
             <p className="text-[11px] text-ink/40 mt-12 text-center">Prix en FCFA, TTC · Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</p>
           </div>

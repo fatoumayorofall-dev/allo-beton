@@ -1,3 +1,4 @@
+import { canBuy, isPreorder } from '../utils/stock';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Banknote, Check, ChevronLeft, Home, MessageCircle, Phone, RefreshCw, ShoppingBag, Truck } from 'lucide-react';
@@ -29,7 +30,7 @@ export const SimpleCard: React.FC<{ product: Product; source?: VisitSource }> = 
   <Link to={`/p/${productCode(product)}${source ? `?s=${source}` : ''}`} className="block rounded-[1.75rem] bg-white overflow-hidden shadow-sm active:scale-[.98] transition-transform">
     <div className="relative">
       <ProductImage src={product.images[0]} alt={product.name} className="w-full aspect-[4/5]" />
-      {product.stock <= 0 && <span className="absolute inset-x-0 bottom-0 py-1.5 bg-ink/80 text-ivory text-center text-xs font-bold">ÉPUISÉ</span>}
+      {!canBuy(product) && <span className="absolute inset-x-0 bottom-0 py-1.5 bg-ink/80 text-ivory text-center text-xs font-bold">ÉPUISÉ</span>}
     </div>
     <div className="p-3 text-center">
       <p className="text-xl font-extrabold text-wine">{formatPrice(product.price)}</p>
@@ -101,7 +102,7 @@ export const SimpleProduct: React.FC = () => {
   }
 
   const off = discountPercent(product.price, product.oldPrice);
-  const outOfStock = product.stock <= 0;
+  const outOfStock = !canBuy(product);
 
   const addToBasket = () => {
     if (product.sizes.length && !size) {
@@ -143,7 +144,7 @@ export const SimpleProduct: React.FC = () => {
           {product.oldPrice && <p className="text-lg text-ink/40 line-through mt-1">{formatPrice(product.oldPrice)}</p>}
         </div>
         <p className={`mt-3 mx-auto w-fit px-4 py-2 rounded-full text-base font-bold flex items-center gap-2 ${outOfStock ? 'bg-ink/10 text-ink/60' : 'bg-emerald-100 text-emerald-800'}`}>
-          {outOfStock ? '❌ Épuisé' : <><Check className="w-5 h-5" /> Disponible</>}
+          {outOfStock ? '❌ Épuisé' : isPreorder(product) ? <>⏳ Sur commande · {product.preorderDays} jours</> : <><Check className="w-5 h-5" /> Disponible</>}
         </p>
 
         {/* Couleurs : gros ronds */}

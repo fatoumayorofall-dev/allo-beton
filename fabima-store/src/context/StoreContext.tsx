@@ -1,6 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { CATALOG_VERSION, INITIAL_PRODUCTS } from '../data/catalog';
 import { isOnSale } from '../config/site';
+import { fetchCatalog, postReview, postStockAlert } from '../services/api';
+import { PREORDER_MAX, isPreorder } from '../utils/stock';
 import type { CartItem, CustomerInfo, Order, OrderNotification, OrderStatus, Product, Review, StockAlert } from '../data/types';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
@@ -83,6 +85,10 @@ interface StoreContextValue {
   saveProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   resetCatalog: () => void;
+  /** Le catalogue vient du serveur (le même pour toutes les clientes) */
+  catalogLive: boolean;
+  /** Recharge le catalogue publié (après une modification ou un refus de commande) */
+  reloadCatalog: () => Promise<void>;
   addReview: (productId: string, review: Omit<Review, 'date'>) => void;
 
   cart: CartItem[];
@@ -156,6 +162,24 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   useEffect(() => save(KEYS.products, products), [products]);
+
+  /* ---------- Catalogue publié sur le serveur : le même pour toutes les clientes ---------- */
+  const [catalogLive, setCatalogLive] = useState(false);
+  const lastCatalogFetch = useRef(0);
+  const reloadCatalog = useCallback(async () => {
+    lastCatalogFetch.current = Date.now();
+    const r = await fetchCatalog();
+    if (!r?.products) return; // serveur absent ou catalogue pas encore publié : on garde celui de l'appareil
+    setProducts(r.products.filter(p => isOnSale(p.category)));
+    setCatalogLive(true);
+  }, []);
+  useEffect(() => {
+    reloadCatalog();
+    // Prix et stocks rafraîchis quand la cliente revient sur l'onglet
+    const onVisible = () => { if (document.visibilityState === 'visible' && Date.now() - lastCatalogFetch.current > 60_000) reloadCatalog(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [reloadCatalog]);
   useEffect(() => save(KEYS.cart, cart), [cart]);
   useEffect(() => save(KEYS.wishlist, wishlist), [wishlist]);
   useEffect(() => save(KEYS.orders, orders), [orders]);
@@ -182,11 +206,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Articles du Marché : hors catalogue de la boutique, leur prix est revérifié par le serveur au paiement
         if (item.market) { next.push(item); continue; }
         const p = products.find(x => x.id === item.productId);
-        if (!p || p.stock <= 0) { changed = true; continue; }
-        const quantity = Math.min(item.quantity, p.stock);
+        if (!p || (p.stock <= 0 && !p.preorderDays)) { changed = true; continue; }
+        // Épuisée entre-temps mais vendue sur commande : l'article reste, marqué « sur commande »
+        const preorder = isPreorder(p) ? { days: p.preorderDays! } : undefined;
+        const quantity = Math.min(item.quantity, preorder ? PREORDER_MAX : p.stock);
         const image = p.images[0] ?? item.image;
-        if (quantity !== item.quantity || p.price !== item.price || p.name !== item.name || image !== item.image) changed = true;
-        next.push({ ...item, quantity, price: p.price, name: p.name, image });
+        if (quantity !== item.quantity || p.price !== item.price || p.name !== item.name || image !== item.image || item.preorder?.days !== preorder?.days) changed = true;
+        const { preorder: _old, ...rest } = item;
+        next.push({ ...rest, quantity, price: p.price, name: p.name, image, ...(preorder ? { preorder } : {}) });
       }
       return changed ? next : items;
     });
@@ -211,6 +238,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const addStockAlert = useCallback((productId: string, contact: string) => {
     setStockAlerts(list => (list.some(a => a.productId === productId && a.contact === contact)
       ? list : [...list, { productId, contact, createdAt: new Date().toISOString() }]));
+    postStockAlert(productId, contact); // la gérante la voit depuis n'importe quel appareil
   }, []);
   const removeStockAlerts = useCallback((productId: string) => setStockAlerts(list => list.filter(a => a.productId !== productId)), []);
 
@@ -221,6 +249,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const rating = Math.round(((p.rating * p.reviewCount + review.rating) / reviewCount) * 10) / 10;
       return { ...p, rating, reviewCount, reviews: [{ ...review, date: new Date().toISOString().slice(0, 10) }, ...(p.reviews ?? [])] };
     }));
+    // Publié pour toutes les visiteuses quand le catalogue est en ligne
+    postReview(productId, review).then(r => { if (r.ok) setProducts(list => list.map(p => (p.id === productId ? r.data.product : p))); });
   }, []);
 
   /* ---------- Panier ---------- */
@@ -230,19 +260,21 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const quantity = opts.quantity ?? 1;
     const key = [product.id, size ?? '', color ?? ''].join('|');
     const inCart = cart.filter(i => i.productId === product.id).reduce((s, i) => s + i.quantity, 0);
-    const available = product.stock - inCart;
+    // Épuisée mais vendue sur commande : commandable avec un délai
+    const preorder = isPreorder(product) ? { days: product.preorderDays! } : undefined;
+    const available = (preorder ? PREORDER_MAX : product.stock) - inCart;
     if (available <= 0) {
-      notify(product.stock <= 0 ? 'Cet article est épuisé' : `Stock maximum atteint (${product.stock})`, 'error');
+      notify(preorder ? `Maximum ${PREORDER_MAX} pièces sur commande` : product.stock <= 0 ? 'Cet article est épuisé' : `Stock maximum atteint (${product.stock})`, 'error');
       return false;
     }
     const qty = Math.min(quantity, available);
     setCart(items => {
       const existing = items.find(i => i.key === key);
       if (existing) return items.map(i => (i.key === key ? { ...i, quantity: i.quantity + qty } : i));
-      return [...items, { key, productId: product.id, name: product.name, image: product.images[0], price: product.price, size, color, quantity: qty, ...(opts.market ? { market: opts.market } : {}) }];
+      return [...items, { key, productId: product.id, name: product.name, image: product.images[0], price: product.price, size, color, quantity: qty, ...(opts.market ? { market: opts.market } : {}), ...(preorder ? { preorder } : {}) }];
     });
     if (!opts.silent) {
-      notify(qty < quantity ? `Seulement ${qty} ajouté(s) : stock limité` : `« ${product.name} » ajouté au panier`, qty < quantity ? 'info' : 'success');
+      notify(qty < quantity ? `Seulement ${qty} ajouté(s) : stock limité` : `« ${product.name} » ajouté au panier${preorder ? ' (sur commande)' : ''}`, qty < quantity ? 'info' : 'success');
     }
     return true;
   }, [cart, notify]);
@@ -252,7 +284,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (quantity <= 0) return items.filter(i => i.key !== key);
       const item = items.find(i => i.key === key);
       if (!item) return items;
-      const stock = products.find(p => p.id === item.productId)?.stock ?? quantity;
+      const product = products.find(p => p.id === item.productId);
+      const stock = item.market ? PREORDER_MAX : item.preorder ? PREORDER_MAX : product?.stock ?? quantity;
       const others = items.filter(i => i.productId === item.productId && i.key !== key).reduce((s, i) => s + i.quantity, 0);
       const capped = Math.max(1, Math.min(quantity, stock - others));
       return items.map(i => (i.key === key ? { ...i, quantity: capped } : i));
@@ -372,7 +405,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const value = useMemo<StoreContextValue>(() => ({
-    products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview,
+    products, getProduct, saveProduct, deleteProduct, resetCatalog, catalogLive, reloadCatalog, addReview,
     cart, addToCart, updateQuantity, removeFromCart, clearCart, cartOpen, setCartOpen,
     promoCode, applyPromo, removePromo, giftWrap, setGiftWrap, computeTotals,
     wishlist, toggleWishlist, mergeWishlist, isInWishlist,
@@ -382,7 +415,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     stockAlerts, addStockAlert, removeStockAlerts,
     orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, syncOrders,
     toasts, notify,
-  }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
+  }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, catalogLive, reloadCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
     cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, mergeWishlist, isInWishlist, recentlyViewed, markViewed,
     quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, syncOrders, toasts, notify]);
 

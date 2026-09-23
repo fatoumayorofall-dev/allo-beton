@@ -80,6 +80,11 @@ export const OrderSuccess: React.FC = () => {
         )}
       </div>
 
+      {order.items.some(i => i.preorder) && (
+        <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl bg-white border border-ink/10 print:hidden" data-testid="success-preorder">
+          ⏳ {order.items.filter(i => i.preorder).length > 1 ? 'Certaines pièces sont' : 'Une pièce est'} sur commande : nous la faisons venir pour vous, livraison sous {Math.max(...order.items.filter(i => i.preorder).map(i => i.preorder!.days))} jours. Nous vous prévenons sur WhatsApp dès qu'elle arrive.
+        </p>
+      )}
       {order.items.some(i => i.market) && (
         <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl bg-white border border-ink/10 print:hidden" data-testid="success-market">
           🌍 Nous commandons tout de suite {order.items.filter(i => i.market).length > 1 ? 'vos articles' : 'votre article'} du Marché chez notre partenaire. Vous recevrez un message WhatsApp quand il sera commandé, en route, puis arrivé à Dakar.

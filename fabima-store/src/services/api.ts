@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, SupplierStatus, Vehicle } from '../data/types';
+import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -19,6 +19,10 @@ export interface ServerStatus {
   adminApi: boolean;
   /** Commandes enregistrées sur le serveur (suivi du livreur en direct) */
   orders?: boolean;
+  /** Catalogue partagé (produits, stocks, avis) */
+  catalog?: boolean;
+  /** Le Marché (dropshipping) */
+  market?: boolean;
 }
 
 const OFFLINE: ServerStatus = { ok: false, assistant: false, whatsapp: false, ownerNotifications: false, adminApi: false };
@@ -264,5 +268,23 @@ export const importMarketProduct = (url: string, pin: string) =>
   call<{ draft: ImportDraft }>('/api/admin/marche/import', { method: 'POST', body: JSON.stringify({ url }), headers: { 'x-admin-pin': pin } });
 export const patchSupplier = (orderId: string, patch: { status?: SupplierStatus; ref?: string; tracking?: string; trackingUrl?: string }, pin: string) =>
   call<{ order: Order; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(orderId)}/supplier`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
-export const checkMarketCart = (items: { productId: string; name: string; price: number; quantity: number; color?: string }[], paymentMethod: string) =>
-  call<{ ok: true }>('/api/marche/check', { method: 'POST', body: JSON.stringify({ items, paymentMethod }) });
+/** Vérification avant paiement : pièces en ligne, prix à jour, stock ou « sur commande », moyen de paiement accepté. */
+export const checkOrder = (items: { productId: string; name: string; price: number; quantity: number; color?: string }[], paymentMethod: string) =>
+  call<{ ok: true; preorder: Record<string, number> }>('/api/orders/check', { method: 'POST', body: JSON.stringify({ items, paymentMethod }) });
+
+/* ---------- Catalogue partagé, avis, alertes de retour en stock ---------- */
+
+/** Catalogue publié par la gérante (products = null tant qu'il n'a pas été publié). */
+export const fetchCatalog = () => getJson<{ products: Product[] | null; updatedAt: string | null }>('/api/catalog');
+export const publishCatalog = (products: Product[], pin: string) =>
+  call<{ products: Product[] }>('/api/admin/catalog', { method: 'PUT', body: JSON.stringify({ products }), headers: { 'x-admin-pin': pin } });
+export const saveCatalogProduct = (product: Product, pin: string) =>
+  call<{ product: Product }>(`/api/admin/catalog/products/${encodeURIComponent(product.id)}`, { method: 'PUT', body: JSON.stringify(product), headers: { 'x-admin-pin': pin } });
+export const removeCatalogProduct = (id: string, pin: string) =>
+  call<null>(`/api/admin/catalog/products/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
+export const postReview = (productId: string, review: { author: string; rating: number; comment: string }) =>
+  call<{ product: Product }>(`/api/catalog/products/${encodeURIComponent(productId)}/reviews`, { method: 'POST', body: JSON.stringify(review) });
+export const postStockAlert = (productId: string, contact: string) => post<{ ok: true }>('/api/stock-alerts', { productId, contact });
+export const fetchStockAlerts = (pin: string) => getJson<{ alerts: StockAlert[] }>('/api/admin/stock-alerts', pin).then(r => r?.alerts ?? null);
+export const clearStockAlerts = (productId: string, pin: string) =>
+  call<null>(`/api/admin/stock-alerts/${encodeURIComponent(productId)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });

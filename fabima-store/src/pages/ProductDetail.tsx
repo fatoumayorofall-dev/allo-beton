@@ -7,6 +7,7 @@ import { SITE_CONFIG, buildProductWhatsAppMessage, buildWhatsAppLink } from '../
 import { discountPercent, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { useInView } from '../utils/hooks';
+import { canBuy, isPreorder, maxQty } from '../utils/stock';
 import { ProductImage } from '../components/ProductImage';
 import { ColorSwatch } from '../components/ColorSwatch';
 import { Stars } from '../components/Stars';
@@ -140,7 +141,7 @@ export const ProductDetail: React.FC = () => {
       image: product.images, sku: product.id, brand: { '@type': 'Brand', name: 'Fabima Store' }, material: product.material,
       aggregateRating: { '@type': 'AggregateRating', ratingValue: product.rating, reviewCount: product.reviewCount },
       offers: { '@type': 'Offer', priceCurrency: 'XOF', price: product.price, url: window.location.href,
-        availability: product.stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock' },
+        availability: product.stock > 0 ? 'https://schema.org/InStock' : isPreorder(product) ? 'https://schema.org/PreOrder' : 'https://schema.org/OutOfStock' },
     });
     document.head.appendChild(el);
     return () => el.remove();
@@ -160,7 +161,8 @@ export const ProductDetail: React.FC = () => {
   const category = CATEGORIES.find(c => c.id === product.category);
   const off = discountPercent(product.price, product.oldPrice);
   const liked = isInWishlist(product.id);
-  const outOfStock = product.stock <= 0;
+  const preorder = isPreorder(product);
+  const outOfStock = !canBuy(product);
   const related = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
 
   const validate = () => {
@@ -288,18 +290,18 @@ export const ProductDetail: React.FC = () => {
               </div>
             )}
 
-            <p className={`mt-6 text-xs flex items-center gap-2 ${outOfStock ? 'text-wine' : product.stock <= 5 ? 'text-amber-800' : 'text-emerald-800'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${outOfStock ? 'bg-wine' : product.stock <= 5 ? 'bg-amber-600 animate-pulse' : 'bg-emerald-600'}`} />
-              {outOfStock ? 'Épuisé — bientôt de retour' : product.stock <= 5 ? `Plus que ${product.stock} pièce${product.stock > 1 ? 's' : ''} disponible${product.stock > 1 ? 's' : ''}` : 'En stock — expédié sous 24h'}
+            <p className={`mt-6 text-xs flex items-center gap-2 ${outOfStock ? 'text-wine' : preorder ? 'text-wine' : product.stock <= 5 ? 'text-amber-800' : 'text-emerald-800'}`} data-testid="stock-line">
+              <span className={`w-1.5 h-1.5 rounded-full ${outOfStock || preorder ? 'bg-wine' : product.stock <= 5 ? 'bg-amber-600 animate-pulse' : 'bg-emerald-600'}`} />
+              {outOfStock ? 'Épuisé — bientôt de retour' : preorder ? `Sur commande — livrée sous ${product.preorderDays} jours (paiement à la commande)` : product.stock <= 5 ? `Plus que ${product.stock} pièce${product.stock > 1 ? 's' : ''} disponible${product.stock > 1 ? 's' : ''}` : 'En stock — expédié sous 24h'}
             </p>
 
             <div ref={buyRef} className="mt-5 flex gap-2">
               <div className="flex items-center border border-ink/15 h-[52px] rounded-full overflow-hidden">
                 <button onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Diminuer" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3.5 h-3.5" /></button>
                 <span className="w-8 text-center" aria-live="polite">{qty}</span>
-                <button onClick={() => setQty(q => Math.min(Math.max(1, product.stock), q + 1))} aria-label="Augmenter" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Plus className="w-3.5 h-3.5" /></button>
+                <button onClick={() => setQty(q => Math.min(Math.max(1, maxQty(product)), q + 1))} aria-label="Augmenter" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Plus className="w-3.5 h-3.5" /></button>
               </div>
-              <button onClick={handleAdd} disabled={outOfStock} className="btn-dark flex-1">{outOfStock ? 'Épuisé' : 'Ajouter au panier'}</button>
+              <button onClick={handleAdd} disabled={outOfStock} className="btn-dark flex-1">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter au panier'}</button>
               <button onClick={() => toggleWishlist(product.id)} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                 className="w-[52px] h-[52px] rounded-full border border-ink/15 grid place-items-center hover:border-ink transition-colors shrink-0">
                 <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
@@ -381,7 +383,7 @@ export const ProductDetail: React.FC = () => {
           <p className="font-display text-lg leading-tight truncate">{product.name}</p>
           <p className="text-xs text-ink/60">{formatPrice(product.price)}{size && ` · T. ${size}`}</p>
         </div>
-        <button onClick={handleAdd} disabled={outOfStock} className="btn-dark !h-12 !px-5 shrink-0">{outOfStock ? 'Épuisé' : 'Ajouter'}</button>
+        <button onClick={handleAdd} disabled={outOfStock} className="btn-dark !h-12 !px-5 shrink-0">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter'}</button>
       </div>
     </div>
   );

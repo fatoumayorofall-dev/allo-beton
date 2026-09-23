@@ -6,12 +6,14 @@ import { useStore } from '../context/StoreContext';
 import { discountPercent, formatPrice } from '../utils/format';
 import { ProductImage } from './ProductImage';
 import { ColorSwatch } from './ColorSwatch';
+import { canBuy, isPreorder } from '../utils/stock';
 
 export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = ({ product }) => {
   const { addToCart, toggleWishlist, isInWishlist, openQuickView } = useStore();
   const off = discountPercent(product.price, product.oldPrice);
   const liked = isInWishlist(product.id);
-  const outOfStock = product.stock <= 0;
+  const preorder = isPreorder(product);
+  const outOfStock = !canBuy(product);
   const color = product.colors[0]?.name;
 
   return (
@@ -29,6 +31,8 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 pointer-events-none">
           {outOfStock && <span className="px-2.5 py-1 bg-white text-ink/60 text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Épuisé</span>}
+          {preorder && <span className="px-2.5 py-1 bg-white text-wine text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full" data-testid="badge-preorder">Sur commande · {product.preorderDays} j</span>}
+          {!outOfStock && !preorder && product.stock <= 3 && <span className="px-2.5 py-1 bg-amber-100 text-amber-900 text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Plus que {product.stock}</span>}
           {off > 0 && <span className="px-2.5 py-1 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
           {product.isNew && <span className="px-2.5 py-1 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
           {!product.isNew && !off && product.isBestseller && <span className="px-2.5 py-1 bg-ink text-gold-light text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Coup de cœur</span>}

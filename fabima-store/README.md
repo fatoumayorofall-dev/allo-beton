@@ -191,9 +191,23 @@ Chaque visite arrivée depuis un statut est comptée : le nombre s'affiche sur c
 La vitrine, les notes vocales et les compteurs sont gardés par le serveur (`server/data/`, ou le dossier `DATA_DIR`) :
 sur un hébergement, prévoyez un disque persistant pour ce dossier.
 
+## Catalogue partagé, stock et « sur commande »
+
+**Catalogue en ligne** : la première fois que la gérante ouvre l'onglet **Produits**, le catalogue est publié sur le
+serveur. Ensuite, chaque ajout, modification ou suppression est visible **tout de suite par toutes les clientes**
+(un bandeau vert l'indique). Les avis et les demandes « prévenez-moi du retour en stock » sont aussi gardés par
+le serveur : la gérante les voit dans le tableau de bord, quel que soit le téléphone de la cliente.
+
+**Stock** : il baisse à chaque commande et remonte si la commande est annulée. Juste avant le paiement, la boutique
+vérifie que la pièce est toujours disponible et que le prix n'a pas changé : pas de survente, pas de prix modifié.
+
+**Sur commande** : dans la fiche d'un produit, « Si épuisé : vendre sur commande » (délai en jours). Quand le stock
+tombe à zéro, la pièce reste commandable avec la mention « Sur commande · 7 j » au lieu de « Épuisé » ; la cliente
+paie à la commande et vous vous réapprovisionnez. Ces pièces apparaissent avec ⏳ dans le détail des commandes.
+
 ## Le Marché Fabima (dropshipping)
 
-Une deuxième partie du site, `/marche`, où vous vendez **n'importe quel produit** trouvé chez un fournisseur
+Une deuxième partie du site, `/marche`, où vous vendez des **chaussures et des sacs** trouvés chez un fournisseur
 (AliExpress, Alibaba, CJ Dropshipping, une boutique en ligne, un grossiste…) sans l'avoir en stock.
 
 **Ajouter un produit** (espace gérant → onglet **Le Marché** → « Ajouter un produit ») :
@@ -205,6 +219,8 @@ Une deuxième partie du site, `/marche`, où vous vendez **n'importe quel produi
 3. ajoutez les choix proposés à la cliente (couleur, taille, pointure…) et le délai de livraison.
 
 La marge par défaut (40 %), les taux de change et l'arrondi se règlent dans « Marge & devises ».
+Le Marché suit les catégories en vente : un produit d'une autre catégorie reste masqué. Les pages Chaussures et Sacs
+proposent en bas « Encore plus de chaussures / sacs » avec les pièces du Marché.
 
 **Quand une cliente commande** :
 
@@ -243,8 +259,9 @@ et `vercel.json` renvoient toutes les adresses vers l'application (sinon un rafr
 
 ## À savoir avant la mise en production
 
-- **Données** : le catalogue, les paniers et les commandes sont conservés dans le navigateur (`localStorage`).
-  Pour une vraie boutique multi-appareils, brancher `StoreContext` sur une API (le backend Express/MySQL d'Allô Béton peut servir de base).
+- **Données** : catalogue, stocks, avis, commandes, comptes et Marché sont gardés par le serveur dans un fichier
+  (`DATA_DIR`, à placer sur un disque persistant). Panier et favoris restent sur le téléphone de la cliente.
+  Pour un gros volume, passer à une vraie base de données.
 - **Paiement** : la passerelle est simulée dans `pages/Checkout.tsx` (fonction `pay`). À remplacer par l'API Wave Business,
   Orange Money ou un agrégateur (PayDunya, CinetPay…).
 - **Commandes** : elles sont gardées par le serveur dans un fichier JSON (`DATA_DIR`) ; il vérifie le format et limite

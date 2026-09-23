@@ -8,6 +8,7 @@
 // ============================================================
 import crypto from 'node:crypto';
 import net from 'node:net';
+import { checkStock } from './catalog.js';
 
 const CURRENCIES = new Set(['XOF', 'EUR', 'USD', 'CNY']);
 export const SUPPLIER_STATUSES = ['a_commander', 'commandee', 'expediee', 'arrivee'];
@@ -168,12 +169,17 @@ export function registerMarketRoutes(app, { limit, isAdmin, store, wa }) {
   });
 
   /* Vérification avant paiement : produits encore en ligne, prix à jour, paiement accepté */
-  app.post('/api/marche/check', (req, res) => {
+  const check = (req, res) => {
     const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, 50) : [];
-    const r = checkMarketItems({ items, paymentMethod: req.body?.paymentMethod }, store);
+    const order = { items, paymentMethod: req.body?.paymentMethod };
+    const r = checkMarketItems(order, store);
     if (r.error) return res.status(409).json({ error: r.error });
-    res.json({ ok: true });
-  });
+    const s = checkStock(order, store);
+    if (s.error) return res.status(409).json({ error: s.error });
+    res.json({ ok: true, preorder: Object.fromEntries(s.preorder) });
+  };
+  app.post('/api/marche/check', check);
+  app.post('/api/orders/check', check);
 
   /* Gérante */
   app.get('/api/admin/marche', (req, res) => {
