@@ -26,7 +26,7 @@ export function setupPwa() {
     try { localStorage.setItem('fabima_installed', '1'); } catch { /* ignore */ }
     emit();
   });
-  if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  if (import.meta.env.PROD && import.meta.env.VITE_ROUTER !== 'hash' && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
 }

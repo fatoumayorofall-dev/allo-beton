@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { StoreProvider } from './context/StoreContext';
 import { AccountProvider } from './context/AccountContext';
 import { Navbar } from './components/Navbar';
@@ -45,6 +45,9 @@ const MarketProduct = page(() => import('./pages/MarketProduct'), 'default');
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
 const Driver = lazy(() => import('./pages/Driver'));
 
+/** Aperçu en ligne sans serveur (VITE_ROUTER=hash) : les adresses passent après le # pour fonctionner depuis n'importe quel dossier. */
+const Router = import.meta.env.VITE_ROUTER === 'hash' ? HashRouter : BrowserRouter;
+
 /** Pages les plus probables après l'arrivée : préchargées quand le navigateur n'a plus rien à faire. */
 const usePreloadLikelyPages = () => {
   useEffect(() => {
@@ -87,7 +90,7 @@ const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 export default function App() {
   usePreloadLikelyPages();
   return (
-    <BrowserRouter>
+    <Router>
       <StoreProvider>
         <AccountProvider>
         <ScrollToTop />
@@ -134,6 +137,6 @@ export default function App() {
         <Chrome><FloatingActions /><AssistantHost /><InstallBanner /><MagicLayer /></Chrome>
         </AccountProvider>
       </StoreProvider>
-    </BrowserRouter>
+    </Router>
   );
 }
