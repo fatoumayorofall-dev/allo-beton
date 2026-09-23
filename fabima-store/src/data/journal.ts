@@ -1,4 +1,6 @@
 import { px } from './catalog';
+import { isOnSale } from '../config/site';
+import type { CategoryId } from './types';
 
 export type ArticleBlock =
   | { type: 'p'; text: string }
@@ -15,13 +17,15 @@ export interface Article {
   date: string;
   image: string;
   blocks: ArticleBlock[];
+  /** Article affiché seulement si ces catégories sont en vente */
+  needs?: CategoryId[];
 }
 
-export const ARTICLES: Article[] = [
+const ALL_ARTICLES: Article[] = [
   {
     slug: 'invitee-mariage-parfaite',
     title: 'Invitée à un mariage : le guide pour briller sans voler la vedette',
-    excerpt: 'Tenue, chaussures, bijoux : nos règles d\'or pour être parfaite de la mairie jusqu\'à la dernière danse.',
+    excerpt: 'Chaussures, pochette et tenue : nos règles d\'or pour être parfaite de la mairie jusqu\'à la dernière danse.',
     category: 'Guide de style',
     readingTime: 4,
     date: '2026-09-12',
@@ -33,14 +37,15 @@ export const ARTICLES: Article[] = [
       { type: 'h', text: '2. Penser au confort des pieds' },
       { type: 'p', text: 'Un talon fin de 8 à 9 cm pour la cérémonie, et une paire plate dans le sac pour la soirée dansante. Nos escarpins Aminata ont une semelle à mémoire de forme justement pour les longues journées.' },
       { type: 'products', slugs: ['escarpins-velours-aminata', 'sandales-talons-perlees-linguere', 'sandales-dorees-ndeye'] },
-      { type: 'h', text: '3. Un seul bijou fort' },
-      { type: 'p', text: 'Si votre tenue est brodée, misez sur des bijoux discrets. Si elle est unie, osez la parure ou les grandes créoles. Et toujours une pochette : les grands sacs n\'ont pas leur place dans les photos.' },
+      { type: 'h', text: '3. La pochette, votre alliée' },
+      { type: 'p', text: 'Si votre tenue est brodée, choisissez une pochette sobre ; si elle est unie, osez la pochette perlée ou dorée, assortie à vos sandales. Et laissez le grand sac à la maison : il n\'a pas sa place sur les photos.' },
       { type: 'tip', text: 'Préparez votre pochette la veille : rouge à lèvres, mouchoirs, pansements, un peu d\'argent liquide et votre téléphone chargé.' },
       { type: 'products', slugs: ['pochette-soiree-perles', 'parure-perles-mariage', 'bague-solitaire'] },
     ],
   },
   {
     slug: 'cinq-facons-porter-foulard',
+    needs: ['accessoires'],
     title: '5 façons de porter le foulard en soie',
     excerpt: 'En turban, au cou, au poignet ou sur votre sac : un seul carré de soie, cinq allures différentes.',
     category: 'Astuces',
@@ -64,6 +69,7 @@ export const ARTICLES: Article[] = [
   },
   {
     slug: 'tabaski-korite-tenues-fete',
+    needs: ['vetements'],
     title: 'Tabaski & Korité : nos tenues pour briller en famille',
     excerpt: 'Bazin, kaftan brodé ou robe en wax : comment composer une tenue de fête élégante, de la tête aux pieds.',
     category: 'Occasions',
@@ -102,3 +108,6 @@ export const ARTICLES: Article[] = [
     ],
   },
 ];
+
+/** Articles du journal (ceux qui parlent de catégories pas encore en vente sont masqués). */
+export const ARTICLES: Article[] = ALL_ARTICLES.filter(a => !a.needs || a.needs.every(isOnSale));

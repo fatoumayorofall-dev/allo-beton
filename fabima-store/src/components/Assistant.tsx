@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { ArrowUp, MessageCircle, RotateCcw, Sparkles, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
-import { OCCASIONS } from '../data/catalog';
+import { OCCASIONS, CATEGORIES } from '../data/catalog';
 import { FAQ_ITEMS } from '../data/faq';
 import type { Product } from '../data/types';
 import { getServerStatus, streamChat, type ChatTurn } from '../services/api';
@@ -120,6 +120,7 @@ export const Assistant: React.FC = () => {
     phone: SITE_CONFIG.phone, whatsapp: SITE_CONFIG.whatsappRaw, address: SITE_CONFIG.address, hours: SITE_CONFIG.hours,
     freeShippingThreshold: SITE_CONFIG.freeShippingThreshold, giftWrapFee: SITE_CONFIG.giftWrapFee,
     zones: DELIVERY_ZONES, promos: PROMO_CODES, faq: FAQ_ITEMS, occasions: OCCASIONS.map(o => `${o.id} = ${o.name}`),
+    categories: CATEGORIES.map(c => c.name),
   }), []);
 
   const ask = async (question: string) => {

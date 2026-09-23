@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { SITE_CONFIG } from '../config/site';
 
-const DEFAULT_DESCRIPTION = 'Fabima Store, la boutique de mode au féminin à Dakar : chaussures, sacs, bijoux, accessoires et prêt-à-porter. Livraison 24h, paiement Wave, Orange Money ou à la livraison.';
+const DEFAULT_DESCRIPTION = 'Fabima Store, la boutique de mode au féminin à Dakar : chaussures et sacs pour femme. Livraison 24h, paiement Wave, Orange Money ou à la livraison.';
 
 function setMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);

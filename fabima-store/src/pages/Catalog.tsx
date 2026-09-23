@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { CATEGORIES, OCCASIONS } from '../data/catalog';
+import { ALL_CATEGORIES, CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, Product } from '../data/types';
 import { ProductCard } from '../components/ProductCard';
 import { ColorSwatch } from '../components/ColorSwatch';
@@ -24,10 +24,10 @@ const SORTS = {
 type SortKey = keyof typeof SORTS;
 
 const PRICE_RANGES = [
-  { id: 'lt15', label: 'Moins de 15 000', test: (p: number) => p < 15000 },
-  { id: '15-30', label: '15 000 – 30 000', test: (p: number) => p >= 15000 && p <= 30000 },
-  { id: '30-50', label: '30 000 – 50 000', test: (p: number) => p > 30000 && p <= 50000 },
-  { id: 'gt50', label: 'Plus de 50 000', test: (p: number) => p > 50000 },
+  { id: 'lt20', label: 'Moins de 20 000', test: (p: number) => p < 20000 },
+  { id: '20-30', label: '20 000 – 30 000', test: (p: number) => p >= 20000 && p <= 30000 },
+  { id: '30-40', label: '30 000 – 40 000', test: (p: number) => p > 30000 && p <= 40000 },
+  { id: 'gt40', label: 'Plus de 40 000', test: (p: number) => p > 40000 },
 ];
 
 const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -43,6 +43,8 @@ export const Catalog: React.FC = () => {
   useEffect(() => setShown(PAGE_SIZE), [params, category]);
 
   const cat = CATEGORIES.find(c => c.id === category);
+  // Ancien lien vers une catégorie pas encore en vente (bijoux…) : on l'annonce et on montre le reste
+  const soon = !cat && category ? ALL_CATEGORIES.find(c => c.id === category) : undefined;
   const q = params.get('q') ?? '';
   const promoOnly = params.get('promo') === '1';
   const sort = (params.get('tri') as SortKey) in SORTS ? (params.get('tri') as SortKey) : 'pertinence';
@@ -152,7 +154,7 @@ export const Catalog: React.FC = () => {
           </nav>
           {occasion && !cat && <p className="font-script text-3xl text-gold-light mb-1">{occasion.tagline}</p>}
           <h1 className="font-display text-5xl sm:text-7xl leading-none">{cat?.name ?? occasion?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em>{q}</em> »</> : 'La boutique')}</h1>
-          <p className="mt-3 text-ivory/70 text-sm max-w-md">{cat?.description ?? (occasion ? `Notre sélection de pièces pour « ${occasion.name.toLowerCase()} ».` : promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : 'Chaussures, sacs, accessoires, bijoux et prêt-à-porter pour elle.')}</p>
+          <p className="mt-3 text-ivory/70 text-sm max-w-md">{cat?.description ?? (occasion ? `Notre sélection de pièces pour « ${occasion.name.toLowerCase()} ».` : promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : soon ? `${soon.name} : bientôt chez Fabima ! En attendant, découvrez nos ${CATEGORIES.map(c => c.name.toLowerCase()).join(' et nos ')}.` : `${CATEGORIES.map(c => c.name).join(', ').replace(/, ([^,]*)$/, ' et $1')} pour elle.`)}</p>
           {occasion && cat && <p className="mt-2 text-xs text-gold-light">Occasion : {occasion.name}</p>}
         </div>
       </section>

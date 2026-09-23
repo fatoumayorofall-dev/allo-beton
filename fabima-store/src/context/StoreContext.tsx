@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { CATALOG_VERSION, INITIAL_PRODUCTS } from '../data/catalog';
+import { isOnSale } from '../config/site';
 import type { CartItem, CustomerInfo, Order, OrderNotification, OrderStatus, Product, Review, StockAlert } from '../data/types';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
@@ -27,7 +28,9 @@ function loadProducts(): Product[] {
     save(KEYS.catalogVersion, CATALOG_VERSION);
     return INITIAL_PRODUCTS;
   }
-  return load(KEYS.products, INITIAL_PRODUCTS);
+  // Pièces des catégories qui ne sont plus en vente : masquées (les pièces ajoutées par la gérante sont gardées)
+  const stored = load<Product[]>(KEYS.products, INITIAL_PRODUCTS).filter(p => isOnSale(p.category));
+  return stored.length ? stored : INITIAL_PRODUCTS;
 }
 
 function load<T>(key: string, fallback: T): T {

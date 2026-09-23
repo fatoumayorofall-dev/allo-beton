@@ -3,9 +3,9 @@
  * (livraison, paiement, échanges, codes promo, suivi, recherche de pièces).
  * Utilisée quand le serveur IA n'est pas configuré ou injoignable.
  */
-import type { Order, Product } from '../data/types';
-import { CATEGORIES, OCCASIONS } from '../data/catalog';
-import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG } from '../config/site';
+import type { Category, Order, Product } from '../data/types';
+import { ALL_CATEGORIES, CATEGORIES, OCCASIONS } from '../data/catalog';
+import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, isOnSale } from '../config/site';
 import { formatPrice } from './format';
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -20,6 +20,20 @@ const STATUS_TEXT: Record<Order['status'], string> = {
   annulee: 'a été annulée',
 };
 
+const CATEGORY_WORDS: Record<Category['id'], string[]> = {
+  chaussures: ['chaussure', 'escarpin', 'sandale', 'basket', 'sneaker', 'mule', 'ballerine', 'talon', 'bottine', 'compensee'],
+  sacs: ['sac', 'pochette', 'cabas', 'besace'],
+  accessoires: ['lunette', 'montre ', 'montres', 'foulard', 'ceinture', 'chapeau', 'capeline', 'accessoire'],
+  bijoux: ['bijou', 'collier', 'bague', 'bracelet', 'creole', 'boucle d', 'parure'],
+  vetements: ['robe', 'kaftan', 'boubou', 'tailleur', 'vetement', 'habit'],
+};
+
+/** Liste lisible des catégories en vente : « chaussures et sacs ». */
+const onSaleLabel = () => {
+  const names = CATEGORIES.map(c => c.name.toLowerCase());
+  return names.length > 1 ? `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}` : names[0];
+};
+
 const link = (p: Product) => `[${p.name}](/produit/${p.slug}) — ${formatPrice(p.price)}${p.stock <= 0 ? ' (épuisé)' : ''}`;
 
 function searchProducts(q: string, products: Product[]): Product[] | null {
@@ -31,13 +45,7 @@ function searchProducts(q: string, products: Product[]): Product[] | null {
     quotidien: ['quotidien', 'tous les jours', 'casual'],
     vacances: ['vacances', 'plage', 'saly', 'ete'],
   }[o.id]));
-  const category = CATEGORIES.find(c => has(q, ...{
-    chaussures: ['chaussure', 'escarpin', 'sandale', 'basket', 'sneaker', 'mule', 'ballerine', 'talon', 'bottine', 'compensee'],
-    sacs: ['sac', 'pochette', 'cabas', 'besace'],
-    accessoires: ['lunette', 'montre', 'foulard', 'ceinture', 'chapeau', 'capeline', 'accessoire'],
-    bijoux: ['bijou', 'collier', 'bague', 'bracelet', 'creole', 'boucle', 'parure'],
-    vetements: ['robe', 'kaftan', 'boubou', 'tenue', 'ensemble', 'tailleur', 'vetement'],
-  }[c.id]));
+  const category = CATEGORIES.find(c => has(q, ...CATEGORY_WORDS[c.id]));
   const budgetMatch = q.match(/(?:moins de|max(?:imum)?|budget(?: de)?|jusqu'a)\s*(\d[\d\s.]*)\s*(k|000|f|fcfa)?/);
   let budget = budgetMatch ? Number(budgetMatch[1].replace(/[\s.]/g, '')) : 0;
   if (budgetMatch && budgetMatch[2] === 'k') budget *= 1000;
@@ -86,6 +94,12 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
   }
   if (has(q, 'horaire', 'ouvert', 'adresse', 'ou etes', 'boutique physique', 'magasin')) {
     return `Notre boutique se trouve à **${SITE_CONFIG.address}**. Ouverte du lundi au vendredi ${SITE_CONFIG.hours.weekdays}, le samedi ${SITE_CONFIG.hours.saturday} et le dimanche ${SITE_CONFIG.hours.sunday}.`;
+  }
+
+  // Catégorie pas encore en vente (bijoux, vêtements…) : on le dit simplement et on propose le reste
+  const later = ALL_CATEGORIES.find(c => !isOnSale(c.id) && has(q, ...CATEGORY_WORDS[c.id]));
+  if (later && !CATEGORIES.some(c => has(q, ...CATEGORY_WORDS[c.id]))) {
+    return `Pour le moment, Fabima propose uniquement des **${onSaleLabel()}** 🌸 Les ${later.name.toLowerCase()} arrivent bientôt ! En attendant : ${CATEGORIES.map(c => `[${c.name.toLowerCase()}](/boutique/${c.id})`).join(' ou ')} ?`;
   }
 
   const found = searchProducts(q, ctx.products);

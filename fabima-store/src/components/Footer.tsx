@@ -52,7 +52,7 @@ export const Footer: React.FC = () => {
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-16 grid gap-12 grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1.2fr]">
         <div className="col-span-2 lg:col-span-1 space-y-6">
           <p className="font-script text-6xl text-gold-light leading-none">Fabima</p>
-          <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures, sacs, bijoux et tenues choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
+          <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures et sacs choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
           <div className="flex gap-2">
             {[
               { Icon: Instagram, href: SITE_CONFIG.social.instagram, label: 'Instagram' },

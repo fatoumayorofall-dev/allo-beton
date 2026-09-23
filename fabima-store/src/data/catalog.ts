@@ -1,4 +1,5 @@
 import type { Category, ColorOption, Occasion, Product } from './types';
+import { isOnSale } from '../config/site';
 
 /** Image Pexels redimensionnée. Une image indisponible est remplacée à l'affichage par un visuel de secours. */
 export const px = (id: number, w = 800) =>
@@ -10,13 +11,17 @@ export const px = (id: number, w = 800) =>
  */
 export const CATALOG_VERSION = 2;
 
-export const CATEGORIES: Category[] = [
+/** Toutes les catégories prévues (y compris celles pas encore en vente). */
+export const ALL_CATEGORIES: Category[] = [
   { id: 'chaussures', name: 'Chaussures', description: 'Escarpins, sandales, mules, ballerines & sneakers', image: px(1598505, 700) },
   { id: 'sacs', name: 'Sacs', description: 'Sacs à main, cabas, pochettes & mini-sacs', image: px(1152077, 700) },
   { id: 'accessoires', name: 'Accessoires', description: 'Lunettes, montres, foulards & chapeaux', image: px(1161268, 700) },
   { id: 'bijoux', name: 'Bijoux', description: 'Colliers, créoles, bracelets & parures', image: px(1191531, 700) },
   { id: 'vetements', name: 'Prêt-à-porter', description: 'Robes, kaftans, boubous & ensembles', image: px(994523, 700) },
 ];
+
+/** Catégories en vente (réglage SHOP_CATEGORIES dans config/site.ts). */
+export const CATEGORIES: Category[] = ALL_CATEGORIES.filter(c => isOnSale(c.id));
 
 export const OCCASIONS: Occasion[] = [
   { id: 'mariage', name: 'Mariage & baptême', tagline: 'Être l\'invitée qu\'on remarque', image: px(1616096, 700) },
@@ -57,7 +62,8 @@ const p = (data: Omit<Product, 'id' | 'createdAt'> & { createdAt?: string }): Pr
 const LEATHER_CARE = 'Dépoussiérer avec un chiffon doux, nourrir le cuir une fois par mois, ranger dans sa pochette à l\'abri de la chaleur.';
 const JEWEL_CARE = 'Éviter le contact avec l\'eau, le parfum et les crèmes. Ranger à plat dans son écrin.';
 
-export const INITIAL_PRODUCTS: Product[] = [
+/** Catalogue complet, y compris les pièces des catégories pas encore en vente. */
+export const ALL_PRODUCTS: Product[] = [
   /* ───────── CHAUSSURES ───────── */
   p({
     slug: 'escarpins-velours-aminata', name: 'Escarpins Aminata en velours', category: 'chaussures', subcategory: 'Escarpins',
@@ -403,3 +409,6 @@ export const INITIAL_PRODUCTS: Product[] = [
     rating: 4.7, reviewCount: 8, createdAt: '2026-09-18T10:00:00Z',
   }),
 ];
+
+/** Catalogue de départ de la boutique : seulement les catégories en vente. */
+export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category));

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MessageCircle, Plus, Sparkles } from 'lucide-react';
 import { openAssistant } from '../components/Assistant';
-import { DELIVERY_ZONES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
+import { DELIVERY_ZONES, SITE_CONFIG, buildWhatsAppLink, isOnSale } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { FAQ_ITEMS as QUESTIONS } from '../data/faq';
@@ -54,14 +54,14 @@ export const FAQ: React.FC = () => {
             {SHOE_SIZES.map(([s, cm]) => <tr key={s} className="border-b border-ink/10"><td className="py-2.5">{s}</td><td className="py-2.5 text-right text-ink/60">{cm}</td></tr>)}
           </tbody></table>
         </div>
-        <div>
+        {isOnSale('vetements') && <div>
           <h3 className="field-label">Prêt-à-porter</h3>
           <table className="w-full text-sm">
             <thead><tr className="text-ink/50 border-b border-ink/10"><th className="text-left py-2.5 font-normal">Taille</th><th className="text-left font-normal">FR</th><th className="text-right font-normal">Poitrine</th></tr></thead>
             <tbody>{CLOTHES_SIZES.map(([s, fr, p]) => <tr key={s} className="border-b border-ink/10"><td className="py-2.5">{s}</td><td>{fr}</td><td className="text-right text-ink/60">{p}</td></tr>)}</tbody>
           </table>
           <p className="text-xs text-ink/50 mt-4">Entre deux tailles ? Choisissez la plus grande, ou demandez conseil sur WhatsApp.</p>
-        </div>
+        </div>}
       </div>
 
       <div className="mt-24 text-center bg-ink text-ivory px-6 py-16 grain relative overflow-hidden">

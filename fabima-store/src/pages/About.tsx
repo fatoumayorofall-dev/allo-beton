@@ -24,7 +24,7 @@ export const About: React.FC = () => {
         <Reveal className="lg:col-span-4"><p className="eyebrow">Depuis 2021</p><h2 className="font-display text-4xl sm:text-5xl mt-4 leading-tight">Une exigence, une promesse</h2></Reveal>
         <Reveal className="lg:col-span-7 lg:col-start-6 space-y-6 text-ink/70 leading-relaxed text-[15px]" delay={120}>
           <p className="font-display text-2xl sm:text-3xl text-ink leading-snug">Fabima est née d'une conviction simple : chaque femme mérite de se sentir belle, sans que l'élégance soit un luxe inaccessible.</p>
-          <p>Nous sélectionnons chaque paire de chaussures, chaque sac et chaque bijou avec la même exigence que s'il nous était destiné. Nous collaborons avec des artisanes et tailleurs dakarois pour nos collections en wax et en bazin, afin que chaque pièce raconte aussi une histoire d'ici.</p>
+          <p>Nous sélectionnons chaque paire de chaussures et chaque sac avec la même exigence que s'ils nous étaient destinés. Nous collaborons avec des artisanes dakaroises pour nos sacs en wax, afin que chaque pièce raconte aussi une histoire d'ici.</p>
           <p>Commandez en quelques instants, réglez par Wave ou Orange Money, et recevez vos pièces dès le lendemain à Dakar, soigneusement emballées.</p>
         </Reveal>
       </section>

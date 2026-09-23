@@ -37,13 +37,13 @@ const HERO_SLIDES = [
     featured: 'sac-a-main-fatou',
   },
   {
-    kicker: 'Joaillerie',
-    title: ['Brillez', 'de mille', 'feux'],
+    kicker: 'Le duo parfait',
+    title: ['Sac', '& souliers', 'assortis'],
     accent: 1,
-    text: 'Plaqué or 18 carats, perles nacrées et créoles lumineuses pour briller à chaque cérémonie.',
-    cta: { label: 'Voir les bijoux', to: '/boutique/bijoux' },
-    image: px(1191531),
-    featured: 'collier-plaque-or',
+    text: 'Pochettes perlées et sandales à talons, cabas et mules : des duos pensés pour aller ensemble, du bureau aux cérémonies.',
+    cta: { label: 'Voir les pochettes', to: '/boutique/sacs' },
+    image: px(2081199),
+    featured: 'pochette-soiree-perles',
   },
 ];
 
@@ -82,11 +82,10 @@ export const Home: React.FC = () => {
     return products.filter(p => p.isBestseller).slice(0, 8);
   }, [tab, products]);
 
-  const look = useMemo(() => ['robe-wax-dior', 'sac-a-main-fatou', 'sandales-dorees-ndeye', 'collier-plaque-or'].map(getProduct).filter((p): p is NonNullable<typeof p> => !!p), [getProduct]);
+  const look = useMemo(() => ['sac-a-main-fatou', 'sandales-talons-perlees-linguere', 'pochette-soiree-perles', 'escarpins-velours-aminata'].map(getProduct).filter((p): p is NonNullable<typeof p> => !!p), [getProduct]);
   const recent = recentlyViewed.map(getProduct).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 4);
   const current = HERO_SLIDES[slide];
   const featured = getProduct(current.featured);
-  const [c0, ...cRest] = CATEGORIES;
 
   return (
     <div className="overflow-x-clip">
@@ -178,18 +177,23 @@ export const Home: React.FC = () => {
       {/* ───────────── UNIVERS ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12">
         <Reveal className="flex items-end justify-between gap-6 mb-10">
-          <div><p className="eyebrow">Nos univers</p><h2 className="font-display text-5xl sm:text-6xl mt-3">Tout pour vous <span className="font-script text-gold-dark text-[1.1em]">sublimer</span></h2></div>
+          <div><p className="eyebrow">Nos univers</p><h2 className="font-display text-5xl sm:text-6xl mt-3">Chaque pas, <span className="font-script text-gold-dark text-[1.1em]">chaque sac</span></h2></div>
           <Link to="/boutique" className="hidden sm:inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe">Toute la boutique <ArrowRight className="w-3.5 h-3.5" /></Link>
         </Reveal>
-        <div className="grid lg:grid-cols-2 gap-4">
-          <Reveal>
-            <CategoryTile id={c0.id} name={c0.name} description={c0.description} image={c0.image} tall />
-          </Reveal>
-          <div className="grid grid-cols-2 gap-4">
-            {cRest.map((c, i) => (
-              <Reveal key={c.id} delay={i * 90}><CategoryTile id={c.id} name={c.name} description={c.description} image={c.image} /></Reveal>
-            ))}
-          </div>
+        {/* Deux grands univers côte à côte (les petites tuiles servent quand d'autres catégories ouvrent) */}
+        <div className={`grid gap-4 ${CATEGORIES.length <= 2 ? 'sm:grid-cols-2' : 'lg:grid-cols-2'}`}>
+          {CATEGORIES.length <= 2 ? CATEGORIES.map((c, i) => (
+            <Reveal key={c.id} delay={i * 90}><CategoryTile id={c.id} name={c.name} description={c.description} image={c.image} tall /></Reveal>
+          )) : (
+            <>
+              <Reveal><CategoryTile id={CATEGORIES[0].id} name={CATEGORIES[0].name} description={CATEGORIES[0].description} image={CATEGORIES[0].image} tall /></Reveal>
+              <div className="grid grid-cols-2 gap-4">
+                {CATEGORIES.slice(1).map((c, i) => (
+                  <Reveal key={c.id} delay={i * 90}><CategoryTile id={c.id} name={c.name} description={c.description} image={c.image} /></Reveal>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </section>
 
@@ -197,7 +201,7 @@ export const Home: React.FC = () => {
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
         <Reveal className="text-center mb-12">
           <p className="eyebrow">Shopping par occasion</p>
-          <h2 className="font-display text-5xl sm:text-6xl mt-3">Une tenue pour <span className="font-script text-gold-dark text-[1.15em]">chaque moment</span></h2>
+          <h2 className="font-display text-5xl sm:text-6xl mt-3">Un duo pour <span className="font-script text-gold-dark text-[1.15em]">chaque moment</span></h2>
         </Reveal>
         <div className="flex lg:grid lg:grid-cols-6 gap-4 overflow-x-auto no-scrollbar snap-x -mx-5 px-5 sm:mx-0 sm:px-0 pb-2">
           {OCCASIONS.map((o, i) => {
@@ -242,14 +246,14 @@ export const Home: React.FC = () => {
           <Reveal className="lg:col-span-5 relative">
             <div className="aspect-[4/5] overflow-hidden arch"><ProductImage src={px(6044266, 1000)} alt="Artisane de l'atelier Teranga" label="Atelier Teranga" className="w-full h-full" /></div>
             <div className="hidden sm:block absolute -bottom-10 -right-10 lg:-right-20 w-44 lg:w-56 aspect-[3/4] overflow-hidden arch border-[8px] border-ivory shadow-luxe">
-              <ProductImage src={px(994523, 600)} alt="Robe en wax" label="" className="w-full h-full" />
+              <ProductImage src={px(1152077, 600)} alt="Sac structuré Fabima" label="" className="w-full h-full" />
             </div>
           </Reveal>
           <Reveal className="lg:col-span-6 lg:col-start-7" delay={120}>
             <p className="eyebrow">Fait main à Dakar</p>
             <h2 className="font-display text-5xl sm:text-7xl leading-[0.95] mt-4">L'atelier<br /><span className="font-script text-gold-dark text-[1.2em]">Teranga</span></h2>
             <p className="mt-8 text-ink/65 leading-relaxed max-w-lg">
-              Au cœur de la Médina, nos artisanes façonnent des cabas en wax et des robes cintrées aux imprimés vibrants.
+              Au cœur de la Médina, nos artisanes façonnent des cabas en wax et des sacs aux imprimés vibrants, cousus main.
               Chaque pièce est coupée à la main, numérotée et ne sera jamais tout à fait identique à une autre.
             </p>
             <dl className="mt-10 grid grid-cols-3 gap-6 max-w-md">
@@ -300,7 +304,7 @@ export const Home: React.FC = () => {
             <Reveal delay={120}>
               <p className="eyebrow">Shop the look</p>
               <h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">Invitée <em>d'honneur</em></h2>
-              <p className="mt-5 text-ink/60 max-w-md">Une silhouette pensée pour les mariages et baptêmes : wax éclatant, maroquinerie structurée et touches dorées.</p>
+              <p className="mt-5 text-ink/60 max-w-md">Pour les mariages et baptêmes : un sac structuré, une pochette perlée et des souliers qui brillent à chaque pas.</p>
               <ul className="mt-10 divide-y divide-ink/10 border-y border-ink/10">
                 {look.map(p => (
                   <li key={p.id}>
@@ -331,10 +335,10 @@ export const Home: React.FC = () => {
             </Reveal>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { id: 'lt15', label: 'Moins de 15 000', hint: 'Créoles, foulards, lunettes' },
-                { id: '15-30', label: '15 000 – 30 000', hint: 'Colliers, sandales, sacs wax' },
-                { id: '30-50', label: '30 000 – 50 000', hint: 'Sacs à main, escarpins, robes' },
-                { id: 'gt50', label: 'Plus de 50 000', hint: 'Boubou brodé, pièces d\'exception' },
+                { id: 'lt20', label: 'Moins de 20 000', hint: 'Sandales, pochettes, sacs wax' },
+                { id: '20-30', label: '20 000 – 30 000', hint: 'Mules, ballerines, sacs du quotidien' },
+                { id: '30-40', label: '30 000 – 40 000', hint: 'Escarpins, bottines, cabas' },
+                { id: 'gt40', label: 'Plus de 40 000', hint: 'Sac à main Fatou, pièces d\'exception' },
               ].map((b, i) => (
                 <Reveal key={b.id} delay={i * 80}>
                   <Link to={`/boutique?prix=${b.id}&tri=note`} className="group block h-full p-6 rounded-[2rem] bg-ivory/[0.06] border border-ivory/10 hover:bg-ivory hover:text-ink transition-colors duration-500">

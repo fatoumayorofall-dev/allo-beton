@@ -191,6 +191,19 @@ Chaque visite arrivée depuis un statut est comptée : le nombre s'affiche sur c
 La vitrine, les notes vocales et les compteurs sont gardés par le serveur (`server/data/`, ou le dossier `DATA_DIR`) :
 sur un hébergement, prévoyez un disque persistant pour ce dossier.
 
+## Catégories en vente
+
+Pour le moment, la boutique vend **uniquement des chaussures et des sacs** (15 pièces). Les bijoux, accessoires et
+vêtements restent prêts dans le catalogue mais sont masqués partout (menu, accueil, recherche, journal, guide des
+tailles, assistante). Pour ouvrir une catégorie, ajoutez-la dans `src/config/site.ts` :
+
+```ts
+export const SHOP_CATEGORIES: CategoryId[] = ['chaussures', 'sacs', 'bijoux'];
+```
+
+Un ancien lien comme `/boutique/bijoux` affiche « Bijoux : bientôt chez Fabima » et propose les chaussures et les sacs ;
+l'assistante Fabi répond de la même façon si une cliente demande un bijou ou une robe.
+
 ## Modifier le catalogue
 
 Le catalogue de départ est dans `src/data/catalog.ts`. Si vous changez sa structure, augmentez `CATALOG_VERSION` :

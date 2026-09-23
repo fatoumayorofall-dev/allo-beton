@@ -1,3 +1,13 @@
+import type { CategoryId } from '../data/types';
+
+/**
+ * Catégories en vente. Les autres (bijoux, accessoires, prêt-à-port) restent dans le catalogue
+ * mais sont masquées partout : pour les ouvrir, ajoutez simplement leur identifiant ici.
+ * Ex. : ['chaussures', 'sacs', 'bijoux']
+ */
+export const SHOP_CATEGORIES: CategoryId[] = ['chaussures', 'sacs'];
+export const isOnSale = (category: CategoryId) => SHOP_CATEGORIES.includes(category);
+
 export const SITE_CONFIG = {
   name: 'Fabima Store',
   tagline: 'La mode au féminin',
