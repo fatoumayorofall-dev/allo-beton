@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Clock } from 'lucide-react';
 import { ARTICLES } from '../data/journal';
 import { useStore } from '../context/StoreContext';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { ArticleCard } from '../components/ArticleCard';
+import { BrandMark } from '../components/Logo';
 import { ProductCard } from '../components/ProductCard';
 import { Reveal } from '../components/Reveal';
 import { Flourish, Flower } from '../components/Decor';
@@ -23,10 +24,35 @@ export const Journal: React.FC = () => {
         <p className="text-ink/75 mt-4 max-w-lg mx-auto">Guides d'occasion, astuces de style et soins : tout ce que notre équipe aime partager avec vous.</p>
         <Flourish className="mt-10" />
       </div>
-      <Reveal className="mt-16"><ArticleCard article={first} large level={2} /></Reveal>
-      <div className="mt-20 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-        {rest.map((a, i) => <Reveal key={a.slug} delay={i * 90}><ArticleCard article={a} level={2} /></Reveal>)}
-      </div>
+      {/* Article vedette en mise en page magazine : photo à gauche, texte à droite */}
+      <Reveal className="mt-16">
+        <Link to={`/journal/${first.slug}`} className="group grid lg:grid-cols-[1.35fr_1fr] gap-8 lg:gap-14 items-center">
+          <div className="overflow-hidden rounded-[2.5rem] aspect-[16/11] bg-ivory-deep">
+            <ProductImage src={first.image} alt={first.title} label={first.category} sizes="(min-width: 1024px) 55vw, 100vw" priority className="w-full h-full group-hover:scale-105 transition-transform duration-[1.2s] ease-luxe" />
+          </div>
+          <div>
+            <p className="eyebrow">À la une · {first.category} · {first.readingTime} min</p>
+            <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.02] mt-4 group-hover:text-gold-dark transition-colors">{first.title}</h2>
+            <p className="text-ink/75 mt-5 leading-relaxed max-w-md">{first.excerpt}</p>
+            <span className="mt-7 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold">Lire l'article <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></span>
+          </div>
+        </Link>
+      </Reveal>
+      {rest.length > 0 && (
+        <div className={`mt-20 grid gap-x-8 gap-y-16 ${rest.length === 1 ? 'sm:grid-cols-2 lg:grid-cols-3' : rest.length === 2 ? 'sm:grid-cols-2 max-w-4xl' : 'sm:grid-cols-2 lg:grid-cols-3'}`}>
+          {rest.map((a, i) => <Reveal key={a.slug} delay={i * 90}><ArticleCard article={a} level={2} /></Reveal>)}
+          {rest.length === 1 && (
+            <Reveal delay={90} className="hidden sm:flex lg:col-span-2 relative overflow-hidden rounded-[2.5rem] bg-ink text-ivory p-8 sm:p-12 flex-col justify-end">
+              <BrandMark light className="absolute -top-10 right-10 h-[70%] w-auto opacity-[0.12] rotate-[8deg] pointer-events-none" />
+              <span className="pointer-events-none absolute -bottom-24 -left-16 w-80 h-80 rounded-full bg-wine/40 blur-[90px]" aria-hidden />
+              <p className="relative eyebrow !text-gold-light">Le cercle des Fabima Girls</p>
+              <p className="relative font-display text-4xl sm:text-5xl leading-[1.05] mt-4">Nos prochains conseils, <em className="text-gold-light">directement chez vous</em></p>
+              <p className="relative text-ivory/75 mt-4 max-w-md">Guides d'occasion, soins du cuir et nouveautés : une lettre par mois, jamais plus. Inscription en bas de page.</p>
+              <Link to="/boutique?tri=nouveautes" className="relative btn-light mt-8 self-start">Voir les nouveautés <ArrowRight className="w-4 h-4" /></Link>
+            </Reveal>
+          )}
+        </div>
+      )}
     </div>
   );
 };

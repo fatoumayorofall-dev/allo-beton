@@ -2,7 +2,7 @@ import { delayLabel } from '../utils/market';
 import { PREORDER_MAX } from '../utils/stock';
 import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Gift, Minus, Plus, X } from 'lucide-react';
+import { Gift, Minus, Plus, ShieldCheck, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { formatPrice } from '../utils/format';
 import { SITE_CONFIG } from '../config/site';
@@ -42,11 +42,14 @@ export const CartDrawer: React.FC = () => {
   const remaining = Math.max(0, SITE_CONFIG.freeShippingThreshold - (t.subtotal - t.discount));
   const progress = Math.min(100, ((t.subtotal - t.discount) / SITE_CONFIG.freeShippingThreshold) * 100);
 
-  // Suggestions « complétez votre look » : pièces sans taille d'autres univers, pas déjà au panier
+  // Suggestions « complétez votre look » : d'abord l'autre univers (un sac pour des souliers…), puis les coups de cœur
   const suggestions = useMemo(() => {
     const inCart = new Set(cart.map(i => i.productId));
     const cats = new Set(cart.map(i => products.find(p => p.id === i.productId)?.category));
-    return products.filter(p => !inCart.has(p.id) && !cats.has(p.category) && p.sizes.length === 0 && p.stock > 0).slice(0, 3);
+    return products
+      .filter(p => !inCart.has(p.id) && p.stock > 0)
+      .sort((a, b) => Number(cats.has(a.category)) - Number(cats.has(b.category)) || Number(!!b.isBestseller) - Number(!!a.isBestseller))
+      .slice(0, 4);
   }, [cart, products]);
 
   if (!cartOpen) return null;
@@ -113,16 +116,19 @@ export const CartDrawer: React.FC = () => {
               {suggestions.length > 0 && (
                 <div className="px-6 sm:px-8 py-6 bg-ivory-deep/60">
                   <p className="eyebrow mb-4">Complétez votre look</p>
-                  <ul className="grid grid-cols-3 gap-3">
+                  <ul className="grid grid-cols-2 gap-3">
                     {suggestions.map(p => (
-                      <li key={p.id} className="group">
-                        <div className="relative aspect-[3/4] overflow-hidden rounded-2xl">
-                          <ProductImage src={p.images[0]} alt={p.name} label="" className="w-full h-full" />
-                          <button onClick={() => addToCart(p, { color: p.colors[0]?.name })} aria-label={`Ajouter ${p.name}`}
-                            className="absolute bottom-2 right-2 w-8 h-8 rounded-full bg-white grid place-items-center shadow-soft hover:bg-ink hover:text-ivory transition-colors"><Plus className="w-3.5 h-3.5" /></button>
+                      <li key={p.id} className="group flex gap-3 items-center p-2 rounded-2xl bg-white border border-ink/[0.05]">
+                        <Link to={`/produit/${p.slug}`} onClick={close} className="w-14 h-[72px] shrink-0 overflow-hidden rounded-xl">
+                          <ProductImage src={p.images[0]} alt="" label="" className="w-full h-full group-hover:scale-105 transition-transform duration-700" />
+                        </Link>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs leading-tight line-clamp-2">{p.name}</p>
+                          <p className="text-[11px] text-ink/70 mt-0.5">{formatPrice(p.price)}</p>
+                          {p.sizes.length === 0
+                            ? <button onClick={() => addToCart(p, { color: p.colors[0]?.name })} className="mt-1 text-[11px] font-semibold text-wine inline-flex items-center gap-1" aria-label={`Ajouter ${p.name}`}><Plus className="w-3 h-3" /> Ajouter</button>
+                            : <Link to={`/produit/${p.slug}`} onClick={close} className="mt-1 text-[11px] font-semibold text-ink/75 underline underline-offset-4 decoration-ink/20 inline-block">Choisir la taille</Link>}
                         </div>
-                        <p className="text-xs mt-2 leading-tight line-clamp-1">{p.name}</p>
-                        <p className="text-[11px] text-ink/70">{formatPrice(p.price)}</p>
                       </li>
                     ))}
                   </ul>
@@ -137,6 +143,7 @@ export const CartDrawer: React.FC = () => {
                 <span className="font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span>
               </div>
               <button onClick={() => { close(); navigate('/commande'); }} className="btn-dark w-full">Commander</button>
+              <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70"><ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave · Orange Money · à la livraison</p>
               <Link to="/panier" onClick={close} className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Voir le panier détaillé</Link>
             </footer>
           </>

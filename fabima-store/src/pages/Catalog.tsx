@@ -70,6 +70,7 @@ export const Catalog: React.FC = () => {
 
   const base = useMemo(() => (cat ? products.filter(p => p.category === cat.id) : products), [products, cat]);
   const subcategories = useMemo(() => [...new Set(base.map(p => p.subcategory))].sort(), [base]);
+  const types = useMemo(() => subcategories.map(name => ({ name, image: base.find(p => p.subcategory === name)?.images[0] })), [subcategories, base]);
   const colors = useMemo(() => {
     const map = new Map<string, Product['colors'][number]>();
     base.forEach(p => p.colors.forEach(c => map.set(c.name, c)));
@@ -146,31 +147,49 @@ export const Catalog: React.FC = () => {
 
   return (
     <div>
-      {/* Bannière */}
-      <section className="relative h-[42vh] min-h-[320px] max-h-[460px] overflow-hidden bg-ink grain rounded-b-[3rem] mx-0 sm:mx-4">
-        <ProductImage src={cat?.image ?? occasion?.image ?? CATEGORIES[1].image} alt="" className="absolute inset-0 w-full h-full opacity-70 animate-kenburns" />
-        <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/30 to-ink/20" />
-        <div className="relative h-full max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 flex flex-col justify-end pb-10 text-ivory">
-          <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ivory/60 mb-5" aria-label="Fil d'Ariane">
-            <Link to="/" className="hover:text-ivory">Accueil</Link><ChevronRight className="w-3 h-3" />
-            <Link to="/boutique" className="hover:text-ivory">Boutique</Link>
-            {cat && <><ChevronRight className="w-3 h-3" /><span className="text-ivory">{cat.name}</span></>}
-          </nav>
-          {occasion && !cat && <p className="font-script text-3xl text-gold-light mb-1">{occasion.tagline}</p>}
-          <h1 className="font-display text-5xl sm:text-7xl leading-none">{cat?.name ?? occasion?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em>{q}</em> »</> : 'La boutique')}</h1>
-          <p className="mt-3 text-ivory/70 text-sm max-w-md">{cat?.description ?? (occasion ? `Notre sélection de pièces pour « ${occasion.name.toLowerCase()} ».` : promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : soon ? `${soon.name} : bientôt chez Fabima ! En attendant, découvrez nos ${CATEGORIES.map(c => c.name.toLowerCase()).join(' et nos ')}.` : `${CATEGORIES.map(c => c.name).join(', ').replace(/, ([^,]*)$/, ' et $1')} pour elle.`)}</p>
-          {occasion && cat && <p className="mt-2 text-xs text-gold-light">Occasion : {occasion.name}</p>}
+      {/* En-tête éditorial : titre à gauche, photo en arche à droite */}
+      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-6 sm:pt-10">
+        <div className="grid md:grid-cols-[1fr_auto] gap-6 md:gap-12 items-center">
+          <div>
+            <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ink/70 mb-5" aria-label="Fil d'Ariane">
+              <Link to="/" className="hover:text-ink">Accueil</Link><ChevronRight className="w-3 h-3" />
+              <Link to="/boutique" className="hover:text-ink">Boutique</Link>
+              {cat && <><ChevronRight className="w-3 h-3" /><span className="text-ink">{cat.name}</span></>}
+            </nav>
+            {occasion && !cat && <p className="eyebrow mb-2">{occasion.tagline}</p>}
+            <h1 className="font-display text-6xl sm:text-7xl lg:text-8xl leading-[0.92]">{cat?.name ?? occasion?.name ?? (promoOnly ? 'Les offres' : q ? <>« <em className="text-gold-dark">{q}</em> »</> : <>La <em className="text-gold-dark">boutique</em></>)}</h1>
+            <p className="mt-4 text-ink/75 max-w-lg leading-relaxed">{cat?.description ?? (occasion ? `Notre sélection de pièces pour « ${occasion.name.toLowerCase()} ».` : promoOnly ? 'Une sélection de pièces à prix doux, en quantités limitées.' : soon ? `${soon.name} : bientôt chez Fabima ! En attendant, découvrez nos ${CATEGORIES.map(c => c.name.toLowerCase()).join(' et nos ')}.` : `${CATEGORIES.map(c => c.name).join(', ').replace(/, ([^,]*)$/, ' et $1')} pour elle.`)}</p>
+            {occasion && cat && <p className="mt-2 text-xs text-gold-dark">Occasion : {occasion.name}</p>}
+            {/* Univers : sélecteur en pilule */}
+            <div className="mt-7 inline-flex p-1 rounded-full bg-white border border-ink/[0.07] shadow-soft">
+              <Link to="/boutique" className={`px-5 h-10 inline-flex items-center rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold transition-colors ${!cat ? 'bg-ink text-ivory' : 'text-ink/75 hover:text-ink'}`}>Tout</Link>
+              {CATEGORIES.map(c => (
+                <Link key={c.id} to={`/boutique/${c.id}`} className={`px-5 h-10 inline-flex items-center rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold transition-colors ${cat?.id === c.id ? 'bg-ink text-ivory' : 'text-ink/75 hover:text-ink'}`}>{c.name}</Link>
+              ))}
+            </div>
+          </div>
+          <div className="hidden md:block w-[200px] lg:w-[250px] aspect-[4/5] overflow-hidden rounded-t-[999px] rounded-b-[2rem] shadow-luxe bg-ivory-deep">
+            <ProductImage src={cat?.image ?? occasion?.image ?? CATEGORIES[1].image} alt="" className="w-full h-full animate-kenburns" sizes="250px" priority />
+          </div>
         </div>
       </section>
 
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12">
-        {/* Univers */}
-        <div className="flex gap-7 overflow-x-auto no-scrollbar border-b border-ink/10 -mx-5 px-5 sm:mx-0 sm:px-0">
-          <Link to="/boutique" className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${!cat ? 'border-ink' : 'border-transparent text-ink/70 hover:text-ink'}`}>Tout</Link>
-          {CATEGORIES.map(c => (
-            <Link key={c.id} to={`/boutique/${c.id}`} className={`py-5 text-[11px] uppercase tracking-[0.22em] font-semibold whitespace-nowrap border-b -mb-px ${cat?.id === c.id ? 'border-ink' : 'border-transparent text-ink/70 hover:text-ink'}`}>{c.name}</Link>
-          ))}
-        </div>
+        {/* Types de pièces : pastilles photo (un toucher filtre, un second retire le filtre) */}
+        {types.length > 1 && (
+          <ul className="mt-8 flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0 pb-2" aria-label="Types de pièces" data-testid="type-chips">
+            {types.map(t => (
+              <li key={t.name} className="shrink-0">
+                <button onClick={() => setParam('type', sub === t.name ? null : t.name)} aria-pressed={sub === t.name} className="group flex flex-col items-center gap-2 w-[76px]">
+                  <span className={`w-[68px] h-[68px] rounded-full overflow-hidden p-[3px] transition-all duration-500 ${sub === t.name ? 'bg-gradient-to-br from-gold to-wine' : 'bg-ink/[0.06] group-hover:bg-gold-light'}`}>
+                    <span className="block w-full h-full rounded-full overflow-hidden border-2 border-ivory"><ProductImage src={t.image} alt="" label="" className="w-full h-full group-hover:scale-110 transition-transform duration-700" /></span>
+                  </span>
+                  <span className={`text-[11px] leading-tight text-center line-clamp-2 ${sub === t.name ? 'font-semibold text-ink' : 'text-ink/75'}`}>{t.name}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* Barre d'outils */}
         <div className="flex items-center justify-between gap-3 py-6 sticky top-16 lg:top-[116px] z-30 bg-ivory/95 backdrop-blur">

@@ -8,7 +8,7 @@ import { discountPercent, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { useInView } from '../utils/hooks';
 import { canBuy, isPreorder, maxQty } from '../utils/stock';
-import { ProductImage } from '../components/ProductImage';
+import { ProductGallery } from '../components/ProductGallery';
 import { ColorSwatch } from '../components/ColorSwatch';
 import { Stars } from '../components/Stars';
 import { ProductCard } from '../components/ProductCard';
@@ -17,21 +17,18 @@ import { Flower } from '../components/Decor';
 import { ListenButton } from '../components/ListenButton';
 import { shortLink } from '../utils/share';
 
-/** Image principale avec zoom qui suit le curseur (desktop). */
-const ZoomImage: React.FC<{ src?: string; alt: string }> = ({ src, alt }) => {
-  const [origin, setOrigin] = useState('50% 50%');
-  const [zoom, setZoom] = useState(false);
+/** Date de livraison estimée à Dakar : demain si la commande part avant 16 h (le dimanche est sauté). */
+const DeliveryEstimate: React.FC = () => {
+  const now = new Date();
+  const d = new Date(now); d.setDate(d.getDate() + (now.getHours() < 16 ? 1 : 2));
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1);
+  const day = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const tomorrow = d.getDate() === new Date(now.getTime() + 864e5).getDate();
   return (
-    <div className="relative w-full h-full overflow-hidden cursor-zoom-in"
-      onMouseEnter={() => setZoom(true)} onMouseLeave={() => setZoom(false)}
-      onMouseMove={e => {
-        const r = e.currentTarget.getBoundingClientRect();
-        setOrigin(`${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`);
-      }}>
-      <div className="w-full h-full transition-transform duration-300 ease-out" style={{ transform: zoom ? 'scale(1.8)' : 'scale(1)', transformOrigin: origin }}>
-        <ProductImage src={src} alt={alt} className="w-full h-full" sizes="(min-width: 1024px) 50vw, 100vw" priority />
-      </div>
-    </div>
+    <p className="mt-4 flex items-center gap-3 p-4 rounded-2xl bg-blush/40 text-[13px]" data-testid="delivery-estimate">
+      <Truck className="w-5 h-5 text-wine shrink-0" strokeWidth={1.5} />
+      <span>Livrée à Dakar <strong className="font-semibold">{tomorrow ? 'dès demain' : 'le'} {day}</strong>{now.getHours() < 16 ? ' si vous commandez avant 16 h' : ''}. Partout au Sénégal en 48 à 72 h.</span>
+    </p>
   );
 };
 
@@ -91,7 +88,6 @@ export const ProductDetail: React.FC = () => {
   const { getProduct, products, addToCart, toggleWishlist, isInWishlist, markViewed, setCartOpen, notify, addReview, addStockAlert } = useStore();
   const product = getProduct(slug);
 
-  const [imageIdx, setImageIdx] = useState(0);
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   const [qty, setQty] = useState(1);
@@ -106,7 +102,6 @@ export const ProductDetail: React.FC = () => {
   useEffect(() => {
     if (!product) return;
     markViewed(product.id);
-    setImageIdx(0);
     setSize('');
     setColor(product.colors[0]?.name ?? '');
     setQty(1);
@@ -202,37 +197,13 @@ export const ProductDetail: React.FC = () => {
 
         <div className="grid lg:grid-cols-[1.25fr_1fr] gap-10 lg:gap-20 items-start">
           {/* Galerie */}
-          <div className="lg:flex lg:items-start lg:gap-4 min-w-0">
-            {product.images.length > 1 && (
-              <div className="hidden lg:flex flex-col gap-3 w-20 shrink-0">
-                {product.images.map((img, i) => (
-                  <button key={img} onClick={() => setImageIdx(i)} aria-label={`Image ${i + 1}`}
-                    className={`aspect-[3/4] overflow-hidden rounded-2xl transition-opacity ${i === imageIdx ? 'ring-1 ring-ink ring-offset-2 ring-offset-ivory' : 'opacity-50 hover:opacity-100'}`}>
-                    <ProductImage src={img} alt="" className="w-full h-full" />
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="relative flex-1 min-w-0 aspect-[4/5] bg-ivory-deep rounded-[2.5rem] overflow-hidden">
-              <div key={imageIdx} className="absolute inset-0 animate-fade-in"><ZoomImage src={product.images[imageIdx]} alt={product.name} /></div>
-              <div className="absolute top-4 left-4 flex flex-col gap-1.5 pointer-events-none">
-                {off > 0 && <span className="px-3 py-1.5 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
-                {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
-              </div>
-              {product.images.length > 1 && (
-                <div className="lg:hidden absolute bottom-2 inset-x-0 flex justify-center">
-                  {product.images.map((img, i) => (
-                    <button key={img} onClick={() => setImageIdx(i)} aria-label={`Image ${i + 1}`} aria-current={i === imageIdx} className="h-6 min-w-6 px-1 grid place-items-center">
-                      <span className={`block h-[2px] transition-all ${i === imageIdx ? 'w-8 bg-ink' : 'w-4 bg-ink/30'}`} />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <ProductGallery images={product.images} name={product.name} badges={<>
+            {off > 0 && <span className="px-3 py-1.5 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
+            {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
+          </>} />
 
           {/* Informations */}
-          <div className="lg:sticky lg:top-36 lg:self-start">
+          <div>
             <div className="flex items-start justify-between gap-4">
               <p className="eyebrow">{category?.name} · {product.subcategory}</p>
               <button onClick={share} aria-label="Partager" className="w-9 h-9 -mt-2 grid place-items-center rounded-full hover:bg-ink/5"><Share2 className="w-4 h-4" strokeWidth={1.5} /></button>
@@ -316,6 +287,7 @@ export const ProductDetail: React.FC = () => {
               className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#1f8f4e] hover:text-[#1f8f4e] transition-colors">
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Commander sur WhatsApp
             </a>
+            {!outOfStock && !preorder && <DeliveryEstimate />}
 
             <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/75">
               {[
@@ -326,6 +298,11 @@ export const ProductDetail: React.FC = () => {
                 <li key={t} className="py-4 px-2"><Icon className="w-4 h-4 mx-auto text-gold-dark mb-2" strokeWidth={1.4} />{t}</li>
               ))}
             </ul>
+            <p className="mt-4 flex flex-wrap items-center gap-1.5 text-[11px] text-ink/70" aria-label="Moyens de paiement">
+              {[['Wave', 'bg-sky-500'], ['Orange Money', 'bg-orange-500'], ['Free Money', 'bg-red-600'], ['Carte', 'bg-ink'], ['Espèces', 'bg-emerald-600']].map(([n, c]) => (
+                <span key={n} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-white border border-ink/[0.07]"><span className={`w-1.5 h-1.5 rounded-full ${c}`} />{n}</span>
+              ))}
+            </p>
 
             <div className="mt-8 border-t border-ink/10">
               <Accordion title="Détails & composition" open={openSection === 'details'} onToggle={() => toggle('details')}>

@@ -157,7 +157,16 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 - Étiquettes numérotées avec QR code (espace gérant → Authenticité) et page publique `/authentique` : pièce authentique, code inconnu (contrefaçon) ou étiquette photocopiée (plus de 5 vérifications).
 - Reste à faire hors du site : dépôt de la marque à l'OAPI via l'ASPIT, et impression des étiquettes en dorure à chaud.
 
-## 11. Restent à traiter avant la mise en ligne
+## 11. Présentation : fiche produit, boutique, panier, journal
+
+- Fiche produit : galerie qui reste visible pendant la lecture (ordinateur), photos qui défilent au doigt (téléphone), visionneuse plein écran (glissement, flèches, clavier), compteur de photos.
+- Zone d'achat : date de livraison estimée (« Livrée à Dakar dès demain jeudi 24 septembre si vous commandez avant 16 h »), moyens de paiement en pastilles.
+- Boutique : en-tête éditorial clair (titre, photo en arche, sélecteur Tout / Chaussures / Sacs) et pastilles photo par type de pièce (un toucher filtre).
+- Panier : suggestions « Complétez votre look » toujours proposées (ajout direct ou choix de la taille), mention paiement sécurisé.
+- Photos : apparition en fondu doux une fois chargées ; visuel de remplacement signé de l'écrin si une photo manque.
+- Journal : article vedette en mise en page magazine ; plus de colonnes vides quand il y a peu d'articles.
+
+## 12. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 
