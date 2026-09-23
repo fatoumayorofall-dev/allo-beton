@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = process.env.DATA_DIR || path.join(here, 'data');
+export const DATA_DIR = process.env.DATA_DIR || path.join(here, 'data');
 const VOICE_DIR = path.join(DATA_DIR, 'voice');
 const FILE = path.join(DATA_DIR, 'store.json');
 fs.mkdirSync(VOICE_DIR, { recursive: true });

@@ -1,10 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Heart, Plus } from 'lucide-react';
+import { Eye, Heart, Play, Plus } from 'lucide-react';
 import type { Product } from '../data/types';
 import { useStore } from '../context/StoreContext';
 import { discountPercent, formatPrice } from '../utils/format';
 import { ProductImage } from './ProductImage';
+import { ProductVideo } from './ProductVideo';
 import { flyToCart } from '../utils/flyToCart';
 import { sparkleBurst } from './Magic';
 import { Sparkle } from './Decor';
@@ -30,11 +31,21 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
         <Link to={`/produit/${product.slug}`} aria-label={product.name} className="block w-full h-full">
           <ProductImage src={product.images[0]} alt={product.name} sizes="(min-width: 1024px) 25vw, 50vw"
             className="w-full h-full transition-transform duration-[1.4s] ease-luxe group-hover:scale-[1.06]" />
-          {product.images[1] && (
+          {/* Vidéo : elle prend la place de la photo ; sinon, la 2e photo apparaît au survol */}
+          {product.video ? (
+            <span className="absolute inset-0 transition-transform duration-[1.4s] ease-luxe group-hover:scale-[1.06]">
+              <ProductVideo src={product.video} className="w-full h-full" />
+            </span>
+          ) : product.images[1] && (
             <ProductImage src={product.images[1]} alt="" sizes="(min-width: 1024px) 25vw, 50vw"
               className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           )}
         </Link>
+        {product.video && (
+          <span className="absolute left-3 bottom-3 inline-flex items-center gap-1.5 pl-2 pr-2.5 h-7 rounded-full bg-ink/45 backdrop-blur text-ivory text-[9px] uppercase tracking-[0.2em] font-semibold pointer-events-none transition-opacity duration-500 lg:group-hover:opacity-0" data-testid="video-badge">
+            <Play className="w-3 h-3 fill-current" /> Vidéo
+          </span>
+        )}
 
         {/* Reflets de lumière qui s'allument au survol (ordinateur) */}
         <span className="hidden lg:block motion-reduce:!hidden pointer-events-none" aria-hidden>

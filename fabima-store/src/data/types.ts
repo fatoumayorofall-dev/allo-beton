@@ -44,6 +44,8 @@ export interface Product {
   price: number;
   oldPrice?: number;
   images: string[];
+  /** Vidéo de la pièce (filmée au téléphone) : jouée en boucle, sans le son, à la place de la photo principale */
+  video?: string;
   colors: ColorOption[];
   sizes: string[];
   stock: number;

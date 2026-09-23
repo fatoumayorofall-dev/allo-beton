@@ -4,8 +4,8 @@ import { CATEGORIES, INITIAL_PRODUCTS } from './src/data/catalog';
 import { ARTICLES } from './src/data/journal';
 import { SITE_CONFIG, SHOP_LOCATION } from './src/config/site';
 
-// En développement, les appels /api sont relayés vers le serveur Fabima (npm run server).
-const api = { '/api': { target: 'http://localhost:8787', changeOrigin: true } };
+// En développement, les appels /api (et les vidéos envoyées, /media) sont relayés vers le serveur Fabima (npm run server).
+const api = { '/api': { target: 'http://localhost:8787', changeOrigin: true }, '/media': { target: 'http://localhost:8787', changeOrigin: true } };
 
 /**
  * Référencement : écrit dist/seo-data.json (pages, produits, articles) pour que le serveur produise

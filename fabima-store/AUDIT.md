@@ -176,7 +176,16 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 - Cartes produit (ordinateur) : des reflets de lumière s'allument sur la photo au survol ; une fine poussière d'or suit le curseur (pas dans l'espace gérant).
 - Légèreté : un seul calque de dessin pour tout le site, qui ne travaille que lorsqu'il y a des étincelles ; la poussière de l'accueil s'arrête hors de l'écran et quand l'onglet est caché. Tout s'éteint si le téléphone demande moins d'animations.
 
-## 13. Restent à traiter avant la mise en ligne
+## 13. Vidéos à la place des photos
+
+- Chaque pièce peut avoir une vidéo, envoyée depuis l'espace gérant (téléphone ou ordinateur) avec l'avancement de l'envoi, un aperçu, et un avertissement si la vidéo n'est pas lisible partout (format HEVC d'iPhone).
+- La vidéo remplace la photo sur la carte (étiquette « Vidéo »), passe en premier dans la galerie de la fiche, dans la visionneuse (avec commandes), l'aperçu rapide et la page simple des statuts WhatsApp.
+- Lecture en boucle et sans le son, seulement quand la vidéo est à l'écran (rien n'est téléchargé avant) ; la photo reste en dessous et reprend sa place si la vidéo ne se lit pas.
+- Rien ne se lance tout seul si le téléphone demande moins d'animations ou économise les données.
+- Serveur : envoi réservé à la gérante, format vérifié au contenu du fichier (MP4, MOV, WebM ; un faux fichier est refusé), 40 Mo au maximum, même vidéo jamais stockée deux fois, lecture par morceaux pour l'iPhone, adresses de vidéo contrôlées dans le catalogue.
+- Accueil : la vidéo envoyée par la gérante (sandales tenues à la main) tourne dans l'arche du héros, en boucle aller-retour sans à-coup (MP4 800 Ko + WebM), avec la poussière de lumière par-dessus.
+
+## 14. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

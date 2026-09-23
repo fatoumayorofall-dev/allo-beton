@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, BarChart3, Globe2, Download, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { AlertTriangle, BarChart3, Film, Globe2, Download, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
@@ -10,7 +10,7 @@ import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
 import { ProductImage } from '../components/ProductImage';
 import { StatusTab } from './AdminStatus';
 import { CustomersTab } from './AdminCustomers';
-import { clearStockAlerts, fetchAdminOrders, fetchCatalog, fetchStockAlerts, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, publishCatalog, removeCatalogProduct, saveCatalogProduct, type ServerStatus } from '../services/api';
+import { MAX_VIDEO_MB, clearStockAlerts, fetchAdminOrders, fetchCatalog, fetchStockAlerts, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, publishCatalog, removeCatalogProduct, saveCatalogProduct, uploadVideo, type ServerStatus } from '../services/api';
 import { INITIAL_PRODUCTS } from '../data/catalog';
 import type { StockAlert } from '../data/types';
 import { DeliveryPanel } from './AdminDelivery';
@@ -460,7 +460,7 @@ const Products: React.FC = () => {
           <tbody>
             {list.map(p => (
               <tr key={p.id} className="border-b border-ink/5">
-                <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} label="" className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}</p><p className="text-xs text-ink/70">{p.id}</p></div></div></td>
+                <td className="p-4"><div className="flex items-center gap-3"><ProductImage src={p.images[0]} alt={p.name} label="" className="w-10 h-12 rounded-lg shrink-0" /><div><p className="font-medium">{p.name}{p.video && <Film className="inline w-3.5 h-3.5 ml-1.5 -mt-0.5 text-gold-dark" aria-label="avec vidéo" />}</p><p className="text-xs text-ink/70">{p.id}</p></div></div></td>
                 <td className="p-4">{CATEGORIES.find(c => c.id === p.category)?.name}<br /><span className="text-xs text-ink/70">{p.subcategory}</span></td>
                 <td className="p-4">{formatPrice(p.price)}{p.oldPrice && <><br /><span className="text-xs text-ink/70 line-through">{formatPrice(p.oldPrice)}</span></>}</td>
                 <td className="p-4"><span className={p.stock === 0 ? 'text-red-700 font-semibold' : p.stock <= 5 ? 'text-amber-700 font-semibold' : ''}>{p.stock}</span>
@@ -544,6 +544,7 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
           </div>
         </fieldset>
         <label className="col-span-2">Images (une URL par ligne)<textarea rows={2} value={imagesText} onChange={e => setImagesText(e.target.value)} className={field} /></label>
+        <VideoField value={p.video} poster={imagesText.split('\n')[0]?.trim()} onChange={video => setP(prev => ({ ...prev, video }))} />
         <label className="col-span-2">Tailles (séparées par des virgules)<input value={sizesText} onChange={e => setSizesText(e.target.value)} placeholder="38, 39, 40 — vide si taille unique" className={field} /></label>
         <label className="col-span-2">Couleurs (nom:code, …)<input value={colorsText} onChange={e => setColorsText(e.target.value)} placeholder="Noir:#111111, Camel:#b5835a" className={field} /></label>
         <label className="col-span-2">Matière<input value={p.material} onChange={e => setP({ ...p, material: e.target.value })} placeholder="Ex : cuir grainé, doublure suédine" className={field} /></label>
@@ -561,6 +562,63 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
         </div>
       </form>
     </Modal>
+  );
+};
+
+/**
+ * Vidéo d'une pièce : filmée au téléphone, envoyée d'un toucher, avec l'avancement de l'envoi,
+ * un aperçu et un avertissement si ce téléphone ou cet ordinateur ne sait pas la lire.
+ */
+const VideoField: React.FC<{ value?: string; poster?: string; onChange: (url?: string) => void }> = ({ value, poster, onChange }) => {
+  const [pct, setPct] = useState<number | null>(null);
+  const [error, setError] = useState('');
+  const [unplayable, setUnplayable] = useState(false);
+
+  const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError(''); setUnplayable(false);
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      setError(`Vidéo trop lourde (${Math.round(file.size / 1048576)} Mo, ${MAX_VIDEO_MB} Mo au maximum) : raccourcissez-la (10 à 20 secondes suffisent) ou envoyez-la en qualité réduite.`);
+      return;
+    }
+    setPct(0);
+    const r = await uploadVideo(file, adminPin(), setPct);
+    setPct(null);
+    if ('error' in r) setError(r.error); else onChange(r.url);
+  };
+
+  return (
+    <div className="col-span-2" data-testid="video-field">
+      <p>Vidéo <span className="text-ink/70">(facultatif)</span></p>
+      {value ? (
+        <div className="mt-1 flex items-center gap-4 p-3 rounded-2xl bg-ivory-deep/60">
+          <video src={value} poster={poster || undefined} muted loop autoPlay playsInline onError={() => setUnplayable(true)}
+            className="w-20 h-28 rounded-xl object-cover bg-ink/10 shrink-0" data-testid="video-preview" />
+          <div className="text-xs text-ink/75 space-y-2">
+            <p>Elle remplace la photo sur la carte de la pièce et passe en premier sur sa fiche : en boucle, sans le son.</p>
+            <button type="button" onClick={() => { onChange(undefined); setUnplayable(false); }} className="inline-flex items-center gap-1.5 text-wine font-semibold">
+              <Trash2 className="w-3.5 h-3.5" /> Retirer la vidéo
+            </button>
+          </div>
+        </div>
+      ) : (
+        <label className={`mt-1 flex items-center justify-center gap-2 min-h-14 px-4 py-3 rounded-2xl border border-dashed border-ink/25 text-center cursor-pointer hover:border-ink transition-colors ${pct !== null ? 'pointer-events-none opacity-70' : ''}`}>
+          <Film className="w-4 h-4 shrink-0" />
+          {pct !== null ? <span>Envoi de la vidéo… {pct} %</span> : <span>Ajouter une vidéo <span className="text-ink/70">(MP4 ou MOV, {MAX_VIDEO_MB} Mo max.)</span></span>}
+          <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" onChange={pick} className="sr-only" data-testid="video-input" />
+        </label>
+      )}
+      {pct !== null && <div className="mt-2 h-1 rounded-full bg-ink/10 overflow-hidden"><div className="h-full bg-gold-dark transition-[width]" style={{ width: `${pct}%` }} /></div>}
+      {error && <p role="alert" className="mt-2 text-xs text-wine">{error}</p>}
+      {unplayable && (
+        <p role="alert" className="mt-2 text-xs text-amber-800">
+          Cet appareil ne sait pas lire cette vidéo : certaines clientes risquent de ne voir que la photo.
+          Sur iPhone : Réglages › Appareil photo › Formats › « Le plus compatible », puis filmez à nouveau.
+        </p>
+      )}
+    </div>
   );
 };
 

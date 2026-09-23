@@ -143,6 +143,29 @@ export async function uploadVoice(slug: string, blob: Blob, pin: string): Promis
     return false;
   }
 }
+/* ---------- Vidéos des pièces ---------- */
+export const MAX_VIDEO_MB = 40;
+/**
+ * Envoie une vidéo au serveur (espace gérant) et renvoie son adresse (/media/…).
+ * `onProgress` reçoit le pourcentage envoyé : utile sur une connexion mobile lente.
+ */
+export function uploadVideo(file: Blob, pin: string, onProgress?: (pct: number) => void): Promise<{ url: string } | { error: string }> {
+  return new Promise(resolve => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API}/api/admin/media`);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.setRequestHeader('x-admin-pin', pin);
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => {
+      let body: { url?: string; error?: string } = {};
+      try { body = JSON.parse(xhr.responseText); } catch { /* réponse vide */ }
+      resolve(xhr.status < 300 && body.url ? { url: body.url } : { error: body.error || (xhr.status === 413 ? `Vidéo trop lourde (${MAX_VIDEO_MB} Mo au maximum)` : 'Envoi impossible, réessayez') });
+    };
+    xhr.onerror = () => resolve({ error: 'Pas de connexion au serveur : réessayez' });
+    xhr.send(file);
+  });
+}
+
 export async function deleteVoice(slug: string, pin: string): Promise<boolean> {
   try {
     return (await fetch(voiceUrl(slug), { method: 'DELETE', headers: { 'x-admin-pin': pin } })).ok;

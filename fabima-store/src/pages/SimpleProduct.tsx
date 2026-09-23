@@ -10,6 +10,7 @@ import { findByCode, productCode, shortLink } from '../utils/share';
 import { usePageTitle } from '../utils/usePageTitle';
 import { getShowcase, trackVisit, type VisitSource } from '../services/api';
 import { ProductImage } from '../components/ProductImage';
+import { ProductVideo } from '../components/ProductVideo';
 import { ListenButton } from '../components/ListenButton';
 import { BrandMark, Wordmark } from '../components/Logo';
 
@@ -31,6 +32,7 @@ export const SimpleCard: React.FC<{ product: Product; source?: VisitSource }> = 
   <Link to={`/p/${productCode(product)}${source ? `?s=${source}` : ''}`} className="block rounded-[1.75rem] bg-white overflow-hidden shadow-sm active:scale-[.98] transition-transform">
     <div className="relative">
       <ProductImage src={product.images[0]} alt={product.name} className="w-full aspect-[4/5]" />
+      {product.video && <ProductVideo src={product.video} className="absolute inset-0 w-full h-full" />}
       {!canBuy(product) && <span className="absolute inset-x-0 bottom-0 py-1.5 bg-ink/80 text-ivory text-center text-xs font-bold">ÉPUISÉ</span>}
     </div>
     <div className="p-3 text-center">
@@ -66,6 +68,8 @@ export const SimpleProduct: React.FC = () => {
     trackVisit(product.slug, s === 'partage' || s === 'vitrine' ? s : 'statut');
     window.scrollTo({ top: 0 });
   }, [product?.id]);
+  // Une vidéo arrive avec le catalogue du serveur : on revient au début pour la montrer en premier
+  useEffect(() => { setImageIdx(0); scroller.current?.scrollTo({ left: 0 }); }, [product?.video]);
 
   // « Autres modèles » : la vitrine du statut, sinon les nouveautés
   useEffect(() => {
@@ -125,15 +129,21 @@ export const SimpleProduct: React.FC = () => {
         <div className="relative rounded-[2rem] overflow-hidden bg-ivory-deep shadow-soft">
           <div ref={scroller} className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
             onScroll={e => setImageIdx(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}>
+            {product.video && (
+              <div className="relative w-full shrink-0 snap-center aspect-square">
+                <ProductImage src={product.images[0]} alt={product.name} className="w-full h-full" />
+                <ProductVideo src={product.video} className="absolute inset-0 w-full h-full" label={`Vidéo — ${product.name}`} />
+              </div>
+            )}
             {product.images.map(img => (
               <ProductImage key={img} src={img} alt={product.name} className="w-full shrink-0 snap-center aspect-square" />
             ))}
           </div>
           {off > 0 && <span className="absolute top-4 left-4 px-4 py-2 rounded-full bg-wine text-white text-lg font-extrabold">-{off}%</span>}
           <ListenButton product={product} big className="absolute bottom-3 right-3" />
-          {product.images.length > 1 && (
+          {product.images.length + (product.video ? 1 : 0) > 1 && (
             <div className="absolute bottom-5 left-5 flex gap-2">
-              {product.images.map((img, i) => <span key={img} className={`h-2.5 rounded-full transition-all ${i === imageIdx ? 'w-7 bg-white' : 'w-2.5 bg-white/60'}`} />)}
+              {[...(product.video ? [product.video] : []), ...product.images].map((m, i) => <span key={m} className={`h-2.5 rounded-full transition-all ${i === imageIdx ? 'w-7 bg-white' : 'w-2.5 bg-white/60'}`} />)}
             </div>
           )}
         </div>

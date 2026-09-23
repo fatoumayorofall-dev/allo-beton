@@ -16,18 +16,29 @@ import { StyleStories } from '../components/StyleStories';
 import { CountUp } from '../components/CountUp';
 import { MarketCard } from '../components/MarketCard';
 import { GoldDust, Twinkles } from '../components/Magic';
+import { ProductVideo } from '../components/ProductVideo';
 import { Sparkle } from '../components/Decor';
 
 const px = (id: number, w = 1600) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
-const HERO_SLIDES = [
+/**
+ * Diapositives du héros. `video` (facultatif) : film en boucle, sans le son, joué à la place de la photo
+ * (`image` sert alors d'affiche le temps qu'il démarre). Plusieurs formats du même film : le navigateur prend le premier qu'il sait lire.
+ */
+type HeroSlide = {
+  kicker: string; title: string[]; accent: number; text: string;
+  cta: { label: string; to: string }; image: string; video?: string[]; featured: string;
+};
+
+const HERO_SLIDES: HeroSlide[] = [
   {
     kicker: 'Collection Automne 2026 · Pour elle',
     title: ['Belle', 'à chaque', 'pas'],
     accent: 1,
     text: 'Escarpins en velours, sandales dorées et mules raffinées : la nouvelle saison se porte avec grâce.',
     cta: { label: 'Découvrir les chaussures', to: '/boutique/chaussures' },
-    image: px(1464625),
+    image: '/videos/accueil-sandales.jpg',
+    video: ['/videos/accueil-sandales.webm', '/videos/accueil-sandales.mp4'],
     featured: 'escarpins-velours-aminata',
   },
   {
@@ -132,8 +143,9 @@ export const Home: React.FC = () => {
             <div className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] max-h-[78svh] mx-auto overflow-hidden rounded-t-[999px] rounded-b-[2.25rem] bg-ivory-deep shadow-luxe">
               {HERO_SLIDES.map((s, i) => (
                 <div key={i} className={`absolute inset-0 transition-opacity duration-[1.2s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}>
-                  <div className={`absolute inset-0 ${i === slide ? 'animate-kenburns' : ''}`}>
+                  <div className={`absolute inset-0 ${i === slide && !s.video ? 'animate-kenburns' : ''}`}>
                     <ProductImage src={s.image} alt="" className="w-full h-full" sizes="(min-width: 1024px) 45vw, 100vw" priority={i === 0} />
+                    {s.video && <ProductVideo src={s.video} active={i === slide} className="absolute inset-0 w-full h-full" />}
                   </div>
                 </div>
               ))}
@@ -144,7 +156,7 @@ export const Home: React.FC = () => {
             <Sparkle className="absolute -top-3 right-[14%] w-7 h-7 text-gold animate-twinkle pointer-events-none" />
             <Sparkle className="absolute top-[9%] right-[6%] w-3.5 h-3.5 text-gold-dark animate-twinkle pointer-events-none" style={{ animationDelay: '1.4s' }} />
             <Sparkle className="absolute top-[30%] left-2 lg:left-12 w-4 h-4 text-mauve animate-twinkle pointer-events-none" style={{ animationDelay: '2.3s' }} />
-            <p className="hidden lg:block absolute left-0 top-[16%] -rotate-6 font-script text-5xl text-gold-dark text-magic pointer-events-none" aria-hidden>le coup de cœur</p>
+            <p className="hidden lg:block absolute left-0 top-[16%] -rotate-6 font-script text-5xl text-gold-dark text-magic pointer-events-none drop-shadow-[0_0_10px_rgba(253,247,245,.95)]" aria-hidden>le coup de cœur</p>
             {/* La pièce du moment */}
             {featured && (
               <Link key={`f-${slide}`} to={`/produit/${featured.slug}`} data-testid="hero-featured"

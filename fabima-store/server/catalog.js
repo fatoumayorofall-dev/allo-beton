@@ -10,6 +10,8 @@ const CATEGORY_IDS = new Set(['chaussures', 'sacs', 'accessoires', 'bijoux', 've
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 const int = (v, min, max, dflt = min) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt; };
 const isMarketId = id => typeof id === 'string' && id.startsWith('MK-');
+/** Vidéo d'une pièce : envoyée par la gérante (/media/…), du site (/videos/…) ou hébergée ailleurs en https. */
+const videoUrl = v => { const u = clip(v, 600); return /^\/media\/[a-f0-9]{16}\.(mp4|webm)$|^\/videos\/[\w.-]+\.(mp4|webm)$|^https:\/\/\S+$/.test(u) ? u : undefined; };
 const strList = (a, n, len) => (Array.isArray(a) ? a.map(x => clip(x, len)).filter(Boolean).slice(0, n) : []);
 
 /** Produit envoyé par l'espace gérant, nettoyé. Les avis restent ceux du serveur. */
@@ -35,6 +37,7 @@ export function cleanCatalogProduct(p, existing) {
     price,
     oldPrice: Number(p.oldPrice) > price ? int(p.oldPrice, 0, 50_000_000) : undefined,
     images: strList(p.images, 8, 600).filter(u => /^(https?:)?\/\//.test(u) || u.startsWith('/')),
+    video: videoUrl(p.video),
     colors: (Array.isArray(p.colors) ? p.colors : []).slice(0, 12).map(c => ({ name: clip(c?.name, 30), hex: /^#[0-9a-f]{3,8}$/i.test(c?.hex || '') ? c.hex : '#999999' })).filter(c => c.name),
     sizes: strList(p.sizes, 20, 12),
     stock: int(p.stock, 0, 100_000, 0),

@@ -110,7 +110,7 @@ src/
 ```
 
 Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
-`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `market.js` (le Marché : produits fournisseurs, import par lien, suivi fournisseur), `catalog.js` (catalogue partagé, stock, avis), `seo.js` (robots.txt, sitemap, aperçus de liens), `authenticity.js` et `brandSecurity.js` (étiquettes d'authenticité, marques secrètes), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
+`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `market.js` (le Marché : produits fournisseurs, import par lien, suivi fournisseur), `catalog.js` (catalogue partagé, stock, avis), `media.js` (vidéos des pièces), `seo.js` (robots.txt, sitemap, aperçus de liens), `authenticity.js` et `brandSecurity.js` (étiquettes d'authenticité, marques secrètes), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
 
@@ -264,6 +264,26 @@ Conseils : imprimez les étiquettes sur papier épais ou autocollant mat, idéal
 (la dorure et le guilloché fin sont très difficiles à photocopier). Côté juridique, déposez la marque « Fabima » (nom et logo)
 à l'**OAPI** — l'office qui protège les marques au Sénégal et dans 16 autres pays d'Afrique — par l'intermédiaire de l'**ASPIT** à Dakar :
 c'est ce dépôt qui vous permet de faire saisir les contrefaçons.
+
+## Vidéos des pièces
+
+Une pièce peut avoir une **vidéo** en plus de ses photos (la chaussure tenue à la main, le sac qu'on ouvre…) :
+
+1. **Espace gérant → Produits → Modifier** : touchez « Ajouter une vidéo » et choisissez-la dans la galerie du téléphone
+   (MP4, MOV d'iPhone ou WebM, 40 Mo au maximum ; 10 à 20 secondes suffisent). L'avancement de l'envoi s'affiche, puis un aperçu.
+2. **Enregistrer** : la vidéo remplace la photo sur la carte de la pièce (petite étiquette « Vidéo »), passe en premier sur sa fiche,
+   dans l'aperçu rapide et sur la page simple des statuts WhatsApp. Elle se joue **en boucle, sans le son**, seulement quand elle est à l'écran :
+   rien n'est téléchargé avant. En plein écran, la cliente a les commandes (pause, son).
+3. **Économie** : si le téléphone de la cliente demande moins d'animations ou économise les données, rien ne se lance tout seul (la photo reste).
+   Si une vidéo ne se lit pas, la photo reste affichée à sa place.
+
+Sur iPhone, choisissez **Réglages › Appareil photo › Formats › « Le plus compatible »** : les vidéos « haute efficacité » (HEVC)
+ne se lisent pas sur beaucoup de téléphones Android ; l'espace gérant vous prévient si c'est le cas.
+Les vidéos sont gardées par le serveur dans `DATA_DIR/media` et servies en `/media/…`. Derrière un proxy (Nginx…),
+autorisez des envois de 40 Mo (`client_max_body_size 40m;`).
+
+La vidéo de l'accueil (`public/videos/accueil-sandales.*`) se change dans `src/pages/Home.tsx` (`HERO_SLIDES`, champ `video`) :
+fournissez-la en MP4 (H.264) et, si possible, en WebM, avec une image d'affiche.
 
 ## Catégories en vente
 

@@ -202,7 +202,7 @@ export const ProductDetail: React.FC = () => {
 
         <div className="grid lg:grid-cols-[1.25fr_1fr] gap-10 lg:gap-20 items-start">
           {/* Galerie */}
-          <ProductGallery images={product.images} name={product.name} badges={<>
+          <ProductGallery images={product.images} video={product.video} name={product.name} badges={<>
             {off > 0 && <span className="px-3 py-1.5 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
             {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
           </>} />

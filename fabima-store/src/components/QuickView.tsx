@@ -6,6 +6,7 @@ import { useStore } from '../context/StoreContext';
 import { discountPercent, formatPrice } from '../utils/format';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
+import { ProductVideo } from './ProductVideo';
 import { ColorSwatch } from './ColorSwatch';
 import { Stars } from './Stars';
 import { sparkleBurst } from './Magic';
@@ -39,7 +40,10 @@ export const QuickView: React.FC = () => {
       <div role="dialog" aria-modal="true" aria-label={`Aperçu : ${product.name}`}
         className="relative bg-ivory w-full max-w-4xl rounded-t-[2rem] sm:rounded-[2rem] max-h-[92vh] overflow-y-auto grid sm:grid-cols-2 animate-fade-up shadow-luxe">
         <button onClick={close} aria-label="Fermer" className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/90 grid place-items-center hover:rotate-90 transition-transform duration-500"><X className="w-4 h-4" /></button>
-        <ProductImage src={product.images[0]} alt={product.name} className="w-full aspect-[4/5] sm:aspect-auto sm:h-full" />
+        <div className="relative w-full aspect-[4/5] sm:aspect-auto sm:h-full">
+          <ProductImage src={product.images[0]} alt={product.name} className="w-full h-full" />
+          {product.video && <ProductVideo src={product.video} className="absolute inset-0 w-full h-full" />}
+        </div>
         <div className="p-7 sm:p-10 flex flex-col">
           <p className="eyebrow">{product.subcategory}</p>
           <h2 className="font-display text-4xl mt-3 leading-[1.05]">{product.name}</h2>

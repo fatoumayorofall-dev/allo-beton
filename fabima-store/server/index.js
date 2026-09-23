@@ -3,6 +3,7 @@
 //  - /api/chat      : assistant IA (Claude), réponse diffusée en direct (SSE)
 //  - /api/notify/*  : notifications WhatsApp (nouvelle commande, statut, retour en stock)
 //  - /api/orders, /api/driver/*, /api/geo/* : commandes, livreur suivi en direct, carte
+//  - /api/admin/media, /media/* : vidéos des pièces
 //  - sert aussi le site compilé (dist/) en production, avec robots.txt, sitemap.xml et aperçus de liens
 // ============================================================
 import express from 'express';
@@ -22,6 +23,7 @@ const { registerCatalogRoutes } = await import('./catalog.js');
 const { registerSeoRoutes } = await import('./seo.js');
 const { registerAuthenticityRoutes } = await import('./authenticity.js');
 const { registerBrandSecurityRoutes } = await import('./brandSecurity.js');
+const { registerMediaRoutes } = await import('./media.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -159,6 +161,9 @@ registerCatalogRoutes(app, { limit, isAdmin, store });
 
 /* ---------- Étiquettes d'authenticité (anti-contrefaçon) ---------- */
 registerAuthenticityRoutes(app, { limit, isAdmin, store });
+
+/* ---------- Vidéos des pièces (envoyées depuis l'espace gérant) ---------- */
+registerMediaRoutes(app, { limit, isAdmin, dataDir: store.DATA_DIR });
 
 /* ---------- Le Marché (dropshipping) ---------- */
 registerMarketRoutes(app, { limit, isAdmin, store, wa });
