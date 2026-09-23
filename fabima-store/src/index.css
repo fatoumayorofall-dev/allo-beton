@@ -22,12 +22,20 @@
   /* Libellé éditorial : petites capitales espacées */
   .eyebrow { @apply text-[10px] sm:text-[11px] uppercase tracking-luxe font-semibold text-gold-dark; }
 
-  .btn { @apply inline-flex items-center justify-center gap-2.5 px-8 h-[52px] rounded-full text-[11px] uppercase tracking-[0.22em] font-semibold transition-all duration-500 ease-luxe disabled:opacity-40 disabled:pointer-events-none; }
+  .btn { @apply relative isolate overflow-hidden inline-flex items-center justify-center gap-2.5 px-8 h-[52px] rounded-full text-[11px] uppercase tracking-[0.22em] font-semibold transition-all duration-500 ease-luxe disabled:opacity-40 disabled:pointer-events-none; }
   .btn-dark { @apply btn bg-ink text-ivory hover:bg-gold-dark hover:shadow-soft; }
   .btn-light { @apply btn bg-ivory text-ink hover:bg-gold-light; }
   .btn-gold { @apply btn bg-gradient-to-r from-gold to-wine/80 text-white hover:shadow-soft hover:brightness-105; }
   .btn-outline { @apply btn border border-ink/80 text-ink hover:bg-ink hover:text-ivory; }
   .btn-ghost-light { @apply btn border border-ivory/50 text-ivory hover:bg-ivory hover:text-ink; }
+
+  /* Reflet satiné qui traverse les boutons pleins au survol */
+  .btn-dark::before, .btn-light::before, .btn-gold::before {
+    content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+    background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%);
+    transform: translateX(-120%); transition: transform .9s cubic-bezier(.22,1,.36,1);
+  }
+  .btn-dark:hover::before, .btn-light:hover::before, .btn-gold:hover::before { transform: translateX(120%); }
 
   /* Soulignement animé des liens */
   .link-luxe { @apply relative inline-block; }
@@ -42,6 +50,8 @@
   /* Arche : forme signature du thème féminin */
   .arch { border-radius: 999px 999px 1.75rem 1.75rem; }
   .hairline { @apply h-px bg-gradient-to-r from-transparent via-gold/50 to-transparent; }
+  /* Verre dépoli rosé (cartes posées sur les photos) */
+  .glass { @apply bg-white/15 backdrop-blur-xl border border-white/25 shadow-luxe; }
 }
 
 /* Fond pétale : halos pastel superposés */

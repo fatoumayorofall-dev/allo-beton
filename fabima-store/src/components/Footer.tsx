@@ -27,6 +27,10 @@ export const Footer: React.FC = () => {
 
   return (
     <footer className="relative bg-ink text-ivory mt-32 rounded-t-[3rem] overflow-hidden print:hidden">
+      {/* Halos rosés et grande signature en filigrane */}
+      <span className="pointer-events-none absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-wine/25 blur-[120px]" aria-hidden />
+      <span className="pointer-events-none absolute -bottom-48 right-0 w-[32rem] h-[32rem] rounded-full bg-gold/15 blur-[120px]" aria-hidden />
+      <span className="pointer-events-none select-none absolute -bottom-[0.28em] left-1/2 -translate-x-1/2 font-script text-[28vw] lg:text-[22rem] leading-none text-ivory/[0.035] whitespace-nowrap" aria-hidden>Fabima</span>
       {/* Newsletter */}
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-end border-b border-ivory/10">
         <div>
@@ -95,10 +99,14 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="border-t border-ivory/10">
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-6 flex flex-col md:flex-row gap-4 items-center justify-between text-[11px] text-ivory/40">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-6 pb-24 md:pb-6 md:pr-24 flex flex-col md:flex-row gap-4 items-center justify-between text-[11px] text-ivory/40">
           <p>© {new Date().getFullYear()} {SITE_CONFIG.name} — Tous droits réservés · <Link to="/admin" className="hover:text-ivory/70">Espace gérant</Link></p>
-          <ul className="flex flex-wrap justify-center gap-x-5 gap-y-2 uppercase tracking-[0.18em] text-[9px]">
-            {['Wave', 'Orange Money', 'Free Money', 'Visa', 'Mastercard', 'Espèces'].map(m => <li key={m}>{m}</li>)}
+          <ul className="flex flex-wrap justify-center gap-2" aria-label="Moyens de paiement">
+            {([['Wave', '#1dc4ff'], ['Orange Money', '#ff7900'], ['Free Money', '#cd0f2d'], ['Visa', '#f5d5d6'], ['Mastercard', '#f79e1b'], ['Espèces', '#8fd3b0']] as const).map(([m, c]) => (
+              <li key={m} className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full border border-ivory/15 bg-ivory/[0.04] text-[10px] text-ivory/70">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />{m}
+              </li>
+            ))}
           </ul>
         </div>
       </div>

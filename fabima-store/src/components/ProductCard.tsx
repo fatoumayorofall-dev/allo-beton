@@ -16,7 +16,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
 
   return (
     <article className="group relative flex flex-col">
-      <div className="relative aspect-[3/4] overflow-hidden bg-ivory-deep rounded-[2rem]">
+      <div className="relative aspect-[3/4] overflow-hidden bg-ivory-deep rounded-[2rem] transition-[box-shadow,transform] duration-700 ease-luxe group-hover:shadow-luxe group-hover:-translate-y-1">
         <Link to={`/produit/${product.slug}`} aria-label={product.name} className="block w-full h-full">
           <ProductImage src={product.images[0]} alt={product.name}
             className="w-full h-full transition-transform duration-[1.4s] ease-luxe group-hover:scale-[1.06]" />
@@ -38,7 +38,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           <button onClick={() => toggleWishlist(product.id)} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             className="w-9 h-9 rounded-full bg-white/90 backdrop-blur grid place-items-center transition-transform hover:scale-110">
-            <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : 'text-ink'}`} strokeWidth={1.5} />
+            <Heart key={String(liked)} className={`w-4 h-4 ${liked ? 'fill-wine text-wine animate-heart-pop' : 'text-ink'}`} strokeWidth={1.5} />
           </button>
           <button onClick={() => openQuickView(product)} aria-label="Aperçu rapide"
             className="w-9 h-9 rounded-full bg-white/90 backdrop-blur grid place-items-center transition-all hover:scale-110 lg:opacity-0 lg:translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 duration-500">
@@ -79,6 +79,12 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
           </div>
         </div>
         <Link to={`/produit/${product.slug}`} className="font-display text-[19px] leading-tight text-ink hover:text-gold-dark transition-colors line-clamp-1">{product.name}</Link>
+        {product.reviewCount > 0 && (
+          <span className="flex items-center gap-1 text-[11px] text-ink/45" aria-label={`Note ${product.rating} sur 5`}>
+            <span className="text-gold tracking-[-0.1em]" aria-hidden>{'★★★★★'.slice(0, Math.round(product.rating))}</span>
+            {product.rating.toFixed(1).replace('.', ',')} · {product.reviewCount} avis
+          </span>
+        )}
         <div className="flex items-baseline gap-2.5 text-[13px]">
           <span className={`font-semibold ${off ? 'text-wine' : 'text-ink'}`}>{formatPrice(product.price)}</span>
           {product.oldPrice && <span className="text-ink/35 line-through">{formatPrice(product.oldPrice)}</span>}

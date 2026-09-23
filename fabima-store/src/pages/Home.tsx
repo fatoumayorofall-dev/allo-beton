@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Gift, Instagram, Plus, RefreshCw, ShieldCheck, ShoppingBag, Smartphone, Truck } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Gift, Instagram, MapPin, Plus, RefreshCw, ShoppingBag, Smartphone, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { ARTICLES } from '../data/journal';
@@ -25,6 +25,7 @@ const HERO_SLIDES = [
     text: 'Escarpins en velours, sandales dorées et mules raffinées : la nouvelle saison se porte avec grâce.',
     cta: { label: 'Découvrir les chaussures', to: '/boutique/chaussures' },
     image: px(1464625),
+    featured: 'escarpins-velours-aminata',
   },
   {
     kicker: 'Maroquinerie',
@@ -33,6 +34,7 @@ const HERO_SLIDES = [
     text: 'Sacs structurés, cabas en wax façonnés à Dakar et pochettes de soirée perlées.',
     cta: { label: 'Explorer les sacs', to: '/boutique/sacs' },
     image: px(1152077),
+    featured: 'sac-a-main-fatou',
   },
   {
     kicker: 'Joaillerie',
@@ -41,6 +43,7 @@ const HERO_SLIDES = [
     text: 'Plaqué or 18 carats, perles nacrées et créoles lumineuses pour briller à chaque cérémonie.',
     cta: { label: 'Voir les bijoux', to: '/boutique/bijoux' },
     image: px(1191531),
+    featured: 'collier-plaque-or',
   },
 ];
 
@@ -82,12 +85,13 @@ export const Home: React.FC = () => {
   const look = useMemo(() => ['robe-wax-dior', 'sac-a-main-fatou', 'sandales-dorees-ndeye', 'collier-plaque-or'].map(getProduct).filter((p): p is NonNullable<typeof p> => !!p), [getProduct]);
   const recent = recentlyViewed.map(getProduct).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 4);
   const current = HERO_SLIDES[slide];
+  const featured = getProduct(current.featured);
   const [c0, ...cRest] = CATEGORIES;
 
   return (
     <div className="overflow-x-clip">
       {/* ───────────── HERO ───────────── */}
-      <section className="relative h-[100svh] min-h-[620px] overflow-hidden bg-ink grain" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
+      <section className="relative h-[calc(100svh-2.25rem)] min-h-[620px] overflow-hidden bg-ink grain" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         aria-roledescription="carrousel" aria-label="À la une">
         {HERO_SLIDES.map((s, i) => (
           <div key={i} className={`absolute inset-0 transition-opacity duration-[1.4s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}>
@@ -112,6 +116,31 @@ export const Home: React.FC = () => {
               <Link to={current.cta.to} className="btn-light self-start shrink-0">{current.cta.label} <ArrowRight className="w-4 h-4" /></Link>
             </div>
           </div>
+        </div>
+
+        {/* La pièce du moment : carte en verre dépoli posée sur la photo */}
+        {featured && (
+          <Link key={`f-${slide}`} to={`/produit/${featured.slug}`}
+            className="hidden lg:flex absolute right-28 bottom-28 w-[330px] items-center gap-4 p-3 pr-5 rounded-[1.75rem] glass text-ivory animate-fade-up group"
+            style={{ animationDelay: '700ms' }} data-testid="hero-featured">
+            <span className="block w-20 h-24 rounded-[1.25rem] overflow-hidden shrink-0 animate-hover">
+              <ProductImage src={featured.images[0]} alt="" label="" className="w-full h-full" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-script text-[1.35rem] text-gold-light leading-none whitespace-nowrap">La pièce du moment</span>
+              <span className="block font-display text-xl leading-tight mt-1.5 line-clamp-2">{featured.name}</span>
+              <span className="flex items-center gap-2 mt-1.5 text-sm">
+                <strong className="font-semibold">{formatPrice(featured.price)}</strong>
+                <ArrowUpRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+              </span>
+            </span>
+          </Link>
+        )}
+
+        {/* Invitation à défiler */}
+        <div className="hidden md:flex absolute bottom-8 left-1/2 -translate-x-1/2 flex-col items-center gap-2 text-ivory/60 pointer-events-none" aria-hidden>
+          <span className="text-[9px] uppercase tracking-luxe">Défiler</span>
+          <span className="relative w-px h-10 bg-ivory/20 overflow-hidden"><span className="absolute inset-0 bg-ivory animate-scroll-cue" /></span>
         </div>
 
         {/* Contrôles */}
@@ -334,17 +363,25 @@ export const Home: React.FC = () => {
 
       {/* ───────────── SERVICES ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28 sm:pt-36">
-        <div className="grid grid-cols-2 lg:grid-cols-4 border-t border-ink/10">
+        <Reveal className="text-center mb-12">
+          <p className="font-script text-4xl text-gold-dark">Nos engagements</p>
+          <h2 className="font-display text-4xl sm:text-5xl mt-1">Le service <em className="italic">Fabima</em></h2>
+        </Reveal>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
           {[
-            { Icon: Truck, t: 'Livraison 24h', d: `À Dakar, offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}` },
-            { Icon: Smartphone, t: 'Paiement mobile', d: 'Wave, Orange Money, Free Money ou espèces' },
-            { Icon: RefreshCw, t: 'Échange offert', d: 'Taille ou couleur, sous 7 jours' },
-            { Icon: ShieldCheck, t: 'Qualité contrôlée', d: 'Chaque pièce vérifiée avant l\'envoi' },
+            { Icon: Truck, t: 'Livraison 24h', d: `À Dakar, offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}. Partout au Sénégal en relais.` },
+            { Icon: MapPin, t: 'Suivi en direct', d: 'Suivez votre livreur sur la carte jusqu\'à votre porte.' },
+            { Icon: Smartphone, t: 'Paiement mobile', d: 'Wave, Orange Money, Free Money ou espèces à la livraison.' },
+            { Icon: RefreshCw, t: 'Échange offert', d: 'Taille ou couleur, sous 7 jours, sans frais.' },
           ].map(({ Icon, t, d }, i) => (
-            <Reveal key={t} delay={i * 80} className={`py-10 px-2 sm:px-6 ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''} ${i === 2 ? 'lg:border-l' : ''} border-ink/10`}>
-              <Icon className="w-6 h-6 text-gold-dark" strokeWidth={1.2} />
-              <p className="font-display text-2xl mt-5">{t}</p>
-              <p className="text-sm text-ink/55 mt-2 leading-relaxed">{d}</p>
+            <Reveal key={t} delay={i * 80}
+              className="group relative p-5 sm:p-8 rounded-[1.75rem] sm:rounded-[2rem] bg-white border border-ink/[0.05] hover:-translate-y-1 hover:shadow-luxe transition-all duration-500 ease-luxe overflow-hidden">
+              <span className="absolute -right-10 -top-10 w-32 h-32 rounded-full bg-blush/50 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700" aria-hidden />
+              <span className="relative w-11 h-11 sm:w-14 sm:h-14 rounded-full bg-gradient-to-br from-blush to-mauve/40 grid place-items-center">
+                <Icon className="w-6 h-6 text-wine" strokeWidth={1.4} />
+              </span>
+              <p className="relative font-display text-xl sm:text-[1.7rem] mt-4 sm:mt-6 leading-tight">{t}</p>
+              <p className="relative text-[13px] sm:text-sm text-ink/55 mt-2 leading-snug sm:leading-relaxed">{d}</p>
             </Reveal>
           ))}
         </div>
@@ -409,10 +446,10 @@ const CategoryTile: React.FC<{ id: string; name: string; description: string; im
     <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-wine/5 to-transparent" />
     <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 text-ivory flex items-end justify-between gap-4">
       <div>
-        <h3 className={`font-display leading-none ${tall ? 'text-5xl sm:text-6xl' : 'text-3xl sm:text-4xl'}`}>{name}</h3>
+        <h3 className={`font-display leading-none ${tall ? 'text-5xl sm:text-6xl' : 'text-[1.4rem] sm:text-4xl whitespace-nowrap'}`}>{name}</h3>
         <p className="text-xs text-ivory/70 mt-2 hidden sm:block">{description}</p>
       </div>
-      <span className="w-11 h-11 rounded-full border border-ivory/50 grid place-items-center shrink-0 group-hover:bg-ivory group-hover:text-ink transition-colors duration-500">
+      <span className="hidden sm:grid w-11 h-11 rounded-full border border-ivory/50 place-items-center shrink-0 group-hover:bg-ivory group-hover:text-ink transition-colors duration-500">
         <ArrowUpRight className="w-4 h-4" />
       </span>
     </div>

@@ -48,6 +48,12 @@ const PageFallback: React.FC = () => (
   <div className="min-h-[60vh] grid place-items-center"><span className="font-script text-5xl text-gold animate-pulse">Fabima</span></div>
 );
 
+/** Fondu doux à chaque changement de page. */
+const PageFade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { pathname } = useLocation();
+  return <div key={pathname} className="animate-page-in">{children}</div>;
+};
+
 /** Les pages « statut » (/p/…, /s) et la page du livreur ont leur propre en-tête, très simple : pas de menu, pied de page ni boutons flottants. */
 const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
@@ -66,6 +72,7 @@ export default function App() {
           <Chrome><Navbar /></Chrome>
           <main id="contenu" className="flex-1">
             <Suspense fallback={<PageFallback />}>
+              <PageFade>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/boutique" element={<Catalog />} />
@@ -88,6 +95,7 @@ export default function App() {
                 <Route path="/livreur/:token" element={<Driver />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </PageFade>
             </Suspense>
           </main>
           <Chrome><Footer /></Chrome>
