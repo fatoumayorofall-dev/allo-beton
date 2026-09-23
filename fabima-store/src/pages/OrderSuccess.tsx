@@ -80,6 +80,11 @@ export const OrderSuccess: React.FC = () => {
         )}
       </div>
 
+      {order.items.some(i => i.market) && (
+        <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl bg-white border border-ink/10 print:hidden" data-testid="success-market">
+          🌍 Nous commandons tout de suite {order.items.filter(i => i.market).length > 1 ? 'vos articles' : 'votre article'} du Marché chez notre partenaire. Vous recevrez un message WhatsApp quand il sera commandé, en route, puis arrivé à Dakar.
+        </p>
+      )}
       <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl bg-blush/40 print:hidden">
         🛵 Quand votre livreur partira, vous recevrez un message WhatsApp : vous pourrez le <strong>suivre en direct sur la carte</strong>, jusqu'à votre porte.
       </p>

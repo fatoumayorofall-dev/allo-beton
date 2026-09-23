@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, Order, OrderStatus, Product, RelayPoint, Vehicle } from '../data/types';
+import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, SupplierStatus, Vehicle } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -246,3 +246,23 @@ export async function searchPlaces(q: string, near?: { lat: number; lng: number 
 }
 export const reverseGeocode = (p: { lat: number; lng: number }) =>
   getJson<{ label: string; area: string; city: string }>(`/api/geo/reverse?lat=${p.lat.toFixed(6)}&lng=${p.lng.toFixed(6)}`);
+
+/* ---------- Le Marché (dropshipping) ---------- */
+
+/** Produits du Marché visibles par les clientes (null si le serveur est injoignable). */
+export const fetchMarket = () => getJson<{ products: MarketProduct[]; delay: { min: number; max: number } }>('/api/marche');
+
+export const fetchAdminMarket = (pin: string) => getJson<{ products: MarketProduct[]; settings: MarketSettings }>('/api/admin/marche', pin);
+export const saveMarketProduct = (product: Partial<MarketProduct>, pin: string) =>
+  call<{ product: MarketProduct }>('/api/admin/marche/products', { method: 'POST', body: JSON.stringify(product), headers: { 'x-admin-pin': pin } });
+export const deleteMarketProduct = (id: string, pin: string) =>
+  call<null>(`/api/admin/marche/products/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
+export const saveMarketSettings = (settings: Partial<MarketSettings>, pin: string) =>
+  call<{ settings: MarketSettings }>('/api/admin/marche/settings', { method: 'PUT', body: JSON.stringify(settings), headers: { 'x-admin-pin': pin } });
+export interface ImportDraft { name: string; description: string; images: string[]; cost?: number; currency?: 'XOF' | 'EUR' | 'USD' | 'CNY'; supplierName: string; url: string }
+export const importMarketProduct = (url: string, pin: string) =>
+  call<{ draft: ImportDraft }>('/api/admin/marche/import', { method: 'POST', body: JSON.stringify({ url }), headers: { 'x-admin-pin': pin } });
+export const patchSupplier = (orderId: string, patch: { status?: SupplierStatus; ref?: string; tracking?: string; trackingUrl?: string }, pin: string) =>
+  call<{ order: Order; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(orderId)}/supplier`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
+export const checkMarketCart = (items: { productId: string; name: string; price: number; quantity: number; color?: string }[], paymentMethod: string) =>
+  call<{ ok: true }>('/api/marche/check', { method: 'POST', body: JSON.stringify({ items, paymentMethod }) });

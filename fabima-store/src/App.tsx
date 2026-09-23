@@ -30,6 +30,8 @@ import { InstallBanner } from './components/InstallApp';
 // L'espace gérant n'est chargé que lorsqu'on y accède : la clientèle ne télécharge pas son code.
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
 const Driver = lazy(() => import('./pages/Driver'));
+const Market = lazy(() => import('./pages/Market'));
+const MarketProduct = lazy(() => import('./pages/MarketProduct'));
 
 /** Remonte en haut de page à chaque changement de route (ou vers l'ancre demandée). */
 const ScrollToTop: React.FC = () => {
@@ -93,6 +95,8 @@ export default function App() {
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/livreur/:token" element={<Driver />} />
+                <Route path="/marche" element={<Market />} />
+                <Route path="/marche/:slug" element={<MarketProduct />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </PageFade>

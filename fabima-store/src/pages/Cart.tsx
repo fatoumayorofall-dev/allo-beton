@@ -1,3 +1,4 @@
+import { delayLabel } from '../utils/market';
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Lock, Minus, Plus, Tag, X } from 'lucide-react';
@@ -74,6 +75,7 @@ export const Cart: React.FC = () => {
                       {product && <p className="eyebrow !text-ink/40">{product.subcategory}</p>}
                       <Link to={product ? `/produit/${product.slug}` : '#'} className="font-display text-2xl leading-tight mt-1 block hover:text-gold-dark">{item.name}</Link>
                       <p className="text-sm text-ink/55 mt-2">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
+{item.market && <p className="text-[11px] text-wine mt-1" data-testid="cart-market">🌍 Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
                     </div>
                     <span className="font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
                   </div>

@@ -17,6 +17,7 @@ const wa = await import('./whatsapp.js');
 const store = await import('./store.js');
 const { registerAuthRoutes } = await import('./auth.js');
 const { registerOrderRoutes } = await import('./orders.js');
+const { registerMarketRoutes } = await import('./market.js');
 
 const app = express();
 app.disable('x-powered-by');
@@ -47,7 +48,7 @@ function validOrder(o) {
 
 /* ---------- État des services ---------- */
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, storage: true, accounts: true, orders: true, maps: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
+  res.json({ ok: true, storage: true, accounts: true, orders: true, maps: true, market: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
 });
 
 /* ---------- Assistant IA ---------- */
@@ -148,6 +149,9 @@ registerAuthRoutes(app, { limit, wa, store, isAdmin });
 
 /* ---------- Commandes, livraison et suivi GPS du livreur ---------- */
 registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder });
+
+/* ---------- Le Marché (dropshipping) ---------- */
+registerMarketRoutes(app, { limit, isAdmin, store, wa });
 
 /* ---------- Site compilé (production) ---------- */
 const dist = path.join(here, '..', 'dist');

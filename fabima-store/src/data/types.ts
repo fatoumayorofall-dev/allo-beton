@@ -66,6 +66,8 @@ export interface CartItem {
   size?: string;
   color?: string;
   quantity: number;
+  /** Article du Marché (dropshipping) : commandé chez un fournisseur, délai en jours */
+  market?: { delayMin: number; delayMax: number };
 }
 
 export interface CustomerInfo {
@@ -166,6 +168,56 @@ export interface Order {
   notifications?: OrderNotification[];
   /** Livreur et position (commandes enregistrées sur le serveur, vue gérante) */
   delivery?: DeliveryInfo | null;
+  /** Articles du Marché : commande passée chez le fournisseur */
+  supplier?: OrderSupplier;
+}
+
+/* ---------- Le Marché (dropshipping) ---------- */
+
+export type SupplierStatus = 'a_commander' | 'commandee' | 'expediee' | 'arrivee';
+export type Currency = 'XOF' | 'EUR' | 'USD' | 'CNY';
+
+export interface OrderSupplier {
+  status: SupplierStatus;
+  history: { status: SupplierStatus; date: string }[];
+  ref?: string;
+  tracking?: string;
+  trackingUrl?: string;
+  /** Coût d'achat estimé en FCFA (gérante uniquement) */
+  cost?: number;
+  /** Ce qu'il faut commander chez chaque fournisseur (gérante uniquement) */
+  lines?: { productId: string; name: string; variant: string; quantity: number; supplierName: string; supplierUrl: string; unitCost: number }[];
+}
+
+export interface MarketProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  category: string;
+  images: string[];
+  price: number;
+  oldPrice?: number;
+  /** Choix proposés à la cliente (Couleur, Taille, Pointure…) */
+  options: { name: string; values: string[] }[];
+  delayMin: number;
+  delayMax: number;
+  active: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  /** Fournisseur (gérante uniquement) */
+  supplier?: { name: string; url: string; cost: number; currency: Currency; shipping: number; note?: string };
+}
+
+export interface MarketSettings {
+  /** Marge en % ajoutée au coût (produit + port) */
+  margin: number;
+  /** FCFA pour 1 unité de devise */
+  rates: Record<Exclude<Currency, 'XOF'>, number>;
+  /** Arrondi du prix de vente (ex. 500 FCFA) */
+  roundTo: number;
+  delayMin: number;
+  delayMax: number;
 }
 
 export interface OrderNotification {

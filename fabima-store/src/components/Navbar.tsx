@@ -111,6 +111,9 @@ export const Navbar: React.FC = () => {
               {c.name}
             </NavLink>
           ))}
+          <NavLink to="/marche" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap inline-flex items-center gap-1.5 ${isActive ? 'is-active' : ''}`}>
+            Le Marché <span className={`px-1.5 py-0.5 rounded-full text-[8px] tracking-[0.1em] ${transparent ? 'bg-ivory/20' : 'bg-blush text-wine'}`}>MONDE</span>
+          </NavLink>
           <NavLink to="/journal" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap ${isActive ? 'is-active' : ''}`}>Le journal</NavLink>
           <NavLink to="/boutique?promo=1" onMouseEnter={() => setMega(null)}
             className={`link-luxe text-[11px] uppercase tracking-[0.2em] font-semibold py-2 ${transparent ? 'text-gold-light' : 'text-wine'}`}>Offres</NavLink>
@@ -173,6 +176,9 @@ export const Navbar: React.FC = () => {
                 <Link key={c.id} to={`/boutique/${c.id}`} className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">{c.name} <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
               ))}
               <Link to="/boutique?promo=1" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl text-wine">Offres <ArrowRight className="w-4 h-4" /></Link>
+              <Link to="/marche" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">
+                <span>Le Marché <span className="font-sans text-[10px] align-middle ml-1 px-2 py-0.5 rounded-full bg-blush text-wine tracking-[0.1em]">MONDE</span></span> <ArrowRight className="w-4 h-4 text-ink/30" />
+              </Link>
               <p className="eyebrow mt-8 mb-3">Par occasion</p>
               <div className="flex flex-wrap gap-2">
                 {OCCASIONS.map(o => <Link key={o.id} to={`/boutique?occasion=${o.id}`} className="px-3.5 h-9 inline-flex items-center rounded-full bg-blush/60 text-xs">{o.name}</Link>)}

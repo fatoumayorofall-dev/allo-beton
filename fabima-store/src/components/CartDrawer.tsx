@@ -1,3 +1,4 @@
+import { delayLabel } from '../utils/market';
 import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Gift, Minus, Plus, X } from 'lucide-react';
@@ -91,6 +92,7 @@ export const CartDrawer: React.FC = () => {
                           <span className="text-sm font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
                         </div>
                         <p className="text-xs text-ink/50 mt-1">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
+{item.market && <p className="text-[11px] text-wine mt-1" data-testid="cart-market">🌍 Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
                         <div className="mt-auto flex items-center justify-between pt-3">
                           <div className="flex items-center border border-ink/15 h-9 rounded-full overflow-hidden">
                             <button onClick={() => updateQuantity(item.key, item.quantity - 1)} aria-label="Diminuer" className="w-9 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3 h-3" /></button>

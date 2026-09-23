@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, BarChart3, Download, LogOut, Send, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { AlertTriangle, BarChart3, Globe2, Download, LogOut, Send, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
@@ -12,6 +12,7 @@ import { StatusTab } from './AdminStatus';
 import { CustomersTab } from './AdminCustomers';
 import { fetchAdminOrders, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, type ServerStatus } from '../services/api';
 import { DeliveryPanel } from './AdminDelivery';
+import { MarketTab, SupplierPanel } from './AdminMarket';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 
 const PIN_KEY = 'fabima_admin_pin';
@@ -44,7 +45,7 @@ export const Admin: React.FC = () => {
   });
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
-  const [tab, setTab] = useState<'dashboard' | 'orders' | 'products' | 'customers' | 'status'>('dashboard');
+  const [tab, setTab] = useState<'dashboard' | 'orders' | 'products' | 'market' | 'customers' | 'status'>('dashboard');
 
   if (!authed) {
     return (
@@ -73,7 +74,7 @@ export const Admin: React.FC = () => {
           className="inline-flex items-center gap-2 text-sm text-ink/60 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
       <div className="flex gap-2 mb-8 overflow-x-auto">
-        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send]] as const).map(([id, label, Icon]) => (
+        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ['market', 'Le Marché', Globe2], ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send]] as const).map(([id, label, Icon]) => (
           <button key={id} onClick={() => setTab(id)}
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap ${tab === id ? 'bg-ink text-ivory' : 'bg-white hover:bg-ink/5'}`}>
             <Icon className="w-4 h-4" /> {label}
@@ -83,6 +84,7 @@ export const Admin: React.FC = () => {
       {tab === 'dashboard' && <Dashboard onGoto={setTab} />}
       {tab === 'orders' && <Orders />}
       {tab === 'products' && <Products />}
+      {tab === 'market' && <MarketTab pin={adminPin()} />}
       {tab === 'customers' && <CustomersTab />}
       {tab === 'status' && <StatusTab />}
     </div>
@@ -298,7 +300,7 @@ const Orders: React.FC = () => {
               {list.map(o => (
                 <tr key={o.id} onClick={() => setSelected(o)} className="border-b border-ink/5 hover:bg-ivory cursor-pointer">
                   <td className="p-4"><strong>{o.id}</strong><br /><span className="text-xs text-ink/50">{formatDate(o.createdAt)}</span></td>
-                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.customer.location && <span title="Point GPS">📍 </span>}{o.customer.zone}{o.delivery?.relay && <span title="Livraison en relais"> · 🔁</span>}{o.delivery?.state === 'en_route' && <span className="text-wine"> · 🛵 en route</span>}</span></td>
+                  <td className="p-4">{o.customer.firstName} {o.customer.lastName}<br /><span className="text-xs text-ink/50">{o.supplier && <span title="Article du Marché" className="text-wine">🌍 {o.supplier.status === 'a_commander' ? 'à commander · ' : ''}</span>}{o.customer.location && <span title="Point GPS">📍 </span>}{o.customer.zone}{o.delivery?.relay && <span title="Livraison en relais"> · 🔁</span>}{o.delivery?.state === 'en_route' && <span className="text-wine"> · 🛵 en route</span>}</span></td>
                   <td className="p-4">{PAYMENT_LABELS[o.paymentMethod]}<br /><span className={`text-xs ${o.paymentStatus === 'paye' ? 'text-emerald-700' : 'text-amber-700'}`}>{o.paymentStatus === 'paye' ? 'Payé' : 'En attente'}</span></td>
                   <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[o.status]}`}>{STATUS_LABELS[o.status]}</span></td>
                   <td className="p-4 text-right font-semibold">{formatPrice(o.total)}</td>
@@ -349,6 +351,7 @@ const Orders: React.FC = () => {
             {current.paymentStatus !== 'paye' && (
               <button onClick={() => { markOrderPaid(current.id); if (current.delivery !== undefined) patchAdminOrder(current.id, { paymentStatus: 'paye' }, adminPin()); }} className="w-full py-3 rounded-full bg-emerald-700 text-white font-semibold">Marquer comme payée</button>
             )}
+            {current.supplier && <SupplierPanel order={current} pin={adminPin()} />}
             <DeliveryPanel order={current} pin={adminPin()} onChanged={refresh} />
             {!!current.notifications?.length && (
               <div>

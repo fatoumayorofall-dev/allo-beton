@@ -16,7 +16,7 @@ fs.mkdirSync(VOICE_DIR, { recursive: true });
 const SLUG_RE = /^[a-z0-9-]{2,80}$/;
 export const validSlug = s => typeof s === 'string' && SLUG_RE.test(s);
 
-let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {} };
+let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, market: { products: {}, settings: null } };
 try { state = { ...state, ...JSON.parse(fs.readFileSync(FILE, 'utf8')) }; } catch { /* premier démarrage */ }
 
 let timer = null;
@@ -143,3 +143,18 @@ export function saveDelivery(orderId, delivery) {
   persist();
   return state.deliveries[orderId];
 }
+
+/* ---------- Le Marché (dropshipping) : produits des fournisseurs + réglages ---------- */
+export const DEFAULT_MARKET_SETTINGS = {
+  margin: 40,            // marge en % ajoutée au coût (produit + port fournisseur)
+  rates: { EUR: 655.957, USD: 600, CNY: 85 }, // FCFA pour 1 unité (EUR : parité fixe)
+  roundTo: 500,          // prix arrondi au 500 FCFA supérieur
+  delayMin: 10, delayMax: 20,
+};
+export const getMarketSettings = () => ({ ...DEFAULT_MARKET_SETTINGS, ...(state.market.settings || {}), rates: { ...DEFAULT_MARKET_SETTINGS.rates, ...(state.market.settings?.rates || {}) } });
+export function saveMarketSettings(patch) { state.market.settings = { ...getMarketSettings(), ...patch }; persist(); return getMarketSettings(); }
+export const listMarketProducts = () => Object.values(state.market.products).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export const getMarketProduct = id => state.market.products[id] ?? null;
+export const findMarketProductBySlug = slug => Object.values(state.market.products).find(p => p.slug === slug) ?? null;
+export function saveMarketProduct(p) { state.market.products[p.id] = p; persist(); return p; }
+export function deleteMarketProduct(id) { delete state.market.products[id]; persist(); }

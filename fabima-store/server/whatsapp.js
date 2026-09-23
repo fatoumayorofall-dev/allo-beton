@@ -195,3 +195,18 @@ export function buildRelayMessage(kind, order, prev, link, minutes) {
 export function buildArrivingMessage(order, minutes) {
   return `🛵 ${order.customer.firstName}, votre livreur Fabima arrive dans ${minutes <= 1 ? 'une minute' : `environ ${minutes} minutes`} ! Gardez votre téléphone près de vous.\n\nSuivi : ${trackingUrl(order)}`;
 }
+
+/* ---------- Le Marché : commande passée chez le fournisseur ---------- */
+const SUPPLIER_TEXT = {
+  commandee: 'a été commandée chez notre partenaire 🌍 Nous vous prévenons dès son expédition.',
+  expediee: 'est en route vers Dakar ✈️',
+  arrivee: 'est arrivée à Dakar 🎉 Nous vous la livrons très vite, le livreur vous préviendra.',
+};
+export function buildSupplierMessage(order, status) {
+  const text = SUPPLIER_TEXT[status];
+  if (!text) return null;
+  const lines = [`Bonjour ${order.customer.firstName} 🌸`, ``, `Votre commande *${order.id}* ${text}`];
+  if (status === 'expediee' && order.supplier?.tracking) lines.push(`Numéro de suivi : ${order.supplier.tracking}`);
+  lines.push(``, `Suivi : ${trackingUrl(order)}`);
+  return lines.join('\n');
+}

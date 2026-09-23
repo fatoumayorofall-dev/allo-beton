@@ -7,6 +7,7 @@ import { formatDate, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { OrderTimeline, PAYMENT_LABELS } from '../components/OrderTimeline';
 import { lookupOrder } from '../services/api';
+import { SupplierSteps } from '../components/SupplierSteps';
 
 const LiveTracking = lazy(() => import('../components/LiveTracking'));
 
@@ -90,6 +91,7 @@ export const Tracking: React.FC = () => {
               <LiveTracking location={order.customer.location} delivery={delivery} />
             </Suspense>
           )}
+          {order.supplier && order.status !== 'annulee' && order.status !== 'livree' && <SupplierSteps supplier={order.supplier} />}
           <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10">
             <div className="flex flex-wrap justify-between gap-6 pb-8 border-b border-ink/10">
               <div><p className="field-label">Commande</p><p className="font-display text-4xl">{order.id}</p><p className="text-xs text-ink/50 mt-1">{formatDate(order.createdAt)}</p></div>

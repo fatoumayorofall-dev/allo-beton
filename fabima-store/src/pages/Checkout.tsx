@@ -8,7 +8,8 @@ import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { PromoBox } from './Cart';
-import { createOrder } from '../services/api';
+import { checkMarketCart, createOrder } from '../services/api';
+import { delayLabel } from '../utils/market';
 import { useAccount } from '../context/AccountContext';
 
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
@@ -63,6 +64,10 @@ export const Checkout: React.FC = () => {
   const zone = DELIVERY_ZONES.find(z => z.name === form.zone) ?? DELIVERY_ZONES[0];
   const t = computeTotals(zone.fee);
   const isMobile = method === 'wave' || method === 'orange_money' || method === 'free_money';
+  // Articles du Marché : commandés chez le fournisseur, donc payés à la commande (pas d'espèces)
+  const marketItems = cart.filter(i => i.market);
+  const hasMarket = marketItems.length > 0;
+  const marketDelay = hasMarket ? { min: Math.max(...marketItems.map(i => i.market!.delayMin)), max: Math.max(...marketItems.map(i => i.market!.delayMax)) } : null;
 
   /** Point choisi sur la carte : la zone et les frais de livraison se règlent tout seuls. */
   const setLocation = (location: DeliveryLocation | undefined) => {
@@ -108,7 +113,12 @@ export const Checkout: React.FC = () => {
     if (method === 'card' && (card.number.replace(/\s/g, '').length < 16 || !/^\d{2}\/\d{2}$/.test(card.expiry) || card.cvc.length < 3)) {
       notify('Informations de carte incomplètes', 'error'); return;
     }
+    if (hasMarket && method === 'cash') { notify('Les articles du Marché se règlent à la commande', 'error'); return; }
     setProcessing(true);
+    if (hasMarket) {
+      const check = await checkMarketCart(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity, color: i.color })), method);
+      if (!check.ok) { setProcessing(false); notify(check.status === 0 ? 'Connexion nécessaire pour commander au Marché' : check.error, 'error'); return; }
+    }
     // Simulation de la passerelle de paiement (à brancher sur l'API Wave / Orange Money / PayDunya en production)
     await new Promise(r => setTimeout(r, method === 'cash' ? 600 : 2200));
     const order = placeOrder({
@@ -243,8 +253,14 @@ export const Checkout: React.FC = () => {
 
               <fieldset>
                 <legend className="font-display text-3xl mb-6">Mode de paiement</legend>
+                {hasMarket && marketDelay && (
+                  <p className="-mt-3 mb-5 flex gap-3 p-4 rounded-2xl bg-blush/40 text-sm" data-testid="market-notice">
+                    <span className="text-xl">🌍</span>
+                    <span>Votre panier contient {marketItems.length > 1 ? 'des articles' : 'un article'} du <strong>Marché</strong>, commandé{marketItems.length > 1 ? 's' : ''} pour vous chez notre partenaire : paiement à la commande, livraison en <strong>{delayLabel(marketDelay.min, marketDelay.max)}</strong>. Vous serez prévenue sur WhatsApp à chaque étape.</span>
+                  </p>
+                )}
                 <div className="grid sm:grid-cols-2 gap-2">
-                  {PAYMENT_METHODS.map(m => (
+                  {PAYMENT_METHODS.filter(m => !(hasMarket && m.id === 'cash')).map(m => (
                     <label key={m.id} className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-colors ${method === m.id ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
                       <input type="radio" name="payment" checked={method === m.id} onChange={() => setMethod(m.id)} className="sr-only" />
                       <span className="w-11 h-11 rounded-full grid place-items-center text-white shrink-0" style={{ background: m.color }}><m.Icon className="w-5 h-5" strokeWidth={1.5} /></span>
@@ -300,6 +316,7 @@ export const Checkout: React.FC = () => {
                 <div className="flex-1 min-w-0 text-sm">
                   <p className="font-display text-lg leading-tight line-clamp-1">{i.name}</p>
                   <p className="text-xs text-ink/50">{[i.color, i.size && `T. ${i.size}`].filter(Boolean).join(' · ')}</p>
+                  {i.market && <p className="text-[11px] text-wine mt-0.5">🌍 Marché · {delayLabel(i.market.delayMin, i.market.delayMax)}</p>}
                 </div>
                 <span className="text-sm whitespace-nowrap">{formatPrice(i.price * i.quantity)}</span>
               </li>

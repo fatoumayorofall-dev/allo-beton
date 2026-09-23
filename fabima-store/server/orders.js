@@ -10,6 +10,7 @@
 // ============================================================
 import crypto from 'node:crypto';
 import { distanceM, etaMinutes, reverseGeocode, searchPlaces, validPoint } from './geo.js';
+import { checkMarketItems } from './market.js';
 
 const STATUSES = new Set(['en_attente', 'confirmee', 'en_preparation', 'expediee', 'livree', 'annulee']);
 const NEAR_M = 400; // distance à laquelle la cliente est prévenue que le livreur arrive
@@ -120,9 +121,13 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     if (!limit(`order-ip:${req.ip}`, 6, 3600e3) || !limit(`order-phone:${phone}`, 4, 3600e3)) {
       return res.status(429).json({ error: 'Trop de commandes, réessayez plus tard.' });
     }
+    // Articles du Marché (dropshipping) : prix vérifiés et suivi fournisseur préparé
+    const market = checkMarketItems(o, store);
+    if (market.error) return res.status(409).json({ error: market.error });
     const now = new Date().toISOString();
     const order = {
       ...o,
+      supplier: market.supplier ?? undefined,
       customer: { ...o.customer, location: cleanLocation(o.customer.location) },
       createdAt: now,
       status: 'en_attente',
@@ -144,7 +149,9 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     if (!order || last9(order.customer.phone) !== last9(req.query.phone) || last9(req.query.phone).length < 9) {
       return res.status(404).json({ error: 'Commande introuvable' });
     }
-    const { notifications: _n, ...rest } = order;
+    const { notifications: _n, supplier, ...rest } = order;
+    // La cliente voit l'étape chez le fournisseur et le suivi, jamais le coût ni les liens fournisseurs
+    if (supplier) rest.supplier = { status: supplier.status, history: supplier.history, tracking: supplier.tracking, trackingUrl: supplier.trackingUrl };
     res.json({ order: rest, delivery: publicDelivery(store.getDelivery(order.id), order) });
   });
 

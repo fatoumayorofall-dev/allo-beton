@@ -97,7 +97,7 @@ src/
 ```
 
 Le serveur (`server/`) : `index.js` (routes, limites de débit, site compilé), `assistant.js` (Claude),
-`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
+`whatsapp.js` (Twilio et textes des messages), `orders.js` (commandes, livreur, suivi GPS), `geo.js` (recherche d'adresse), `market.js` (le Marché : produits fournisseurs, import par lien, suivi fournisseur), `store.js` (vitrine du statut, compteurs de visites, notes vocales, comptes et commandes des clientes), `auth.js` (connexion par numéro de téléphone).
 
 Le rapport d'audit (bugs corrigés, nouveautés, points restants) est dans [`AUDIT.md`](AUDIT.md).
 
@@ -190,6 +190,33 @@ Ce que voit la cliente :
 Chaque visite arrivée depuis un statut est comptée : le nombre s'affiche sur chaque pièce dans l'onglet.
 La vitrine, les notes vocales et les compteurs sont gardés par le serveur (`server/data/`, ou le dossier `DATA_DIR`) :
 sur un hébergement, prévoyez un disque persistant pour ce dossier.
+
+## Le Marché Fabima (dropshipping)
+
+Une deuxième partie du site, `/marche`, où vous vendez **n'importe quel produit** trouvé chez un fournisseur
+(AliExpress, Alibaba, CJ Dropshipping, une boutique en ligne, un grossiste…) sans l'avoir en stock.
+
+**Ajouter un produit** (espace gérant → onglet **Le Marché** → « Ajouter un produit ») :
+
+1. collez le lien du produit chez le fournisseur et touchez **Importer** : le nom, les photos et le prix sont lus
+   sur la page quand le site le permet (sinon, remplissez la fiche à la main) ;
+2. indiquez le prix fournisseur, la devise (FCFA, €, $, ¥) et les frais de port : le site calcule le **coût en FCFA**,
+   le **prix conseillé** avec votre marge et le **bénéfice** ;
+3. ajoutez les choix proposés à la cliente (couleur, taille, pointure…) et le délai de livraison.
+
+La marge par défaut (40 %), les taux de change et l'arrondi se règlent dans « Marge & devises ».
+
+**Quand une cliente commande** :
+
+| Étape | Ce qui se passe |
+|---|---|
+| Paiement | À la commande uniquement (Wave, Orange Money, Free Money, carte) : c'est vous qui payez le fournisseur. Le serveur revérifie le prix et la disponibilité |
+| Onglet Le Marché → « À commander maintenant » | Chaque article, sa couleur/taille, un bouton **Commander** vers la page du fournisseur, le coût et votre bénéfice |
+| Vous passez l'étape à « Commandée » (+ n° de commande fournisseur) | La cliente reçoit un WhatsApp |
+| « En route vers Dakar » (+ n° de suivi du colis) | WhatsApp avec le numéro de suivi ; la cliente voit les étapes sur la page de suivi |
+| « Arrivée à Dakar » | WhatsApp, puis vous confiez la livraison à un livreur comme d'habitude (suivi GPS, relais) |
+
+Les clientes ne voient jamais le fournisseur, son lien ni votre coût d'achat.
 
 ## Catégories en vente
 

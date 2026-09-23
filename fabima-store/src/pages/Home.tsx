@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Gift, Instagram, MapPin, Plus, RefreshCw, ShoppingBag, Smartphone, Truck } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Gift, Globe2, Instagram, MapPin, Plus, RefreshCw, ShoppingBag, Smartphone, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { ARTICLES } from '../data/journal';
@@ -14,6 +14,8 @@ import { ProductCard } from '../components/ProductCard';
 import { ProductImage } from '../components/ProductImage';
 import { Reveal } from '../components/Reveal';
 import { FloatingPetals, Flourish, Flower } from '../components/Decor';
+import { useMarket } from '../utils/market';
+import { MarketCard } from '../components/MarketCard';
 
 const px = (id: number, w = 1600) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
@@ -86,6 +88,7 @@ export const Home: React.FC = () => {
   const recent = recentlyViewed.map(getProduct).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 4);
   const current = HERO_SLIDES[slide];
   const featured = getProduct(current.featured);
+  const market = useMarket().products ?? [];
 
   return (
     <div className="overflow-x-clip">
@@ -278,6 +281,24 @@ export const Home: React.FC = () => {
           ))}
         </div>
       </section>
+
+      {/* ───────────── LE MARCHÉ (dropshipping) ───────────── */}
+      {market.length > 0 && (
+        <section className="relative mt-28 sm:mt-36 mx-3 sm:mx-6 rounded-[3rem] overflow-hidden bg-ink text-ivory" data-testid="home-market">
+          <span className="pointer-events-none absolute -top-32 -left-24 w-[30rem] h-[30rem] rounded-full bg-wine/40 blur-[110px]" aria-hidden />
+          <div className="relative max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-16 sm:py-20 grid lg:grid-cols-[0.8fr_1.2fr] gap-10 items-center">
+            <Reveal>
+              <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light"><Globe2 className="w-4 h-4" /> Nouveau</p>
+              <h2 className="font-display text-5xl sm:text-6xl mt-4 leading-[1]">Le Marché <span className="font-script text-gold-light text-[1.1em]">Fabima</span></h2>
+              <p className="mt-5 text-ivory/65 max-w-md leading-relaxed">Des idées du monde entier, commandées pour vous chez nos partenaires et livrées chez vous avec un suivi à chaque étape.</p>
+              <Link to="/marche" className="btn-light mt-8">Découvrir le Marché <ArrowRight className="w-4 h-4" /></Link>
+            </Reveal>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 [&_p]:text-ivory [&_.text-ink\/45]:!text-ivory/50">
+              {market.slice(0, 4).map((p, i) => <Reveal key={p.id} delay={i * 80}><MarketCard product={p} /></Reveal>)}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ───────────── SHOP THE LOOK ───────────── */}
       {look.length > 0 && (

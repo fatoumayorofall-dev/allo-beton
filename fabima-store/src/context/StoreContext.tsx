@@ -86,7 +86,7 @@ interface StoreContextValue {
   addReview: (productId: string, review: Omit<Review, 'date'>) => void;
 
   cart: CartItem[];
-  addToCart: (product: Product, opts?: { size?: string; color?: string; quantity?: number; silent?: boolean }) => boolean;
+  addToCart: (product: Product, opts?: { size?: string; color?: string; quantity?: number; silent?: boolean; market?: CartItem['market'] }) => boolean;
   updateQuantity: (key: string, quantity: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
@@ -179,6 +179,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       let changed = false;
       const next: CartItem[] = [];
       for (const item of items) {
+        // Articles du Marché : hors catalogue de la boutique, leur prix est revérifié par le serveur au paiement
+        if (item.market) { next.push(item); continue; }
         const p = products.find(x => x.id === item.productId);
         if (!p || p.stock <= 0) { changed = true; continue; }
         const quantity = Math.min(item.quantity, p.stock);
@@ -237,7 +239,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setCart(items => {
       const existing = items.find(i => i.key === key);
       if (existing) return items.map(i => (i.key === key ? { ...i, quantity: i.quantity + qty } : i));
-      return [...items, { key, productId: product.id, name: product.name, image: product.images[0], price: product.price, size, color, quantity: qty }];
+      return [...items, { key, productId: product.id, name: product.name, image: product.images[0], price: product.price, size, color, quantity: qty, ...(opts.market ? { market: opts.market } : {}) }];
     });
     if (!opts.silent) {
       notify(qty < quantity ? `Seulement ${qty} ajouté(s) : stock limité` : `« ${product.name} » ajouté au panier`, qty < quantity ? 'info' : 'success');
