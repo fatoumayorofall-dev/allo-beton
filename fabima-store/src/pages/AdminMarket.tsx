@@ -12,8 +12,8 @@ import { ProductImage } from '../components/ProductImage';
 const CURRENCIES: { id: Currency; label: string }[] = [
   { id: 'XOF', label: 'FCFA' }, { id: 'EUR', label: '€ Euro' }, { id: 'USD', label: '$ Dollar' }, { id: 'CNY', label: '¥ Yuan' },
 ];
-const input = 'w-full px-3 h-11 rounded-xl border border-ink/15 bg-white outline-none focus:border-ink';
-const label = 'block text-[11px] uppercase tracking-[0.16em] font-semibold text-ink/75 mb-1.5';
+const input = 'field-sm';
+const label = 'field-label !mb-1.5';
 
 /** Montant des articles du Marché dans une commande (ce que la cliente a payé pour eux). */
 const marketRevenue = (o: Order) => o.items.filter(i => i.productId.startsWith('MK-')).reduce((s, i) => s + i.price * i.quantity, 0);

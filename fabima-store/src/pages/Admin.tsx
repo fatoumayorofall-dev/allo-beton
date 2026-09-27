@@ -62,9 +62,9 @@ export const Admin: React.FC = () => {
           <h1 className="font-display text-3xl">Espace gérant</h1>
           <p className="text-sm text-ink/75 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
           <input value={pin} onChange={e => { setPin(e.target.value); setError(false); }} type="password" inputMode="numeric" placeholder="••••" aria-label="Code PIN"
-            className={`mt-6 w-full text-center tracking-[0.5em] text-2xl px-4 py-3 rounded-xl border outline-none ${error ? 'border-wine' : 'border-ink/15 focus:border-ink'}`} />
+            aria-invalid={error} className="field mt-6 !h-16 text-center !text-2xl tracking-[0.5em]" />
           {error && <p className="text-xs text-wine mt-2">Code incorrect</p>}
-          <button className="mt-5 w-full py-3.5 rounded-full bg-ink text-ivory font-semibold">Se connecter</button>
+          <button className="btn-dark mt-5 w-full">Se connecter</button>
           <p className="text-xs text-ink/70 mt-4">Code de démonstration : {SITE_CONFIG.adminPin}</p>
         </form>
       </div>
@@ -517,7 +517,7 @@ const Orders: React.FC = () => {
             <label className="block">
               <span className="font-medium">Statut</span>
               <select value={current.status} onChange={e => changeStatus(current, e.target.value as OrderStatus)}
-                className="mt-1.5 w-full px-4 py-3 rounded-xl border border-ink/15 outline-none focus:border-ink">
+                className="field mt-1.5">
                 {(Object.keys(STATUS_LABELS) as OrderStatus[]).map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
               </select>
             </label>
@@ -660,7 +660,7 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
   const [colorsText, setColorsText] = useState(product.colors.map(c => `${c.name}:${c.hex}`).join(', '));
   const [detailsText, setDetailsText] = useState(product.details.join('\n'));
 
-  const field = 'mt-1 w-full px-3.5 py-2.5 rounded-xl border border-ink/15 outline-none focus:border-ink text-sm';
+  const field = 'field-sm mt-1';
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -682,7 +682,7 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
 
   return (
     <Modal title={product.name ? 'Modifier le produit' : 'Nouveau produit'} onClose={onClose}>
-      <form onSubmit={submit} className="grid grid-cols-2 gap-4 text-sm">
+      <form onSubmit={submit} className="grid grid-cols-2 gap-x-4 gap-y-5 text-sm [&>label]:text-[10px] [&>label]:uppercase [&>label]:tracking-[0.2em] [&>label]:font-semibold [&>label]:text-ink/65">
         <label className="col-span-2">Nom *<input required value={p.name} onChange={e => setP({ ...p, name: e.target.value })} className={field} /></label>
         <label>Catégorie
           <select value={p.category} onChange={e => setP({ ...p, category: e.target.value as CategoryId })} className={field}>
@@ -693,14 +693,14 @@ const ProductForm: React.FC<{ product: Product; onClose: () => void; onSave: (p:
         <label>Prix (FCFA) *<input required type="number" min={1} value={p.price || ''} onChange={e => setP({ ...p, price: Number(e.target.value) })} className={field} /></label>
         <label>Ancien prix<input type="number" min={0} value={p.oldPrice ?? ''} onChange={e => setP({ ...p, oldPrice: e.target.value ? Number(e.target.value) : undefined })} className={field} /></label>
         <label>Stock<input type="number" min={0} value={p.stock} onChange={e => setP({ ...p, stock: Number(e.target.value) })} className={field} /></label>
-        <label className="col-span-2 p-3 rounded-2xl bg-blush/30">Si épuisé : vendre sur commande
+        <label className="col-span-2 p-4 rounded-2xl border border-ink/10 bg-ivory/60">Si épuisé : vendre sur commande
           <span className="flex items-center gap-2 mt-1">
             <input type="number" min={0} max={90} value={p.preorderDays ?? 0} onChange={e => setP({ ...p, preorderDays: Number(e.target.value) || undefined })} className={`${field} !mt-0 w-24`} aria-label="Délai sur commande (jours)" />
-            <span className="text-xs text-ink/75">jours de délai (0 = non). La cliente peut commander et paie à la commande ; vous vous réapprovisionnez.</span>
+            <span className="text-xs text-ink/75 normal-case tracking-normal font-normal">jours de délai (0 = non). La cliente peut commander et paie à la commande ; vous vous réapprovisionnez.</span>
           </span>
         </label>
         <fieldset className="col-span-2">
-          <legend>Occasions</legend>
+          <legend className="text-[10px] uppercase tracking-[0.2em] font-semibold text-ink/65 mb-1">Occasions</legend>
           <div className="mt-1 flex flex-wrap gap-2">
             {OCCASIONS.map(o => {
               const on = p.occasions.includes(o.id);
@@ -767,7 +767,7 @@ const VideoField: React.FC<{ value?: string; poster?: string; onChange: (url?: s
 
   return (
     <div className="col-span-2" data-testid="video-field">
-      <p>Vidéo <span className="text-ink/70">(facultatif)</span></p>
+      <p className="text-[10px] uppercase tracking-[0.2em] font-semibold text-ink/65">Vidéo <span className="text-ink/45">(facultatif)</span></p>
       {value ? (
         <div className="mt-1 flex items-center gap-4 p-3 rounded-2xl bg-ivory-deep/60">
           <video src={mediaUrl(value)} poster={poster || undefined} muted loop autoPlay playsInline onError={() => setUnplayable(true)}
@@ -795,7 +795,7 @@ const VideoField: React.FC<{ value?: string; poster?: string; onChange: (url?: s
           </p>
           <div className="mt-1.5 flex gap-2">
             <input value={link} onChange={e => setLink(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyLink(); } }}
-              placeholder="sandales.mp4 ou https://…" aria-label="Nom ou lien de la vidéo" className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl border border-ink/15 outline-none focus:border-ink text-sm" data-testid="video-link" />
+              placeholder="sandales.mp4 ou https://…" aria-label="Nom ou lien de la vidéo" className="field-sm flex-1 min-w-0" data-testid="video-link" />
             <button type="button" onClick={applyLink} className="px-4 rounded-xl bg-ink text-ivory text-xs font-semibold">Utiliser</button>
           </div>
         </div>

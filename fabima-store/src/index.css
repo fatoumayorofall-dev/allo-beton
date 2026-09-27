@@ -77,6 +77,19 @@
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238f544e' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
     background-repeat: no-repeat; background-position: right 1.1rem center; background-size: 1rem;
   }
+  /* Variante compacte (espace gérant, filtres) : même allure, plus serrée */
+  .field-sm {
+    @apply w-full h-11 px-3.5 rounded-xl bg-white border border-ink/[0.14] text-sm font-normal normal-case tracking-normal text-ink outline-none
+      transition-[border-color,box-shadow] duration-300 ease-luxe placeholder:text-ink/35 hover:border-ink/30
+      focus:border-ink focus:shadow-[0_0_0_4px_rgba(196,138,130,.18)];
+  }
+  .field-sm:focus-visible { outline: none; }
+  textarea.field-sm { @apply h-auto py-2.5 leading-relaxed; }
+  select.field-sm {
+    appearance: none; -webkit-appearance: none; cursor: pointer; padding-right: 2.5rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238f544e' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right .9rem center; background-size: .95rem;
+  }
   .field-label { @apply block text-[10px] uppercase tracking-[0.24em] font-semibold text-ink/65 mb-2.5; }
 
   .card-luxe { @apply bg-white border border-ink/[0.06] rounded-3xl; }

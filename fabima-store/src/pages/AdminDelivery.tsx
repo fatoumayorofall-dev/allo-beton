@@ -55,7 +55,7 @@ const RelayPointField: React.FC<{ value: RelayPoint | null; onChange: (p: RelayP
     <div className="relative">
       <input value={q} onChange={e => { setQ(e.target.value); onChange(e.target.value.trim() ? { label: e.target.value.trim() } : null); }}
         placeholder="Point de relais : gare routière, station…" aria-label={`Point de relais ${index + 1}`}
-        className="w-full px-3 h-11 rounded-xl border border-ink/15 bg-white" />
+        className="field-sm" />
       {value?.label && <span className="text-[11px] text-ink/70">{value.lat != null ? '📍 point sur la carte' : 'nom seulement (pas de point sur la carte)'}</span>}
       {!value && recent.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -187,10 +187,10 @@ export const DeliveryPanel: React.FC<{ order: Order; pin: string; onChanged: () 
                       </div>
                     )}
                     <div className="grid grid-cols-2 gap-2">
-                      <input value={row.name} onChange={e => update(k, { name: e.target.value })} placeholder="Nom" aria-label={rows.length > 1 ? `Nom du livreur ${k + 1}` : 'Nom du livreur'} required className="px-3 h-11 rounded-xl border border-ink/15 bg-white" />
-                      <input value={row.phone} onChange={e => update(k, { phone: e.target.value })} placeholder="77 123 45 67" type="tel" aria-label={rows.length > 1 ? `Téléphone du livreur ${k + 1}` : 'Téléphone du livreur'} required className="px-3 h-11 rounded-xl border border-ink/15 bg-white" />
+                      <input value={row.name} onChange={e => update(k, { name: e.target.value })} placeholder="Nom" aria-label={rows.length > 1 ? `Nom du livreur ${k + 1}` : 'Nom du livreur'} required className="field-sm" />
+                      <input value={row.phone} onChange={e => update(k, { phone: e.target.value })} placeholder="77 123 45 67" type="tel" aria-label={rows.length > 1 ? `Téléphone du livreur ${k + 1}` : 'Téléphone du livreur'} required className="field-sm" />
                     </div>
-                    <select value={row.vehicle} onChange={e => update(k, { vehicle: e.target.value as Vehicle })} aria-label={`Véhicule ${k + 1}`} className="w-full px-3 h-11 rounded-xl border border-ink/15 bg-white">
+                    <select value={row.vehicle} onChange={e => update(k, { vehicle: e.target.value as Vehicle })} aria-label={`Véhicule ${k + 1}`} className="field-sm">
                       {(Object.keys(VEHICLE_LABELS) as Vehicle[]).map(v => <option key={v} value={v}>{VEHICLE_LABELS[v]}</option>)}
                     </select>
                     {last ? <p className="text-xs text-ink/70">🏠 Jusqu'à la cliente ({loc?.label || order.customer.zone})</p>

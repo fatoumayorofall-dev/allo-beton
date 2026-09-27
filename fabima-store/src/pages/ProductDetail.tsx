@@ -51,7 +51,7 @@ const ReviewForm: React.FC<{ onSubmit: (r: { author: string; rating: number; com
   const [comment, setComment] = useState('');
   if (!open) return <button onClick={() => setOpen(true)} className="btn-outline !h-11 !px-6 mt-2">Donner mon avis</button>;
   return (
-    <form className="space-y-3 mt-2 p-5 bg-ivory-deep/60 rounded-3xl" onSubmit={e => {
+    <form className="space-y-4 mt-2 p-6 bg-white border border-ink/[0.07] rounded-3xl shadow-soft" onSubmit={e => {
       e.preventDefault();
       if (!author.trim() || comment.trim().length < 10) return;
       onSubmit({ author: author.trim(), rating, comment: comment.trim() });

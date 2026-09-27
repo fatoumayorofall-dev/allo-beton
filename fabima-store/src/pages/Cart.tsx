@@ -37,7 +37,7 @@ export const PromoBox: React.FC = () => {
   return (
     <form onSubmit={e => { e.preventDefault(); const r = applyPromo(code); notify(r.message, r.ok ? 'success' : 'error'); if (r.ok) setCode(''); }} className="flex gap-2 animate-fade-in">
       <input value={code} onChange={e => setCode(e.target.value)} placeholder="Code promo" aria-label="Code promo" autoFocus className="field uppercase text-sm" />
-      <button className="px-5 rounded-full bg-ink text-ivory text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-gold-dark transition-colors">OK</button>
+      <button className="btn-dark !h-[52px] !px-6 shrink-0">Appliquer</button>
     </form>
   );
 };
@@ -82,13 +82,13 @@ export const Cart: React.FC = () => {
         {/* Livraison offerte : ce qu'il reste à ajouter */}
         <div className={`mb-8 p-5 rounded-[1.5rem] border ${remaining ? 'bg-white border-ink/[0.06]' : 'bg-emerald-50 border-emerald-100'}`} data-testid="free-shipping">
           <p className="flex items-center gap-3 text-sm">
-            <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${remaining ? 'bg-blush text-wine' : 'bg-emerald-100 text-emerald-800'}`}>{remaining ? <Truck className="w-4 h-4" strokeWidth={1.6} /> : <Check className="w-4 h-4" />}</span>
+            <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${remaining ? 'border border-gold/50 text-gold-dark' : 'bg-emerald-100 text-emerald-800'}`}>{remaining ? <Truck className="w-4 h-4" strokeWidth={1.3} /> : <Check className="w-4 h-4" />}</span>
             {remaining
               ? <span>Plus que <strong>{formatPrice(remaining)}</strong> pour profiter de la <strong>livraison offerte</strong> à Dakar</span>
               : <span className="text-emerald-900"><strong>Livraison offerte</strong> à Dakar : c'est cadeau !</span>}
           </p>
           <div className="mt-4 h-1.5 rounded-full bg-ink/[0.07] overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label="Progression vers la livraison offerte">
-            <div className={`h-full rounded-full transition-[width] duration-700 ease-luxe ${remaining ? 'bg-gradient-to-r from-gold to-wine' : 'bg-emerald-600'}`} style={{ width: `${progress}%` }} />
+            <div className={`h-full rounded-full transition-[width] duration-700 ease-luxe ${remaining ? 'bg-gradient-to-r from-gold-light to-gold' : 'bg-emerald-600'}`} style={{ width: `${progress}%` }} />
           </div>
         </div>
         <ul className="divide-y divide-ink/10">

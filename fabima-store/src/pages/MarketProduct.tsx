@@ -80,7 +80,7 @@ export const MarketProduct: React.FC = () => {
             <span className={`font-display text-4xl ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
             {product.oldPrice && <span className="text-ink/70 line-through">{formatPrice(product.oldPrice)}</span>}
           </p>
-          <p className="mt-4 inline-flex items-center gap-2 px-4 h-10 rounded-full bg-blush/50 text-sm" data-testid="market-delay">
+          <p className="mt-4 inline-flex items-center gap-2 px-4 h-10 rounded-full border border-ink/10 text-sm" data-testid="market-delay">
             <Truck className="w-4 h-4 text-wine" /> Livré chez vous en <strong>{delayLabel(product.delayMin, product.delayMax)}</strong>
           </p>
 

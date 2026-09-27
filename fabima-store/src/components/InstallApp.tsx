@@ -33,7 +33,7 @@ const InstallGuide: React.FC<{ ios: boolean; onClose: () => void }> = ({ ios, on
           </div>
         </div>
         <button onClick={() => speak(steps.map((s, i) => `Étape ${i + 1} : ${s.text}.`).join(' '))}
-          className="mt-4 inline-flex items-center gap-2 px-4 h-10 rounded-full bg-blush/60 text-sm"><Volume2 className="w-4 h-4 text-wine" /> Écouter les explications</button>
+          className="mt-4 inline-flex items-center gap-2 px-4 h-10 rounded-full border border-ink/15 text-[11px] uppercase tracking-[0.18em] font-semibold text-ink/75 hover:border-ink transition-colors"><Volume2 className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Écouter les explications</button>
         <ol className="mt-5 space-y-3">
           {steps.map((s, i) => (
             <li key={s.text} className="flex items-center gap-4 p-4 rounded-2xl bg-white">
