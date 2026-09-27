@@ -8,7 +8,10 @@ import { AssistantLauncher } from './AssistantLauncher';
 export const FloatingActions: React.FC = () => {
   const [showTop, setShowTop] = useState(false);
   // Sur la fiche produit mobile, on remonte les boutons au-dessus de la barre d'achat collante
-  const onProduct = useLocation().pathname.startsWith('/produit/');
+  const { pathname } = useLocation();
+  const onProduct = pathname.startsWith('/produit/');
+  // Espace cliente sur téléphone : ses boutons ont déjà l'aide WhatsApp, on libère le bas de l'écran
+  const onAccount = pathname === '/compte';
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 900);
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -16,7 +19,7 @@ export const FloatingActions: React.FC = () => {
   }, []);
 
   return (
-    <aside aria-label="Raccourcis" className={`floating-actions fixed right-5 z-40 ${onProduct ? 'bottom-24 lg:bottom-5' : 'bottom-5'} flex flex-col items-center gap-3 print:hidden`}>
+    <aside aria-label="Raccourcis" className={`floating-actions fixed right-5 z-40 ${onProduct ? 'bottom-24 lg:bottom-5' : 'bottom-5'} ${onAccount ? 'hidden lg:flex' : 'flex'} flex-col items-center gap-3 print:hidden`}>
       <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Revenir en haut"
         className={`w-11 h-11 rounded-full bg-ivory/90 backdrop-blur border border-ink/10 grid place-items-center shadow-soft transition-all duration-500 ${showTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3 pointer-events-none'}`}>
         <ArrowUp className="w-4 h-4" />

@@ -193,6 +193,8 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 - **Espace gérant** : bandeau de gestion sombre à la place de la vitrine (plus de menu boutique, de lettre d'information ni de boutons flottants), rubriques collées en haut au défilement.
 - **Tableau de bord** : période 7 / 30 / 90 jours, indicateurs comparés à la période précédente (▲ ▼ %), « À faire » (commandes à confirmer, à préparer, stock faible, clientes à prévenir), raccourcis (ajouter une pièce, statut WhatsApp, étiquettes, export Excel), graphique des ventes jour par jour avec détail au survol et tableau des chiffres, meilleures ventes. Les réglages du serveur passent en bas.
 
+- **Espace cliente** : carte d'accueil prune étoilée (prénom, ancienneté, commandes, en cours, favoris), dernière commande avec ses étapes (reçue, préparée, en route, livrée) et « Suivre ma commande », favoris en photos, raccourcis à icônes fines (commandes, favoris, nouveautés, authenticité, guide des tailles, aide WhatsApp), adresse modifiable ; sur téléphone, plus de boutons flottants sur les boutons de l'espace.
+
 ## 15. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
