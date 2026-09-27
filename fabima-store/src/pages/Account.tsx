@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Heart, Loader2, LogOut, MapPin, MessageCircle, Package, Pencil, Ruler, ShieldCheck, Sparkles, Volume2 } from 'lucide-react';
+import { ArrowRight, Check, Heart, Loader2, LogOut, MapPin, MessageCircle, Package, Pencil, Ruler, ShieldCheck, Smartphone, Sparkles, Volume2, Zap } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, buildWhatsAppLink } from '../config/site';
@@ -92,8 +92,8 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
       <Card>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-4xl">📱</p>
-            <h1 className="font-display text-4xl mt-2 leading-tight">Mon compte Fabima</h1>
+            <span className="w-12 h-12 rounded-full border border-gold/50 grid place-items-center text-gold-dark"><Smartphone className="w-5 h-5" strokeWidth={1.3} /></span>
+            <h1 className="font-display text-4xl mt-4 leading-tight">Mon compte Fabima</h1>
             <p className="text-ink/75 mt-2">Juste votre numéro. Pas de mot de passe.</p>
           </div>
           <HelpVoice text={HELP_PHONE} />
@@ -112,9 +112,9 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
           </button>
         </form>
         <ul className="mt-7 grid grid-cols-3 gap-3 text-center text-xs text-ink/75">
-          <li className="p-3 rounded-2xl bg-ivory-deep/60"><span className="block text-2xl">📦</span>Suivre mes commandes</li>
-          <li className="p-3 rounded-2xl bg-ivory-deep/60"><span className="block text-2xl">❤️</span>Garder mes favoris</li>
-          <li className="p-3 rounded-2xl bg-ivory-deep/60"><span className="block text-2xl">⚡</span>Commander plus vite</li>
+          <li className="p-3 rounded-2xl border border-ink/[0.07]"><Package className="mx-auto mb-2 w-5 h-5 text-gold-dark" strokeWidth={1.3} />Suivre mes commandes</li>
+          <li className="p-3 rounded-2xl border border-ink/[0.07]"><Heart className="mx-auto mb-2 w-5 h-5 text-gold-dark" strokeWidth={1.3} />Garder mes favoris</li>
+          <li className="p-3 rounded-2xl border border-ink/[0.07]"><Zap className="mx-auto mb-2 w-5 h-5 text-gold-dark" strokeWidth={1.3} />Commander plus vite</li>
         </ul>
       </Card>
     );
@@ -124,8 +124,8 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
     <Card>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-4xl">💬</p>
-          <h1 className="font-display text-3xl mt-2 leading-tight">Écrivez le code reçu sur WhatsApp</h1>
+          <span className="w-12 h-12 rounded-full border border-gold/50 grid place-items-center text-gold-dark"><MessageCircle className="w-5 h-5" strokeWidth={1.3} /></span>
+          <h1 className="font-display text-3xl mt-4 leading-tight">Écrivez le code reçu sur WhatsApp</h1>
           <p className="text-ink/75 mt-2">Envoyé au <strong className="text-ink">+221 {pretty(digits)}</strong></p>
         </div>
         <HelpVoice text={HELP_CODE} />
@@ -176,8 +176,8 @@ const NameStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [name, setName] = useState('');
   return (
     <Card>
-      <p className="text-4xl">🌸</p>
-      <h1 className="font-display text-4xl mt-2">Bienvenue chez Fabima !</h1>
+      <span className="w-12 h-12 rounded-full border border-gold/50 grid place-items-center text-gold-dark"><Sparkles className="w-5 h-5" strokeWidth={1.3} /></span>
+      <h1 className="font-display text-4xl mt-4">Bienvenue chez Fabima !</h1>
       <p className="text-ink/75 mt-2">Comment vous appelez-vous ?</p>
       <form onSubmit={async e => { e.preventDefault(); if (name.trim()) await saveProfile({ firstName: name.trim() }); onDone(); }} className="mt-6">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Votre prénom" aria-label="Votre prénom" autoFocus autoComplete="given-name"
@@ -397,13 +397,13 @@ export const Account: React.FC = () => {
   const done = () => { setAskName(false); if (back?.startsWith('/')) navigate(back); };
 
   return (
-    <div className="bg-petal min-h-[80vh]">
+    <div className="bg-ivory min-h-[80vh]">
       <div className={`${status === 'user' && !(askName && !user?.firstName) ? 'max-w-5xl' : 'max-w-md'} mx-auto px-4 py-10 sm:py-16`}>
         {status === 'loading' && <div className="grid place-items-center py-24"><Loader2 className="w-8 h-8 animate-spin text-gold" /></div>}
         {status === 'off' && (
           <Card>
-            <p className="text-4xl">📱</p>
-            <h1 className="font-display text-3xl mt-2">Mon compte Fabima</h1>
+            <span className="w-12 h-12 rounded-full border border-gold/50 grid place-items-center text-gold-dark"><Smartphone className="w-5 h-5" strokeWidth={1.3} /></span>
+            <h1 className="font-display text-3xl mt-4">Mon compte Fabima</h1>
             <p className="text-ink/75 mt-2">La création de compte n'est pas disponible pour le moment. Vous pouvez tout de même commander et suivre vos commandes depuis ce téléphone.</p>
             <div className="mt-6 flex flex-col gap-3">
               <Link to="/mes-commandes" className="h-14 rounded-full bg-ink text-ivory font-bold grid place-items-center">Mes commandes</Link>

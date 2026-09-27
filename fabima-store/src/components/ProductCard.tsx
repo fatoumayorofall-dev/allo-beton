@@ -56,12 +56,12 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 pointer-events-none">
-          {outOfStock && <span className="px-2.5 py-1 bg-white text-ink/75 text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Épuisé</span>}
-          {preorder && <span className="px-2.5 py-1 bg-white text-wine text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full" data-testid="badge-preorder">Sur commande · {product.preorderDays} j</span>}
-          {!outOfStock && !preorder && product.stock <= 3 && <span className="px-2.5 py-1 bg-amber-100 text-amber-900 text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Plus que {product.stock}</span>}
-          {off > 0 && <span className="px-2.5 py-1 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
-          {product.isNew && <span className="px-2.5 py-1 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
-          {!product.isNew && !off && product.isBestseller && <span className="px-2.5 py-1 bg-ink text-gold-light text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Coup de cœur</span>}
+          {outOfStock && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink/60">Épuisé</span>}
+          {preorder && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink" data-testid="badge-preorder">Sur commande · {product.preorderDays} j</span>}
+          {!outOfStock && !preorder && product.stock <= 3 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink">Plus que {product.stock}</span>}
+          {off > 0 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">-{off}%</span>}
+          {product.isNew && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink">Nouveau</span>}
+          {!product.isNew && !off && product.isBestseller && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-gold-dark">Coup de cœur</span>}
         </div>
 
         {/* Actions */}
@@ -118,15 +118,9 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
           </div>
         </div>
         <Link to={`/produit/${product.slug}`} className="font-display text-[19px] leading-tight text-ink hover:text-gold-dark transition-colors line-clamp-1">{product.name}</Link>
-        {product.reviewCount > 0 && (
-          <span className="flex items-center gap-1 text-[11px] text-ink/70">
-            <span className="text-gold tracking-[-0.1em]" aria-hidden>{'★★★★★'.slice(0, Math.round(product.rating))}</span>
-            <span className="sr-only">Note</span>{product.rating.toFixed(1).replace('.', ',')} sur 5 · {product.reviewCount} avis
-          </span>
-        )}
-        <div className="flex items-baseline gap-2.5 text-[13px]">
-          <span className={`font-semibold ${off ? 'text-wine' : 'text-ink'}`}>{formatPrice(product.price)}</span>
-          {product.oldPrice && <span className="text-ink/70 line-through"><span className="sr-only">au lieu de </span>{formatPrice(product.oldPrice)}</span>}
+        <div className="flex items-baseline gap-2.5 text-[13px] tracking-wide">
+          <span className={`font-medium ${off ? 'text-wine' : 'text-ink/85'}`}>{formatPrice(product.price)}</span>
+          {product.oldPrice && <span className="text-ink/50 line-through"><span className="sr-only">au lieu de </span>{formatPrice(product.oldPrice)}</span>}
         </div>
       </div>
     </article>

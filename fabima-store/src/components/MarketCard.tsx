@@ -17,7 +17,7 @@ export const MarketCard: React.FC<{ product: MarketProduct }> = ({ product: p })
         <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur text-[10px] font-semibold text-ink">
           <Globe2 className="w-3 h-3 text-wine" /> {delayShort(p.delayMin, p.delayMax)}
         </span>
-        {off > 0 && <span className="absolute top-3 right-3 px-2.5 py-1 bg-wine text-white text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
+        {off > 0 && <span className="absolute top-3 right-3 px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">-{off}%</span>}
       </div>
       <div className="pt-4">
         <p className="text-[9px] uppercase tracking-[0.25em] text-ink/70">{p.category}</p>

@@ -114,9 +114,9 @@ export const Home: React.FC = () => {
               <Link to={current.cta.to} className="btn-dark">{current.cta.label} <ArrowRight className="w-4 h-4" /></Link>
               <Link to={current.cta.to === '/boutique/sacs' ? '/boutique/chaussures' : '/boutique/sacs'} className="btn-outline">{current.cta.to === '/boutique/sacs' ? 'Voir les chaussures' : 'Voir les sacs'}</Link>
             </div>
-            <p className="mt-8 flex items-center gap-3 text-[13px] font-semibold">
-              <span className="flex -space-x-2.5" aria-hidden>{['bg-gold-light', 'bg-mauve', 'bg-gold', 'bg-blush'].map(c => <span key={c} className={`w-8 h-8 rounded-full border-[3px] border-ivory ${c}`} />)}</span>
-              <span><span className="text-gold" aria-hidden>★★★★★</span> 4,8/5 · plus de 800 clientes à Dakar</span>
+            <p className="mt-8 flex items-center gap-4 text-[10px] uppercase tracking-luxe text-ink/65">
+              <span className="w-10 h-px bg-gold" aria-hidden />
+              <span>Maison fondée à Dakar · 4,8/5 sur plus de 800 avis</span>
             </p>
             {/* Contrôles du diaporama */}
             <div className="mt-8 flex items-center gap-5 max-w-xs">
@@ -186,7 +186,7 @@ export const Home: React.FC = () => {
             { Icon: RefreshCw, t: 'Échange 7 jours', d: 'Taille ou couleur, sans frais' },
           ].map(({ Icon, t, d }) => (
             <li key={t} className="flex flex-col items-start sm:flex-row sm:items-center gap-2.5 sm:gap-4 p-4 lg:px-7 rounded-[1.25rem] bg-white lg:bg-transparent border border-ink/[0.06] lg:border-0">
-              <span className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blush grid place-items-center shrink-0"><Icon className="w-5 h-5 text-wine" strokeWidth={1.5} /></span>
+              <Icon className="w-6 h-6 text-gold-dark shrink-0" strokeWidth={1.1} />
               <span className="min-w-0"><span className="block font-display text-lg sm:text-xl leading-tight">{t}</span><span className="block text-[12px] text-ink/70 leading-snug">{d}</span></span>
             </li>
           ))}
@@ -204,15 +204,15 @@ export const Home: React.FC = () => {
             <Reveal key={c.id} delay={i * 90}><CategoryTile id={c.id} name={c.name} description={c.description} image={c.image} tall /></Reveal>
           ))}
           <div className="col-span-2 lg:col-span-1 grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
-            <Link to="/boutique?tri=nouveautes" className="group relative overflow-hidden rounded-[2rem] min-h-[190px] bg-gradient-to-br from-blush to-wine/70 p-6 flex flex-col justify-end text-ivory">
-              <span className="absolute inset-0 bg-gradient-to-t from-ink/55 to-transparent" />
+            <Link to="/boutique?tri=nouveautes" className="group relative overflow-hidden rounded-[2rem] min-h-[190px] bg-ink-soft p-6 flex flex-col justify-end text-ivory">
+              <span className="absolute inset-0 bg-gradient-to-t from-ink/70 to-ink/20" />
               <span className="relative font-display text-3xl sm:text-4xl leading-none">Nouveautés</span>
               <span className="relative text-xs mt-2 text-ivory/85 inline-flex items-center gap-1.5">Arrivées de la saison <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
             </Link>
             <Link to="/boutique?prix=lt20&tri=note" className="group relative overflow-hidden rounded-[2rem] min-h-[190px] bg-ink p-6 flex flex-col justify-end text-ivory">
-              <span className="eyebrow !text-gold-light">Petits prix</span>
-              <span className="font-display text-3xl sm:text-4xl leading-[1.02] mt-2">Moins de 20 000 FCFA</span>
-              <span className="text-xs mt-2 text-gold-light inline-flex items-center gap-1.5">Idées cadeaux <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
+              <span className="eyebrow !text-gold-light">L'essentiel</span>
+              <span className="font-display text-3xl sm:text-4xl leading-[1.02] mt-2">Les petites attentions</span>
+              <span className="text-xs mt-2 text-gold-light inline-flex items-center gap-1.5">Moins de 20 000 FCFA <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
             </Link>
           </div>
         </div>
@@ -222,7 +222,7 @@ export const Home: React.FC = () => {
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">
         <SectionHead eyebrow="La sélection" title="Nos coups" accent="de cœur" link={{ to: '/boutique', label: 'Voir tout' }} />
         <div className="-mt-4 mb-8 flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0" role="tablist" aria-label="Sélection">
-          {([['bestsellers', 'Coups de cœur'], ['nouveautes', 'Nouveautés'], ['promos', 'Petits prix']] as const).map(([id, label]) => (
+          {([['bestsellers', 'Coups de cœur'], ['nouveautes', 'Nouveautés'], ['promos', 'L\'essentiel']] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`shrink-0 px-5 h-10 rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold border transition-colors ${tab === id ? 'bg-ink text-ivory border-ink' : 'border-ink/15 text-ink/75 hover:border-ink/40'}`}>{label}</button>
           ))}
@@ -352,7 +352,7 @@ export const Home: React.FC = () => {
           {TESTIMONIALS.map((t, i) => (
             <Reveal key={t.name} delay={i * 90}>
               <figure className="h-full p-7 sm:p-8 rounded-[2rem] bg-white border border-ink/[0.05] flex flex-col">
-                <p className="text-gold tracking-[0.2em]" aria-label="5 étoiles sur 5">★★★★★</p>
+                <p className="flex items-center gap-3 text-[10px] uppercase tracking-luxe text-gold-dark"><span className="w-6 h-px bg-gold" aria-hidden />Avis vérifié · 5/5</p>
                 <blockquote className="font-display text-[1.45rem] leading-snug mt-4 flex-1">« {t.text} »</blockquote>
                 <figcaption className="mt-6 text-[11px] uppercase tracking-[0.22em] font-semibold text-gold-dark">{t.name} <span className="text-ink/70 font-normal">· {t.city}</span></figcaption>
               </figure>

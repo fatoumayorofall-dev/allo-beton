@@ -53,7 +53,7 @@ export const OrderSuccess: React.FC = () => {
       <div className="mt-14 bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10 animate-fade-up" style={{ animationDelay: '400ms' }}>
         <dl className="grid sm:grid-cols-3 gap-6 text-sm pb-8 border-b border-ink/10">
           <div><dt className="field-label">Livraison</dt><dd className="font-medium">{order.customer.zone}</dd><dd className="text-ink/75">{[order.customer.location?.label, order.customer.address].filter(Boolean).join(' · ')}</dd>
-            {order.customer.location && <dd className="text-emerald-800 text-xs mt-1">📍 Point GPS enregistré</dd>}</div>
+            {order.customer.location && <dd className="text-emerald-800 text-xs mt-1">Point GPS enregistré</dd>}</div>
           <div><dt className="field-label">Paiement</dt><dd className="font-medium">{PAYMENT_LABELS[order.paymentMethod]}</dd>
             <dd className={order.paymentStatus === 'paye' ? 'text-emerald-800' : 'text-amber-800'}>{order.paymentStatus === 'paye' ? 'Payé' : 'À régler à la livraison'}</dd></div>
           <div><dt className="field-label">Total</dt><dd className="font-display text-4xl">{formatPrice(order.total)}</dd></div>
@@ -99,11 +99,11 @@ export const OrderSuccess: React.FC = () => {
       )}
       {order.items.some(i => i.market) && (
         <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl bg-white border border-ink/10 print:hidden" data-testid="success-market">
-          🌍 Nous commandons tout de suite {order.items.filter(i => i.market).length > 1 ? 'vos articles' : 'votre article'} du Marché chez notre partenaire. Vous recevrez un message WhatsApp quand il sera commandé, en route, puis arrivé à Dakar.
+          Nous commandons tout de suite {order.items.filter(i => i.market).length > 1 ? 'vos articles' : 'votre article'} du Marché chez notre partenaire. Vous recevrez un message WhatsApp quand il sera commandé, en route, puis arrivé à Dakar.
         </p>
       )}
-      <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl bg-blush/40 print:hidden">
-        🛵 Quand votre livreur partira, vous recevrez un message WhatsApp : vous pourrez le <strong>suivre en direct sur la carte</strong>, jusqu'à votre porte.
+      <p className="mt-8 max-w-xl mx-auto text-center text-sm p-4 rounded-2xl border border-ink/10 print:hidden">
+        Quand votre livreur partira, vous recevrez un message WhatsApp : vous pourrez le <strong>suivre en direct sur la carte</strong>, jusqu'à votre porte.
       </p>
       <div className="mt-6 flex flex-col sm:flex-row gap-2 justify-center print:hidden">
         <Link to={`/suivi?commande=${order.id}&tel=${encodeURIComponent(order.customer.phone)}`} className="btn-dark">Suivre ma commande</Link>

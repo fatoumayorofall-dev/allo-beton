@@ -103,7 +103,7 @@ export const Cart: React.FC = () => {
                       {product && <p className="eyebrow !text-ink/70">{product.subcategory}</p>}
                       <Link to={product ? `/produit/${product.slug}` : '#'} className="font-display text-2xl leading-tight mt-1 block hover:text-gold-dark">{item.name}</Link>
                       <p className="text-sm text-ink/70 mt-2">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
-{item.market && <p className="text-[11px] text-wine mt-1" data-testid="cart-market">🌍 Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
+{item.market && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-market">Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
 {item.preorder && <p className="text-[11px] text-wine mt-1" data-testid="cart-preorder">⏳ Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
                     </div>
                     <span className="font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>

@@ -32,7 +32,7 @@
   .btn { @apply relative isolate overflow-hidden inline-flex items-center justify-center gap-2.5 px-8 h-[52px] rounded-full text-[11px] uppercase tracking-[0.22em] font-semibold transition-all duration-500 ease-luxe disabled:opacity-40 disabled:pointer-events-none; }
   .btn-dark { @apply btn bg-ink text-ivory hover:bg-gold-dark hover:shadow-soft; }
   .btn-light { @apply btn bg-ivory text-ink hover:bg-gold-light; }
-  .btn-gold { @apply btn bg-gradient-to-r from-gold-dark to-wine text-white hover:shadow-soft hover:brightness-110; }
+  .btn-gold { @apply btn bg-gold-dark text-white hover:bg-ink hover:shadow-soft; }
   .btn-outline { @apply btn border border-ink/80 text-ink hover:bg-ink hover:text-ivory; }
   .btn-ghost-light { @apply btn border border-ivory/50 text-ivory hover:bg-ivory hover:text-ink; }
 
@@ -65,9 +65,9 @@
 .bg-petal {
   background-color: #fdf7f5;
   background-image:
-    radial-gradient(40rem 28rem at 8% 10%, rgba(245,213,214,.75), transparent 60%),
-    radial-gradient(34rem 26rem at 95% 30%, rgba(185,150,184,.25), transparent 60%),
-    radial-gradient(30rem 24rem at 60% 100%, rgba(240,201,193,.55), transparent 60%);
+    radial-gradient(40rem 28rem at 8% 10%, rgba(245,213,214,.38), transparent 60%),
+    radial-gradient(34rem 26rem at 95% 30%, rgba(185,150,184,.12), transparent 60%),
+    radial-gradient(30rem 24rem at 60% 100%, rgba(240,201,193,.28), transparent 60%);
 }
 
 /* Grain photographique subtil pour les visuels plein écran */

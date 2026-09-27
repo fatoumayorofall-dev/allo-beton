@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Banknote, Check, ChevronDown, ChevronLeft, CreditCard, Gift, Loader2, Lock, MapPin, Smartphone } from 'lucide-react';
+import { Banknote, Check, ChevronDown, ChevronLeft, Clock, CreditCard, Gift, Globe2, Loader2, Lock, MapPin, Smartphone } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, SHOP_LOCATION, zoneForPoint } from '../config/site';
 import type { DeliveryLocation, PaymentMethod } from '../data/types';
@@ -197,8 +197,8 @@ export const Checkout: React.FC = () => {
                 <legend className="font-display text-3xl mb-6">Vos coordonnées</legend>
                 {(savedCustomer || me?.firstName) && <p className="text-xs text-ink/70 -mt-3">Bon retour parmi nous, {savedCustomer?.firstName || me?.firstName} : vos coordonnées ont été préremplies.</p>}
                 {account.status === 'guest' && !savedCustomer && (
-                  <Link to="/compte?retour=/commande" className="flex items-center gap-3 p-4 -mt-1 rounded-2xl bg-blush/40 text-sm">
-                    <span className="text-2xl">📱</span><span><strong>Déjà cliente ?</strong> Connectez-vous avec votre numéro pour tout préremplir.</span>
+                  <Link to="/compte?retour=/commande" className="flex items-center gap-3 p-4 -mt-1 rounded-2xl border border-ink/10 text-sm hover:border-ink/30 transition-colors">
+                    <Smartphone className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.4} /><span><strong>Déjà cliente ?</strong> Connectez-vous avec votre numéro pour tout préremplir.</span>
                   </Link>
                 )}
                 <div className="grid sm:grid-cols-2 gap-5">
@@ -259,7 +259,7 @@ export const Checkout: React.FC = () => {
                   <p className="field-label !mb-1.5">Livraison à</p>
                   <p className="font-semibold">{form.firstName} {form.lastName} · {form.phone}</p>
                   <p className="text-ink/75">{[form.location?.label, form.location?.landmark, form.address].filter(Boolean).join(' · ') || form.zone} — {form.zone}, {zone.delay}</p>
-                  {form.location && <p className="text-xs text-emerald-800 mt-1">📍 Point de livraison enregistré sur la carte : le livreur viendra directement.</p>}
+                  {form.location && <p className="text-xs text-emerald-800 mt-1">Point de livraison enregistré sur la carte : le livreur viendra directement.</p>}
                 </div>
                 <button onClick={() => setStep(1)} className="text-[11px] uppercase tracking-[0.2em] link-luxe shrink-0">Modifier</button>
               </div>
@@ -267,8 +267,8 @@ export const Checkout: React.FC = () => {
               <fieldset>
                 <legend className="font-display text-3xl mb-6">Mode de paiement</legend>
                 {hasOnDemand && onDemandDelay && (
-                  <p className="-mt-3 mb-5 flex gap-3 p-4 rounded-2xl bg-blush/40 text-sm" data-testid="market-notice">
-                    <span className="text-xl">{hasMarket ? '🌍' : '⏳'}</span>
+                  <p className="-mt-3 mb-5 flex gap-3 p-4 rounded-2xl border border-ink/10 text-sm" data-testid="market-notice">
+                    {hasMarket ? <Globe2 className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.4} /> : <Clock className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.4} />}
                     <span>Votre panier contient {onDemandItems.length > 1 ? 'des pièces' : 'une pièce'} <strong>sur commande</strong>{hasMarket && ' (Le Marché)'}, commandée{onDemandItems.length > 1 ? 's' : ''} spécialement pour vous : paiement à la commande, livraison en <strong>{delayLabel(onDemandDelay.min, onDemandDelay.max)}</strong>. Vous serez prévenue sur WhatsApp à chaque étape.</span>
                   </p>
                 )}
@@ -329,7 +329,7 @@ export const Checkout: React.FC = () => {
                 <div className="flex-1 min-w-0 text-sm">
                   <p className="font-display text-lg leading-tight line-clamp-1">{i.name}</p>
                   <p className="text-xs text-ink/70">{[i.color, i.size && `T. ${i.size}`].filter(Boolean).join(' · ')}</p>
-                  {i.market && <p className="text-[11px] text-wine mt-0.5">🌍 Marché · {delayLabel(i.market.delayMin, i.market.delayMax)}</p>}
+                  {i.market && <p className="text-[11px] uppercase tracking-[0.14em] text-gold-dark mt-0.5">Marché · {delayLabel(i.market.delayMin, i.market.delayMax)}</p>}
                   {i.preorder && <p className="text-[11px] text-wine mt-0.5">⏳ Sur commande · {delayLabel(i.preorder.days, i.preorder.days)}</p>}
                 </div>
                 <span className="text-sm whitespace-nowrap">{formatPrice(i.price * i.quantity)}</span>

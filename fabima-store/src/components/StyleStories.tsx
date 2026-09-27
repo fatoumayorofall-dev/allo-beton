@@ -54,7 +54,7 @@ export const StyleStories: React.FC = () => {
                     <ProductImage src={s.image} alt="" label="" className="w-full h-full transition-transform duration-700 ease-luxe group-hover:scale-110" />
                   </span>
                 </span>
-                {s.isNew && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-wine text-white text-[8px] font-bold tracking-[0.12em] uppercase">Nouveau</span>}
+                {s.isNew && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-ink text-ivory text-[8px] font-semibold tracking-[0.2em] uppercase">Nouveau</span>}
               </span>
               <span className="mt-2.5 text-[12px] font-medium text-center leading-tight line-clamp-2">{s.sub}</span>
               <span className="text-[10px] text-ink/70">{s.count} modèle{s.count > 1 ? 's' : ''}</span>
