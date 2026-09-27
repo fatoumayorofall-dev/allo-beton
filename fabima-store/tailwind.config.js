@@ -13,10 +13,10 @@ export default {
         wine: '#b03a64',                                                    // framboise (promos)
       },
       fontFamily: {
-        display: ['"Instrument Serif"', 'Georgia', 'serif'],
-        sans: ['"Inter Tight"', 'system-ui', 'sans-serif'],
+        display: ['"Bodoni Moda"', 'Didot', 'Georgia', 'serif'],
+        sans: ['Jost', 'Futura', 'system-ui', 'sans-serif'],
         // Touche « écrite à la main » : l'italique du sérif, plus actuelle qu'une calligraphie
-        script: ['"Instrument Serif"', 'Georgia', 'serif'],
+        script: ['"Bodoni Moda"', 'Didot', 'Georgia', 'serif'],
       },
       letterSpacing: { luxe: '0.32em' },
       boxShadow: {

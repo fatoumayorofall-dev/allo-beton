@@ -10,9 +10,9 @@
     @apply bg-ivory text-ink font-sans antialiased;
     font-feature-settings: 'ss01', 'cv11';
   }
-  h1, h2, h3, .font-display { font-feature-settings: 'liga', 'dlig'; letter-spacing: 0; font-synthesis-weight: none; }
+  h1, h2, h3, .font-display { font-feature-settings: 'liga', 'dlig'; letter-spacing: -0.015em; }
   /* Italique du sérif pour les touches manuscrites (« Bonjour », « le coup de cœur »…) */
-  .font-script { font-style: italic; letter-spacing: 0; font-synthesis-weight: none; }
+  .font-script { font-style: italic; letter-spacing: -0.01em; }
   /* Titres équilibrés sur plusieurs lignes, paragraphes sans mot orphelin */
   h1, h2, h3, h4 { text-wrap: balance; }
   p, li, figcaption, blockquote { text-wrap: pretty; }
@@ -172,7 +172,7 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
 @keyframes pin-pulse { from { transform: scale(.6); opacity: 1; } to { transform: scale(1.5); opacity: 0; } }
 .fabima-pin-shop {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 9999px; background: #fff; border: 2px solid #3a1f2d;
-  font-family: 'Instrument Serif', serif; font-style: italic; font-size: 24px; color: #3a1f2d; box-shadow: 0 4px 12px rgba(58,31,45,.25);
+  font-family: 'Bodoni Moda', serif; font-style: italic; font-size: 24px; color: #3a1f2d; box-shadow: 0 4px 12px rgba(58,31,45,.25);
 }
 .fabima-pin-relay {
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #fff; border: 2px solid #b03a64;

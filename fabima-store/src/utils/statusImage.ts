@@ -56,9 +56,9 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, max
 /** Dessine le statut et renvoie un fichier JPEG prêt à partager. */
 export async function renderStatusImage(p: Product): Promise<Blob> {
   await Promise.all([
-    document.fonts.load('italic 400 120px "Instrument Serif"'),
-    document.fonts.load('400 80px "Instrument Serif"'),
-    document.fonts.load('700 100px "Inter Tight"'),
+    document.fonts.load('italic 400 120px "Bodoni Moda"'),
+    document.fonts.load('400 80px "Bodoni Moda"'),
+    document.fonts.load('700 100px Jost'),
   ]).catch(() => {});
 
   const canvas = document.createElement('canvas');
@@ -80,10 +80,10 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   // Logo
   ctx.textAlign = 'center';
   ctx.fillStyle = INK;
-  ctx.font = 'italic 400 110px "Instrument Serif", serif';
+  ctx.font = 'italic 400 110px "Bodoni Moda", serif';
   ctx.fillText('Fabima', W / 2, 165);
   ctx.fillStyle = GOLD;
-  ctx.font = '600 24px "Inter Tight", sans-serif';
+  ctx.font = '600 24px Jost, sans-serif';
   ctx.fillText('✿  S T O R E  ✿', W / 2, 212);
 
   // Photo en arche
@@ -103,7 +103,7 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
     ctx.drawImage(img, ax + (aw - iw) / 2, ay + (ah - ih) / 2, iw, ih);
   } else {
     ctx.fillStyle = 'rgba(58,31,45,.55)';
-    ctx.font = 'italic 400 64px "Instrument Serif", serif';
+    ctx.font = 'italic 400 64px "Bodoni Moda", serif';
     wrap(ctx, p.name, aw - 140, 3).forEach((l, i, arr) => ctx.fillText(l, W / 2, ay + ah / 2 - (arr.length - 1) * 38 + i * 76));
   }
   ctx.restore();
@@ -116,7 +116,7 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   const off = discountPercent(p.price, p.oldPrice);
   const badge = off ? `-${off}%` : p.isNew ? 'NOUVEAU' : '';
   if (badge) {
-    ctx.font = '700 40px "Inter Tight", sans-serif';
+    ctx.font = '700 40px Jost, sans-serif';
     const bw = ctx.measureText(badge).width + 64;
     ctx.fillStyle = off ? WINE : INK;
     roundRect(ctx, ax + aw - bw - 10, ay + ah - 110, bw, 76, 38);
@@ -127,20 +127,20 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
 
   // Nom
   ctx.fillStyle = INK;
-  ctx.font = '400 70px "Instrument Serif", serif';
+  ctx.font = '400 70px "Bodoni Moda", serif';
   const nameLines = wrap(ctx, p.name, 900, 2);
   nameLines.forEach((l, i) => ctx.fillText(l, W / 2, 1310 + i * 74));
   let y = 1310 + (nameLines.length - 1) * 74;
 
   // Prix
   y += 118;
-  ctx.font = '800 112px "Inter Tight", sans-serif';
+  ctx.font = '800 112px Jost, sans-serif';
   ctx.fillStyle = off ? WINE : INK;
   const price = formatPrice(p.price);
   ctx.fillText(price, W / 2, y);
   if (p.oldPrice) {
     y += 58;
-    ctx.font = '500 44px "Inter Tight", sans-serif';
+    ctx.font = '500 44px Jost, sans-serif';
     ctx.fillStyle = 'rgba(58,31,45,.45)';
     const old = formatPrice(p.oldPrice);
     ctx.fillText(old, W / 2, y);
@@ -168,7 +168,7 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
       ctx.stroke();
     });
     y += 72;
-    ctx.font = '600 34px "Inter Tight", sans-serif';
+    ctx.font = '600 34px Jost, sans-serif';
     ctx.fillStyle = 'rgba(58,31,45,.7)';
     ctx.fillText(p.colors.length > 1 ? `${p.colors.length} couleurs disponibles` : p.colors[0].name, W / 2, y);
   }
@@ -179,12 +179,12 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   roundRect(ctx, 70, by, W - 140, 170, 85);
   ctx.fill();
   ctx.fillStyle = GOLD_LIGHT;
-  ctx.font = '600 32px "Inter Tight", sans-serif';
+  ctx.font = '600 32px Jost, sans-serif';
   ctx.fillText('👆 Voir toutes les photos et commander', W / 2, by + 62);
   ctx.fillStyle = '#fff';
   const link = displayLink(p);
   let size = 52;
-  do { ctx.font = `700 ${size}px "Inter Tight", sans-serif`; size -= 2; } while (ctx.measureText(link).width > W - 220 && size > 28);
+  do { ctx.font = `700 ${size}px Jost, sans-serif`; size -= 2; } while (ctx.measureText(link).width > W - 220 && size > 28);
   ctx.fillText(link, W / 2, by + 128);
 
   return new Promise((resolve, reject) => {

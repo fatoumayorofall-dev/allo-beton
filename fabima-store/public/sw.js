@@ -1,6 +1,6 @@
 // Service worker Fabima Store : ouverture rapide et consultation même avec une connexion faible.
-const VERSION = 'fabima-v5'; // v5 : polices Instrument Serif et Inter Tight
-const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/fonts/inter-tight-latin.woff2', '/fonts/instrument-serif-latin.woff2'];
+const VERSION = 'fabima-v6'; // v6 : polices Bodoni Moda et Jost
+const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/fonts/jost-latin.woff2', '/fonts/bodoni-moda-latin.woff2'];
 const RUNTIME = `${VERSION}-runtime`;
 
 self.addEventListener('install', event => {
