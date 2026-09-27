@@ -330,7 +330,7 @@ export const Checkout: React.FC = () => {
                   <p className="font-display text-lg leading-tight line-clamp-1">{i.name}</p>
                   <p className="text-xs text-ink/70">{[i.color, i.size && `T. ${i.size}`].filter(Boolean).join(' · ')}</p>
                   {i.market && <p className="text-[11px] uppercase tracking-[0.14em] text-gold-dark mt-0.5">Marché · {delayLabel(i.market.delayMin, i.market.delayMax)}</p>}
-                  {i.preorder && <p className="text-[11px] text-wine mt-0.5">⏳ Sur commande · {delayLabel(i.preorder.days, i.preorder.days)}</p>}
+                  {i.preorder && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-0.5">Sur commande · {delayLabel(i.preorder.days, i.preorder.days)}</p>}
                 </div>
                 <span className="text-sm whitespace-nowrap">{formatPrice(i.price * i.quantity)}</span>
               </li>

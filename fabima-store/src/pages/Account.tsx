@@ -34,8 +34,8 @@ const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 const HelpVoice: React.FC<{ text: string }> = ({ text }) => (
-  <button type="button" onClick={() => speak(text)} className="inline-flex items-center gap-2 px-4 h-10 rounded-full bg-blush/60 text-sm">
-    <Volume2 className="w-4 h-4 text-wine" /> Écouter
+  <button type="button" onClick={() => speak(text)} className="inline-flex items-center gap-2 px-4 h-10 rounded-full border border-ink/15 text-[11px] uppercase tracking-[0.18em] font-semibold text-ink/75 hover:border-ink hover:text-ink transition-colors">
+    <Volume2 className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Écouter
   </button>
 );
 

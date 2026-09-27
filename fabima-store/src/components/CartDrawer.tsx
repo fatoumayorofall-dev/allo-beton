@@ -99,7 +99,7 @@ export const CartDrawer: React.FC = () => {
                         </div>
                         <p className="text-xs text-ink/70 mt-1">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
 {item.market && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-market">Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
-{item.preorder && <p className="text-[11px] text-wine mt-1" data-testid="cart-preorder">⏳ Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
+{item.preorder && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-preorder">Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
                         <div className="mt-auto flex items-center justify-between pt-3">
                           <div className="flex items-center border border-ink/15 h-9 rounded-full overflow-hidden">
                             <button onClick={() => updateQuantity(item.key, item.quantity - 1)} aria-label="Diminuer" className="w-9 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3 h-3" /></button>
