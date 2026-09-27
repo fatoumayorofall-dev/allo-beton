@@ -13,9 +13,10 @@ export default {
         wine: '#b03a64',                                                    // framboise (promos)
       },
       fontFamily: {
-        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        sans: ['Manrope', 'system-ui', 'sans-serif'],
-        script: ['"Pinyon Script"', '"Great Vibes"', 'cursive'],
+        display: ['"Instrument Serif"', 'Georgia', 'serif'],
+        sans: ['"Inter Tight"', 'system-ui', 'sans-serif'],
+        // Touche « écrite à la main » : l'italique du sérif, plus actuelle qu'une calligraphie
+        script: ['"Instrument Serif"', 'Georgia', 'serif'],
       },
       letterSpacing: { luxe: '0.32em' },
       boxShadow: {
