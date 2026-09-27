@@ -38,21 +38,33 @@ export const QuickView: React.FC = () => {
     <div className="fixed inset-0 z-[85] flex items-end sm:items-center justify-center sm:p-6">
       <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm animate-fade-in" onClick={close} />
       <div role="dialog" aria-modal="true" aria-label={`Aperçu : ${product.name}`}
-        className="relative bg-ivory w-full max-w-4xl rounded-t-[2rem] sm:rounded-[2rem] max-h-[92vh] overflow-y-auto grid sm:grid-cols-2 animate-fade-up shadow-luxe">
+        className="relative bg-ivory w-full max-w-4xl rounded-t-[2rem] sm:rounded-[2rem] max-h-[88svh] sm:max-h-[92vh] overflow-y-auto grid sm:grid-cols-2 animate-fade-up shadow-luxe pb-[env(safe-area-inset-bottom,0px)] sm:pb-0">
+        {/* Poignée du panneau (téléphone) */}
+        <span className="sm:hidden absolute top-2.5 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-ink/15" aria-hidden />
         <button onClick={close} aria-label="Fermer" className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full bg-white/90 grid place-items-center hover:rotate-90 transition-transform duration-500"><X className="w-4 h-4" /></button>
-        <div className="relative w-full aspect-[4/5] sm:aspect-auto sm:h-full">
+        <div className="hidden sm:block relative w-full sm:h-full">
           <ProductImage src={product.images[0]} alt={product.name} className="w-full h-full" />
           {product.video && <ProductVideo src={product.video} className="absolute inset-0 w-full h-full" />}
         </div>
-        <div className="p-7 sm:p-10 flex flex-col">
-          <p className="eyebrow">{product.subcategory}</p>
-          <h2 className="font-display text-4xl mt-3 leading-[1.05]">{product.name}</h2>
-          <div className="mt-3 flex items-center gap-2 text-xs text-ink/70"><Stars rating={product.rating} /> {product.reviewCount} avis</div>
-          <div className="mt-5 flex items-baseline gap-3">
+        <div className="px-5 pt-7 sm:p-10 flex flex-col">
+          {/* Téléphone : photo en vignette à côté du nom, pour garder le bouton à portée de pouce */}
+          <div className="flex gap-4 items-center sm:block">
+            <div className="sm:hidden relative w-24 h-28 shrink-0 rounded-2xl overflow-hidden">
+              <ProductImage src={product.images[0]} alt="" label="" className="w-full h-full" />
+              {product.video && <ProductVideo src={product.video} className="absolute inset-0 w-full h-full" />}
+            </div>
+            <div className="min-w-0 pr-10 sm:pr-0">
+              <p className="eyebrow">{product.subcategory}</p>
+              <h2 className="font-display text-2xl sm:text-4xl mt-1 sm:mt-3 leading-[1.05]">{product.name}</h2>
+              <p className={`sm:hidden mt-1.5 font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}{product.oldPrice && <span className="ml-2 text-ink/70 line-through text-xs font-normal">{formatPrice(product.oldPrice)}</span>}</p>
+            </div>
+          </div>
+          <div className="hidden sm:flex mt-3 items-center gap-2 text-xs text-ink/70"><Stars rating={product.rating} /> {product.reviewCount} avis</div>
+          <div className="hidden sm:flex mt-5 items-baseline gap-3">
             <span className={`text-xl font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
             {product.oldPrice && <span className="text-ink/70 line-through text-sm">{formatPrice(product.oldPrice)}</span>}
           </div>
-          <p className="mt-5 text-sm text-ink/75 leading-relaxed line-clamp-3">{product.description}</p>
+          <p className="hidden sm:block mt-5 text-sm text-ink/75 leading-relaxed line-clamp-3">{product.description}</p>
 
           {product.colors.length > 0 && (
             <div className="mt-6">
@@ -72,13 +84,13 @@ export const QuickView: React.FC = () => {
             </div>
           )}
 
-          <div className="mt-8 flex gap-2">
+          <div className="mt-8 flex gap-2 sticky bottom-0 -mx-5 px-5 py-3 bg-ivory/95 backdrop-blur sm:static sm:mx-0 sm:px-0 sm:py-0 sm:bg-transparent">
             <button onClick={add} disabled={!canBuy(product)} className="btn-dark flex-1">{!canBuy(product) ? 'Épuisé' : isPreorder(product) ? `Commander · sous ${product.preorderDays} j` : 'Ajouter au panier'}</button>
             <button onClick={e => { if (!isInWishlist(product.id)) sparkleBurst(e.currentTarget, { hearts: true, count: 12, power: 0.8 }); toggleWishlist(product.id); }} aria-label="Favoris" className="w-[52px] h-[52px] rounded-full border border-ink/20 grid place-items-center hover:border-ink">
               <Heart className={`w-4 h-4 ${isInWishlist(product.id) ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
             </button>
           </div>
-          <Link to={`/produit/${product.slug}`} onClick={close} className="mt-6 self-start link-luxe text-[11px] uppercase tracking-[0.22em] font-semibold inline-flex items-center gap-2">
+          <Link to={`/produit/${product.slug}`} onClick={close} className="mt-3 mb-4 sm:mb-0 sm:mt-6 self-start link-luxe text-[11px] uppercase tracking-[0.22em] font-semibold inline-flex items-center gap-2">
             Voir la fiche complète <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

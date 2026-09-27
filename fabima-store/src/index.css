@@ -86,6 +86,9 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
   body[data-tabbar] .floating-actions { bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px)); }
   body[data-tabbar] .install-banner { bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)); }
   body[data-tabbar][data-install-banner] .floating-actions { bottom: 15rem; }
+  /* L'en-tête s'efface au défilement : les barres collées dessous remontent tout en haut */
+  .under-header { transition: top .5s cubic-bezier(.22,1,.36,1); }
+  body[data-header-hidden] .under-header { top: 0; }
 }
 
 /* Apparition au défilement */

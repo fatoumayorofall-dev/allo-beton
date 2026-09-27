@@ -205,6 +205,9 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 - **Fiche produit** : « Ajouter au panier » tient sur une ligne.
 - Notifications, bandeau d'installation et boutons flottants se placent au-dessus de la barre d'onglets.
 
+- **En-tête qui s'efface** au défilement vers le bas et revient dès qu'on remonte (téléphone) : plus de place pour les pièces ; la barre « Filtrer » remonte tout en haut. Le cœur de l'en-tête passe dans la barre d'onglets.
+- **Ajout rapide au pouce** : sur chaque carte, un bouton panier ouvre un panneau compact par le bas (vignette, prix, couleur, taille, « Ajouter au panier » collé en bas), sans quitter la liste.
+
 ## 16. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :

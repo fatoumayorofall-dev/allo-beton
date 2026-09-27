@@ -57,7 +57,7 @@ export const Market: React.FC = () => {
 
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12">
         {/* Filtres */}
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4 py-8 sticky top-16 lg:top-[116px] z-30 bg-ivory/95 backdrop-blur">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-4 py-8 under-header sticky top-16 lg:top-[116px] z-30 bg-ivory/95 backdrop-blur">
           <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0 flex-1">
             {['', ...categories].map(c => (
               <button key={c || 'all'} onClick={() => setCat(c)}

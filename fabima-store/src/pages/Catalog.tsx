@@ -199,7 +199,7 @@ export const Catalog: React.FC = () => {
         )}
 
         {/* Barre d'outils */}
-        <div className="flex items-center justify-between gap-3 py-6 sticky top-16 lg:top-[116px] z-30 bg-ivory/95 backdrop-blur">
+        <div className="flex items-center justify-between gap-3 py-6 under-header sticky top-16 lg:top-[116px] z-30 bg-ivory/95 backdrop-blur">
           <button onClick={() => setFiltersOpen(true)} className="lg:hidden inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold">
             <SlidersHorizontal className="w-4 h-4" strokeWidth={1.5} /> Filtrer {activeCount > 0 && <span className="w-5 h-5 rounded-full bg-ink text-ivory text-[10px] grid place-items-center">{activeCount}</span>}
           </button>

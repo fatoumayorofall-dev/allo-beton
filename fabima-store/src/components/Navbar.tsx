@@ -26,6 +26,8 @@ export const Navbar: React.FC = () => {
   const account = useAccount();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  // Téléphone : l'en-tête s'efface quand on descend et revient dès qu'on remonte (plus de place pour les pièces)
+  const [tucked, setTucked] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [mega, setMega] = useState<CategoryId | null>(null);
@@ -36,7 +38,15 @@ export const Navbar: React.FC = () => {
   useEscape(mobileOpen, () => setMobileOpen(false));
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      setScrolled(y > 40);
+      const d = y - last;
+      if (window.innerWidth >= 1024 || y < 160 || d < -6) setTucked(false);
+      else if (d > 6) setTucked(true);
+      last = y;
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -60,6 +70,8 @@ export const Navbar: React.FC = () => {
 
   // Au défilement, l'en-tête devient un îlot flottant en verre dépoli
   const floating = scrolled && !mega;
+  const hideBar = tucked && !mobileOpen && !searchOpen;
+  useEffect(() => { document.body.toggleAttribute('data-header-hidden', hideBar); }, [hideBar]);
   const tone = 'text-ink';
   const iconBtn = `relative w-10 h-10 grid place-items-center rounded-full transition-colors hover:bg-ink/5`;
   const badge = 'absolute top-1 right-0.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold grid place-items-center';
@@ -73,7 +85,7 @@ export const Navbar: React.FC = () => {
 
       <header onMouseLeave={() => setMega(null)} data-floating={floating || undefined}
         className={`sticky top-0 inset-x-0 z-50 transition-[background-color,box-shadow,border-radius,margin,transform] duration-500 ease-luxe ${
-          floating ? 'mx-2 sm:mx-4 translate-y-2 rounded-full lg:rounded-[2rem] bg-ivory/[0.88] backdrop-blur-xl backdrop-saturate-150 shadow-[0_18px_40px_-22px_rgba(58,31,45,.45)] ring-1 ring-ink/[0.06]'
+          hideBar ? '-translate-y-[130%] mx-2 sm:mx-4 rounded-full bg-ivory/[0.88] backdrop-blur-xl' : floating ? 'mx-2 sm:mx-4 translate-y-2 rounded-full lg:rounded-[2rem] bg-ivory/[0.88] backdrop-blur-xl backdrop-saturate-150 shadow-[0_18px_40px_-22px_rgba(58,31,45,.45)] ring-1 ring-ink/[0.06]'
             : 'bg-ivory/95 backdrop-blur-md shadow-[0_1px_0_rgba(22,18,15,.08)]'}`}>
         <div className="max-w-[1440px] mx-auto px-4 sm:px-8 lg:px-12 h-16 lg:h-[72px] grid grid-cols-[1fr_auto_1fr] items-center">
           {/* Gauche */}
@@ -92,7 +104,7 @@ export const Navbar: React.FC = () => {
               <User className="w-[18px] h-[18px]" strokeWidth={1.5} />
               {account.user && <span className="absolute bottom-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-ivory" />}
             </Link>
-            <Link to="/favoris" aria-label="Mes favoris" className={iconBtn}>
+            <Link to="/favoris" aria-label="Mes favoris" className={`hidden lg:grid ${iconBtn}`}>
               <Heart className="w-[18px] h-[18px]" strokeWidth={1.5} />
               {wishlist.length > 0 && <span className={`${badge} bg-gold text-white`}>{wishlist.length}</span>}
             </Link>

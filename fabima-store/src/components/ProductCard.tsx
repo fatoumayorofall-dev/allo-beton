@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, Heart, Play, Plus } from 'lucide-react';
+import { Eye, Heart, Play, Plus, ShoppingBag } from 'lucide-react';
 import type { Product } from '../data/types';
 import { useStore } from '../context/StoreContext';
 import { discountPercent, formatPrice } from '../utils/format';
@@ -71,10 +71,19 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
             <Heart key={String(liked)} className={`w-4 h-4 ${liked ? 'fill-wine text-wine animate-heart-pop' : 'text-ink'}`} strokeWidth={1.5} />
           </button>
           <button onClick={() => openQuickView(product)} aria-label="Aperçu rapide"
-            className="w-9 h-9 rounded-full bg-white/90 backdrop-blur grid place-items-center transition-all hover:scale-110 lg:opacity-0 lg:translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 duration-500">
+            className="hidden lg:grid w-9 h-9 rounded-full bg-white/90 backdrop-blur place-items-center transition-all hover:scale-110 lg:opacity-0 lg:translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 duration-500">
             <Eye className="w-4 h-4 text-ink" strokeWidth={1.5} />
           </button>
         </div>
+
+        {/* Téléphone : ajout rapide au pouce, sans quitter la liste */}
+        {!outOfStock && (
+          <button onClick={() => openQuickView(product)} aria-label={`Ajout rapide : ${product.name}`}
+            className="lg:hidden absolute right-2.5 bottom-2.5 w-10 h-10 rounded-full bg-white/95 backdrop-blur shadow-soft grid place-items-center active:scale-90 transition-transform" data-testid="quick-add-mobile">
+            <ShoppingBag className="w-[18px] h-[18px]" strokeWidth={1.6} />
+            <Plus className="absolute top-1.5 right-1.5 w-3 h-3 bg-wine text-white rounded-full p-[1px]" strokeWidth={3} />
+          </button>
+        )}
 
         {/* Ajout rapide (desktop) : tailles directement sur la carte */}
         {!outOfStock && (
