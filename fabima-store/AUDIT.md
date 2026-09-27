@@ -208,7 +208,24 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 - **En-tête qui s'efface** au défilement vers le bas et revient dès qu'on remonte (téléphone) : plus de place pour les pièces ; la barre « Filtrer » remonte tout en haut. Le cœur de l'en-tête passe dans la barre d'onglets.
 - **Ajout rapide au pouce** : sur chaque carte, un bouton panier ouvre un panneau compact par le bas (vignette, prix, couleur, taille, « Ajouter au panier » collé en bas), sans quitter la liste.
 
-## 16. Restent à traiter avant la mise en ligne
+## 16. Audit de septembre 2026 (accessibilité, sécurité, référencement)
+
+Audit automatisé sur 18 pages, sur ordinateur et sur téléphone : règles WCAG 2.1 AA (outil axe), zones à toucher, débordements, titres et descriptions, liens internes, erreurs, en-têtes de sécurité et dépendances.
+
+| Constat | Gravité | Correction |
+|---|---|---|
+| Aucun en-tête de sécurité : le site pouvait être affiché dans une page piège (clickjacking), aucune barrière contre l'injection de scripts | Élevée | Politique de sécurité du contenu (scripts du site seulement, `frame-ancestors 'self'`), `X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` (GPS et micro pour le site seul), HSTS en HTTPS ; `.htaccess` équivalent pour la version WAMP |
+| Contrastes insuffisants (27 cas) : anciens prix barrés, onglets du téléphone, pied de page de la commande, bouton WhatsApp blanc sur vert (4,1:1), « 404 » | Moyenne | Textes secondaires foncés (≥ 4,5:1), vert WhatsApp assombri (#177a41, 5,3:1) |
+| Titres lus sans espaces par les lecteurs d'écran et Google : « Belleà chaquepas », « Née à Dakar,pensée pour elle », « nouveautésen avant-première » | Moyenne | Espaces ajoutés entre les lignes des titres |
+| Zones à toucher trop petites sur téléphone (15 à 20 px) : Filtrer, Retirer, Tout retirer, code promo, avis, Écouter, liens du pied de page | Moyenne | Zone de toucher agrandie à ~44 px sans changer l'apparence (`.tap`), liens du pied de page plus hauts |
+| Deux zones principales (`main`) imbriquées sur la vitrine du statut | Faible | Une seule zone principale |
+| Descriptions de page identiques pour « Notre maison » et « Aide & FAQ » | Faible | Descriptions propres à chaque page |
+
+Vérifié sans défaut : langue du document, un seul titre H1 par page, textes alternatifs des images, adresses canoniques, 66 liens internes sans lien cassé, aucune erreur JavaScript, aucune page plus large que l'écran du téléphone, 0 vulnérabilité dans les dépendances (`npm audit`).
+
+Nouveau test permanent `securite` (en-têtes, aucune violation de la politique de sécurité en naviguant, carte toujours affichée).
+
+## 17. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

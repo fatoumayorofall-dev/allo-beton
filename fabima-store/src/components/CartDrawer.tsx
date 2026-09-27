@@ -106,7 +106,7 @@ export const CartDrawer: React.FC = () => {
                             <span className="w-7 text-center text-sm" aria-live="polite">{item.quantity}</span>
                             <button onClick={() => updateQuantity(item.key, item.quantity + 1)} disabled={item.quantity >= stock} aria-label="Augmenter" className="w-9 h-full grid place-items-center hover:bg-ink/5 disabled:opacity-25"><Plus className="w-3 h-3" /></button>
                           </div>
-                          <button onClick={() => removeFromCart(item.key)} className="text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Retirer</button>
+                          <button onClick={() => removeFromCart(item.key)} className="tap text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Retirer</button>
                         </div>
                       </div>
                     </li>
@@ -141,7 +141,7 @@ export const CartDrawer: React.FC = () => {
               <GiftWrapOption />
               <div className="flex justify-between items-baseline">
                 <span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Sous-total</span>
-                <span className="text-right"><span className="block font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/55" /></span>
+                <span className="text-right"><span className="block font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span>
               </div>
               <button onClick={() => { close(); navigate('/commande'); }} className="btn-dark w-full">Commander</button>
               <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70"><ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave · Orange Money · à la livraison</p>

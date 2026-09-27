@@ -32,7 +32,7 @@ export const PromoBox: React.FC = () => {
     );
   }
   if (!open) {
-    return <button onClick={() => setOpen(true)} className="text-[11px] uppercase tracking-[0.2em] font-semibold link-luxe inline-flex items-center gap-2"><Tag className="w-3.5 h-3.5" strokeWidth={1.5} /> J'ai un code promo</button>;
+    return <button onClick={() => setOpen(true)} className="tap text-[11px] uppercase tracking-[0.2em] font-semibold link-luxe inline-flex items-center gap-2"><Tag className="w-3.5 h-3.5" strokeWidth={1.5} /> J'ai un code promo</button>;
   }
   return (
     <form onSubmit={e => { e.preventDefault(); const r = applyPromo(code); notify(r.message, r.ok ? 'success' : 'error'); if (r.ok) setCode(''); }} className="flex gap-2 animate-fade-in">
@@ -75,7 +75,7 @@ export const Cart: React.FC = () => {
     <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-12">
       <div className="flex items-end justify-between mb-10 pb-8 border-b border-ink/10">
         <div><p className="eyebrow">{t.itemCount} pièce{t.itemCount > 1 ? 's' : ''}</p><h1 className="font-display text-5xl sm:text-6xl mt-2">Votre panier</h1></div>
-        <button onClick={clearCart} className="text-[11px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Tout retirer</button>
+        <button onClick={clearCart} className="tap text-[11px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Tout retirer</button>
       </div>
       <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
         <div className="min-w-0">
@@ -115,7 +115,7 @@ export const Cart: React.FC = () => {
                       <span className="w-8 text-center text-sm">{item.quantity}</span>
                       <button onClick={() => updateQuantity(item.key, item.quantity + 1)} disabled={item.quantity >= stock} aria-label="Augmenter" className="w-10 h-full grid place-items-center hover:bg-ink/5 disabled:opacity-25"><Plus className="w-3.5 h-3.5" /></button>
                     </div>
-                    <button onClick={() => removeFromCart(item.key)} className="text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Retirer</button>
+                    <button onClick={() => removeFromCart(item.key)} className="tap text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Retirer</button>
                   </div>
                 </div>
               </li>
@@ -134,10 +134,10 @@ export const Cart: React.FC = () => {
             {t.giftFee > 0 && <div className="flex justify-between"><dt className="text-ink/75">Emballage cadeau</dt><dd>{formatPrice(t.giftFee)}</dd></div>}
             <div className="flex justify-between"><dt className="text-ink/75">Livraison</dt><dd className="text-ink/75">{t.subtotal - t.discount >= SITE_CONFIG.freeShippingThreshold ? 'Offerte' : 'Selon votre zone'}</dd></div>
           </dl>
-          <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="text-right"><span className="block font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/55" /></span></div>
+          <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="text-right"><span className="block font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span></div>
           <button onClick={() => navigate('/commande')} className="btn-dark w-full">Passer commande <ArrowRight className="w-4 h-4" /></button>
           <p className="text-[11px] text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Free Money · Carte · Espèces</p>
-          <Link to="/boutique" className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>
+          <Link to="/boutique" className="block py-3 -my-3 text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>
           <ul className="border-t border-ink/10 pt-6 space-y-3 text-xs text-ink/75">
             {[
               { Icon: Truck, t: 'Livraison 24 h à Dakar', d: '48 à 72 h dans les régions' },

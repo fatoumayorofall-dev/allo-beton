@@ -49,7 +49,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
         <div className="max-w-6xl mx-auto px-5 sm:px-10 pt-8 pb-10">
           <div className="flex justify-end"><button onClick={onClose} aria-label="Fermer la recherche" className="w-10 h-10 grid place-items-center hover:rotate-90 transition-transform duration-500"><X className="w-5 h-5" strokeWidth={1.5} /></button></div>
           <form onSubmit={submit} className="flex items-center gap-4 border-b border-ink pb-4">
-            <Search className="w-6 h-6 text-ink/50 shrink-0" strokeWidth={1.3} />
+            <Search className="w-6 h-6 text-ink/65 shrink-0" strokeWidth={1.3} />
             <input ref={inputRef} value={q} onChange={e => setQ(e.target.value)} placeholder="Que recherchez-vous ?"
               className="flex-1 min-w-0 bg-transparent outline-none font-display text-3xl sm:text-5xl placeholder:text-ink/25" aria-label="Rechercher" />
           </form>

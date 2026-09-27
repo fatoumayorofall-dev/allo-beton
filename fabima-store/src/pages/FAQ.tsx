@@ -12,7 +12,7 @@ const SHOE_SIZES = [['36', '23 cm'], ['37', '23,7 cm'], ['38', '24,3 cm'], ['39'
 const CLOTHES_SIZES = [['S', '36–38', '84–88 cm'], ['M', '40–42', '88–96 cm'], ['L', '44–46', '96–104 cm'], ['XL', '48–50', '104–112 cm']];
 
 export const FAQ: React.FC = () => {
-  usePageTitle('Aide & FAQ');
+  usePageTitle('Aide & FAQ', 'Livraison à Dakar et en régions, paiement Wave ou Orange Money, échanges sous 7 jours, guide des tailles : toutes les réponses de Fabima Store.');
   const [open, setOpen] = useState<number | null>(0);
 
   return (

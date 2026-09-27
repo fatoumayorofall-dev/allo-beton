@@ -215,13 +215,13 @@ export const ProductDetail: React.FC = () => {
             </div>
             <h1 className="font-display text-5xl sm:text-6xl mt-3 leading-[0.98]">{product.name}</h1>
             <button onClick={() => { setOpenSection('avis'); document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
-              className="mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink">
+              className="tap mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink">
               <Stars rating={product.rating} /> <span>{product.rating.toFixed(1)} · {product.reviewCount} avis</span>
             </button>
 
             <div className="mt-7 flex items-baseline gap-4">
               <span className="text-2xl font-medium tracking-wide" data-testid="detail-price">{formatPrice(product.price)}</span>
-              {product.oldPrice && <span className="text-ink/50 line-through">{formatPrice(product.oldPrice)}</span>}
+              {product.oldPrice && <span className="text-ink/65 line-through">{formatPrice(product.oldPrice)}</span>}
               <ForeignPrice amount={product.price} className="text-sm text-ink/60" />
             </div>
             <p className="text-[11px] text-ink/70 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
@@ -289,7 +289,7 @@ export const ProductDetail: React.FC = () => {
               ? <StockAlertForm onSubmit={c => { addStockAlert(product.id, c); notify('Alerte enregistrée'); }} />
               : <button onClick={handleBuyNow} className="btn-gold w-full mt-2">Acheter maintenant</button>}
             <a href={waLink} target="_blank" rel="noopener noreferrer"
-              className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#1f8f4e] hover:text-[#1f8f4e] transition-colors">
+              className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#177a41] hover:text-[#177a41] transition-colors">
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Commander sur WhatsApp
             </a>
             {!outOfStock && !preorder && <DeliveryEstimate />}

@@ -208,7 +208,7 @@ export const Navbar: React.FC = () => {
             </div>
             <div className="px-6 py-3 border-t border-ink/[0.07] flex items-center justify-between text-xs text-ink/75"><span>Afficher les prix en</span><CurrencySwitch up /></div>
             <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/75 flex justify-between">
-              <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer" className="text-[#1f8f4e] font-semibold">WhatsApp</a><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>
+              <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer" className="text-[#177a41] font-semibold">WhatsApp</a><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>
             </div>
           </nav>
         </div>

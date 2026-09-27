@@ -281,10 +281,10 @@ const Dashboard: React.FC<{ onGoto: (t: Tab) => void }> = ({ onGoto }) => {
                     <button onClick={async () => {
                       const r = await notifyRestock(product, contacts, adminPin());
                       notify(r ? `${r.sent}/${r.total} cliente(s) prévenue(s) sur WhatsApp` : 'Envoi impossible, utilisez l\'envoi manuel', r ? 'success' : 'error');
-                    }} className="text-xs px-3 py-1.5 rounded-full bg-[#1f8f4e] text-white">Prévenir sur WhatsApp</button>
+                    }} className="text-xs px-3 py-1.5 rounded-full bg-[#177a41] text-white">Prévenir sur WhatsApp</button>
                   ) : contacts.map(c => {
                     const href = restockLink(product.name, product.slug, c);
-                    return href && <a key={c} href={href} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 rounded-full bg-[#1f8f4e] text-white">Prévenir {c}</a>;
+                    return href && <a key={c} href={href} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 rounded-full bg-[#177a41] text-white">Prévenir {c}</a>;
                   }))}
                   <button onClick={() => removeStockAlerts(id)} className="text-xs px-3 py-1.5 rounded-full bg-ink/5 hover:bg-ink hover:text-ivory">Traitée ({contacts.length})</button>
                 </li>
@@ -528,7 +528,7 @@ const Orders: React.FC = () => {
               if (!href || autoSent || (autoWhatsApp && lastChange?.id !== current.id)) return null;
               return (
                 <a href={href} target="_blank" rel="noopener noreferrer" onClick={() => logNotification(current.id, { event: current.status, to: 'cliente', channel: 'manuel' })}
-                  className={`w-full py-3 rounded-full inline-flex items-center justify-center gap-2 font-semibold ${lastChange?.id === current.id ? 'bg-[#1f8f4e] text-white animate-pulse' : 'border border-[#1f8f4e] text-[#1f8f4e]'}`}>
+                  className={`w-full py-3 rounded-full inline-flex items-center justify-center gap-2 font-semibold ${lastChange?.id === current.id ? 'bg-[#177a41] text-white animate-pulse' : 'border border-[#177a41] text-[#177a41]'}`}>
                   <MessageCircle className="w-4 h-4" /> Prévenir {current.customer.firstName} : « {STATUS_LABELS[current.status]} »
                 </a>
               );

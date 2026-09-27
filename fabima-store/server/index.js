@@ -30,6 +30,35 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 app.use(express.json({ limit: '300kb' }));
 
+/* ---------- En-têtes de sécurité (clickjacking, injection de scripts, fuite d'adresses) ---------- */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline'", // styles en ligne de React et de la carte
+  "img-src 'self' data: blob: https:", // photos des pièces et tuiles de la carte
+  "media-src 'self' blob: https:",
+  "font-src 'self'",
+  "connect-src 'self' https:",
+  "worker-src 'self'",
+  "manifest-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+].join('; ');
+app.use((req, res, next) => {
+  res.set({
+    'Content-Security-Policy': CSP,
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'SAMEORIGIN',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'geolocation=(self), microphone=(self), camera=(self), payment=()', // GPS de livraison, voix des statuts
+    'Cross-Origin-Opener-Policy': 'same-origin',
+  });
+  if (req.secure) res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
+
 /* ---------- Limiteur de débit en mémoire (protège le coût IA et les envois WhatsApp) ---------- */
 const buckets = new Map();
 function limit(key, max, windowMs) {

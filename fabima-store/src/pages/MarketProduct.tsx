@@ -105,7 +105,7 @@ export const MarketProduct: React.FC = () => {
             </div>
             <button onClick={() => add(true)} className="btn-dark flex-1 min-w-[12rem]"><ShoppingBag className="w-4 h-4" /> Ajouter au panier</button>
           </div>
-          <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-3 w-full inline-flex items-center justify-center gap-2 h-12 rounded-full border border-[#1f8f4e] text-[#1f8f4e] text-sm font-semibold">
+          <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-3 w-full inline-flex items-center justify-center gap-2 h-12 rounded-full border border-[#177a41] text-[#177a41] text-sm font-semibold">
             <MessageCircle className="w-4 h-4" /> Une question ? WhatsApp
           </a>
 

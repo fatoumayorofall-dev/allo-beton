@@ -94,7 +94,7 @@ export const StatusTab: React.FC = () => {
             <h2 className="font-display text-xl">Vitrine du jour <span className="text-ink/70 text-base">({showcaseProducts.length})</span></h2>
             <p className="text-xs text-ink/70 mt-1">Un seul lien pour toutes vos pièces du statut : <a href="/s" target="_blank" className="underline">{window.location.host}/s</a> · {totalStatusVisits} visite(s) depuis vos statuts</p>
           </div>
-          <button onClick={shareShowcase} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1f8f4e] text-white text-sm font-semibold"><Share2 className="w-4 h-4" /> Partager la vitrine</button>
+          <button onClick={shareShowcase} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#177a41] text-white text-sm font-semibold"><Share2 className="w-4 h-4" /> Partager la vitrine</button>
         </div>
         {showcaseProducts.length > 0 ? (
           <ul className="mt-4 flex gap-3 overflow-x-auto no-scrollbar">
@@ -124,7 +124,7 @@ export const StatusTab: React.FC = () => {
                   <div className="relative rounded-2xl overflow-hidden">
                     <ProductImage src={p.images[0]} alt={p.name} className="w-full aspect-[4/5] group-hover:scale-105 transition-transform duration-500" />
                     <div className="absolute top-2 left-2 flex gap-1">
-                      {inShowcase(p.slug) && <span className="px-2 py-0.5 rounded-full bg-[#1f8f4e] text-white text-[10px] font-bold">En vitrine</span>}
+                      {inShowcase(p.slug) && <span className="px-2 py-0.5 rounded-full bg-[#177a41] text-white text-[10px] font-bold">En vitrine</span>}
                       {voices.includes(p.slug) && <span className="px-2 py-0.5 rounded-full bg-white text-[10px] font-bold">🎙 Voix</span>}
                     </div>
                     {!!v && <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-full bg-ink/80 text-ivory text-[10px] inline-flex items-center gap-1"><Eye className="w-3 h-3" /> {v.statut + v.vitrine + v.partage}</span>}
@@ -202,7 +202,7 @@ const StatusStudio: React.FC<{
           </div>
 
           <div className="space-y-4">
-            <button onClick={publish} disabled={!blob} className="w-full h-16 rounded-full bg-[#1f8f4e] text-white text-lg font-extrabold inline-flex items-center justify-center gap-3 shadow-luxe disabled:opacity-50">
+            <button onClick={publish} disabled={!blob} className="w-full h-16 rounded-full bg-[#177a41] text-white text-lg font-extrabold inline-flex items-center justify-center gap-3 shadow-luxe disabled:opacity-50">
               <Send className="w-6 h-6" /> Publier sur mon statut
             </button>
             <div className="grid grid-cols-2 gap-2">
@@ -317,7 +317,7 @@ const VoiceRecorder: React.FC<{ product: Product; serverOk: boolean; hasVoice: b
           {clip && !recording && (
             <>
               <audio controls src={clipUrl} className="h-10 max-w-[200px]" />
-              <button onClick={save} disabled={busy} className="h-12 px-5 rounded-full bg-[#1f8f4e] text-white font-semibold inline-flex items-center gap-2">
+              <button onClick={save} disabled={busy} className="h-12 px-5 rounded-full bg-[#177a41] text-white font-semibold inline-flex items-center gap-2">
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Mettre en ligne
               </button>
             </>

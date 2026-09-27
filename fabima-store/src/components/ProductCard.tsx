@@ -57,7 +57,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 pointer-events-none">
-          {outOfStock && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink/60">Épuisé</span>}
+          {outOfStock && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink/75">Épuisé</span>}
           {preorder && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink" data-testid="badge-preorder">Sur commande · {product.preorderDays} j</span>}
           {!outOfStock && !preorder && product.stock <= 3 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink">Plus que {product.stock}</span>}
           {off > 0 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">-{off}%</span>}
@@ -121,9 +121,9 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
         <Link to={`/produit/${product.slug}`} className="font-display text-[19px] leading-tight text-ink hover:text-gold-dark transition-colors line-clamp-1">{product.name}</Link>
         <div className="flex items-baseline gap-2.5 text-[13px] tracking-wide">
           <span className={`font-medium ${off ? 'text-wine' : 'text-ink/85'}`}>{formatPrice(product.price)}</span>
-          {product.oldPrice && <span className="text-ink/50 line-through"><span className="sr-only">au lieu de </span>{formatPrice(product.oldPrice)}</span>}
+          {product.oldPrice && <span className="text-ink/65 line-through"><span className="sr-only">au lieu de </span>{formatPrice(product.oldPrice)}</span>}
         </div>
-        <ForeignPrice amount={product.price} className="text-[11px] text-ink/55 -mt-1" />
+        <ForeignPrice amount={product.price} className="text-[11px] text-ink/65 -mt-1" />
       </div>
     </article>
   );

@@ -29,7 +29,7 @@ export const Showcase: React.FC = () => {
   return (
     <div className="min-h-screen bg-petal pb-32">
       <SimpleHeader />
-      <main className="max-w-md mx-auto px-4 pt-6">
+      <div className="max-w-md mx-auto px-4 pt-6">
         <div className="text-center">
           <p className="font-script text-4xl text-gold-dark leading-none">Nouveautés</p>
           <h1 className="font-display text-3xl mt-1">Vues sur mon statut</h1>
@@ -42,11 +42,11 @@ export const Showcase: React.FC = () => {
           <div className="mt-8 grid grid-cols-2 gap-3">{items.map(p => <SimpleCard key={p.id} product={p} source="vitrine" />)}</div>
         )}
         <Link to="/boutique" className="mt-8 flex h-14 items-center justify-center rounded-full bg-white font-bold shadow-sm">🛍️ Toute la boutique</Link>
-      </main>
+      </div>
       <div className="fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/[0.06] pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-4 py-3">
           <a href={buildWhatsAppLink('Bonjour Fabima 🌸 J\'ai vu votre statut, je voudrais des informations.')} target="_blank" rel="noopener noreferrer"
-            className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#1f8f4e] text-white text-lg font-extrabold shadow-luxe">
+            className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#177a41] text-white text-lg font-extrabold shadow-luxe">
             <MessageCircle className="w-7 h-7" /> Écrire sur WhatsApp
           </a>
         </div>

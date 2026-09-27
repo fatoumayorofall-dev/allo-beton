@@ -23,7 +23,7 @@ export const CheckoutHeader: React.FC = () => (
       <Logo />
       <a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai une question sur ma commande.')} target="_blank" rel="noopener noreferrer"
         className="justify-self-end inline-flex items-center gap-2 text-[11px] text-ink/75 hover:text-ink">
-        <span className="hidden md:inline text-right leading-tight"><span className="block uppercase tracking-[0.2em] text-[10px] text-ink/60">Une question ?</span>{SITE_CONFIG.phone}</span>
+        <span className="hidden md:inline text-right leading-tight"><span className="block uppercase tracking-[0.2em] text-[10px] text-ink/70">Une question ?</span>{SITE_CONFIG.phone}</span>
         <span className="w-9 h-9 rounded-full border border-ink/15 grid place-items-center"><Headphones className="w-4 h-4" strokeWidth={1.6} /></span>
         <span className="sr-only">Écrire à la boutique sur WhatsApp</span>
       </a>
@@ -55,7 +55,7 @@ export const CheckoutFooter: React.FC = () => (
         ))}
       </ul>
     </div>
-    <p className="max-w-6xl mx-auto px-4 sm:px-8 pb-8 text-[11px] text-ink/60 flex flex-wrap gap-x-4 gap-y-1">
+    <p className="max-w-6xl mx-auto px-4 sm:px-8 pb-8 text-[11px] text-ink/70 flex flex-wrap gap-x-4 gap-y-1">
       <span>© {new Date().getFullYear()} {SITE_CONFIG.name}</span>
       <Link to="/faq" className="hover:text-ink">Livraison &amp; échanges</Link>
       <Link to="/authentique" className="hover:text-ink">Vérifier l'authenticité</Link>

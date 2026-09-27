@@ -233,7 +233,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
           </button>
         </form>
         <div className="flex items-center justify-between mt-2 px-1">
-          <a href={handoff} target="_blank" rel="noopener noreferrer" className="text-[11px] text-ink/75 hover:text-[#1f8f4e] inline-flex items-center gap-1.5">
+          <a href={handoff} target="_blank" rel="noopener noreferrer" className="text-[11px] text-ink/75 hover:text-[#177a41] inline-flex items-center gap-1.5">
             <MessageCircle className="w-3.5 h-3.5" /> Parler à une conseillère
           </a>
           <span className="text-[10px] text-ink/70">{mode === 'ia' ? 'IA · peut se tromper' : ''}</span>

@@ -149,7 +149,7 @@ export const DeliveryPanel: React.FC<{ order: Order; pin: string; onChanged: () 
             {legs.map((l, k) => l.state !== 'remis' && l.driverLink && (
               <div key={k} className="flex flex-wrap items-center gap-2">
                 <a href={buildWhatsAppLink(driverText(order, legs, k), waNumber(l.driverPhone))} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-[#1f8f4e] text-white text-sm font-semibold"><MessageCircle className="w-4 h-4" /> {legs.length > 1 ? `Envoyer le lien à ${l.driverName}` : 'Envoyer le lien au livreur'}</a>
+                  className="inline-flex items-center gap-1.5 px-4 h-10 rounded-full bg-[#177a41] text-white text-sm font-semibold"><MessageCircle className="w-4 h-4" /> {legs.length > 1 ? `Envoyer le lien à ${l.driverName}` : 'Envoyer le lien au livreur'}</a>
                 <button type="button" onClick={() => navigator.clipboard?.writeText(l.driverLink!).then(() => notify('Lien copié', 'success'))}
                   className="inline-flex items-center gap-1.5 px-3 h-10 rounded-full border border-ink/15 text-sm"><Copy className="w-4 h-4" /> Copier</button>
               </div>

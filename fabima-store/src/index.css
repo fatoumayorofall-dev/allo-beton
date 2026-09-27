@@ -59,6 +59,10 @@
   }
   .btn-dark:hover::before, .btn-light:hover::before, .btn-gold:hover::before { transform: translateX(120%); }
 
+  /* Zone de toucher agrandie (au moins 44 px de haut) sans changer l'apparence du lien ou du bouton */
+  .tap { @apply relative; }
+  .tap::before { content: ''; position: absolute; inset: -12px -6px; }
+
   /* Soulignement animé des liens */
   .link-luxe { @apply relative inline-block; }
   .link-luxe::after { content: ''; @apply absolute left-0 -bottom-0.5 h-px w-full bg-current origin-right scale-x-0 transition-transform duration-500 ease-luxe; }

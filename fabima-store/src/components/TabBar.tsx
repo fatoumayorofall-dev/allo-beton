@@ -24,7 +24,7 @@ export const TabBar: React.FC = () => {
   if (hidden) return null;
 
   const item = 'relative flex-1 flex flex-col items-center justify-center gap-1 h-full text-[10px] font-semibold tracking-wide transition-colors';
-  const tone = ({ isActive }: { isActive: boolean }) => `${item} ${isActive ? 'text-wine' : 'text-ink/60 hover:text-ink'}`;
+  const tone = ({ isActive }: { isActive: boolean }) => `${item} ${isActive ? 'text-wine' : 'text-ink/70 hover:text-ink'}`;
   const dot = (on: boolean) => on && <span className="absolute top-1.5 w-1 h-1 rounded-full bg-wine" aria-hidden />;
   const badge = 'absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold grid place-items-center';
 
@@ -36,7 +36,7 @@ export const TabBar: React.FC = () => {
         <NavLink to="/boutique" className={tone}>{({ isActive }) => <>{dot(isActive)}<LayoutGrid className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />Boutique</>}</NavLink>
         <NavLink to="/favoris" className={tone}>{({ isActive }) => <>{dot(isActive)}<span className="relative"><Heart className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />{wishlist.length > 0 && <span className={`${badge} bg-gold text-white`}>{wishlist.length}</span>}</span>Favoris</>}</NavLink>
         <NavLink to="/compte" className={tone}>{({ isActive }) => <>{dot(isActive)}<span className="relative"><User className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />{user && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-ivory" />}</span>{user?.firstName ? user.firstName.slice(0, 10) : 'Compte'}</>}</NavLink>
-        <button onClick={() => setCartOpen(true)} className={`${item} text-ink/60 hover:text-ink`} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`}>
+        <button onClick={() => setCartOpen(true)} className={`${item} text-ink/70 hover:text-ink`} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`}>
           <span className="relative"><ShoppingBag className="w-5 h-5" strokeWidth={1.5} />{count > 0 && <span key={count} className={`${badge} bg-ink text-ivory animate-heart-pop`}>{count}</span>}</span>
           Panier
         </button>

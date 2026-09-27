@@ -226,7 +226,7 @@ export const SimpleProduct: React.FC = () => {
       <div className="fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/[0.06] pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-4 py-3 space-y-2">
           <a href={whatsappOrder} target="_blank" rel="noopener noreferrer"
-            className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#1f8f4e] text-white text-lg font-extrabold shadow-luxe active:scale-[.98] transition-transform">
+            className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#177a41] text-white text-lg font-extrabold shadow-luxe active:scale-[.98] transition-transform">
             <MessageCircle className="w-7 h-7" strokeWidth={2} /> Commander sur WhatsApp
           </a>
           <div className="grid grid-cols-2 gap-2">

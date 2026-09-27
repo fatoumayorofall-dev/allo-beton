@@ -8,12 +8,12 @@ import { usePageTitle } from '../utils/usePageTitle';
 const px = (id: number, w = 1200) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
 export const About: React.FC = () => {
-  usePageTitle('Notre maison');
+  usePageTitle('Notre maison', 'L\'histoire de Fabima Store, maison dakaroise de chaussures et de sacs pour femme : notre sélection, nos engagements et notre boutique à Sacré-Cœur.');
   return (
     <div>
       <section className="max-w-5xl mx-auto px-5 sm:px-8 pt-20 text-center">
         <p className="eyebrow animate-fade-up">Notre maison</p>
-        <h1 className="font-display text-6xl sm:text-8xl leading-[0.95] mt-6 animate-fade-up" style={{ animationDelay: '120ms' }}>Née à Dakar,<br /><span className="font-script text-gold-dark text-[1.1em]">pensée pour elle</span></h1>
+        <h1 className="font-display text-6xl sm:text-8xl leading-[0.95] mt-6 animate-fade-up" style={{ animationDelay: '120ms' }}>Née à Dakar,<br />{' '}<span className="font-script text-gold-dark text-[1.1em]">pensée pour elle</span></h1>
       </section>
 
       <Reveal className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 mt-16">

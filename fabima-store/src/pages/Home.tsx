@@ -105,7 +105,7 @@ export const Home: React.FC = () => {
             <h1 className="font-display font-medium text-[3.6rem] sm:text-7xl xl:text-[7.4rem] leading-[0.9] mt-4 sm:mt-6">
               {current.title.map((line, i) => (
                 <span key={i} className={`block animate-fade-up ${i === current.accent ? 'italic text-gold-dark' : ''}`} style={{ animationDelay: `${80 + i * 90}ms` }}>
-                  {i === current.accent ? <span className="text-magic" style={{ animationDelay: '-3.2s' }}>{line}</span> : line}
+                  {i === current.accent ? <span className="text-magic" style={{ animationDelay: '-3.2s' }}>{line}</span> : line}{' '}
                 </span>
               ))}
             </h1>
@@ -131,7 +131,7 @@ export const Home: React.FC = () => {
                   </button>
                 ))}
               </div>
-              <span className="font-display text-lg text-ink/50 tabular-nums">0{HERO_SLIDES.length}</span>
+              <span className="font-display text-lg text-ink/65 tabular-nums">0{HERO_SLIDES.length}</span>
             </div>
           </div>
 

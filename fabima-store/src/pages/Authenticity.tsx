@@ -104,7 +104,7 @@ const ResultCard: React.FC<{ result: AuthCheck; report: string }> = ({ result, r
       {result.status === 'inconnu' && <p className="mt-4 text-sm text-ink/80">Ce code n'a jamais été émis par Fabima Store. La pièce qui le porte n'est pas une pièce Fabima.</p>}
       {result.status === 'invalide' && <p className="mt-4 text-sm text-ink/80">Vérifiez la saisie : le code a 11 caractères, par exemple « K7QM-2HXD-9RP ». Les lettres O et I se lisent comme 0 et 1.</p>}
       {!ok && result.status !== 'invalide' && (
-        <a href={report} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-[#1f8f4e] text-white text-sm font-semibold"><MessageCircle className="w-4 h-4" /> Signaler sur WhatsApp</a>
+        <a href={report} target="_blank" rel="noopener noreferrer" className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-[#177a41] text-white text-sm font-semibold"><MessageCircle className="w-4 h-4" /> Signaler sur WhatsApp</a>
       )}
     </div>
   );

@@ -65,7 +65,7 @@ export const CustomersTab: React.FC = () => {
                   <td className="p-4 text-right font-semibold">{formatPrice(c.spent)}</td>
                   <td className="p-4 text-right">
                     <a href={buildWhatsAppLink(`Bonjour ${c.firstName || ''} 🌸 C'est Fabima Store.`, c.phone.replace('+', ''))} target="_blank" rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1f8f4e] text-white text-xs"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</a>
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#177a41] text-white text-xs"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</a>
                   </td>
                 </tr>
               ))}

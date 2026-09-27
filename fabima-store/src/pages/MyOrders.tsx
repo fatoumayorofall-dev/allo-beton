@@ -30,7 +30,7 @@ export const MyOrders: React.FC = () => {
         {orders.length === 0 ? (
           <div className="text-center py-24">
             <p className="font-display text-3xl">Aucune commande pour le moment</p>
-            <p className="text-sm text-ink/75 mt-3">Une commande passée depuis un autre appareil ? <Link to="/suivi" className="link-luxe text-ink">Suivez-la ici</Link>.</p>
+            <p className="text-sm text-ink/75 mt-3">Une commande passée depuis un autre appareil ? <Link to="/suivi" className="tap link-luxe text-ink">Suivez-la ici</Link>.</p>
             <Link to="/boutique" className="btn-dark mt-10">Découvrir la boutique</Link>
           </div>
         ) : (

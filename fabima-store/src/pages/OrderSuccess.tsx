@@ -83,13 +83,13 @@ export const OrderSuccess: React.FC = () => {
         {/* WhatsApp : la boutique est-elle prévenue ? */}
         <div className={`mt-8 p-6 rounded-[2rem] border print:hidden ${shopNotified ? 'bg-emerald-50/70 border-emerald-100' : 'bg-white border-gold/30'}`}>
           {shopNotified ? (
-            <p className="text-sm flex items-start gap-3"><MessageCircle className="w-5 h-5 text-[#1f8f4e] shrink-0" strokeWidth={1.5} />
+            <p className="text-sm flex items-start gap-3"><MessageCircle className="w-5 h-5 text-[#177a41] shrink-0" strokeWidth={1.5} />
               <span><strong>La boutique a bien reçu votre commande sur WhatsApp.</strong>{customerNotified ? ' Vous venez aussi de recevoir un message de confirmation ; nous vous écrirons à chaque étape.' : ' Nous vous tiendrons informée à chaque étape.'}</span></p>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <p className="text-sm flex-1"><strong>Dernière étape (recommandée) :</strong> envoyez le récapitulatif sur WhatsApp, la boutique vous confirme la livraison plus vite.</p>
               <a href={wa} target="_blank" rel="noopener noreferrer" onClick={() => logNotification(order.id, { event: 'nouvelle', to: 'gerante', channel: 'manuel' })}
-                className="btn !bg-[#1f8f4e] text-white hover:!bg-[#177a41] shrink-0"><MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Envoyer sur WhatsApp</a>
+                className="btn !bg-[#177a41] text-white hover:!bg-[#12663a] shrink-0"><MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Envoyer sur WhatsApp</a>
             </div>
           )}
         </div>
@@ -111,7 +111,7 @@ export const OrderSuccess: React.FC = () => {
           <Link to={`/suivi?commande=${order.id}&tel=${encodeURIComponent(order.customer.phone)}`} className="btn-dark">Suivre ma commande</Link>
           <button onClick={() => window.print()} className="btn-outline"><Printer className="w-4 h-4" strokeWidth={1.5} /> Imprimer</button>
         </div>
-        <p className="text-center mt-10"><Link to="/boutique" className="text-[11px] uppercase tracking-[0.2em] link-luxe">Continuer mes achats</Link></p>
+        <p className="text-center mt-10"><Link to="/boutique" className="tap text-[11px] uppercase tracking-[0.2em] link-luxe">Continuer mes achats</Link></p>
       </div>
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 print:hidden">
         <ForYou className="mt-20 pt-14 border-t border-ink/10" eyebrow="Pour compléter votre commande" title={<>Elles iraient si bien <em className="text-gold-dark">ensemble</em></>} />

@@ -110,7 +110,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
               className="flex-1 min-w-0 h-16 px-4 text-2xl font-semibold tracking-wider outline-none bg-transparent" />
           </div>
           {error && <p className="mt-2 text-sm text-wine" role="alert">{error}</p>}
-          <button disabled={busy || !digits} className="mt-6 w-full h-16 rounded-full bg-[#1f8f4e] text-white text-[15px] font-semibold tracking-wide inline-flex hover:bg-[#177a41] transition-colors items-center justify-center gap-3 disabled:opacity-40">
+          <button disabled={busy || !digits} className="mt-6 w-full h-16 rounded-full bg-[#177a41] text-white text-[15px] font-semibold tracking-wide inline-flex hover:bg-[#12663a] transition-colors items-center justify-center gap-3 disabled:opacity-40">
             {busy ? <Loader2 className="w-6 h-6 animate-spin" /> : <MessageCircle className="w-6 h-6" />} Recevoir mon code sur WhatsApp
           </button>
         </form>
@@ -160,7 +160,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
       </p>
 
       <div className="mt-4 flex flex-col items-center gap-3 text-sm">
-        <a href="whatsapp://" className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-[#1f8f4e]/10 text-[#1f8f4e] font-semibold"><MessageCircle className="w-5 h-5" /> Ouvrir WhatsApp</a>
+        <a href="whatsapp://" className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-[#177a41]/10 text-[#177a41] font-semibold"><MessageCircle className="w-5 h-5" /> Ouvrir WhatsApp</a>
         <button onClick={send} disabled={wait > 0 || busy} className="underline disabled:no-underline disabled:text-ink/40">
           {wait > 0 ? `Renvoyer le code dans ${wait} s` : 'Je n\'ai rien reçu : renvoyer le code'}
         </button>
@@ -325,7 +325,7 @@ const Dashboard: React.FC = () => {
                     return (
                       <li key={st.label} className="relative flex flex-col items-center text-center" aria-current={i === stepIndex ? 'step' : undefined}>
                         {i > 0 && <span className={`absolute top-3.5 right-1/2 w-full h-0.5 -z-0 ${i <= stepIndex ? 'bg-gold' : 'bg-ink/10'}`} aria-hidden />}
-                        <span className={`relative w-7 h-7 rounded-full grid place-items-center text-[11px] font-bold ${done ? 'bg-ink text-gold-light' : 'bg-white border border-ink/15 text-ink/50'}`}>
+                        <span className={`relative w-7 h-7 rounded-full grid place-items-center text-[11px] font-bold ${done ? 'bg-ink text-gold-light' : 'bg-white border border-ink/15 text-ink/65'}`}>
                           {done ? <Check className="w-3.5 h-3.5" /> : i + 1}
                         </span>
                         <span className={`mt-2 text-[11px] ${i === stepIndex ? 'font-semibold text-ink' : 'text-ink/60'}`}>{st.label}</span>
@@ -366,7 +366,7 @@ const Dashboard: React.FC = () => {
                       {favSignal(p) && <span className="absolute top-2 left-2 px-2 py-1 bg-ivory/90 backdrop-blur text-[8px] uppercase tracking-[0.22em] font-semibold text-ink" data-testid="fav-signal">{favSignal(p)}</span>}
                     </span>
                     <span className="block mt-2 text-sm leading-tight line-clamp-1">{p.name}</span>
-                    <span className="block text-xs text-ink/70">{formatPrice(p.price)}{p.oldPrice && <span className="ml-1.5 line-through text-ink/45">{formatPrice(p.oldPrice)}</span>}</span>
+                    <span className="block text-xs text-ink/70">{formatPrice(p.price)}{p.oldPrice && <span className="ml-1.5 line-through text-ink/65">{formatPrice(p.oldPrice)}</span>}</span>
                   </Link>
                   {canBuy(p) && (
                     <button onClick={() => quickBuy(p)} aria-label={`Ajouter « ${p.name} » au panier`} data-testid="fav-buy"
