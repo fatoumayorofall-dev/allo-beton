@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Headphones, Lock, MessageCircle, RefreshCw, ShieldCheck, Truck } from 'lucide-react';
+import { ExternalLink, Headphones, Lock, RefreshCw, ShieldCheck, Truck } from 'lucide-react';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { BrandMark, Logo, Wordmark } from './Logo';
+import { CardLogos, WhatsAppGlyph } from './BrandLogos';
 
 /*
  * En-têtes « concentrés » :
@@ -10,7 +11,7 @@ import { BrandMark, Logo, Wordmark } from './Logo';
  * - l'espace gérant, qui a son propre bandeau de gestion au lieu de la vitrine de la boutique
  */
 
-const PAY = [['Wave', '#1dc4ff'], ['Orange Money', '#ff7900'], ['Free Money', '#cd0f2d'], ['Visa', '#1a1f71'], ['Mastercard', '#f79e1b'], ['Espèces', '#11694f']] as const;
+const PAY = [['Wave', '#1dc4ff'], ['Orange Money', '#ff7900'], ['Free Money', '#cd0f2d'], ['Espèces', '#11694f']] as const;
 
 /** En-tête du paiement : le logo, la promesse de sécurité et l'aide, rien d'autre. */
 export const CheckoutHeader: React.FC = () => (
@@ -53,6 +54,7 @@ export const CheckoutFooter: React.FC = () => (
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />{m}
           </li>
         ))}
+        <li><CardLogos paydunyaSrc={SITE_CONFIG.paydunyaLogo || undefined} /></li>
       </ul>
     </div>
     <p className="max-w-6xl mx-auto px-4 sm:px-8 pb-8 text-[11px] text-ink/70 flex flex-wrap gap-x-4 gap-y-1">
@@ -60,7 +62,7 @@ export const CheckoutFooter: React.FC = () => (
       <Link to="/faq" className="hover:text-ink">Livraison &amp; échanges</Link>
       <Link to="/authentique" className="hover:text-ink">Vérifier l'authenticité</Link>
       <a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai besoin d\'aide pour ma commande.')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-ink">
-        <MessageCircle className="w-3 h-3" /> Aide sur WhatsApp
+        <WhatsAppGlyph className="w-3.5 h-3.5 text-[#177a41]" /> Aide sur WhatsApp
       </a>
     </p>
   </footer>

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { buildWhatsAppLink } from '../config/site';
 import type { Product } from '../data/types';
 import { getShowcase } from '../services/api';
 import { usePageTitle } from '../utils/usePageTitle';
 import { SimpleCard, SimpleHeader } from './SimpleProduct';
+import { WhatsAppGlyph } from '../components/BrandLogos';
 
 /**
  * Vitrine du statut (/s) : les pièces que la gérante a mises en statut WhatsApp,
@@ -47,7 +47,7 @@ export const Showcase: React.FC = () => {
         <div className="max-w-md mx-auto px-4 py-3">
           <a href={buildWhatsAppLink('Bonjour Fabima 🌸 J\'ai vu votre statut, je voudrais des informations.')} target="_blank" rel="noopener noreferrer"
             className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#177a41] text-white text-lg font-extrabold shadow-luxe">
-            <MessageCircle className="w-7 h-7" /> Écrire sur WhatsApp
+            <WhatsAppGlyph className="w-7 h-7" /> Écrire sur WhatsApp
           </a>
         </div>
       </div>

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Facebook, Instagram, Music2 } from 'lucide-react';
-import { SITE_CONFIG } from '../config/site';
+import { ArrowRight } from 'lucide-react';
+import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { CATEGORIES } from '../data/catalog';
 import { useStore } from '../context/StoreContext';
 import { BrandMark, Wordmark } from './Logo';
 import { Twinkles, sparkleBurst } from './Magic';
+import { CardLogos, FacebookLogo, InstagramLogo, SnapchatLogo, TikTokLogo, WhatsAppLogo } from './BrandLogos';
 
 const NEWSLETTER_KEY = 'fabima_newsletter';
 
@@ -63,13 +64,15 @@ export const Footer: React.FC = () => {
           <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures et sacs choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
           <div className="flex gap-2">
             {[
-              { Icon: Instagram, href: SITE_CONFIG.social.instagram, label: 'Instagram' },
-              { Icon: Facebook, href: SITE_CONFIG.social.facebook, label: 'Facebook' },
-              { Icon: Music2, href: SITE_CONFIG.social.tiktok, label: 'TikTok' },
-            ].map(({ Icon, href, label }) => (
-              <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                className="w-10 h-10 rounded-full border border-ivory/20 grid place-items-center hover:bg-ivory hover:text-ink transition-colors duration-500">
-                <Icon className="w-4 h-4" strokeWidth={1.5} />
+              { Logo: WhatsAppLogo, href: buildWhatsAppLink('Bonjour Fabima Store !'), label: 'WhatsApp' },
+              { Logo: InstagramLogo, href: SITE_CONFIG.social.instagram, label: 'Instagram' },
+              { Logo: TikTokLogo, href: SITE_CONFIG.social.tiktok, label: 'TikTok' },
+              { Logo: SnapchatLogo, href: SITE_CONFIG.social.snapchat, label: 'Snapchat' },
+              { Logo: FacebookLogo, href: SITE_CONFIG.social.facebook, label: 'Facebook' },
+            ].map(({ Logo, href, label }) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} data-testid={`social-${label.toLowerCase()}`}
+                className="w-11 h-11 rounded-full bg-ivory grid place-items-center shadow-[0_6px_18px_-8px_rgba(0,0,0,.5)] hover:-translate-y-0.5 transition-transform duration-500 ease-luxe">
+                <Logo className="w-6 h-6" />
               </a>
             ))}
           </div>
@@ -109,15 +112,18 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="border-t border-ivory/10">
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-6 pb-24 md:pb-6 md:pr-24 flex flex-col md:flex-row gap-4 items-center justify-between text-[11px] text-ivory/40">
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-6 pb-24 md:pb-6 md:pr-28 flex flex-col md:flex-row gap-4 items-center justify-between text-[11px] text-ivory/40">
           <p>© {new Date().getFullYear()} {SITE_CONFIG.name} — Tous droits réservés · <Link to="/admin" className="tap hover:text-ivory/70">Espace gérant</Link></p>
-          <ul className="flex flex-wrap justify-center gap-2" aria-label="Moyens de paiement">
-            {([['Wave', '#1dc4ff'], ['Orange Money', '#ff7900'], ['Free Money', '#cd0f2d'], ['Visa', '#f5d5d6'], ['Mastercard', '#f79e1b'], ['Espèces', '#8fd3b0']] as const).map(([m, c]) => (
-              <li key={m} className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full border border-ivory/15 bg-ivory/[0.04] text-[10px] text-ivory/70">
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />{m}
-              </li>
-            ))}
-          </ul>
+          <div className="flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement" role="group">
+            <ul className="flex flex-wrap justify-center gap-2">
+              {([['Wave', '#1dc4ff'], ['Orange Money', '#ff7900'], ['Free Money', '#cd0f2d'], ['Espèces', '#8fd3b0']] as const).map(([m, c]) => (
+                <li key={m} className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full border border-ivory/15 bg-ivory/[0.04] text-[10px] text-ivory/70">
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />{m}
+                </li>
+              ))}
+            </ul>
+            <CardLogos paydunyaSrc={SITE_CONFIG.paydunyaLogo || undefined} />
+          </div>
         </div>
       </div>
     </footer>

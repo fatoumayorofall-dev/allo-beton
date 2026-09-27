@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Banknote, Check, ChevronDown, ChevronLeft, Clock, CreditCard, Gift, Globe2, Loader2, Lock, MapPin, Smartphone } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { DELIVERY_ZONES, SHOP_LOCATION, zoneForPoint } from '../config/site';
+import { DELIVERY_ZONES, SHOP_LOCATION, SITE_CONFIG, zoneForPoint } from '../config/site';
 import type { DeliveryLocation, PaymentMethod } from '../data/types';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -11,6 +11,7 @@ import { PromoBox } from './Cart';
 import { checkOrder, createOrder, getServerStatus } from '../services/api';
 import { delayLabel } from '../utils/market';
 import { useAccount } from '../context/AccountContext';
+import { CardLogos } from '../components/BrandLogos';
 
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
 
@@ -277,7 +278,7 @@ export const Checkout: React.FC = () => {
                     <label key={m.id} className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-all duration-300 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-wine ${method === m.id ? 'border-ink bg-white shadow-[0_0_0_4px_rgba(196,138,130,.16)]' : 'border-ink/10 bg-white/60 hover:border-ink/40 hover:bg-white'}`}>
                       <input type="radio" name="payment" checked={method === m.id} onChange={() => setMethod(m.id)} className="sr-only" />
                       <span className="w-11 h-11 rounded-full grid place-items-center text-white shrink-0" style={{ background: m.color }}><m.Icon className="w-5 h-5" strokeWidth={1.5} /></span>
-                      <span className="flex-1"><strong className="block text-sm font-semibold">{m.name}</strong><span className="text-xs text-ink/70">{m.desc}</span></span>
+                      <span className="flex-1 min-w-0"><strong className="block text-sm font-semibold">{m.name}</strong>{m.id === 'card' ? <CardLogos className="mt-1.5" paydunyaSrc={SITE_CONFIG.paydunyaLogo || undefined} /> : <span className="text-xs text-ink/70">{m.desc}</span>}</span>
                       <span className={`w-4 h-4 rounded-full border grid place-items-center ${method === m.id ? 'border-ink' : 'border-ink/25'}`}>{method === m.id && <span className="w-2 h-2 rounded-full bg-ink" />}</span>
                     </label>
                   ))}

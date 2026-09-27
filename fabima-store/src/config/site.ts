@@ -25,7 +25,10 @@ export const SITE_CONFIG = {
     instagram: 'https://instagram.com/fabimastore',
     facebook: 'https://facebook.com/fabimastore',
     tiktok: 'https://tiktok.com/@fabimastore',
+    snapchat: 'https://www.snapchat.com/add/fabimastore',
   },
+  // Logo officiel PayDunya : déposer le fichier dans public/brand/ puis indiquer son chemin (ex. '/brand/paydunya.svg')
+  paydunyaLogo: '',
   freeShippingThreshold: 50000,
   giftWrapFee: 2000,
 };

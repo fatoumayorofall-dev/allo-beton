@@ -1,7 +1,7 @@
 import { canBuy, isPreorder } from '../utils/stock';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Banknote, Check, ChevronLeft, Home, MessageCircle, Phone, RefreshCw, ShoppingBag, Truck } from 'lucide-react';
+import { Banknote, Check, ChevronLeft, Home, Phone, RefreshCw, ShoppingBag, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import type { Product } from '../data/types';
@@ -13,6 +13,7 @@ import { ProductImage } from '../components/ProductImage';
 import { ProductVideo } from '../components/ProductVideo';
 import { ListenButton } from '../components/ListenButton';
 import { BrandMark, Wordmark } from '../components/Logo';
+import { WhatsAppGlyph } from '../components/BrandLogos';
 
 /** En-tête minimal des pages « statut » : logo + retour à la boutique. */
 export const SimpleHeader: React.FC<{ back?: string }> = ({ back }) => (
@@ -227,7 +228,7 @@ export const SimpleProduct: React.FC = () => {
         <div className="max-w-md mx-auto px-4 py-3 space-y-2">
           <a href={whatsappOrder} target="_blank" rel="noopener noreferrer"
             className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#177a41] text-white text-lg font-extrabold shadow-luxe active:scale-[.98] transition-transform">
-            <MessageCircle className="w-7 h-7" strokeWidth={2} /> Commander sur WhatsApp
+            <WhatsAppGlyph className="w-7 h-7" /> Commander sur WhatsApp
           </a>
           <div className="grid grid-cols-2 gap-2">
             <button onClick={addToBasket} disabled={outOfStock} className="flex h-12 items-center justify-center gap-2 rounded-full bg-white border border-ink/10 font-bold disabled:opacity-40">

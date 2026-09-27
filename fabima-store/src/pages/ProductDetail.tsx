@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Bell, ChevronDown, ChevronRight, Heart, MessageCircle, Minus, Plus, RefreshCw, Ruler, Share2, ShieldCheck, Truck } from 'lucide-react';
+import { Bell, ChevronDown, ChevronRight, Heart, Minus, Plus, RefreshCw, Ruler, Share2, ShieldCheck, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { SITE_CONFIG, buildProductWhatsAppMessage, buildWhatsAppLink } from '../config/site';
@@ -17,6 +17,7 @@ import { ForeignPrice } from '../components/CurrencySwitch';
 import { sparkleBurst } from '../components/Magic';
 import { ListenButton } from '../components/ListenButton';
 import { shortLink } from '../utils/share';
+import { WhatsAppGlyph } from '../components/BrandLogos';
 
 /** Date de livraison estimée à Dakar : demain si la commande part avant 16 h (le dimanche est sauté). */
 const DeliveryEstimate: React.FC = () => {
@@ -290,7 +291,7 @@ export const ProductDetail: React.FC = () => {
               : <button onClick={handleBuyNow} className="btn-gold w-full mt-2">Acheter maintenant</button>}
             <a href={waLink} target="_blank" rel="noopener noreferrer"
               className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#177a41] hover:text-[#177a41] transition-colors">
-              <MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Commander sur WhatsApp
+              <WhatsAppGlyph className="w-4 h-4 text-[#177a41]" /> Commander sur WhatsApp
             </a>
             {!outOfStock && !preorder && <DeliveryEstimate />}
 

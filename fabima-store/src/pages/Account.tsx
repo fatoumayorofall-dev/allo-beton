@@ -15,6 +15,7 @@ import { canBuy } from '../utils/stock';
 import type { Product } from '../data/types';
 import { formatPrice } from '../utils/format';
 import type { OrderStatus } from '../data/types';
+import { WhatsAppGlyph } from '../components/BrandLogos';
 
 /** Numéro saisi → 9 chiffres (on accepte « 77 123 45 67 », « +221 77… », « 00221… »). */
 const localDigits = (v: string) => {
@@ -111,7 +112,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
           </div>
           {error && <p className="mt-2 text-sm text-wine" role="alert">{error}</p>}
           <button disabled={busy || !digits} className="mt-6 w-full h-16 rounded-full bg-[#177a41] text-white text-[15px] font-semibold tracking-wide inline-flex hover:bg-[#12663a] transition-colors items-center justify-center gap-3 disabled:opacity-40">
-            {busy ? <Loader2 className="w-6 h-6 animate-spin" /> : <MessageCircle className="w-6 h-6" />} Recevoir mon code sur WhatsApp
+            {busy ? <Loader2 className="w-6 h-6 animate-spin" /> : <WhatsAppGlyph className="w-6 h-6" />} Recevoir mon code sur WhatsApp
           </button>
         </form>
         <ul className="mt-7 grid grid-cols-3 gap-3 text-center text-xs text-ink/75">
@@ -160,7 +161,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
       </p>
 
       <div className="mt-4 flex flex-col items-center gap-3 text-sm">
-        <a href="whatsapp://" className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-[#177a41]/10 text-[#177a41] font-semibold"><MessageCircle className="w-5 h-5" /> Ouvrir WhatsApp</a>
+        <a href="whatsapp://" className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-[#177a41]/10 text-[#177a41] font-semibold"><WhatsAppGlyph className="w-5 h-5" /> Ouvrir WhatsApp</a>
         <button onClick={send} disabled={wait > 0 || busy} className="underline disabled:no-underline disabled:text-ink/40">
           {wait > 0 ? `Renvoyer le code dans ${wait} s` : 'Je n\'ai rien reçu : renvoyer le code'}
         </button>

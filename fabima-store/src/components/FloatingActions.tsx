@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { ArrowUp, MessageCircle } from 'lucide-react';
+import { ArrowUp } from 'lucide-react';
 import { buildWhatsAppLink } from '../config/site';
 import { AssistantLauncher } from './AssistantLauncher';
+import { WhatsAppGlyph } from './BrandLogos';
 
 /**
  * Bouton WhatsApp + retour en haut (ordinateur).
@@ -31,7 +32,7 @@ export const FloatingActions: React.FC = () => {
       <a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer"
         aria-label="Nous écrire sur WhatsApp"
         className="group relative hidden lg:grid w-12 h-12 rounded-full bg-ink text-ivory place-items-center shadow-luxe hover:bg-[#12663a] transition-colors duration-500">
-        <MessageCircle className="w-6 h-6" strokeWidth={1.6} />
+        <WhatsAppGlyph className="w-6 h-6" />
         <span className="absolute right-full mr-3 px-3 py-2 bg-ink text-ivory text-[11px] tracking-wide whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden sm:block">
           Conseil personnalisé
         </span>

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Check, Gift, MessageCircle, Printer } from 'lucide-react';
+import { Check, Gift, Printer } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -9,6 +9,7 @@ import { ProductImage } from '../components/ProductImage';
 import { customerOrderSummaryLink } from '../utils/whatsappMessages';
 import { SparkleTrio, sparkleRain } from '../components/Magic';
 import { ForYou } from '../components/ForYou';
+import { WhatsAppGlyph } from '../components/BrandLogos';
 
 export const OrderSuccess: React.FC = () => {
   usePageTitle('Commande confirmée');
@@ -83,13 +84,13 @@ export const OrderSuccess: React.FC = () => {
         {/* WhatsApp : la boutique est-elle prévenue ? */}
         <div className={`mt-8 p-6 rounded-[2rem] border print:hidden ${shopNotified ? 'bg-emerald-50/70 border-emerald-100' : 'bg-white border-gold/30'}`}>
           {shopNotified ? (
-            <p className="text-sm flex items-start gap-3"><MessageCircle className="w-5 h-5 text-[#177a41] shrink-0" strokeWidth={1.5} />
+            <p className="text-sm flex items-start gap-3"><WhatsAppGlyph className="w-5 h-5 text-[#177a41] shrink-0" />
               <span><strong>La boutique a bien reçu votre commande sur WhatsApp.</strong>{customerNotified ? ' Vous venez aussi de recevoir un message de confirmation ; nous vous écrirons à chaque étape.' : ' Nous vous tiendrons informée à chaque étape.'}</span></p>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <p className="text-sm flex-1"><strong>Dernière étape (recommandée) :</strong> envoyez le récapitulatif sur WhatsApp, la boutique vous confirme la livraison plus vite.</p>
               <a href={wa} target="_blank" rel="noopener noreferrer" onClick={() => logNotification(order.id, { event: 'nouvelle', to: 'gerante', channel: 'manuel' })}
-                className="btn !bg-[#177a41] text-white hover:!bg-[#12663a] shrink-0"><MessageCircle className="w-4 h-4" strokeWidth={1.5} /> Envoyer sur WhatsApp</a>
+                className="btn !bg-[#177a41] text-white hover:!bg-[#12663a] shrink-0"><WhatsAppGlyph className="w-4 h-4" /> Envoyer sur WhatsApp</a>
             </div>
           )}
         </div>
