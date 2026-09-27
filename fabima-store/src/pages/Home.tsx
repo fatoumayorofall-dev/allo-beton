@@ -140,7 +140,7 @@ export const Home: React.FC = () => {
             <div className="pointer-events-none absolute -inset-[8%] lg:left-[4%] grid place-items-center" aria-hidden>
               <div className="aurora w-full aspect-square rounded-full blur-[40px] opacity-70 will-change-transform" />
             </div>
-            <div className="relative aspect-[4/5] sm:aspect-[5/6] lg:aspect-[4/5] max-h-[78svh] mx-auto overflow-hidden rounded-t-[999px] rounded-b-[2.25rem] bg-ivory-deep shadow-luxe">
+            <div className="relative aspect-square sm:aspect-[5/6] lg:aspect-[4/5] max-h-[50svh] sm:max-h-[78svh] mx-auto overflow-hidden rounded-t-[999px] rounded-b-[2.25rem] bg-ivory-deep shadow-luxe">
               {HERO_SLIDES.map((s, i) => (
                 <div key={i} className={`absolute inset-0 transition-opacity duration-[1.2s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}>
                   <div className={`absolute inset-0 ${i === slide && !s.video ? 'animate-kenburns' : ''}`}>

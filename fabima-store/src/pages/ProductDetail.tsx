@@ -279,7 +279,7 @@ export const ProductDetail: React.FC = () => {
                 <span className="w-8 text-center" aria-live="polite">{qty}</span>
                 <button onClick={() => setQty(q => Math.min(Math.max(1, maxQty(product)), q + 1))} aria-label="Augmenter" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Plus className="w-3.5 h-3.5" /></button>
               </div>
-              <button onClick={handleAdd} disabled={outOfStock} className="btn-dark flex-1">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter au panier'}</button>
+              <button onClick={handleAdd} disabled={outOfStock} className="btn-dark flex-1 min-w-0 whitespace-nowrap !px-4 sm:!px-8 !tracking-[0.12em] sm:!tracking-[0.22em]">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter au panier'}</button>
               <button onClick={e => { if (!liked) sparkleBurst(e.currentTarget, { hearts: true, count: 12, power: 0.8 }); toggleWishlist(product.id); }} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
                 className="w-[52px] h-[52px] rounded-full border border-ink/15 grid place-items-center hover:border-ink transition-colors shrink-0">
                 <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />

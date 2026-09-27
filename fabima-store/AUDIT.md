@@ -197,7 +197,15 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 
 - **Vidéos sans serveur** : dans l'espace gérant, une vidéo peut aussi être ajoutée par son nom (fichier posé dans le dossier `videos`, ex. version WAMP) ou par un lien https.
 
-## 15. Restent à traiter avant la mise en ligne
+## 15. Passe UX téléphone
+
+- **Barre d'onglets** en bas de l'écran (Accueil, Boutique, Favoris, Compte avec le prénom, Panier avec son nombre) : tout à portée de pouce, comme une application. « Mon compte », auparavant caché dans le menu sur téléphone, est à un toucher. Masquée sur les fiches produit, qui ont leur propre barre d'achat.
+- **Moins d'encombrement** : sur téléphone, un seul bouton flottant (l'assistante, plus petit) ; WhatsApp passe dans le menu. Plus rien ne cache les prix ni les textes.
+- **Accueil** : la vidéo occupe moins de hauteur ; le titre apparaît dès l'ouverture.
+- **Fiche produit** : « Ajouter au panier » tient sur une ligne.
+- Notifications, bandeau d'installation et boutons flottants se placent au-dessus de la barre d'onglets.
+
+## 16. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

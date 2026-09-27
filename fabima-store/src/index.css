@@ -80,6 +80,13 @@
 /* Bandeau « installer l'application » : on écarte la bulle de Fabi et on remonte les boutons flottants */
 body[data-install-banner] .assistant-hint { display: none; }
 body[data-install-banner] .floating-actions { bottom: 10.5rem; }
+/* Barre d'onglets du téléphone : le contenu, les boutons flottants et le bandeau d'installation passent au-dessus */
+@media (max-width: 1023px) {
+  body[data-tabbar] { padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); }
+  body[data-tabbar] .floating-actions { bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px)); }
+  body[data-tabbar] .install-banner { bottom: calc(4.75rem + env(safe-area-inset-bottom, 0px)); }
+  body[data-tabbar][data-install-banner] .floating-actions { bottom: 15rem; }
+}
 
 /* Apparition au défilement */
 .reveal { opacity: 0; transform: translateY(24px); transition: opacity 1s cubic-bezier(.22,1,.36,1), transform 1s cubic-bezier(.22,1,.36,1); }

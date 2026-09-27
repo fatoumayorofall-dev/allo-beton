@@ -98,7 +98,7 @@ export const InstallBanner: React.FC = () => {
   if (!visible) return null;
   const dismiss = () => { setShow(false); try { localStorage.setItem(BANNER_KEY, String(Date.now())); } catch { /* ignore */ } };
   return (
-    <div className="fixed left-3 right-3 bottom-3 z-[60] animate-fade-up print:hidden">
+    <div className="install-banner fixed left-3 right-3 bottom-3 z-[60] animate-fade-up print:hidden">
       <div className="relative bg-white rounded-[1.75rem] shadow-luxe border border-ink/[0.06] p-3 pr-12">
         <button onClick={dismiss} aria-label="Plus tard" className="absolute top-2 right-2 w-9 h-9 rounded-full grid place-items-center text-ink/70"><X className="w-4 h-4" /></button>
         <InstallButton big className="!bg-transparent !text-ink !p-1 [&_span_.text-sm]:!text-ink/75" />

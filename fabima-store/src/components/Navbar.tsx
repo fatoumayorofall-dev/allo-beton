@@ -5,7 +5,7 @@ import { useStore } from '../context/StoreContext';
 import { useAccount } from '../context/AccountContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId } from '../data/types';
-import { SITE_CONFIG } from '../config/site';
+import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { Logo } from './Logo';
@@ -193,7 +193,7 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
             <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/75 flex justify-between">
-              <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>
+              <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer" className="text-[#1f8f4e] font-semibold">WhatsApp</a><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>
             </div>
           </nav>
         </div>

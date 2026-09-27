@@ -16,6 +16,7 @@ import { InstallBanner } from './components/InstallApp';
 import { BrandMark } from './components/Logo';
 import { MagicLayer } from './components/Magic';
 import { AdminHeader, CheckoutFooter, CheckoutHeader } from './components/FocusedChrome';
+import { TabBar } from './components/TabBar';
 
 /*
  * Découpage du code : l'accueil, la boutique et les fiches produit arrivent tout de suite ;
@@ -148,7 +149,7 @@ export default function App() {
         <CartDrawer />
         <QuickView />
         <Toasts />
-        <Chrome><FloatingActions /><AssistantHost /></Chrome>
+        <Chrome><FloatingActions /><AssistantHost /><TabBar /></Chrome>
         <Chrome on={['shop', 'checkout']}><MagicLayer /></Chrome>
         <Chrome><InstallBanner /></Chrome>
         </AccountProvider>
