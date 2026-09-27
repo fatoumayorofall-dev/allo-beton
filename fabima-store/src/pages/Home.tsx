@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Globe2, MapPin, Plus, RefreshCw, ShoppingBag, Smartphone, Truck } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, Plus, QrCode, RefreshCw, ScanSearch, ShieldCheck, ShoppingBag, Smartphone, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
 import type { Product } from '../data/types';
@@ -294,6 +294,47 @@ export const Home: React.FC = () => {
               ))}
             </dl>
             <Link to="/boutique?q=wax" className="btn-outline mt-8">Découvrir la collection <ArrowRight className="w-4 h-4" /></Link>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ───────────── AUTHENTICITÉ GARANTIE ───────────── */}
+      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28" aria-labelledby="authentique-titre" data-testid="home-authentic">
+        <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
+          <Reveal className="relative mx-auto w-full max-w-[420px]">
+            <img src="/brand/fabima-securite.png" alt="L'écrin sécurisé Fabima : guilloché, micro-texte et clé de voûte" width={322} height={436}
+              loading="lazy" className="w-full h-auto drop-shadow-[0_30px_40px_rgba(58,31,45,.35)]" />
+            {/* Loupe : le micro-texte n'est lisible que de très près */}
+            <span className="absolute -right-2 sm:-right-8 bottom-6 w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden ring-4 ring-ivory shadow-luxe" aria-hidden>
+              <img src="/brand/fabima-securite-loupe.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
+              <span className="absolute inset-0 rounded-full ring-1 ring-inset ring-gold-light/60" />
+            </span>
+            <span className="absolute -right-2 sm:-right-8 bottom-1 translate-y-full pt-3 w-36 sm:w-44 text-center text-[10px] uppercase tracking-[0.2em] text-ink/60" aria-hidden>Micro-texte · à la loupe</span>
+          </Reveal>
+          <Reveal delay={120}>
+            <p className="eyebrow">Pièces authentiques</p>
+            <h2 id="authentique-titre" className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">Authentique, <em className="text-gold-dark text-magic">garanti</em></h2>
+            <p className="mt-5 text-ink/75 leading-relaxed max-w-lg">
+              Chaque pièce Fabima est livrée avec une étiquette numérotée. Scannez son QR code : le site vous confirme en une seconde
+              qu'elle sort bien de notre maison. Une copie, elle, ne passe pas.
+            </p>
+            <ul className="mt-8 grid sm:grid-cols-3 gap-3">
+              {[
+                { Icon: QrCode, t: 'Code unique', d: 'Un numéro par pièce, impossible à deviner' },
+                { Icon: Fingerprint, t: 'Écrin sécurisé', d: 'Guilloché et micro-texte, comme un billet' },
+                { Icon: ScanSearch, t: 'Vérifié en ligne', d: 'Gratuit, en scannant ou en tapant le code' },
+              ].map(({ Icon, t, d }) => (
+                <li key={t} className="p-4 rounded-[1.25rem] bg-white border border-ink/[0.06]">
+                  <Icon className="w-5 h-5 text-wine" strokeWidth={1.5} />
+                  <p className="font-display text-xl mt-2 leading-tight">{t}</p>
+                  <p className="text-xs text-ink/70 mt-1 leading-snug">{d}</p>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-8 flex flex-wrap items-center gap-4">
+              <Link to="/authentique" className="btn-dark"><ShieldCheck className="w-4 h-4" strokeWidth={1.6} /> Vérifier une pièce</Link>
+              <span className="text-xs text-ink/70 max-w-[16rem]">Le code figure sur l'étiquette glissée dans votre sac ou collée sur la boîte.</span>
+            </div>
           </Reveal>
         </div>
       </section>

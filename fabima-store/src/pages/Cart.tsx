@@ -1,8 +1,8 @@
 import { delayLabel } from '../utils/market';
 import { PREORDER_MAX } from '../utils/stock';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Lock, Minus, Plus, Tag, X } from 'lucide-react';
+import { ArrowRight, Check, Lock, Minus, Plus, RefreshCw, ShieldCheck, Tag, Truck, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
@@ -10,6 +10,7 @@ import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { GiftWrapOption } from '../components/CartDrawer';
 import { BrandMark } from '../components/Logo';
+import { ProductCard } from '../components/ProductCard';
 
 export const PromoBox: React.FC = () => {
   const { promoCode, applyPromo, removePromo, notify, computeTotals } = useStore();
@@ -42,9 +43,21 @@ export const PromoBox: React.FC = () => {
 
 export const Cart: React.FC = () => {
   usePageTitle('Mon panier');
-  const { cart, updateQuantity, removeFromCart, computeTotals, getProduct, clearCart } = useStore();
+  const { cart, updateQuantity, removeFromCart, computeTotals, getProduct, clearCart, products } = useStore();
   const navigate = useNavigate();
   const t = computeTotals(0);
+  const net = t.subtotal - t.discount;
+  const remaining = Math.max(0, SITE_CONFIG.freeShippingThreshold - net);
+  const progress = Math.min(100, (net / SITE_CONFIG.freeShippingThreshold) * 100);
+  // « Complétez votre look » : d'abord l'autre univers (un sac pour des souliers…), puis les coups de cœur
+  const suggestions = useMemo(() => {
+    const inCart = new Set(cart.map(i => i.productId));
+    const cats = new Set(cart.map(i => products.find(p => p.id === i.productId)?.category));
+    return products
+      .filter(p => !inCart.has(p.id) && p.stock > 0)
+      .sort((a, b) => Number(cats.has(a.category)) - Number(cats.has(b.category)) || Number(!!b.isBestseller) - Number(!!a.isBestseller))
+      .slice(0, 4);
+  }, [cart, products]);
 
   if (cart.length === 0) {
     return (
@@ -64,6 +77,19 @@ export const Cart: React.FC = () => {
         <button onClick={clearCart} className="text-[11px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Tout retirer</button>
       </div>
       <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
+        <div className="min-w-0">
+        {/* Livraison offerte : ce qu'il reste à ajouter */}
+        <div className={`mb-8 p-5 rounded-[1.5rem] border ${remaining ? 'bg-white border-ink/[0.06]' : 'bg-emerald-50 border-emerald-100'}`} data-testid="free-shipping">
+          <p className="flex items-center gap-3 text-sm">
+            <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${remaining ? 'bg-blush text-wine' : 'bg-emerald-100 text-emerald-800'}`}>{remaining ? <Truck className="w-4 h-4" strokeWidth={1.6} /> : <Check className="w-4 h-4" />}</span>
+            {remaining
+              ? <span>Plus que <strong>{formatPrice(remaining)}</strong> pour profiter de la <strong>livraison offerte</strong> à Dakar</span>
+              : <span className="text-emerald-900"><strong>Livraison offerte</strong> à Dakar : c'est cadeau !</span>}
+          </p>
+          <div className="mt-4 h-1.5 rounded-full bg-ink/[0.07] overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label="Progression vers la livraison offerte">
+            <div className={`h-full rounded-full transition-[width] duration-700 ease-luxe ${remaining ? 'bg-gradient-to-r from-gold to-wine' : 'bg-emerald-600'}`} style={{ width: `${progress}%` }} />
+          </div>
+        </div>
         <ul className="divide-y divide-ink/10">
           {cart.map(item => {
             const product = getProduct(item.productId);
@@ -95,6 +121,7 @@ export const Cart: React.FC = () => {
             );
           })}
         </ul>
+        </div>
 
         <aside className="bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-9 space-y-6 lg:sticky lg:top-36">
           <h2 className="font-display text-3xl">Récapitulatif</h2>
@@ -110,8 +137,27 @@ export const Cart: React.FC = () => {
           <button onClick={() => navigate('/commande')} className="btn-dark w-full">Passer commande <ArrowRight className="w-4 h-4" /></button>
           <p className="text-[11px] text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Free Money · Carte · Espèces</p>
           <Link to="/boutique" className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>
+          <ul className="border-t border-ink/10 pt-6 space-y-3 text-xs text-ink/75">
+            {[
+              { Icon: Truck, t: 'Livraison 24 h à Dakar', d: '48 à 72 h dans les régions' },
+              { Icon: RefreshCw, t: 'Échange sous 7 jours', d: 'Taille ou couleur, sans frais' },
+              { Icon: ShieldCheck, t: 'Pièces authentiques', d: 'Étiquette vérifiable en ligne' },
+            ].map(({ Icon, t: title, d }) => (
+              <li key={title} className="flex items-center gap-3"><Icon className="w-4 h-4 text-gold-dark shrink-0" strokeWidth={1.5} /><span><strong className="text-ink font-semibold">{title}</strong> · {d}</span></li>
+            ))}
+          </ul>
         </aside>
       </div>
+
+      {suggestions.length > 0 && (
+        <section className="mt-24" aria-labelledby="look-titre" data-testid="cart-suggestions">
+          <p className="eyebrow">Pour aller avec</p>
+          <h2 id="look-titre" className="font-display text-4xl sm:text-5xl mt-2 mb-8">Complétez votre <em className="text-gold-dark text-magic">look</em></h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12">
+            {suggestions.map(p => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

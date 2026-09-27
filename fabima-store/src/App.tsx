@@ -15,6 +15,7 @@ import { ProductDetail } from './pages/ProductDetail';
 import { InstallBanner } from './components/InstallApp';
 import { BrandMark } from './components/Logo';
 import { MagicLayer } from './components/Magic';
+import { AdminHeader, CheckoutFooter, CheckoutHeader } from './components/FocusedChrome';
 
 /*
  * Découpage du code : l'accueil, la boutique et les fiches produit arrivent tout de suite ;
@@ -80,12 +81,22 @@ const PageFade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <div key={pathname} className="animate-page-in">{children}</div>;
 };
 
-/** Les pages « statut » (/p/…, /s) et la page du livreur ont leur propre en-tête, très simple : pas de menu, pied de page ni boutons flottants. */
-const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+/**
+ * Habillage de chaque page :
+ * - « shop » : la boutique (menu, pied de page, boutons flottants)
+ * - « checkout » : le paiement, sans distraction (logo, sécurité, aide)
+ * - « admin » : l'espace gérant, avec son propre bandeau de gestion
+ * - « none » : les pages « statut » (/p/…, /s) et la page du livreur ont leur propre en-tête très simple
+ */
+type ChromeMode = 'shop' | 'checkout' | 'admin' | 'none';
+const useChromeMode = (): ChromeMode => {
   const { pathname } = useLocation();
-  const simple = pathname.startsWith('/p/') || pathname === '/s' || pathname.startsWith('/livreur/');
-  return simple ? null : <>{children}</>;
+  if (pathname.startsWith('/p/') || pathname === '/s' || pathname.startsWith('/livreur/')) return 'none';
+  if (pathname === '/commande') return 'checkout';
+  if (pathname === '/admin') return 'admin';
+  return 'shop';
 };
+const Chrome: React.FC<{ on?: ChromeMode[]; children: React.ReactNode }> = ({ on = ['shop'], children }) => (on.includes(useChromeMode()) ? <>{children}</> : null);
 
 export default function App() {
   usePreloadLikelyPages();
@@ -97,6 +108,8 @@ export default function App() {
         <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-ink focus:text-ivory focus:px-4 focus:py-2">Aller au contenu</a>
         <div className="min-h-screen flex flex-col">
           <Chrome><Navbar /></Chrome>
+          <Chrome on={['checkout']}><CheckoutHeader /></Chrome>
+          <Chrome on={['admin']}><AdminHeader /></Chrome>
           <main id="contenu" className="flex-1">
             <Suspense fallback={<PageFallback />}>
               <PageFade>
@@ -130,11 +143,14 @@ export default function App() {
             </Suspense>
           </main>
           <Chrome><Footer /></Chrome>
+          <Chrome on={['checkout']}><CheckoutFooter /></Chrome>
         </div>
         <CartDrawer />
         <QuickView />
         <Toasts />
-        <Chrome><FloatingActions /><AssistantHost /><InstallBanner /><MagicLayer /></Chrome>
+        <Chrome><FloatingActions /><AssistantHost /></Chrome>
+        <Chrome on={['shop', 'checkout']}><MagicLayer /></Chrome>
+        <Chrome><InstallBanner /></Chrome>
         </AccountProvider>
       </StoreProvider>
     </Router>

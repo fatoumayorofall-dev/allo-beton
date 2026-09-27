@@ -185,7 +185,15 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 - Serveur : envoi réservé à la gérante, format vérifié au contenu du fichier (MP4, MOV, WebM ; un faux fichier est refusé), 40 Mo au maximum, même vidéo jamais stockée deux fois, lecture par morceaux pour l'iPhone, adresses de vidéo contrôlées dans le catalogue.
 - Accueil : la vidéo envoyée par la gérante (sandales tenues à la main) tourne dans l'arche du héros, en boucle aller-retour sans à-coup (MP4 800 Ko + WebM), avec la poussière de lumière par-dessus.
 
-## 14. Restent à traiter avant la mise en ligne
+## 14. Passe « expert » : conversion et espace gérant
+
+- **Paiement sans distraction** : sur `/commande`, plus de menu, de méga-menu ni de grand pied de page. Un en-tête réduit (logo, « Paiement sécurisé », aide WhatsApp) et une bande de garanties (livraison, échange, authenticité, moyens de paiement). Sur téléphone, les boutons flottants ne cachent plus les champs.
+- **Panier** : barre « Plus que X FCFA pour la livraison offerte » (ou « Livraison offerte » une fois le seuil atteint), garanties sous le bouton de commande, et « Complétez votre look » (l'autre univers d'abord : un sac pour des souliers).
+- **Accueil** : section « Authentique, garanti » (écrin sécurisé, micro-texte à la loupe, code unique, vérification en ligne) qui mène à `/authentique`.
+- **Espace gérant** : bandeau de gestion sombre à la place de la vitrine (plus de menu boutique, de lettre d'information ni de boutons flottants), rubriques collées en haut au défilement.
+- **Tableau de bord** : période 7 / 30 / 90 jours, indicateurs comparés à la période précédente (▲ ▼ %), « À faire » (commandes à confirmer, à préparer, stock faible, clientes à prévenir), raccourcis (ajouter une pièce, statut WhatsApp, étiquettes, export Excel), graphique des ventes jour par jour avec détail au survol et tableau des chiffres, meilleures ventes. Les réglages du serveur passent en bas.
+
+## 15. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, BarChart3, Film, Globe2, Download, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BarChart3, Check, Film, Globe2, Download, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
@@ -31,6 +31,7 @@ function useServerStatus() {
 const EVENT_LABELS: Record<string, string> = { nouvelle: 'Nouvelle commande', ...STATUS_LABELS };
 
 const SESSION_KEY = 'fabima_admin';
+type Tab = 'dashboard' | 'orders' | 'products' | 'market' | 'customers' | 'status' | 'authenticity';
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   en_attente: 'bg-amber-100 text-amber-800',
@@ -48,7 +49,7 @@ export const Admin: React.FC = () => {
   });
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
-  const [tab, setTab] = useState<'dashboard' | 'orders' | 'products' | 'market' | 'customers' | 'status' | 'authenticity'>('dashboard');
+  const [tab, setTab] = useState<Tab>('dashboard');
 
   if (!authed) {
     return (
@@ -70,16 +71,16 @@ export const Admin: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <div><p className="eyebrow">Fabima Store</p><h1 className="font-display text-5xl mt-2">Espace gérant</h1></div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16">
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+        <div><p className="eyebrow">Fabima Store</p><h1 className="font-display text-4xl sm:text-5xl mt-2">Espace gérant</h1></div>
         <button onClick={() => { try { sessionStorage.removeItem(SESSION_KEY); sessionStorage.removeItem(PIN_KEY); } catch { /* ignore */ } setAuthed(false); }}
           className="inline-flex items-center gap-2 text-sm text-ink/75 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
-      <div className="flex gap-2 mb-8 overflow-x-auto">
+      <div className="sticky top-14 z-30 -mx-4 px-4 sm:mx-0 sm:px-0 py-3 mb-6 bg-ivory/95 backdrop-blur flex gap-2 overflow-x-auto no-scrollbar border-b border-ink/[0.06]" role="navigation" aria-label="Rubriques">
         {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ['market', 'Le Marché', Globe2], ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send], ['authenticity', 'Authenticité', ShieldCheck]] as const).map(([id, label, Icon]) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap ${tab === id ? 'bg-ink text-ivory' : 'bg-white hover:bg-ink/5'}`}>
+          <button key={id} onClick={() => { setTab(id); window.scrollTo({ top: 0 }); }} aria-current={tab === id ? 'page' : undefined}
+            className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap border transition-colors ${tab === id ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/[0.07] hover:border-ink/25'}`}>
             <Icon className="w-4 h-4" /> {label}
           </button>
         ))}
@@ -99,7 +100,7 @@ export const Admin: React.FC = () => {
 /*  Tableau de bord                                                    */
 /* ------------------------------------------------------------------ */
 
-const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ onGoto }) => {
+const Dashboard: React.FC<{ onGoto: (t: Tab) => void }> = ({ onGoto }) => {
   const { orders, products, stockAlerts: localAlerts, removeStockAlerts: removeLocalAlerts, notify } = useStore();
   const server = useServerStatus();
   const autoWhatsApp = !!(server?.whatsapp && server.adminApi);
@@ -115,10 +116,24 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
     setServerAlerts(list => list.filter(a => a.productId !== id));
     clearStockAlerts(id, adminPin());
   };
-  const valid = orders.filter(o => o.status !== 'annulee');
+  const [days, setDays] = useState<7 | 30 | 90>(30);
+  const since = Date.now() - days * 864e5;
+  const inPeriod = (o: Order, from: number, to: number) => { const t = new Date(o.createdAt).getTime(); return t >= from && t < to; };
+  const valid = orders.filter(o => o.status !== 'annulee' && inPeriod(o, since, Infinity));
+  const before = orders.filter(o => o.status !== 'annulee' && inPeriod(o, since - days * 864e5, since));
   const revenue = valid.reduce((s, o) => s + o.total, 0);
+  const revenueBefore = before.reduce((s, o) => s + o.total, 0);
   const pending = orders.filter(o => o.status === 'en_attente').length;
+  const toShip = orders.filter(o => o.status === 'confirmee' || o.status === 'en_preparation').length;
   const lowStock = products.filter(p => p.stock <= 5).sort((a, b) => a.stock - b.stock);
+  const top = useMemo(() => {
+    const map = new Map<string, { name: string; image?: string; qty: number; value: number }>();
+    valid.forEach(o => o.items.forEach(i => {
+      const row = map.get(i.productId) ?? { name: i.name, image: i.image, qty: 0, value: 0 };
+      row.qty += i.quantity; row.value += i.price * i.quantity; map.set(i.productId, row);
+    }));
+    return [...map.values()].sort((a, b) => b.value - a.value).slice(0, 5);
+  }, [valid]);
 
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {};
@@ -130,24 +145,93 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
   }, [valid, products]);
   const maxCat = Math.max(1, ...byCategory.map(c => c.value));
 
+  const change = (now: number, prev: number) => (prev > 0 ? Math.round(((now - prev) / prev) * 100) : null);
   const kpis = [
-    { label: 'Chiffre d\'affaires', value: formatPrice(revenue), Icon: Wallet },
-    { label: 'Commandes', value: String(valid.length), Icon: ShoppingCart },
-    { label: 'Panier moyen', value: formatPrice(valid.length ? revenue / valid.length : 0), Icon: BarChart3 },
-    { label: 'À traiter', value: String(pending), Icon: AlertTriangle },
+    { label: 'Chiffre d\'affaires', value: formatPrice(revenue), Icon: Wallet, delta: change(revenue, revenueBefore) },
+    { label: 'Commandes', value: String(valid.length), Icon: ShoppingCart, delta: change(valid.length, before.length) },
+    { label: 'Panier moyen', value: formatPrice(valid.length ? revenue / valid.length : 0), Icon: BarChart3, delta: null },
+    { label: 'À traiter', value: String(pending), Icon: AlertTriangle, delta: null, alert: pending > 0 },
   ];
+  const todo = [
+    pending > 0 && { label: `${pending} commande${pending > 1 ? 's' : ''} à confirmer`, tab: 'orders' as Tab, tone: 'bg-amber-100 text-amber-900' },
+    toShip > 0 && { label: `${toShip} commande${toShip > 1 ? 's' : ''} à préparer ou livrer`, tab: 'orders' as Tab, tone: 'bg-sky-100 text-sky-900' },
+    lowStock.length > 0 && { label: `${lowStock.length} pièce${lowStock.length > 1 ? 's' : ''} bientôt épuisée${lowStock.length > 1 ? 's' : ''}`, tab: 'products' as Tab, tone: 'bg-wine/10 text-wine' },
+    stockAlerts.length > 0 && { label: `${stockAlerts.length} cliente${stockAlerts.length > 1 ? 's' : ''} à prévenir (retour en stock)`, tab: 'dashboard' as Tab, tone: 'bg-violet-100 text-violet-900' },
+  ].filter(Boolean) as { label: string; tab: Tab; tone: string }[];
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
-    <div className="space-y-6">
-      <ServicesCard server={server} />
+    <div className="space-y-6" data-testid="dashboard">
+      {/* Bonjour + période */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-ink/70 first-letter:uppercase">{today}</p>
+          <h2 className="font-display text-3xl mt-1">Bonjour, voici votre boutique</h2>
+        </div>
+        <div className="inline-flex p-1 rounded-full bg-white border border-ink/[0.08]" role="group" aria-label="Période">
+          {([7, 30, 90] as const).map(d => (
+            <button key={d} onClick={() => setDays(d)} aria-pressed={days === d}
+              className={`px-4 h-9 rounded-full text-xs font-semibold tabular-nums transition-colors ${days === d ? 'bg-ink text-ivory' : 'text-ink/70 hover:text-ink'}`}>{d} jours</button>
+          ))}
+        </div>
+      </div>
+
+      {/* À faire aujourd'hui + raccourcis */}
+      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-4">
+        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
+          <h3 className="text-[11px] uppercase tracking-[0.2em] font-semibold text-ink/70">À faire</h3>
+          {todo.length === 0 ? <p className="mt-3 text-sm text-emerald-800 flex items-center gap-2"><Check className="w-4 h-4" /> Tout est à jour. Belle journée !</p> : (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {todo.map(t => <li key={t.label}><button onClick={() => (t.tab === 'dashboard' ? document.getElementById('alertes')?.scrollIntoView({ behavior: 'smooth' }) : onGoto(t.tab))} className={`px-3.5 h-9 rounded-full text-xs font-semibold inline-flex items-center gap-2 ${t.tone}`}>{t.label} <ArrowRight className="w-3.5 h-3.5" /></button></li>)}
+            </ul>
+          )}
+        </div>
+        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
+          <h3 className="text-[11px] uppercase tracking-[0.2em] font-semibold text-ink/70">Raccourcis</h3>
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-semibold">
+            <button onClick={() => onGoto('products')} className="h-10 rounded-xl bg-ivory-deep/70 hover:bg-ivory-deep inline-flex items-center gap-2 px-3"><Plus className="w-4 h-4 text-gold-dark" /> Ajouter une pièce</button>
+            <button onClick={() => onGoto('status')} className="h-10 rounded-xl bg-ivory-deep/70 hover:bg-ivory-deep inline-flex items-center gap-2 px-3"><Send className="w-4 h-4 text-gold-dark" /> Publier un statut</button>
+            <button onClick={() => onGoto('authenticity')} className="h-10 rounded-xl bg-ivory-deep/70 hover:bg-ivory-deep inline-flex items-center gap-2 px-3"><ShieldCheck className="w-4 h-4 text-gold-dark" /> Imprimer des étiquettes</button>
+            <button onClick={() => exportOrdersCsv(orders)} disabled={!orders.length} className="h-10 rounded-xl bg-ivory-deep/70 hover:bg-ivory-deep inline-flex items-center gap-2 px-3 disabled:opacity-40"><Download className="w-4 h-4 text-gold-dark" /> Exporter (Excel)</button>
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, Icon }) => (
-          <div key={label} className="bg-white border border-ink/[0.06] rounded-[2rem] p-5">
-            <Icon className="w-5 h-5 text-gold-dark" />
+        {kpis.map(({ label, value, Icon, delta, alert }) => (
+          <div key={label} className={`bg-white border rounded-[2rem] p-5 ${alert ? 'border-amber-300' : 'border-ink/[0.06]'}`}>
+            <div className="flex items-center justify-between">
+              <Icon className={`w-5 h-5 ${alert ? 'text-amber-700' : 'text-gold-dark'}`} />
+              {delta !== null && (
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full tabular-nums ${delta >= 0 ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`} title={`par rapport aux ${days} jours précédents`}>
+                  {delta >= 0 ? '▲' : '▼'} {Math.abs(delta)} %
+                </span>
+              )}
+            </div>
             <p className="text-xs text-ink/70 mt-3">{label}</p>
-            <p className="font-display text-2xl sm:text-3xl mt-1">{value}</p>
+            <p className="font-display text-2xl sm:text-3xl mt-1 tabular-nums">{value}</p>
           </div>
         ))}
+      </div>
+
+      <div className="grid lg:grid-cols-[1.6fr_1fr] gap-6">
+        <SalesChart orders={valid} days={days} />
+        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
+          <h2 className="font-display text-xl">Meilleures ventes</h2>
+          <p className="text-xs text-ink/70 mt-1 mb-4">Sur les {days} derniers jours</p>
+          {top.length === 0 ? <p className="text-sm text-ink/70">Pas encore de vente sur cette période.</p> : (
+            <ol className="divide-y divide-ink/5" data-testid="top-sales">
+              {top.map((t, i) => (
+                <li key={t.name} className="flex items-center gap-3 py-2.5">
+                  <span className="w-5 text-xs text-ink/60 tabular-nums">{i + 1}</span>
+                  <ProductImage src={t.image} alt="" label="" className="w-10 h-12 rounded-lg shrink-0" />
+                  <span className="flex-1 min-w-0"><span className="block text-sm line-clamp-1">{t.name}</span><span className="text-xs text-ink/70">{t.qty} vendue{t.qty > 1 ? 's' : ''}</span></span>
+                  <span className="text-sm font-medium tabular-nums">{formatPrice(t.value)}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
       <div className="grid lg:grid-cols-2 gap-6">
         <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
@@ -181,7 +265,7 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
         </div>
       </div>
       {stockAlerts.length > 0 && (
-        <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
+        <div id="alertes" className="bg-white border border-ink/[0.06] rounded-[2rem] p-6 scroll-mt-32">
           <h2 className="font-display text-xl">Alertes de retour en stock</h2>
           <p className="text-xs text-ink/70 mt-1 mb-4">Clientes à prévenir quand la pièce revient. Réapprovisionnez, contactez-les, puis marquez l'alerte comme traitée.</p>
           <ul className="divide-y divide-ink/5 text-sm">
@@ -226,6 +310,90 @@ const Dashboard: React.FC<{ onGoto: (t: 'orders' | 'products') => void }> = ({ o
           </ul>
         </div>
       )}
+      <ServicesCard server={server} />
+    </div>
+  );
+};
+
+/** Graduation « ronde » de l'axe (1, 2 ou 5 × 10ⁿ). */
+const niceMax = (v: number) => {
+  if (v <= 0) return 10_000;
+  const p = 10 ** Math.floor(Math.log10(v));
+  return ([1, 2, 5, 10].find(m => m * p >= v) ?? 10) * p;
+};
+const shortPrice = (n: number) => (n >= 1e6 ? `${(n / 1e6).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} M` : n >= 1e3 ? `${Math.round(n / 1e3)} k` : String(n));
+
+/**
+ * Ventes jour par jour sur la période : une colonne par jour (framboise), survol = date, montant et nombre de commandes.
+ * Le tableau des mêmes chiffres est accessible juste en dessous.
+ */
+const SalesChart: React.FC<{ orders: Order[]; days: number }> = ({ orders, days }) => {
+  const [hover, setHover] = useState<number | null>(null);
+  const series = useMemo(() => {
+    const key = (d: Date) => d.toLocaleDateString('fr-CA');
+    const list = Array.from({ length: days }, (_, i) => {
+      const d = new Date(); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - (days - 1 - i));
+      return { key: key(d), date: d, value: 0, count: 0 };
+    });
+    const index = new Map(list.map((x, i) => [x.key, i]));
+    orders.forEach(o => { const i = index.get(key(new Date(o.createdAt))); if (i !== undefined) { list[i].value += o.total; list[i].count += 1; } });
+    return list;
+  }, [orders, days]);
+  const max = niceMax(Math.max(...series.map(s => s.value)));
+  const ticks = [max, max / 2, 0];
+  const label = (d: Date, long = false) => d.toLocaleDateString('fr-FR', long ? { weekday: 'long', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' });
+  const every = days <= 7 ? 1 : days <= 30 ? 7 : 15;
+  const h = hover !== null ? series[hover] : null;
+  const total = series.reduce((s, x) => s + x.value, 0);
+  return (
+    <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6" data-testid="sales-chart">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <div>
+          <h2 className="font-display text-xl">Ventes par jour</h2>
+          <p className="text-xs text-ink/70 mt-1">Chiffre d'affaires des commandes, hors annulées · {days} jours</p>
+        </div>
+        <p className="font-display text-2xl tabular-nums">{formatPrice(total)}</p>
+      </div>
+      <div className="relative mt-6 pl-10 select-none">
+        {/* grille et graduations */}
+        <div className="absolute inset-y-0 left-0 right-0 bottom-6 pointer-events-none" aria-hidden>
+          {ticks.map((t, i) => (
+            <div key={t} className="absolute left-0 right-0 flex items-center" style={{ top: `${(i / (ticks.length - 1)) * 100}%` }}>
+              <span className="w-10 -translate-y-1/2 pr-2 text-right text-[10px] text-ink/60 tabular-nums">{shortPrice(t)}</span>
+              <span className="flex-1 h-px bg-ink/[0.07]" />
+            </div>
+          ))}
+        </div>
+        <div className="relative h-52 flex items-end gap-[2px]" onMouseLeave={() => setHover(null)} role="img"
+          aria-label={`Ventes par jour sur ${days} jours : ${formatPrice(total)} au total`}>
+          {series.map((d, i) => (
+            <button key={d.key} type="button" onMouseEnter={() => setHover(i)} onFocus={() => setHover(i)} onBlur={() => setHover(null)}
+              aria-label={`${label(d.date, true)} : ${formatPrice(d.value)}, ${d.count} commande${d.count > 1 ? 's' : ''}`}
+              className="relative flex-1 h-full flex items-end justify-center group outline-none">
+              <span className={`w-full max-w-[24px] rounded-t-[4px] transition-colors ${d.value ? (hover === i ? 'bg-[#8e2a4f]' : 'bg-wine') : 'bg-ink/[0.06]'}`}
+                style={{ height: d.value ? `${Math.max(3, (d.value / max) * 100)}%` : '2px' }} />
+            </button>
+          ))}
+          {h && (
+            <div className="absolute z-10 -translate-x-1/2 px-3 py-2 rounded-xl bg-ink text-ivory text-xs whitespace-nowrap shadow-soft pointer-events-none" data-testid="chart-tooltip"
+              style={{ left: `${Math.min(86, Math.max(14, ((hover! + 0.5) / series.length) * 100))}%`, bottom: `calc(${Math.min(78, (h.value / max) * 100)}% + 10px)` }} role="status">
+              <span className="block text-ivory/70 first-letter:uppercase">{label(h.date, true)}</span>
+              <span className="font-semibold tabular-nums">{formatPrice(h.value)}</span> · {h.count} commande{h.count > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
+        <div className="flex gap-[2px] h-6 items-end text-[10px] text-ink/60" aria-hidden>
+          {series.map((d, i) => <span key={d.key} className="flex-1 text-center whitespace-nowrap overflow-visible">{i === series.length - 1 ? 'auj.' : i % every === 0 && series.length - 1 - i >= every / 2 ? label(d.date) : ''}</span>)}
+        </div>
+      </div>
+      <details className="mt-3 text-xs">
+        <summary className="cursor-pointer text-ink/70 hover:text-ink">Voir le tableau des ventes</summary>
+        <table className="mt-2 w-full tabular-nums">
+          <thead><tr className="text-left text-ink/60"><th className="py-1 font-medium">Jour</th><th className="py-1 font-medium text-right">Commandes</th><th className="py-1 font-medium text-right">Montant</th></tr></thead>
+          <tbody>{series.filter(d => d.count).reverse().map(d => <tr key={d.key} className="border-t border-ink/5"><td className="py-1">{label(d.date, true)}</td><td className="py-1 text-right">{d.count}</td><td className="py-1 text-right">{formatPrice(d.value)}</td></tr>)}</tbody>
+        </table>
+        {!series.some(d => d.count) && <p className="mt-2 text-ink/70">Aucune vente sur cette période.</p>}
+      </details>
     </div>
   );
 };
