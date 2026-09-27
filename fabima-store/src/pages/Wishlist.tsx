@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useStore } from '../context/StoreContext';
 import { ProductCard } from '../components/ProductCard';
+import { ForYou } from '../components/ForYou';
 import { usePageTitle } from '../utils/usePageTitle';
 
 export const Wishlist: React.FC = () => {
@@ -22,10 +23,11 @@ export const Wishlist: React.FC = () => {
           <Link to="/boutique" className="btn-dark mt-10">Explorer la boutique</Link>
         </div>
       ) : (
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12">
+        <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12" data-testid="wishlist-grid">
           {items.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
       )}
+      <ForYou className="mt-24 pt-14 border-t border-ink/10" eyebrow={items.length ? 'Pour compléter vos envies' : 'Pour commencer'} title={<>Vous aimerez <em className="text-gold-dark">aussi</em></>} />
     </div>
   );
 };

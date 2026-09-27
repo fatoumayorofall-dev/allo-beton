@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Heart, Loader2, LogOut, MapPin, MessageCircle, Package, Pencil, Ruler, ShieldCheck, Smartphone, Sparkles, Volume2, Zap } from 'lucide-react';
+import { ArrowRight, Check, Heart, Loader2, LogOut, MapPin, MessageCircle, Package, Pencil, RotateCcw, Ruler, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Volume2, Zap } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, buildWhatsAppLink } from '../config/site';
@@ -10,6 +10,9 @@ import { InstallButton } from '../components/InstallApp';
 import { ProductImage } from '../components/ProductImage';
 import { BrandMark } from '../components/Logo';
 import { Twinkles } from '../components/Magic';
+import { ForYou, pickForHer } from '../components/ForYou';
+import { canBuy } from '../utils/stock';
+import type { Product } from '../data/types';
 import { formatPrice } from '../utils/format';
 import type { OrderStatus } from '../data/types';
 
@@ -217,6 +220,10 @@ const AddressEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
+/** Petit signal qui donne envie de ne pas attendre : prix en baisse ou dernières pièces. */
+const favSignal = (p: Product) =>
+  p.stock > 0 && p.stock <= 3 ? `Plus que ${p.stock}` : p.oldPrice && p.oldPrice > p.price ? 'Prix doux' : p.stock <= 0 && p.preorderDays ? 'Sur commande' : null;
+
 /** Étapes affichées pour la dernière commande. */
 const STEPS: { status: OrderStatus[]; label: string }[] = [
   { status: ['en_attente'], label: 'Reçue' },
@@ -233,7 +240,7 @@ const STEPS: { status: OrderStatus[]; label: string }[] = [
  */
 const Dashboard: React.FC = () => {
   const { user, remoteOrders, logout } = useAccount();
-  const { orders, wishlist, getProduct } = useStore();
+  const { orders, wishlist, getProduct, products, addToCart, setCartOpen, notify, openQuickView } = useStore();
   const [editing, setEditing] = useState(false);
   const allOrders = [...new Map([...remoteOrders, ...orders].map(o => [o.id, o])).values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const pending = allOrders.filter(o => !['livree', 'annulee'].includes(o.status)).length;
@@ -242,6 +249,17 @@ const Dashboard: React.FC = () => {
   const last = allOrders[0];
   const stepIndex = last ? STEPS.findIndex(st => st.status.includes(last.status)) : -1;
   const favs = wishlist.map(id => getProduct(id)).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 4);
+  const picks = pickForHer(products, [...allOrders.flatMap(o => o.items.map(i => i.productId)), ...wishlist], wishlist);
+  const reorderable = last ? last.items.filter(i => !i.market && getProduct(i.productId) && canBuy(getProduct(i.productId)!)) : [];
+  const reorder = () => {
+    let n = 0;
+    for (const i of reorderable) if (addToCart(getProduct(i.productId)!, { size: i.size, color: i.color, quantity: i.quantity, silent: true })) n++;
+    if (n) { notify(n > 1 ? `${n} pièces remises dans votre panier` : 'Pièce remise dans votre panier'); setCartOpen(true); }
+  };
+  const quickBuy = (p: Product) => {
+    if (p.sizes.length > 1 || p.colors.length > 1) openQuickView(p);
+    else addToCart(p, { size: p.sizes[0], color: p.colors[0]?.name });
+  };
   const since = user.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : null;
 
   const links = [
@@ -250,7 +268,7 @@ const Dashboard: React.FC = () => {
     { to: '/s', Icon: Sparkles, label: 'Nouveautés', hint: 'Vues sur le statut' },
     { to: '/authentique', Icon: ShieldCheck, label: 'Authenticité', hint: 'Vérifier une pièce' },
     { to: '/faq#tailles', Icon: Ruler, label: 'Guide des tailles', hint: 'Trouver ma pointure' },
-    { href: buildWhatsAppLink(`Bonjour Fabima 🌸 C'est ${user.firstName || 'une cliente'} (+221 ${local}).`), Icon: MessageCircle, label: 'Aide', hint: 'Sur WhatsApp' },
+    { href: buildWhatsAppLink(`Bonjour Fabima, c'est ${user.firstName || 'une cliente'} (+221 ${local}).`), Icon: MessageCircle, label: 'Aide', hint: 'Sur WhatsApp' },
   ];
 
   return (
@@ -266,13 +284,17 @@ const Dashboard: React.FC = () => {
           <p className="text-ivory/70 text-sm mt-2">+221 {pretty(local)}{since && <> · cliente Fabima depuis {since}</>}</p>
           <dl className="mt-7 grid grid-cols-3 gap-3 max-w-md">
             {[[String(allOrders.length), 'commande' + (allOrders.length > 1 ? 's' : '')], [String(pending), 'en cours'], [String(wishlist.length), 'favori' + (wishlist.length > 1 ? 's' : '')]].map(([n, l]) => (
-              <div key={l} className="rounded-2xl bg-ivory/[0.07] border border-ivory/10 px-3 py-3">
+              <div key={l} className="border-l border-gold/40 pl-4 py-1">
                 <dt className="sr-only">{l}</dt>
-                <dd className="font-sans font-semibold text-2xl tabular-nums leading-none">{n}</dd>
-                <dd className="text-[11px] text-ivory/70 mt-1">{l}</dd>
+                <dd className="font-sans font-light text-3xl tabular-nums leading-none">{n}</dd>
+                <dd className="text-[10px] uppercase tracking-[0.2em] text-ivory/65 mt-2">{l}</dd>
               </div>
             ))}
           </dl>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link to="/boutique?tri=nouveautes" className="btn-light !h-12">Les nouveautés <ArrowRight className="w-4 h-4" /></Link>
+            {picks.length > 0 && <a href="#pour-vous" className="btn-ghost-light !h-12">Ma sélection</a>}
+          </div>
         </div>
       </section>
 
@@ -302,8 +324,8 @@ const Dashboard: React.FC = () => {
                     const done = i <= stepIndex;
                     return (
                       <li key={st.label} className="relative flex flex-col items-center text-center" aria-current={i === stepIndex ? 'step' : undefined}>
-                        {i > 0 && <span className={`absolute top-3.5 right-1/2 w-full h-0.5 -z-0 ${i <= stepIndex ? 'bg-wine' : 'bg-ink/10'}`} aria-hidden />}
-                        <span className={`relative w-7 h-7 rounded-full grid place-items-center text-[11px] font-bold ${done ? 'bg-wine text-white' : 'bg-white border-2 border-ink/15 text-ink/50'}`}>
+                        {i > 0 && <span className={`absolute top-3.5 right-1/2 w-full h-0.5 -z-0 ${i <= stepIndex ? 'bg-gold' : 'bg-ink/10'}`} aria-hidden />}
+                        <span className={`relative w-7 h-7 rounded-full grid place-items-center text-[11px] font-bold ${done ? 'bg-ink text-gold-light' : 'bg-white border border-ink/15 text-ink/50'}`}>
                           {done ? <Check className="w-3.5 h-3.5" /> : i + 1}
                         </span>
                         <span className={`mt-2 text-[11px] ${i === stepIndex ? 'font-semibold text-ink' : 'text-ink/60'}`}>{st.label}</span>
@@ -318,7 +340,10 @@ const Dashboard: React.FC = () => {
                 ))}
                 {last.items.length > 4 && <li className="w-14 h-16 rounded-xl bg-ivory-deep grid place-items-center text-xs">+{last.items.length - 4}</li>}
               </ul>
-              <Link to={`/suivi?commande=${encodeURIComponent(last.id)}&tel=${encodeURIComponent(local)}`} className="btn-dark w-full mt-6">Suivre ma commande <ArrowRight className="w-4 h-4" /></Link>
+              <div className="mt-6 grid sm:grid-cols-2 gap-2">
+                <Link to={`/suivi?commande=${encodeURIComponent(last.id)}&tel=${encodeURIComponent(local)}`} className="btn-dark !px-5">Suivre <ArrowRight className="w-4 h-4" /></Link>
+                {reorderable.length > 0 && <button onClick={reorder} className="btn-outline !px-5" data-testid="reorder"><RotateCcw className="w-4 h-4" strokeWidth={1.5} /> Recommander</button>}
+              </div>
             </div>
           )}
         </Card>
@@ -334,12 +359,21 @@ const Dashboard: React.FC = () => {
           ) : (
             <ul className="mt-4 grid grid-cols-2 gap-3" data-testid="account-favs">
               {favs.map(p => (
-                <li key={p.id}>
+                <li key={p.id} className="relative">
                   <Link to={`/produit/${p.slug}`} className="group block">
-                    <ProductImage src={p.images[0]} alt={p.name} label="" className="w-full aspect-[4/5] rounded-2xl transition-transform duration-700 group-hover:scale-[1.02]" />
+                    <span className="relative block overflow-hidden rounded-2xl">
+                      <ProductImage src={p.images[0]} alt={p.name} label="" className="w-full aspect-[4/5] transition-transform duration-700 group-hover:scale-[1.03]" />
+                      {favSignal(p) && <span className="absolute top-2 left-2 px-2 py-1 bg-ivory/90 backdrop-blur text-[8px] uppercase tracking-[0.22em] font-semibold text-ink" data-testid="fav-signal">{favSignal(p)}</span>}
+                    </span>
                     <span className="block mt-2 text-sm leading-tight line-clamp-1">{p.name}</span>
-                    <span className="block text-xs text-ink/70">{formatPrice(p.price)}</span>
+                    <span className="block text-xs text-ink/70">{formatPrice(p.price)}{p.oldPrice && <span className="ml-1.5 line-through text-ink/45">{formatPrice(p.oldPrice)}</span>}</span>
                   </Link>
+                  {canBuy(p) && (
+                    <button onClick={() => quickBuy(p)} aria-label={`Ajouter « ${p.name} » au panier`} data-testid="fav-buy"
+                      className="absolute right-2 bottom-[3.4rem] w-10 h-10 rounded-full bg-ink text-ivory grid place-items-center shadow-soft hover:bg-gold-dark transition-colors">
+                      <ShoppingBag className="w-4 h-4" strokeWidth={1.5} />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -347,12 +381,15 @@ const Dashboard: React.FC = () => {
         </Card>
       </div>
 
+      {/* Sélection personnelle */}
+      <ForYou id="pour-vous" className="pt-6" />
+
       {/* Raccourcis */}
       <nav aria-label="Mon compte" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {links.map(({ to, href, Icon, label, hint }) => {
           const inner = (
             <>
-              <span className="w-11 h-11 rounded-full bg-blush/70 grid place-items-center text-wine group-hover:bg-wine group-hover:text-white transition-colors"><Icon className="w-5 h-5" strokeWidth={1.6} /></span>
+              <span className="w-11 h-11 rounded-full border border-gold/50 grid place-items-center text-gold-dark group-hover:bg-ink group-hover:border-ink group-hover:text-gold-light transition-colors"><Icon className="w-5 h-5" strokeWidth={1.3} /></span>
               <span className="mt-3 block font-semibold leading-tight">{label}</span>
               <span className="text-xs text-ink/70">{hint}</span>
             </>
@@ -367,7 +404,7 @@ const Dashboard: React.FC = () => {
       <div className="grid lg:grid-cols-2 gap-5 items-start">
         <Card>
           <div className="flex items-start justify-between gap-3">
-            <p className="flex items-start gap-3"><span className="w-11 h-11 rounded-full bg-ivory-deep grid place-items-center shrink-0"><MapPin className="w-5 h-5 text-gold-dark" strokeWidth={1.6} /></span>
+            <p className="flex items-start gap-3"><span className="w-11 h-11 rounded-full border border-gold/50 grid place-items-center shrink-0"><MapPin className="w-5 h-5 text-gold-dark" strokeWidth={1.3} /></span>
               <span><strong className="block">Mon adresse de livraison</strong>
                 <span className="text-sm text-ink/75">{user.address ? `${user.address}, ${user.zone}` : 'Pas encore enregistrée'}</span></span>
             </p>
