@@ -10,6 +10,7 @@ import { ProductVideo } from './ProductVideo';
 import { ColorSwatch } from './ColorSwatch';
 import { Stars } from './Stars';
 import { sparkleBurst } from './Magic';
+import { ForeignPrice } from './CurrencySwitch';
 
 export const QuickView: React.FC = () => {
   const { quickView: product, openQuickView, addToCart, toggleWishlist, isInWishlist, setCartOpen } = useStore();
@@ -63,6 +64,7 @@ export const QuickView: React.FC = () => {
           <div className="hidden sm:flex mt-5 items-baseline gap-3">
             <span className={`text-xl font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
             {product.oldPrice && <span className="text-ink/70 line-through text-sm">{formatPrice(product.oldPrice)}</span>}
+            <ForeignPrice amount={product.price} className="text-sm text-ink/60" />
           </div>
           <p className="hidden sm:block mt-5 text-sm text-ink/75 leading-relaxed line-clamp-3">{product.description}</p>
 

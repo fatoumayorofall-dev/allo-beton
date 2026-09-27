@@ -11,6 +11,7 @@ import { sparkleBurst } from './Magic';
 import { Sparkle } from './Decor';
 import { ColorSwatch } from './ColorSwatch';
 import { canBuy, isPreorder } from '../utils/stock';
+import { ForeignPrice } from './CurrencySwitch';
 
 export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = ({ product }) => {
   const { addToCart, toggleWishlist, isInWishlist, openQuickView } = useStore();
@@ -122,6 +123,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
           <span className={`font-medium ${off ? 'text-wine' : 'text-ink/85'}`}>{formatPrice(product.price)}</span>
           {product.oldPrice && <span className="text-ink/50 line-through"><span className="sr-only">au lieu de </span>{formatPrice(product.oldPrice)}</span>}
         </div>
+        <ForeignPrice amount={product.price} className="text-[11px] text-ink/55 -mt-1" />
       </div>
     </article>
   );

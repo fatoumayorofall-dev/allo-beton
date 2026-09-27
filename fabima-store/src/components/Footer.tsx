@@ -34,7 +34,7 @@ export const Footer: React.FC = () => {
       <span className="pointer-events-none absolute -top-40 -left-40 w-[36rem] h-[36rem] rounded-full bg-wine/25 blur-[120px]" aria-hidden />
       <span className="pointer-events-none absolute -bottom-48 right-0 w-[32rem] h-[32rem] rounded-full bg-gold/15 blur-[120px]" aria-hidden />
       {/* Ciel étoilé : points de lumière qui scintillent et, de temps en temps, une étoile filante */}
-      <Twinkles count={46} seed={3} shooting />
+      <Twinkles count={18} seed={3} />
       <Wordmark tagline={false} className="pointer-events-none select-none absolute -bottom-[3%] left-1/2 -translate-x-1/2 w-[92%] max-w-[1300px] h-auto text-ivory/[0.035]" />
       {/* Newsletter */}
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 pb-16 grid grid-cols-1 lg:grid-cols-2 gap-10 items-end border-b border-ivory/10">

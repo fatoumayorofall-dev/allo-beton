@@ -40,7 +40,7 @@ export const AssistantLauncher: React.FC = () => {
         </div>
       )}
       <button onClick={() => { dismiss(); openAssistant(); }} onPointerEnter={() => { loadAssistant(); }} aria-label="Poser une question à l'assistante"
-        className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-gradient-to-br from-gold to-wine text-white grid place-items-center shadow-luxe hover:scale-105 transition-transform">
+        className="w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-ink text-gold-light ring-1 ring-gold/40 grid place-items-center shadow-luxe hover:scale-105 transition-transform">
         <Sparkles className="w-6 h-6" strokeWidth={1.6} />
       </button>
     </div>

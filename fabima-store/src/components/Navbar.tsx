@@ -9,6 +9,7 @@ import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { Logo } from './Logo';
+import { CurrencySwitch } from './CurrencySwitch';
 import { SearchOverlay } from './SearchOverlay';
 import { ProductImage } from './ProductImage';
 
@@ -93,6 +94,7 @@ export const Navbar: React.FC = () => {
             <button className={`lg:hidden ${iconBtn} -ml-2`} onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu"><Menu className="w-5 h-5" strokeWidth={1.5} /></button>
             <button onClick={() => setSearchOpen(true)} aria-label="Rechercher" className={`${iconBtn} lg:-ml-2`}><Search className="w-[18px] h-[18px]" strokeWidth={1.5} /></button>
             <a href={`tel:${SITE_CONFIG.phoneRaw}`} className="hidden xl:inline text-[10px] uppercase tracking-[0.2em] ml-2 opacity-80 hover:opacity-100">{SITE_CONFIG.phone}</a>
+            <CurrencySwitch className="hidden lg:block ml-4" />
           </div>
 
           {/* Centre */}
@@ -194,7 +196,7 @@ export const Navbar: React.FC = () => {
               </Link>
               <p className="eyebrow mt-8 mb-3">Par occasion</p>
               <div className="flex flex-wrap gap-2">
-                {OCCASIONS.map(o => <Link key={o.id} to={`/boutique?occasion=${o.id}`} className="px-3.5 h-9 inline-flex items-center rounded-full bg-blush/60 text-xs">{o.name}</Link>)}
+                {OCCASIONS.map(o => <Link key={o.id} to={`/boutique?occasion=${o.id}`} className="px-3.5 h-9 inline-flex items-center rounded-full border border-ink/15 text-xs">{o.name}</Link>)}
               </div>
               <Link to="/journal" className="flex items-center justify-between py-4 mt-6 border-y border-ink/10 font-display text-2xl">Le journal <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
               <div className="mt-8 space-y-4 text-sm">
@@ -204,6 +206,7 @@ export const Navbar: React.FC = () => {
                 <Link to="/favoris" className="flex items-center gap-3"><Heart className="w-4 h-4" strokeWidth={1.5} /> Mes favoris ({wishlist.length})</Link>
               </div>
             </div>
+            <div className="px-6 py-3 border-t border-ink/[0.07] flex items-center justify-between text-xs text-ink/75"><span>Afficher les prix en</span><CurrencySwitch up /></div>
             <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/75 flex justify-between">
               <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={buildWhatsAppLink('Bonjour Fabima Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer" className="text-[#1f8f4e] font-semibold">WhatsApp</a><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>
             </div>

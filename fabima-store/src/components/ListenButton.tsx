@@ -74,8 +74,8 @@ export const ListenButton: React.FC<{ product: Product; big?: boolean; className
     );
   }
   return (
-    <button onClick={play} className={`inline-flex items-center gap-2 px-4 h-10 rounded-full bg-blush/60 text-sm hover:bg-blush transition-colors ${className}`}>
-      <Icon className="w-4 h-4 text-wine" /> {playing ? 'Arrêter' : hasVoice ? 'Écouter la présentation' : 'Écouter la fiche'}
+    <button onClick={play} className={`inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold text-ink/70 hover:text-ink transition-colors ${className}`}>
+      <Icon className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> {playing ? 'Arrêter' : hasVoice ? 'Écouter la présentation' : 'Écouter la fiche'}
     </button>
   );
 };

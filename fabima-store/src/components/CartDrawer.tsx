@@ -9,6 +9,7 @@ import { SITE_CONFIG } from '../config/site';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
 import { BrandMark } from './Logo';
+import { ForeignPrice } from './CurrencySwitch';
 
 export const GiftWrapOption: React.FC = () => {
   const { giftWrap, setGiftWrap } = useStore();
@@ -140,7 +141,7 @@ export const CartDrawer: React.FC = () => {
               <GiftWrapOption />
               <div className="flex justify-between items-baseline">
                 <span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Sous-total</span>
-                <span className="font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span>
+                <span className="text-right"><span className="block font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/55" /></span>
               </div>
               <button onClick={() => { close(); navigate('/commande'); }} className="btn-dark w-full">Commander</button>
               <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70"><ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave · Orange Money · à la livraison</p>

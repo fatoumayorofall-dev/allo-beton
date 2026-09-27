@@ -11,6 +11,7 @@ import { ProductImage } from '../components/ProductImage';
 import { GiftWrapOption } from '../components/CartDrawer';
 import { BrandMark } from '../components/Logo';
 import { ProductCard } from '../components/ProductCard';
+import { ForeignPrice } from '../components/CurrencySwitch';
 
 export const PromoBox: React.FC = () => {
   const { promoCode, applyPromo, removePromo, notify, computeTotals } = useStore();
@@ -133,7 +134,7 @@ export const Cart: React.FC = () => {
             {t.giftFee > 0 && <div className="flex justify-between"><dt className="text-ink/75">Emballage cadeau</dt><dd>{formatPrice(t.giftFee)}</dd></div>}
             <div className="flex justify-between"><dt className="text-ink/75">Livraison</dt><dd className="text-ink/75">{t.subtotal - t.discount >= SITE_CONFIG.freeShippingThreshold ? 'Offerte' : 'Selon votre zone'}</dd></div>
           </dl>
-          <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span></div>
+          <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="text-right"><span className="block font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/55" /></span></div>
           <button onClick={() => navigate('/commande')} className="btn-dark w-full">Passer commande <ArrowRight className="w-4 h-4" /></button>
           <p className="text-[11px] text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Free Money · Carte · Espèces</p>
           <Link to="/boutique" className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>

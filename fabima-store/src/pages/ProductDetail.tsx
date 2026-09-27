@@ -13,7 +13,7 @@ import { ColorSwatch } from '../components/ColorSwatch';
 import { Stars } from '../components/Stars';
 import { ProductCard } from '../components/ProductCard';
 import { Reveal } from '../components/Reveal';
-import { Flower } from '../components/Decor';
+import { ForeignPrice } from '../components/CurrencySwitch';
 import { sparkleBurst } from '../components/Magic';
 import { ListenButton } from '../components/ListenButton';
 import { shortLink } from '../utils/share';
@@ -26,8 +26,8 @@ const DeliveryEstimate: React.FC = () => {
   const day = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const tomorrow = d.getDate() === new Date(now.getTime() + 864e5).getDate();
   return (
-    <p className="mt-4 flex items-center gap-3 p-4 rounded-2xl bg-blush/40 text-[13px]" data-testid="delivery-estimate">
-      <Truck className="w-5 h-5 text-wine shrink-0" strokeWidth={1.5} />
+    <p className="mt-4 flex items-center gap-3 p-4 rounded-2xl border border-ink/10 text-[13px]" data-testid="delivery-estimate">
+      <Truck className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.3} />
       <span>Livrée à Dakar <strong className="font-semibold">{tomorrow ? 'dès demain' : 'le'} {day}</strong>{now.getHours() < 16 ? ' si vous commandez avant 16 h' : ''}. Partout au Sénégal en 48 à 72 h.</span>
     </p>
   );
@@ -70,7 +70,7 @@ const StockAlertForm: React.FC<{ onSubmit: (contact: string) => void }> = ({ onS
   const [contact, setContact] = useState('');
   const [done, setDone] = useState(false);
   const valid = /^\S+@\S+\.\S+$/.test(contact.trim()) || /^(\+?221)?\s?7[05678](\s?\d){7}$/.test(contact.trim());
-  if (done) return <p className="mt-5 p-4 rounded-2xl bg-blush/50 text-sm flex items-center gap-3"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> C'est noté ! Nous vous prévenons dès son retour.</p>;
+  if (done) return <p className="mt-5 p-4 rounded-2xl border border-ink/10 text-sm flex items-center gap-3"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> C'est noté ! Nous vous prévenons dès son retour.</p>;
   return (
     <form className="mt-5 p-5 rounded-3xl bg-white border border-ink/[0.06]" onSubmit={e => { e.preventDefault(); if (valid) { onSubmit(contact.trim()); setDone(true); } }}>
       <p className="text-sm font-semibold flex items-center gap-2"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Victime de son succès</p>
@@ -220,8 +220,9 @@ export const ProductDetail: React.FC = () => {
             </button>
 
             <div className="mt-7 flex items-baseline gap-4">
-              <span className={`text-2xl font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
-              {product.oldPrice && <span className="text-ink/70 line-through">{formatPrice(product.oldPrice)}</span>}
+              <span className="text-2xl font-medium tracking-wide" data-testid="detail-price">{formatPrice(product.price)}</span>
+              {product.oldPrice && <span className="text-ink/50 line-through">{formatPrice(product.oldPrice)}</span>}
+              <ForeignPrice amount={product.price} className="text-sm text-ink/60" />
             </div>
             <p className="text-[11px] text-ink/70 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
             <ListenButton product={product} className="mt-4" />
@@ -231,12 +232,11 @@ export const ProductDetail: React.FC = () => {
             <div className="mt-5 flex flex-wrap gap-2">
               {product.occasions.map(o => {
                 const occ = OCCASIONS.find(x => x.id === o);
-                return occ && <Link key={o} to={`/boutique?occasion=${o}`} className="px-3.5 h-8 inline-flex items-center rounded-full bg-blush/60 text-[11px] text-ink/80 hover:bg-blush transition-colors">{occ.name}</Link>;
+                return occ && <Link key={o} to={`/boutique?occasion=${o}`} className="px-3.5 h-8 inline-flex items-center rounded-full border border-ink/15 text-[11px] text-ink/75 hover:border-ink hover:text-ink transition-colors">{occ.name}</Link>;
               })}
             </div>
 
-            <figure className="mt-7 p-5 rounded-3xl bg-gradient-to-br from-ivory-deep to-blush/40 flex gap-4">
-              <Flower className="w-5 h-5 text-gold shrink-0 mt-1" />
+            <figure className="mt-7 pl-5 border-l border-gold flex gap-4">
               <div>
                 <figcaption className="font-script text-2xl text-gold-dark leading-none">Le conseil de Fabima</figcaption>
                 <blockquote className="mt-2 text-sm text-ink/75 leading-relaxed">{product.styleTip}</blockquote>
