@@ -11,7 +11,7 @@ const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 const int = (v, min, max, dflt = min) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt; };
 const isMarketId = id => typeof id === 'string' && id.startsWith('MK-');
 /** Vidéo d'une pièce : envoyée par la gérante (/media/…), du site (/videos/…) ou hébergée ailleurs en https. */
-const videoUrl = v => { const u = clip(v, 600); return /^\/media\/[a-f0-9]{16}\.(mp4|webm)$|^\/videos\/[\w.-]+\.(mp4|webm)$|^https:\/\/\S+$/.test(u) ? u : undefined; };
+const videoUrl = v => { const u = clip(v, 600); return /^\/media\/[a-f0-9]{16}\.(mp4|webm)$|^\/videos\/[\w.-]+\.(mp4|webm|mov)$|^https:\/\/\S+$/.test(u) ? u : undefined; };
 const strList = (a, n, len) => (Array.isArray(a) ? a.map(x => clip(x, len)).filter(Boolean).slice(0, n) : []);
 
 /** Produit envoyé par l'espace gérant, nettoyé. Les avis restent ceux du serveur. */

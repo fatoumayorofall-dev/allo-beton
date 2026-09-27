@@ -17,6 +17,7 @@ import { DeliveryPanel } from './AdminDelivery';
 import { MarketTab, SupplierPanel } from './AdminMarket';
 import { AuthenticityTab } from './AdminAuthenticity';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
+import { mediaUrl, normalizeVideoInput, staticMode } from '../utils/media';
 
 const PIN_KEY = 'fabima_admin_pin';
 const adminPin = () => { try { return sessionStorage.getItem(PIN_KEY) ?? ''; } catch { return ''; } };
@@ -741,6 +742,12 @@ const VideoField: React.FC<{ value?: string; poster?: string; onChange: (url?: s
   const [pct, setPct] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [unplayable, setUnplayable] = useState(false);
+  const [link, setLink] = useState('');
+  const applyLink = () => {
+    const url = normalizeVideoInput(link);
+    if (!url) { setError('Écrivez le nom du fichier (ex. sandales.mp4) ou un lien qui commence par https://'); return; }
+    setError(''); setUnplayable(false); setLink(''); onChange(url);
+  };
 
   const pick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -754,7 +761,8 @@ const VideoField: React.FC<{ value?: string; poster?: string; onChange: (url?: s
     setPct(0);
     const r = await uploadVideo(file, adminPin(), setPct);
     setPct(null);
-    if ('error' in r) setError(r.error); else onChange(r.url);
+    if ('error' in r) setError(staticMode || /connexion/.test(r.error) ? 'Sans le serveur Fabima, la vidéo ne peut pas être envoyée d\'ici. Copiez-la dans le dossier « videos » du site, puis écrivez son nom ci-dessous.' : r.error);
+    else onChange(r.url);
   };
 
   return (
@@ -762,7 +770,7 @@ const VideoField: React.FC<{ value?: string; poster?: string; onChange: (url?: s
       <p>Vidéo <span className="text-ink/70">(facultatif)</span></p>
       {value ? (
         <div className="mt-1 flex items-center gap-4 p-3 rounded-2xl bg-ivory-deep/60">
-          <video src={value} poster={poster || undefined} muted loop autoPlay playsInline onError={() => setUnplayable(true)}
+          <video src={mediaUrl(value)} poster={poster || undefined} muted loop autoPlay playsInline onError={() => setUnplayable(true)}
             className="w-20 h-28 rounded-xl object-cover bg-ink/10 shrink-0" data-testid="video-preview" />
           <div className="text-xs text-ink/75 space-y-2">
             <p>Elle remplace la photo sur la carte de la pièce et passe en premier sur sa fiche : en boucle, sans le son.</p>
@@ -777,6 +785,20 @@ const VideoField: React.FC<{ value?: string; poster?: string; onChange: (url?: s
           {pct !== null ? <span>Envoi de la vidéo… {pct} %</span> : <span>Ajouter une vidéo <span className="text-ink/70">(MP4 ou MOV, {MAX_VIDEO_MB} Mo max.)</span></span>}
           <input type="file" accept="video/mp4,video/quicktime,video/webm,video/*" onChange={pick} className="sr-only" data-testid="video-input" />
         </label>
+      )}
+      {!value && (
+        <div className="mt-2">
+          <p className="text-xs text-ink/70">
+            {staticMode
+              ? <>Version sans serveur (WAMP) : copiez la vidéo dans le dossier <strong>fabima\videos</strong>, puis écrivez son nom ici.</>
+              : <>Ou une vidéo déjà en ligne : écrivez son lien (https://…), ou le nom d'un fichier du dossier « videos ».</>}
+          </p>
+          <div className="mt-1.5 flex gap-2">
+            <input value={link} onChange={e => setLink(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); applyLink(); } }}
+              placeholder="sandales.mp4 ou https://…" aria-label="Nom ou lien de la vidéo" className="flex-1 min-w-0 px-3.5 py-2.5 rounded-xl border border-ink/15 outline-none focus:border-ink text-sm" data-testid="video-link" />
+            <button type="button" onClick={applyLink} className="px-4 rounded-xl bg-ink text-ivory text-xs font-semibold">Utiliser</button>
+          </div>
+        </div>
       )}
       {pct !== null && <div className="mt-2 h-1 rounded-full bg-ink/10 overflow-hidden"><div className="h-full bg-gold-dark transition-[width]" style={{ width: `${pct}%` }} /></div>}
       {error && <p role="alert" className="mt-2 text-xs text-wine">{error}</p>}

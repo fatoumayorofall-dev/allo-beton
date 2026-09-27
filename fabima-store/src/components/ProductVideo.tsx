@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { mediaUrl } from '../utils/media';
 
 /** Type de fichier d'après son adresse (les vidéos d'iPhone .mov se lisent comme des MP4). */
 const typeOf = (src: string) => (/\.webm($|\?)/i.test(src) ? 'video/webm' : 'video/mp4');
@@ -23,7 +24,7 @@ export const ProductVideo: React.FC<{ src: string | string[]; className?: string
   const [playing, setPlaying] = useState(false);
   const [failed, setFailed] = useState(false);
   const [hold] = useState(shouldHold);
-  const sources = Array.isArray(src) ? src : [src];
+  const sources = (Array.isArray(src) ? src : [src]).map(mediaUrl);
   const key = sources.join('|');
 
   useEffect(() => { setFailed(false); setPlaying(false); }, [key]);

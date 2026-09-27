@@ -195,6 +195,8 @@ Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écr
 
 - **Espace cliente** : carte d'accueil prune étoilée (prénom, ancienneté, commandes, en cours, favoris), dernière commande avec ses étapes (reçue, préparée, en route, livrée) et « Suivre ma commande », favoris en photos, raccourcis à icônes fines (commandes, favoris, nouveautés, authenticité, guide des tailles, aide WhatsApp), adresse modifiable ; sur téléphone, plus de boutons flottants sur les boutons de l'espace.
 
+- **Vidéos sans serveur** : dans l'espace gérant, une vidéo peut aussi être ajoutée par son nom (fichier posé dans le dossier `videos`, ex. version WAMP) ou par un lien https.
+
 ## 15. Restent à traiter avant la mise en ligne
 
 Ces points ne peuvent pas être réglés sans serveur :

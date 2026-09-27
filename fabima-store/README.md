@@ -277,6 +277,10 @@ Une pièce peut avoir une **vidéo** en plus de ses photos (la chaussure tenue �
 3. **Économie** : si le téléphone de la cliente demande moins d'animations ou économise les données, rien ne se lance tout seul (la photo reste).
    Si une vidéo ne se lit pas, la photo reste affichée à sa place.
 
+**Sans le serveur (version WAMP ou aperçu)** : l'envoi depuis le téléphone n'est pas possible. Copiez la vidéo dans le dossier
+`videos` du site (ex. `C:\wamp\www\fabima\videos\sandales.mp4`), puis écrivez son nom (`sandales.mp4`) sous « Ajouter une vidéo »
+et touchez « Utiliser ». Un lien `https://…` vers une vidéo déjà en ligne fonctionne aussi.
+
 Sur iPhone, choisissez **Réglages › Appareil photo › Formats › « Le plus compatible »** : les vidéos « haute efficacité » (HEVC)
 ne se lisent pas sur beaucoup de téléphones Android ; l'espace gérant vous prévient si c'est le cas.
 Les vidéos sont gardées par le serveur dans `DATA_DIR/media` et servies en `/media/…`. Derrière un proxy (Nginx…),
