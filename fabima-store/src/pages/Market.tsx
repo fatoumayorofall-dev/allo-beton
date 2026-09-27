@@ -71,7 +71,7 @@ export const Market: React.FC = () => {
               <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-ink/40" />
               <input value={q} onChange={e => setQ(e.target.value)} type="search" placeholder="Rechercher au Marché" aria-label="Rechercher au Marché" className="field !h-10 !pl-10" />
             </label>
-            <select value={sort} onChange={e => setSort(e.target.value as keyof typeof SORTS)} aria-label="Trier les articles" className="h-10 px-3 rounded-full border border-ink/10 bg-white text-sm">
+            <select value={sort} onChange={e => setSort(e.target.value as keyof typeof SORTS)} aria-label="Trier les articles" className="select-luxe h-10 pl-4 rounded-full border border-ink/10 bg-white text-sm hover:border-ink/30 transition-colors">
               {Object.entries(SORTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
             </select>
           </div>

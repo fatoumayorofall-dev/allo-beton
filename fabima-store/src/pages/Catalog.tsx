@@ -209,7 +209,7 @@ export const Catalog: React.FC = () => {
             <label className="flex items-center gap-2 text-xs">
               <span className="text-ink/70 hidden sm:inline uppercase tracking-[0.18em]">Trier</span>
               <select value={sort} onChange={e => setParam('tri', e.target.value === 'pertinence' ? null : e.target.value)} aria-label="Trier les pièces"
-                className="h-10 pl-4 pr-8 rounded-full border border-ink/15 bg-transparent outline-none text-sm focus:border-ink">
+                className="select-luxe h-10 pl-4 rounded-full border border-ink/15 bg-white/70 outline-none text-sm hover:border-ink/30 focus:border-ink transition-colors">
                 {Object.entries(SORTS).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
               </select>
             </label>

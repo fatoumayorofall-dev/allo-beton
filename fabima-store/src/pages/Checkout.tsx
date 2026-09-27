@@ -194,7 +194,7 @@ export const Checkout: React.FC = () => {
           {step === 1 ? (
             <form onSubmit={goToPayment} className="space-y-10 animate-fade-in" noValidate>
               <fieldset className="space-y-5 min-w-0">
-                <legend className="font-display text-3xl mb-6">Vos coordonnées</legend>
+                <legend className="font-display text-3xl mb-6"><span aria-hidden className="flex items-center gap-3 mb-3 font-sans text-[10px] tracking-[0.3em] text-gold-dark"><span>01</span><span className="w-8 h-px bg-gold/60" /></span>Vos coordonnées</legend>
                 {(savedCustomer || me?.firstName) && <p className="text-xs text-ink/70 -mt-3">Bon retour parmi nous, {savedCustomer?.firstName || me?.firstName} : vos coordonnées ont été préremplies.</p>}
                 {account.status === 'guest' && !savedCustomer && (
                   <Link to="/compte?retour=/commande" className="flex items-center gap-3 p-4 -mt-1 rounded-2xl border border-ink/10 text-sm hover:border-ink/30 transition-colors">
@@ -210,7 +210,7 @@ export const Checkout: React.FC = () => {
               </fieldset>
 
               <fieldset className="space-y-5 min-w-0">
-                <legend className="font-display text-3xl mb-6">Livraison</legend>
+                <legend className="font-display text-3xl mb-6"><span aria-hidden className="flex items-center gap-3 mb-3 font-sans text-[10px] tracking-[0.3em] text-gold-dark"><span>02</span><span className="w-8 h-px bg-gold/60" /></span>Livraison</legend>
                 <Suspense fallback={<div className="h-96 rounded-[1.5rem] bg-blush/30 animate-pulse" />}>
                   <LocationPicker value={form.location} onChange={setLocation} initialCenter={form.location ?? zoneCenter} error={errors.location} />
                 </Suspense>
@@ -229,9 +229,9 @@ export const Checkout: React.FC = () => {
                   {zonesOpen && (
                     <div className="grid sm:grid-cols-2 gap-2 p-3 border-t border-ink/10">
                       {DELIVERY_ZONES.map(z => (
-                        <label key={z.name} className={`flex items-center justify-between gap-3 px-4 h-14 border rounded-2xl cursor-pointer transition-colors ${form.zone === z.name ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
+                        <label key={z.name} className={`flex items-center justify-between gap-3 px-4 h-14 border rounded-xl cursor-pointer transition-all duration-300 ${form.zone === z.name ? 'border-ink bg-white shadow-[0_0_0_4px_rgba(196,138,130,.16)]' : 'border-ink/10 bg-white/60 hover:border-ink/40'}`}>
                           <span className="flex items-center gap-3">
-                            <input type="radio" name="zone" value={z.name} checked={form.zone === z.name} onChange={e => { set('zone')(e); setZoneAuto(false); }} className="accent-ink" />
+                            <input type="radio" name="zone" value={z.name} checked={form.zone === z.name} onChange={e => { set('zone')(e); setZoneAuto(false); }} />
                             <span className="text-sm">{z.name}<span className="block text-[11px] text-ink/70">{z.delay}</span></span>
                           </span>
                           <span className="text-xs">{computeTotals(z.fee).deliveryFee === 0 ? <span className="text-emerald-800">Offerte</span> : formatPrice(z.fee)}</span>
@@ -265,7 +265,7 @@ export const Checkout: React.FC = () => {
               </div>
 
               <fieldset>
-                <legend className="font-display text-3xl mb-6">Mode de paiement</legend>
+                <legend className="font-display text-3xl mb-6"><span aria-hidden className="flex items-center gap-3 mb-3 font-sans text-[10px] tracking-[0.3em] text-gold-dark"><span>03</span><span className="w-8 h-px bg-gold/60" /></span>Mode de paiement</legend>
                 {hasOnDemand && onDemandDelay && (
                   <p className="-mt-3 mb-5 flex gap-3 p-4 rounded-2xl border border-ink/10 text-sm" data-testid="market-notice">
                     {hasMarket ? <Globe2 className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.4} /> : <Clock className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.4} />}
@@ -274,7 +274,7 @@ export const Checkout: React.FC = () => {
                 )}
                 <div className="grid sm:grid-cols-2 gap-2">
                   {PAYMENT_METHODS.filter(m => !(hasOnDemand && m.id === 'cash')).map(m => (
-                    <label key={m.id} className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-colors ${method === m.id ? 'border-ink bg-white' : 'border-ink/10 hover:border-ink/40'}`}>
+                    <label key={m.id} className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-all duration-300 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-wine ${method === m.id ? 'border-ink bg-white shadow-[0_0_0_4px_rgba(196,138,130,.16)]' : 'border-ink/10 bg-white/60 hover:border-ink/40 hover:bg-white'}`}>
                       <input type="radio" name="payment" checked={method === m.id} onChange={() => setMethod(m.id)} className="sr-only" />
                       <span className="w-11 h-11 rounded-full grid place-items-center text-white shrink-0" style={{ background: m.color }}><m.Icon className="w-5 h-5" strokeWidth={1.5} /></span>
                       <span className="flex-1"><strong className="block text-sm font-semibold">{m.name}</strong><span className="text-xs text-ink/70">{m.desc}</span></span>

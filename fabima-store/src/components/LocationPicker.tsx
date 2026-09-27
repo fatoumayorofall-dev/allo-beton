@@ -109,19 +109,19 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
     <div className="space-y-3" data-testid="location-picker">
       <div className="flex items-center justify-between gap-3">
         <span className="field-label !mb-0">Où livrer ? *</span>
-        <button type="button" onClick={() => speak(HELP)} className="inline-flex items-center gap-1.5 text-xs px-3 h-8 rounded-full bg-blush/60">
-          <Volume2 className="w-3.5 h-3.5 text-wine" /> Écouter
+        <button type="button" onClick={() => speak(HELP)} className="inline-flex items-center gap-1.5 px-3 h-8 rounded-full border border-ink/15 text-[10px] uppercase tracking-[0.18em] font-semibold text-ink/70 hover:border-ink hover:text-ink transition-colors">
+          <Volume2 className="w-3.5 h-3.5 text-gold-dark" strokeWidth={1.5} /> Écouter
         </button>
       </div>
 
       <button type="button" onClick={locate} disabled={gps === 'locating'}
-        className="w-full flex items-center gap-4 p-4 rounded-[1.5rem] bg-wine text-white text-left active:scale-[.98] transition-transform disabled:opacity-80">
-        <span className="w-12 h-12 rounded-full bg-white/20 grid place-items-center shrink-0">
-          {gps === 'locating' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Crosshair className="w-6 h-6" />}
+        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-ink text-ivory text-left hover:bg-ink-soft active:scale-[.98] transition-all disabled:opacity-80">
+        <span className="w-12 h-12 rounded-full border border-gold/50 text-gold-light grid place-items-center shrink-0">
+          {gps === 'locating' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Crosshair className="w-6 h-6" strokeWidth={1.3} />}
         </span>
         <span>
-          <strong className="block text-lg leading-tight">{gps === 'locating' ? 'Recherche de votre position…' : '📍 Je suis ici, livrez-moi ici'}</strong>
-          <span className="text-sm text-white/80">Le GPS de votre téléphone trouve votre maison</span>
+          <strong className="block font-display font-normal text-xl leading-tight">{gps === 'locating' ? 'Recherche de votre position…' : 'Je suis ici, livrez-moi ici'}</strong>
+          <span className="text-[13px] text-ivory/70">Le GPS de votre téléphone trouve votre maison</span>
         </span>
       </button>
       {gps === 'denied' && (
@@ -159,12 +159,12 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
         )}
       </div>
 
-      <Suspense fallback={<div className="h-72 rounded-[1.5rem] bg-blush/30 animate-pulse" />}>
+      <Suspense fallback={<div className="h-72 rounded-[1.5rem] bg-ivory-deep animate-pulse" />}>
         <MapView center={center} zoom={value ? 17 : 13} pinCenter onCenterChange={onMapMove} circle={circle}
           className={`h-72 sm:h-80 rounded-[1.5rem] border ${error ? 'border-wine' : 'border-ink/10'}`}>
           {!value && (
             <p className="absolute top-3 left-3 right-3 z-[500] text-center text-xs px-3 py-2 rounded-full bg-white/95 shadow-sm pointer-events-none">
-              👆 Faites glisser la carte pour placer la maison sur votre porte
+              Faites glisser la carte pour placer la maison sur votre porte
             </p>
           )}
         </MapView>

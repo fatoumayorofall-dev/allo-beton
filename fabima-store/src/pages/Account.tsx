@@ -103,14 +103,14 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
         </div>
         <form className="mt-7" onSubmit={e => { e.preventDefault(); send(); }}>
           <label htmlFor="phone" className="field-label">Mon numéro de téléphone</label>
-          <div className={`flex items-center rounded-2xl border-2 bg-white overflow-hidden ${error ? 'border-wine' : 'border-ink/15 focus-within:border-ink'}`}>
+          <div className={`flex items-center rounded-xl border bg-white overflow-hidden transition-[border-color,box-shadow] duration-300 ${error ? 'border-wine' : 'border-ink/[0.14] hover:border-ink/30 focus-within:border-ink focus-within:shadow-[0_0_0_4px_rgba(196,138,130,.18)]'}`}>
             <span className="pl-4 pr-3 h-16 flex items-center gap-2 text-xl font-semibold border-r border-ink/10 bg-ivory-deep/60">🇸🇳 +221</span>
             <input id="phone" value={pretty(digits)} onChange={e => { setDigits(localDigits(e.target.value)); setError(''); }}
               inputMode="numeric" autoComplete="tel-national" placeholder="77 123 45 67" autoFocus
               className="flex-1 min-w-0 h-16 px-4 text-2xl font-semibold tracking-wider outline-none bg-transparent" />
           </div>
           {error && <p className="mt-2 text-sm text-wine" role="alert">{error}</p>}
-          <button disabled={busy || !digits} className="mt-6 w-full h-16 rounded-full bg-[#1f8f4e] text-white text-lg font-extrabold inline-flex items-center justify-center gap-3 disabled:opacity-40">
+          <button disabled={busy || !digits} className="mt-6 w-full h-16 rounded-full bg-[#1f8f4e] text-white text-[15px] font-semibold tracking-wide inline-flex hover:bg-[#177a41] transition-colors items-center justify-center gap-3 disabled:opacity-40">
             {busy ? <Loader2 className="w-6 h-6 animate-spin" /> : <MessageCircle className="w-6 h-6" />} Recevoir mon code sur WhatsApp
           </button>
         </form>
@@ -148,8 +148,8 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
           maxLength={4} disabled={busy} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-describedby="otp-error" />
         <span className="grid grid-cols-4 gap-3" aria-hidden>
           {[0, 1, 2, 3].map(i => (
-            <span key={i} className={`h-20 rounded-2xl border-2 grid place-items-center text-4xl font-extrabold bg-white transition-colors ${
-              error ? 'border-wine' : code.length === i ? 'border-ink' : 'border-ink/15'}`}>
+            <span key={i} className={`h-20 rounded-xl border grid place-items-center font-display text-5xl bg-white transition-all duration-300 ${
+              error ? 'border-wine' : code.length === i ? 'border-ink shadow-[0_0_0_4px_rgba(196,138,130,.18)]' : code[i] ? 'border-gold' : 'border-ink/[0.14]'}`}>
               {code[i] ?? ''}
             </span>
           ))}
@@ -184,8 +184,8 @@ const NameStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
       <p className="text-ink/75 mt-2">Comment vous appelez-vous ?</p>
       <form onSubmit={async e => { e.preventDefault(); if (name.trim()) await saveProfile({ firstName: name.trim() }); onDone(); }} className="mt-6">
         <input value={name} onChange={e => setName(e.target.value)} placeholder="Votre prénom" aria-label="Votre prénom" autoFocus autoComplete="given-name"
-          className="w-full h-16 px-5 rounded-2xl border-2 border-ink/15 focus:border-ink outline-none text-2xl" />
-        <button className="mt-5 w-full h-16 rounded-full bg-ink text-ivory text-lg font-bold inline-flex items-center justify-center gap-2">Continuer <ArrowRight className="w-5 h-5" /></button>
+          className="field !h-16 !text-2xl font-display" />
+        <button className="btn-dark mt-5 w-full !h-14">Continuer <ArrowRight className="w-5 h-5" /></button>
         <button type="button" onClick={onDone} className="mt-3 w-full text-sm text-ink/70">Plus tard</button>
       </form>
     </Card>
@@ -215,7 +215,7 @@ const AddressEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         {DELIVERY_ZONES.map(z => <option key={z.name}>{z.name}</option>)}
       </select>
       <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rue, villa, point de repère" aria-label="Adresse" className="field !h-14 text-lg" />
-      <button className="w-full h-14 rounded-full bg-ink text-ivory font-bold">Enregistrer</button>
+      <button className="btn-dark w-full">Enregistrer</button>
     </form>
   );
 };
@@ -443,7 +443,7 @@ export const Account: React.FC = () => {
             <h1 className="font-display text-3xl mt-4">Mon compte Fabima</h1>
             <p className="text-ink/75 mt-2">La création de compte n'est pas disponible pour le moment. Vous pouvez tout de même commander et suivre vos commandes depuis ce téléphone.</p>
             <div className="mt-6 flex flex-col gap-3">
-              <Link to="/mes-commandes" className="h-14 rounded-full bg-ink text-ivory font-bold grid place-items-center">Mes commandes</Link>
+              <Link to="/mes-commandes" className="btn-dark w-full">Mes commandes</Link>
               <InstallButton big />
             </div>
           </Card>
