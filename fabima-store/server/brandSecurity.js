@@ -14,7 +14,8 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = process.env.DATA_DIR || path.join(here, 'data');
 
-function secret() {
+/** Clé propre à la boutique (marques d'authenticité, jetons de l'espace gérant). */
+export function shopSecret() {
   if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
   const file = path.join(DATA_DIR, 'auth-secret');
   try { return fs.readFileSync(file, 'utf8').trim(); } catch { /* première fois */ }
@@ -26,7 +27,7 @@ function secret() {
 
 /** Emplacements des marques, tirés de la clé (toujours les mêmes pour une boutique donnée). */
 export function secretMarks() {
-  const h = crypto.createHmac('sha256', secret()).update('fabima-marques-secretes-v1').digest();
+  const h = crypto.createHmac('sha256', shopSecret()).update('fabima-marques-secretes-v1').digest();
   const deg = (b1, b2, min, max) => min + ((b1 * 256 + b2) % ((max - min) * 10)) / 10;
   const gapLine = h[0] % 14;
   const gapFrom = deg(h[1], h[2], 20, 330);

@@ -28,7 +28,6 @@ export const SITE_CONFIG = {
   },
   freeShippingThreshold: 50000,
   giftWrapFee: 2000,
-  adminPin: '2026',
 };
 
 /** Point de départ des livraisons (boutique) et centre de la carte par défaut */

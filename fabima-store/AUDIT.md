@@ -231,6 +231,6 @@ Ces points ne peuvent pas être réglés sans serveur :
 
 1. **Données** : ~~commandes, catalogue et stock propres à chaque navigateur~~ → réglé : commandes, catalogue, stock, avis et alertes sont gardés par le serveur, qui vérifie prix et stock. Les frais de livraison et remises restent calculés par le navigateur. → À terme, une vraie base de données (le backend Express/MySQL d'Allô Béton peut servir de base).
 2. **Paiement simulé** : aucun débit réel. → Intégrer Wave Business, Orange Money ou un agrégateur (PayDunya, CinetPay).
-3. **Espace gérant** : le code PIN est vérifié dans le navigateur, il ne protège pas réellement. → Authentification côté serveur.
+3. **Espace gérant** : ~~code PIN vérifié dans le navigateur~~ → réglé : le code (`ADMIN_PIN`) n'est vérifié que par le serveur et n'apparaît plus dans le site ; jeton signé de 12 h ; blocage après 10 essais ratés. → À terme : un compte par personne (gérante, employées) avec mot de passe et journal des actions.
 4. **Avis clients** : publiés sans modération ni vérification d'achat. → À valider côté serveur.
 5. **Photos et coordonnées** : images Pexels et coordonnées d'exemple à remplacer par les vôtres.

@@ -94,6 +94,24 @@ async function post<T>(path: string, body: unknown, pin?: string): Promise<T | n
   }
 }
 
+/**
+ * Connexion à l'espace gérant : le code est vérifié par le serveur, qui renvoie un jeton de 12 h.
+ * `null` : serveur injoignable (version sans serveur, ex. WAMP).
+ */
+export async function adminLogin(pin: string): Promise<{ token: string } | { error: string; status: number } | null> {
+  try {
+    const res = await fetch(`${API}/api/admin/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }), signal: AbortSignal.timeout(8000),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok && typeof body.token === 'string') return { token: body.token };
+    if (res.status === 404) return null;
+    return { error: body.error || 'Connexion impossible', status: res.status };
+  } catch {
+    return null;
+  }
+}
+
 interface SendResult { ok: boolean; simulated?: boolean; error?: string }
 
 /** Nouvelle commande : message à la gérante + accusé de réception à la cliente. */

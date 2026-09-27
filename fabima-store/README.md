@@ -26,7 +26,7 @@ Copiez `server/.env.example` en `server/.env`, puis renseignez :
 | `ANTHROPIC_API_KEY` | Active l'assistante IA (Claude). Clé à créer sur console.anthropic.com. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` | Active l'envoi automatique des messages WhatsApp (même fournisseur qu'Allô Béton). |
 | `OWNER_WHATSAPP` | Votre numéro : vous y recevez chaque nouvelle commande. |
-| `ADMIN_PIN` | Même code que l'espace gérant, exigé pour envoyer les messages de suivi aux clientes. |
+| `ADMIN_PIN` | **Code de l'espace gérant**, vérifié uniquement par le serveur (il n'apparaît nulle part dans le site). À la connexion, le serveur remet un jeton signé valable 12 h ; 10 essais ratés en 15 min bloquent l'adresse. Changer ce code déconnecte tous les appareils. Sans lui, l'espace gérant reste fermé. |
 | `SITE_URL` | Adresse publique du site (ex. `https://fabimastore.sn`) : liens de suivi envoyés sur WhatsApp, aperçus de liens, sitemap. |
 | `AUTH_SECRET` | Clé des marques secrètes des étiquettes d'authenticité (longue chaîne aléatoire). Sans elle, une clé est tirée au hasard au premier démarrage et gardée dans `DATA_DIR/auth-secret` : ne la perdez pas, sinon les marques des nouvelles étiquettes changent. |
 
@@ -73,7 +73,7 @@ modifier une teinte à cet endroit la change sur tout le site.
 
 ## Fonctionnalités
 
-| Côté client | Côté gérant (`/admin`, PIN démo : `2026`) |
+| Côté client | Côté gérant (`/admin`, code défini par `ADMIN_PIN` ; `2026` dans la version WAMP de démonstration) |
 |---|---|
 | Accueil : carrousel, catégories, best-sellers / nouveautés / promos, avis clients | Tableau de bord : CA, commandes, panier moyen, ventes par catégorie, stock faible |
 | Catalogue filtrable (catégorie, femme/homme, type, prix, couleur, stock, promo) et triable | Commandes : filtre par statut, changement de statut, paiement reçu, contact WhatsApp |

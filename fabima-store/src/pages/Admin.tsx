@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowRight, BarChart3, Check, Film, Globe2, Download, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BarChart3, Check, Film, Globe2, Download, Loader2, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
-import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
+import { buildWhatsAppLink } from '../config/site';
 import { formatDate, formatPrice, slugify } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
 import { ProductImage } from '../components/ProductImage';
 import { StatusTab } from './AdminStatus';
 import { CustomersTab } from './AdminCustomers';
-import { MAX_VIDEO_MB, clearStockAlerts, fetchAdminOrders, fetchCatalog, fetchStockAlerts, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, publishCatalog, removeCatalogProduct, saveCatalogProduct, uploadVideo, type ServerStatus } from '../services/api';
+import { MAX_VIDEO_MB, adminLogin, clearStockAlerts, fetchAdminOrders, fetchCatalog, fetchStockAlerts, getServerStatus, notifyRestock, notifyStatus, patchAdminOrder, publishCatalog, removeCatalogProduct, saveCatalogProduct, uploadVideo, type ServerStatus } from '../services/api';
 import { INITIAL_PRODUCTS } from '../data/catalog';
 import type { StockAlert } from '../data/types';
 import { DeliveryPanel } from './AdminDelivery';
@@ -20,6 +20,9 @@ import { restockLink, statusLink } from '../utils/whatsappMessages';
 import { mediaUrl, normalizeVideoInput, staticMode } from '../utils/media';
 
 const PIN_KEY = 'fabima_admin_pin';
+/** Code de démonstration, seulement pour la version sans serveur (WAMP) : ailleurs, le code est
+ *  vérifié par le serveur (variable ADMIN_PIN) et n'apparaît nulle part dans le site. */
+const DEMO_PIN = import.meta.env.VITE_ROUTER === 'hash' ? '2026' : '';
 const adminPin = () => { try { return sessionStorage.getItem(PIN_KEY) ?? ''; } catch { return ''; } };
 
 /** État du serveur (assistant IA, WhatsApp automatique) pour l'espace gérant. */
@@ -49,23 +52,34 @@ export const Admin: React.FC = () => {
     try { return sessionStorage.getItem(SESSION_KEY) === '1'; } catch { return false; }
   });
   const [pin, setPin] = useState('');
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<string | false>(false);
+  const [busy, setBusy] = useState(false);
+  const enter = (credential: string) => {
+    try { sessionStorage.setItem(SESSION_KEY, '1'); sessionStorage.setItem(PIN_KEY, credential); } catch { /* ignore */ }
+    setAuthed(true);
+  };
+  const login = async () => {
+    setBusy(true);
+    const r = await adminLogin(pin.trim());
+    setBusy(false);
+    if (r && 'token' in r) return enter(r.token);
+    // Sans serveur (version WAMP) : code de démonstration vérifié sur place
+    if (!r && DEMO_PIN) return pin.trim() === DEMO_PIN ? enter(pin.trim()) : setError('Code incorrect');
+    setError(r ? r.error : 'Serveur injoignable : réessayez dans un instant');
+  };
   const [tab, setTab] = useState<Tab>('dashboard');
 
   if (!authed) {
     return (
       <div className="max-w-sm mx-auto px-4 pt-24">
-        <form onSubmit={e => {
-          e.preventDefault();
-          if (pin === SITE_CONFIG.adminPin) { try { sessionStorage.setItem(SESSION_KEY, '1'); sessionStorage.setItem(PIN_KEY, pin); } catch { /* ignore */ } setAuthed(true); } else setError(true);
-        }} className="bg-white border border-ink/[0.06] rounded-[2rem] p-8 text-center">
+        <form onSubmit={e => { e.preventDefault(); if (!busy) login(); }} className="bg-white border border-ink/[0.06] rounded-[2rem] p-8 text-center">
           <h1 className="font-display text-3xl">Espace gérant</h1>
           <p className="text-sm text-ink/75 mt-2">Saisissez votre code PIN pour accéder à la gestion de la boutique.</p>
           <input value={pin} onChange={e => { setPin(e.target.value); setError(false); }} type="password" inputMode="numeric" placeholder="••••" aria-label="Code PIN"
-            aria-invalid={error} className="field mt-6 !h-16 text-center !text-2xl tracking-[0.5em]" />
-          {error && <p className="text-xs text-wine mt-2">Code incorrect</p>}
-          <button className="btn-dark mt-5 w-full">Se connecter</button>
-          <p className="text-xs text-ink/70 mt-4">Code de démonstration : {SITE_CONFIG.adminPin}</p>
+            aria-invalid={!!error} className="field mt-6 !h-16 text-center !text-2xl tracking-[0.5em]" />
+          {error && <p className="text-xs text-wine mt-2" role="alert">{error}</p>}
+          <button className="btn-dark mt-5 w-full" disabled={busy || !pin.trim()}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Se connecter'}</button>
+          {DEMO_PIN && <p className="text-xs text-ink/70 mt-4">Code de démonstration : {DEMO_PIN}</p>}
         </form>
       </div>
     );

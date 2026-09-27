@@ -72,7 +72,9 @@ function limit(key, max, windowMs) {
 setInterval(() => buckets.clear(), 6 * 3600e3).unref();
 
 const ADMIN_PIN = process.env.ADMIN_PIN || '';
-const isAdmin = req => !!ADMIN_PIN && req.get('x-admin-pin') === ADMIN_PIN;
+const { createAdminAuth } = await import('./adminAuth.js');
+const { isAdmin, registerAdminLogin } = createAdminAuth(ADMIN_PIN);
+registerAdminLogin(app);
 
 /** Validation minimale d'une commande reçue du navigateur. */
 function validOrder(o) {
