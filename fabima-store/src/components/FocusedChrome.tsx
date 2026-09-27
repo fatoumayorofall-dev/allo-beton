@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ExternalLink, Headphones, Lock, RefreshCw, ShieldCheck, Truck } from 'lucide-react';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { BrandMark, Logo, Wordmark } from './Logo';
-import { CardLogos, WhatsAppGlyph } from './BrandLogos';
+import { PaymentLogos, WhatsAppGlyph } from './BrandLogos';
 
 /*
  * En-têtes « concentrés » :
@@ -11,7 +11,6 @@ import { CardLogos, WhatsAppGlyph } from './BrandLogos';
  * - l'espace gérant, qui a son propre bandeau de gestion au lieu de la vitrine de la boutique
  */
 
-const PAY = [['Wave', '#1dc4ff'], ['Orange Money', '#ff7900'], ['Free Money', '#cd0f2d'], ['Espèces', '#11694f']] as const;
 
 /** En-tête du paiement : le logo, la promesse de sécurité et l'aide, rien d'autre. */
 export const CheckoutHeader: React.FC = () => (
@@ -48,14 +47,7 @@ export const CheckoutFooter: React.FC = () => (
           </li>
         ))}
       </ul>
-      <ul className="flex flex-wrap gap-1.5 md:justify-end" aria-label="Moyens de paiement acceptés">
-        {PAY.map(([m, c]) => (
-          <li key={m} className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-white border border-ink/[0.08] text-[10px] text-ink/75">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />{m}
-          </li>
-        ))}
-        <li><CardLogos paydunyaSrc={SITE_CONFIG.paydunyaLogo || undefined} /></li>
-      </ul>
+      <div aria-label="Moyens de paiement acceptés" role="group"><PaymentLogos className="md:justify-end" /></div>
     </div>
     <p className="max-w-6xl mx-auto px-4 sm:px-8 pb-8 text-[11px] text-ink/70 flex flex-wrap gap-x-4 gap-y-1">
       <span>© {new Date().getFullYear()} {SITE_CONFIG.name}</span>

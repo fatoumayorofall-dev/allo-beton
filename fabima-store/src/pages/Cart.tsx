@@ -136,7 +136,7 @@ export const Cart: React.FC = () => {
           </dl>
           <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="text-right"><span className="block font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span></div>
           <button onClick={() => navigate('/commande')} className="btn-dark w-full">Passer commande <ArrowRight className="w-4 h-4" /></button>
-          <p className="text-[11px] text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Free Money · Carte · Espèces</p>
+          <p className="text-[11px] text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Carte · Espèces</p>
           <Link to="/boutique" className="block py-3 -my-3 text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>
           <ul className="border-t border-ink/10 pt-6 space-y-3 text-xs text-ink/75">
             {[

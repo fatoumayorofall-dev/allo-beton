@@ -27,8 +27,9 @@ export const SITE_CONFIG = {
     tiktok: 'https://tiktok.com/@fabimastore',
     snapchat: 'https://www.snapchat.com/add/fabimastore',
   },
-  // Logo officiel PayDunya : déposer le fichier dans public/brand/ puis indiquer son chemin (ex. '/brand/paydunya.svg')
-  paydunyaLogo: '',
+  // Logos officiels des moyens de paiement : déposer le fichier dans public/brand/ puis indiquer son chemin
+  // (ex. '/brand/wave.png'). Tant qu'un chemin est vide, le nom s'affiche en toutes lettres.
+  paymentLogos: { wave: '', orangeMoney: '', paydunya: '' },
   freeShippingThreshold: 50000,
   giftWrapFee: 2000,
 };

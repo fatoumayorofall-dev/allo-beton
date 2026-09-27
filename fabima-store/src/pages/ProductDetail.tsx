@@ -17,7 +17,7 @@ import { ForeignPrice } from '../components/CurrencySwitch';
 import { sparkleBurst } from '../components/Magic';
 import { ListenButton } from '../components/ListenButton';
 import { shortLink } from '../utils/share';
-import { WhatsAppGlyph } from '../components/BrandLogos';
+import { PaymentLogos, WhatsAppGlyph } from '../components/BrandLogos';
 
 /** Date de livraison estimée à Dakar : demain si la commande part avant 16 h (le dimanche est sauté). */
 const DeliveryEstimate: React.FC = () => {
@@ -304,11 +304,7 @@ export const ProductDetail: React.FC = () => {
                 <li key={t} className="py-4 px-2"><Icon className="w-4 h-4 mx-auto text-gold-dark mb-2" strokeWidth={1.4} />{t}</li>
               ))}
             </ul>
-            <p className="mt-4 flex flex-wrap items-center gap-1.5 text-[11px] text-ink/70" aria-label="Moyens de paiement">
-              {[['Wave', 'bg-sky-500'], ['Orange Money', 'bg-orange-500'], ['Free Money', 'bg-red-600'], ['Carte', 'bg-ink'], ['Espèces', 'bg-emerald-600']].map(([n, c]) => (
-                <span key={n} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-white border border-ink/[0.07]"><span className={`w-1.5 h-1.5 rounded-full ${c}`} />{n}</span>
-              ))}
-            </p>
+            <div className="mt-4" aria-label="Moyens de paiement" role="group"><PaymentLogos /></div>
 
             <div className="mt-8 border-t border-ink/10">
               <Accordion title="Détails & composition" open={openSection === 'details'} onToggle={() => toggle('details')}>

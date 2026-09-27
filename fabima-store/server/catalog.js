@@ -77,7 +77,7 @@ export function checkStock(order, store) {
     if (p.preorderDays) { preorder.set(id, p.preorderDays); continue; }
     return { error: p.stock > 0 ? `Il ne reste que ${p.stock} « ${p.name} » en stock` : `« ${p.name} » vient d'être épuisé` };
   }
-  if (preorder.size && order.paymentMethod === 'cash') return { error: 'Les pièces sur commande se règlent à la commande (Wave, Orange Money, Free Money ou carte)' };
+  if (preorder.size && order.paymentMethod === 'cash') return { error: 'Les pièces sur commande se règlent à la commande (Wave, Orange Money ou carte)' };
   return { preorder };
 }
 

@@ -112,7 +112,7 @@ export const MarketProduct: React.FC = () => {
           <ul className="mt-8 grid gap-2 text-sm">
             {[
               { Icon: PackageCheck, t: 'Commandé pour vous', d: 'Chez notre partenaire, dès votre paiement.' },
-              { Icon: CreditCard, t: 'Paiement à la commande', d: 'Wave, Orange Money, Free Money ou carte.' },
+              { Icon: CreditCard, t: 'Paiement à la commande', d: 'Wave, Orange Money ou carte.' },
               { Icon: Globe2, t: 'Suivi à chaque étape', d: 'Commandé, en route, arrivé à Dakar, livré : message WhatsApp à chaque étape.' },
             ].map(({ Icon, t, d }) => (
               <li key={t} className="flex gap-3 p-4 rounded-2xl bg-white border border-ink/[0.06]">

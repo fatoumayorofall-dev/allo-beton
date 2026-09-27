@@ -1,4 +1,5 @@
 import React from 'react';
+import { SITE_CONFIG } from '../config/site';
 
 /*
  * Logos officiels des marques (moyens de paiement et réseaux sociaux), en SVG intégré :
@@ -31,21 +32,34 @@ export const WhatsAppGlyph = ({ className = 'w-5 h-5', title }: P) => (
   </svg>
 );
 
-/**
- * PayDunya : son site n'étant pas joignable pour récupérer le logo officiel, le nom s'affiche en toutes lettres.
- * Pour le logo officiel : déposer le fichier dans public/brand/ (ex. paydunya.svg) et renseigner SITE_CONFIG.paydunyaLogo.
- */
-export const PayDunyaLogo = ({ className = 'h-5 w-auto', src }: P & { src?: string }) =>
+/** Logo officiel déposé par la boutique (SITE_CONFIG.paymentLogos), sinon le nom en toutes lettres. */
+const Official: React.FC<{ src: string; name: string; dot: string; className?: string; dark?: boolean }> = ({ src, name, dot, className = 'h-4 w-auto', dark }) =>
   src
-    ? <img src={src} alt="PayDunya" className={className} />
-    : <span className="font-sans font-bold text-[11px] tracking-tight text-[#0b2a4a] leading-none" aria-label="PayDunya">PayDunya</span>;
+    ? <img src={src} alt={name} className={className} />
+    : <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium leading-none ${dark ? 'text-ivory/80' : 'text-ink/80'}`}><span className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} aria-hidden />{name}</span>;
 
-/** Les cartes et le service de paiement en ligne acceptés, en petits cartouches blancs. */
-export const CardLogos: React.FC<{ className?: string; paydunya?: boolean; paydunyaSrc?: string }> = ({ className = '', paydunya = true, paydunyaSrc }) => (
+export const PayDunyaLogo = ({ className = 'h-4 w-auto' }: P) => <Official src={SITE_CONFIG.paymentLogos.paydunya} name="PayDunya" dot="#0b2a4a" className={className} />;
+export const WaveLogo = ({ className = 'h-4 w-auto', dark }: P & { dark?: boolean }) => <Official src={SITE_CONFIG.paymentLogos.wave} name="Wave" dot="#1dc4ff" className={className} dark={dark} />;
+export const OrangeMoneyLogo = ({ className = 'h-4 w-auto', dark }: P & { dark?: boolean }) => <Official src={SITE_CONFIG.paymentLogos.orangeMoney} name="Orange Money" dot="#ff7900" className={className} dark={dark} />;
+
+const chip = 'h-7 px-2 rounded-md bg-white border border-ink/[0.08] grid place-items-center';
+
+/** Cartes et paiement en ligne acceptés, en petits cartouches blancs. */
+export const CardLogos: React.FC<{ className?: string; paydunya?: boolean }> = ({ className = '', paydunya = true }) => (
   <span className={`inline-flex items-center gap-1.5 ${className}`} data-testid="card-logos">
-    <span className="h-7 px-2 rounded-md bg-white border border-ink/[0.08] grid place-items-center"><VisaLogo className="h-3 w-auto" title="Visa" /></span>
-    <span className="h-7 px-2 rounded-md bg-white border border-ink/[0.08] grid place-items-center"><MastercardLogo className="h-4 w-auto" title="Mastercard" /></span>
-    {paydunya && <span className="h-7 px-2 rounded-md bg-white border border-ink/[0.08] grid place-items-center"><PayDunyaLogo src={paydunyaSrc} className="h-4 w-auto" /></span>}
+    <span className={chip}><VisaLogo className="h-3 w-auto" title="Visa" /></span>
+    <span className={chip}><MastercardLogo className="h-4 w-auto" title="Mastercard" /></span>
+    {paydunya && <span className={chip}><PayDunyaLogo /></span>}
+  </span>
+);
+
+/** Tous les moyens de paiement : Wave, Orange Money, cartes, PayDunya (et espèces à la livraison). */
+export const PaymentLogos: React.FC<{ className?: string; cash?: boolean }> = ({ className = '', cash = true }) => (
+  <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`} data-testid="payment-logos">
+    <span className={chip}><WaveLogo /></span>
+    <span className={chip}><OrangeMoneyLogo /></span>
+    <CardLogos />
+    {cash && <span className={chip}><span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-ink/80 leading-none"><span className="w-1.5 h-1.5 rounded-full bg-[#11694f]" aria-hidden />Espèces</span></span>}
   </span>
 );
 

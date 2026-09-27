@@ -271,7 +271,7 @@ export function checkMarketItems(order, store) {
     if (!p || !p.active) return { error: `« ${it.name} » n'est plus disponible au Marché` };
     if (Math.round(it.price) !== p.price) return { error: `Le prix de « ${p.name} » a changé : rechargez la page` };
   }
-  if (order.paymentMethod === 'cash') return { error: 'Les articles du Marché se règlent à la commande (Wave, Orange Money, Free Money ou carte)' };
+  if (order.paymentMethod === 'cash') return { error: 'Les articles du Marché se règlent à la commande (Wave, Orange Money ou carte)' };
   // Ce qu'il faut commander chez chaque fournisseur, avec le coût estimé en FCFA
   const { rates } = store.getMarketSettings();
   const toXof = (v, cur) => (cur === 'XOF' ? v : v * (rates[cur] || 0));

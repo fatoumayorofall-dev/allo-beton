@@ -6,7 +6,7 @@ import { CATEGORIES } from '../data/catalog';
 import { useStore } from '../context/StoreContext';
 import { BrandMark, Wordmark } from './Logo';
 import { Twinkles, sparkleBurst } from './Magic';
-import { CardLogos, FacebookLogo, InstagramLogo, SnapchatLogo, TikTokLogo, WhatsAppLogo } from './BrandLogos';
+import { PaymentLogos, FacebookLogo, InstagramLogo, SnapchatLogo, TikTokLogo, WhatsAppLogo } from './BrandLogos';
 
 const NEWSLETTER_KEY = 'fabima_newsletter';
 
@@ -114,16 +114,7 @@ export const Footer: React.FC = () => {
       <div className="border-t border-ivory/10">
         <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-6 pb-24 md:pb-6 md:pr-28 flex flex-col md:flex-row gap-4 items-center justify-between text-[11px] text-ivory/40">
           <p>© {new Date().getFullYear()} {SITE_CONFIG.name} — Tous droits réservés · <Link to="/admin" className="tap hover:text-ivory/70">Espace gérant</Link></p>
-          <div className="flex flex-wrap items-center justify-center gap-2" aria-label="Moyens de paiement" role="group">
-            <ul className="flex flex-wrap justify-center gap-2">
-              {([['Wave', '#1dc4ff'], ['Orange Money', '#ff7900'], ['Free Money', '#cd0f2d'], ['Espèces', '#8fd3b0']] as const).map(([m, c]) => (
-                <li key={m} className="inline-flex items-center gap-1.5 px-3 h-7 rounded-full border border-ivory/15 bg-ivory/[0.04] text-[10px] text-ivory/70">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: c }} />{m}
-                </li>
-              ))}
-            </ul>
-            <CardLogos paydunyaSrc={SITE_CONFIG.paydunyaLogo || undefined} />
-          </div>
+          <div aria-label="Moyens de paiement" role="group"><PaymentLogos className="justify-center" /></div>
         </div>
       </div>
     </footer>

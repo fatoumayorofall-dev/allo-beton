@@ -41,7 +41,7 @@ export const Market: React.FC = () => {
           <p className="mt-5 text-ivory/70 max-w-xl leading-relaxed">Encore plus de chaussures et de sacs, dénichés pour vous chez nos partenaires dans le monde entier. Nous les commandons dès votre achat et vous les livrons chez vous, avec un suivi à chaque étape.</p>
           <ol tabIndex={0} aria-label="Comment ça marche" className="mt-10 flex sm:grid sm:grid-cols-3 gap-3 max-w-4xl overflow-x-auto no-scrollbar snap-x -mx-5 px-5 sm:mx-0 sm:px-0 rounded-[1.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold-light">
             {[
-              { Icon: ShoppingBag, t: '1. Vous commandez', d: 'Paiement sécurisé : Wave, Orange Money, Free Money ou carte.' },
+              { Icon: ShoppingBag, t: '1. Vous commandez', d: 'Paiement sécurisé : Wave, Orange Money ou carte.' },
               { Icon: PackageCheck, t: '2. Nous commandons', d: 'Chez notre partenaire, le jour même. Vous êtes prévenue sur WhatsApp.' },
               { Icon: Truck, t: '3. Livré chez vous', d: 'Suivi du colis jusqu\'à Dakar, puis notre livreur vient à votre porte.' },
             ].map(({ Icon, t, d }) => (

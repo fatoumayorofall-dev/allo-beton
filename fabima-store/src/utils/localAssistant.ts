@@ -77,7 +77,7 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
     return `Nous livrons en 24h à Dakar (1 500 à 2 000 FCFA selon le quartier) et en 48h à 5 jours en régions. La livraison est **offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}**. Tous les tarifs sont sur [la page d'aide](/faq).`;
   }
   if (has(q, 'paiement', 'payer', 'wave', 'orange money', 'free money', 'carte', 'espece')) {
-    return 'Vous pouvez payer par **Wave, Orange Money, Free Money, carte bancaire** ou **en espèces à la livraison**. Le paiement mobile se valide directement sur votre téléphone ✨';
+    return 'Vous pouvez payer par **Wave, Orange Money, carte bancaire** ou **en espèces à la livraison**. Le paiement mobile se valide directement sur votre téléphone ✨';
   }
   if (has(q, 'echange', 'retour', 'rembours', 'pas la bonne taille', 'trop petit', 'trop grand')) {
     return 'Vous avez **7 jours** après réception pour échanger une pièce (taille ou couleur), gratuitement, si elle n\'a pas été portée et reste dans son emballage d\'origine. Écrivez-nous sur WhatsApp pour organiser l\'échange 🌸';

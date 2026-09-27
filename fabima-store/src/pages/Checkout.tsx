@@ -15,10 +15,11 @@ import { CardLogos } from '../components/BrandLogos';
 
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
 
+/** Logos officiels déposés par la boutique (SITE_CONFIG.paymentLogos) : remplacent la pastille de couleur. */
+const OFFICIAL_LOGO: Partial<Record<PaymentMethod, string>> = { wave: SITE_CONFIG.paymentLogos.wave, orange_money: SITE_CONFIG.paymentLogos.orangeMoney };
 const PAYMENT_METHODS: { id: PaymentMethod; name: string; desc: string; color: string; Icon: typeof Smartphone }[] = [
   { id: 'wave', name: 'Wave', desc: 'Instantané, sans frais', color: '#1dc4ff', Icon: Smartphone },
   { id: 'orange_money', name: 'Orange Money', desc: 'Validation par code secret', color: '#ff7900', Icon: Smartphone },
-  { id: 'free_money', name: 'Free Money', desc: 'Paiement mobile Free', color: '#cd0f2d', Icon: Smartphone },
   { id: 'card', name: 'Carte bancaire', desc: 'Visa, Mastercard', color: '#16120f', Icon: CreditCard },
   { id: 'cash', name: 'À la livraison', desc: 'Espèces ou Wave à la réception', color: '#11694f', Icon: Banknote },
 ];
@@ -277,8 +278,10 @@ export const Checkout: React.FC = () => {
                   {PAYMENT_METHODS.filter(m => !(hasOnDemand && m.id === 'cash')).map(m => (
                     <label key={m.id} className={`flex items-center gap-4 p-4 border rounded-2xl cursor-pointer transition-all duration-300 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-wine ${method === m.id ? 'border-ink bg-white shadow-[0_0_0_4px_rgba(196,138,130,.16)]' : 'border-ink/10 bg-white/60 hover:border-ink/40 hover:bg-white'}`}>
                       <input type="radio" name="payment" checked={method === m.id} onChange={() => setMethod(m.id)} className="sr-only" />
-                      <span className="w-11 h-11 rounded-full grid place-items-center text-white shrink-0" style={{ background: m.color }}><m.Icon className="w-5 h-5" strokeWidth={1.5} /></span>
-                      <span className="flex-1 min-w-0"><strong className="block text-sm font-semibold">{m.name}</strong>{m.id === 'card' ? <CardLogos className="mt-1.5" paydunyaSrc={SITE_CONFIG.paydunyaLogo || undefined} /> : <span className="text-xs text-ink/70">{m.desc}</span>}</span>
+                      {OFFICIAL_LOGO[m.id]
+                        ? <span className="w-11 h-11 rounded-full grid place-items-center bg-white border border-ink/[0.08] shrink-0 overflow-hidden"><img src={OFFICIAL_LOGO[m.id]} alt="" className="w-8 h-8 object-contain" /></span>
+                        : <span className="w-11 h-11 rounded-full grid place-items-center text-white shrink-0" style={{ background: m.color }}><m.Icon className="w-5 h-5" strokeWidth={1.5} /></span>}
+                      <span className="flex-1 min-w-0"><strong className="block text-sm font-semibold">{m.name}</strong>{m.id === 'card' ? <CardLogos className="mt-1.5" /> : <span className="text-xs text-ink/70">{m.desc}</span>}</span>
                       <span className={`w-4 h-4 rounded-full border grid place-items-center ${method === m.id ? 'border-ink' : 'border-ink/25'}`}>{method === m.id && <span className="w-2 h-2 rounded-full bg-ink" />}</span>
                     </label>
                   ))}
