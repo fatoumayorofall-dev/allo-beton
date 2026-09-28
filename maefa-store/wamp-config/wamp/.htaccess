@@ -1,0 +1,29 @@
+# Maefa Store - réglages Apache (WAMP). Chaque bloc est ignoré si le module correspondant est désactivé.
+
+# Adresse tapée sans « # » (ex. /maefa/admin ou /maefa/produit/sac) : renvoi vers la bonne page
+# du site (/maefa/#/admin) au lieu de l'erreur « Not Found ».
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_URI}::$1 ^(.*?/)(.*)::\2$
+  RewriteRule ^(.*)$ - [E=MAEFA_BASE:%1]
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^(.+)$ %{ENV:MAEFA_BASE}#/$1 [R=302,NE,L]
+</IfModule>
+
+# Protections de sécurité (identiques au serveur Maefa)
+<IfModule mod_headers.c>
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self'; connect-src 'self' https:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "geolocation=(self), microphone=(self), camera=(self), payment=()"
+</IfModule>
+
+<IfModule mod_mime.c>
+  AddType font/woff2 .woff2
+  AddType video/webm .webm
+  AddType application/manifest+json .webmanifest
+</IfModule>
+
+DirectoryIndex index.html

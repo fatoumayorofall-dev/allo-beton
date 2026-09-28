@@ -1,0 +1,144 @@
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { Loader2 } from 'lucide-react';
+import { useStore } from '../context/StoreContext';
+import type { DeliveryInfo, Order } from '../data/types';
+import { formatDate, formatPrice } from '../utils/format';
+import { usePageTitle } from '../utils/usePageTitle';
+import { OrderTimeline, PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
+import { lookupOrder } from '../services/api';
+import { SupplierSteps } from '../components/SupplierSteps';
+import { useAccount } from '../context/AccountContext';
+import { ProductImage } from '../components/ProductImage';
+import { ForYou } from '../components/ForYou';
+
+const LiveTracking = lazy(() => import('../components/LiveTracking'));
+
+export const Tracking: React.FC = () => {
+  usePageTitle('Suivi de commande');
+  const { findOrder, orders } = useStore();
+  const { remoteOrders } = useAccount();
+  const [params, setParams] = useSearchParams();
+  const [id, setId] = useState(params.get('commande') ?? '');
+  const [phone, setPhone] = useState(params.get('tel') ?? '');
+  const [order, setOrder] = useState<Order | null>(null);
+  const [delivery, setDelivery] = useState<DeliveryInfo | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const query = useRef<{ id: string; phone: string } | null>(null);
+
+  /** Le serveur d'abord (statut à jour + livreur en direct), sinon la commande gardée sur ce téléphone. */
+  const load = async (q: { id: string; phone: string }, polling = false) => {
+    const remote = await lookupOrder(q.id, q.phone);
+    if (query.current !== q) return;
+    if (remote) {
+      setOrder(remote.order);
+      setDelivery(remote.delivery);
+      setNotFound(false);
+      return;
+    }
+    if (polling) return; // coupure passagère : on garde l'affichage
+    const local = findOrder(q.id, q.phone) ?? null;
+    setOrder(local);
+    setNotFound(!local);
+  };
+
+  const search = async (e?: React.FormEvent, pick?: { id: string; phone: string }) => {
+    e?.preventDefault();
+    const q = pick ?? { id: id.trim().toUpperCase(), phone: phone.trim() };
+    query.current = q;
+    setLoading(true);
+    setDelivery(null);
+    await load(q);
+    setLoading(false);
+    if (e || pick) setParams({ commande: q.id, tel: q.phone }, { replace: true });
+  };
+
+  useEffect(() => {
+    if (params.get('commande') && params.get('tel')) search();
+  }, []);
+
+  // Actualisation : toutes les 5 s quand le livreur roule, sinon toutes les 30 s
+  const live = delivery?.state === 'en_route';
+  const done = order?.status === 'livree' || order?.status === 'annulee';
+  useEffect(() => {
+    if (!order || done) return;
+    const t = setInterval(() => { if (query.current && document.visibilityState === 'visible') load(query.current, true); }, live ? 5000 : 30000);
+    return () => clearInterval(t);
+  }, [order?.id, live, done]);
+
+  // Ses commandes connues (ce téléphone + son compte) : un toucher suffit, rien à recopier
+  const recent = [...new Map([...remoteOrders, ...orders].map(o => [o.id, o])).values()]
+    .filter(o => o.status !== 'annulee').sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 3);
+  const pick = (o: Order) => { setId(o.id); setPhone(o.customer.phone); search(undefined, { id: o.id, phone: o.customer.phone }); };
+
+  return (
+    <>
+      <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-16">
+        <div className="text-center">
+          <p className="eyebrow">Service client</p>
+          <h1 className="font-display text-5xl sm:text-6xl mt-4">Suivre une commande</h1>
+          <p className="text-ink/75 mt-4 max-w-md mx-auto">Saisissez votre numéro de commande (ex : MAE-A1B2C3) et le téléphone utilisé lors de l'achat.</p>
+        </div>
+
+        <form onSubmit={search} className="mt-12 grid sm:grid-cols-[1fr_1fr_auto] gap-2">
+          <input value={id} onChange={e => setId(e.target.value)} placeholder="N° de commande" aria-label="Numéro de commande" required className="field uppercase" />
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="Téléphone" type="tel" aria-label="Téléphone" required className="field" />
+          <button className="btn-dark !h-12" disabled={loading}>{loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Rechercher'}</button>
+        </form>
+
+        {!order && recent.length > 0 && (
+          <div className="mt-10" data-testid="recent-orders">
+            <p className="field-label text-center">Vos commandes récentes</p>
+            <ul className="mt-3 grid gap-2">
+              {recent.map(o => (
+                <li key={o.id}>
+                  <button type="button" onClick={() => pick(o)} className="w-full flex items-center gap-4 p-3 pr-5 rounded-2xl bg-white border border-ink/[0.07] hover:border-ink/30 transition-colors text-left">
+                    <ProductImage src={o.items[0]?.image} alt="" label="" className="w-12 h-14 rounded-xl shrink-0" />
+                    <span className="flex-1 min-w-0"><span className="block font-display text-xl leading-tight">{o.id}</span><span className="block text-xs text-ink/65">{formatDate(o.createdAt)}</span></span>
+                    <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] text-ink/70">{STATUS_LABELS[o.status]}</span>
+                    <span className="text-[11px] uppercase tracking-[0.2em] font-semibold">Suivre</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {notFound && <p className="mt-8 text-center text-sm text-wine">Aucune commande ne correspond. Vérifiez vos informations ou écrivez-nous sur WhatsApp.</p>}
+
+        {order && (
+          <div className="mt-10 space-y-6 animate-fade-up">
+            {live && (
+              <p className="flex items-center justify-center gap-2 text-sm font-semibold text-wine">
+                <span className="w-2.5 h-2.5 rounded-full bg-wine animate-pulse" /> Votre commande est en route — suivez votre livreur en direct
+              </p>
+            )}
+            {(order.customer.location || delivery) && !done && (
+              <Suspense fallback={<div className="h-80 rounded-[1.5rem] bg-ivory-deep animate-pulse" />}>
+                <LiveTracking location={order.customer.location} delivery={delivery} />
+              </Suspense>
+            )}
+            {order.supplier && order.status !== 'annulee' && order.status !== 'livree' && <SupplierSteps supplier={order.supplier} />}
+            <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10">
+              <div className="flex flex-wrap justify-between gap-6 pb-8 border-b border-ink/10">
+                <div><p className="field-label">Commande</p><p className="font-display text-4xl">{order.id}</p><p className="text-xs text-ink/70 mt-1">{formatDate(order.createdAt)}</p></div>
+                <div className="sm:text-right"><p className="field-label">Total</p><p className="font-display text-3xl">{formatPrice(order.total)}</p>
+                  <p className="text-xs mt-1">{PAYMENT_LABELS[order.paymentMethod]} · <span className={order.paymentStatus === 'paye' ? 'text-emerald-800' : 'text-amber-800'}>{order.paymentStatus === 'paye' ? 'Payé' : 'À régler'}</span></p></div>
+              </div>
+              <div className="pt-8"><OrderTimeline order={order} /></div>
+              <p className="text-sm text-ink/75 border-t border-ink/10 pt-6">
+                {order.items.reduce((s, i) => s + i.quantity, 0)} pièce(s) · Livraison : {order.customer.location?.label || order.customer.zone}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+      {order && (
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12">
+          <ForYou className="mt-24 pt-14 border-t border-ink/10" eyebrow="En attendant votre colis" title={<>Pour aller <em className="text-gold-dark">avec</em></>} />
+        </div>
+      )}
+    </>
+  );
+};

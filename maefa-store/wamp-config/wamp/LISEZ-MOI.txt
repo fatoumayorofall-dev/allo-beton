@@ -1,0 +1,35 @@
+MAEFA STORE - version a ouvrir avec WAMP
+=========================================
+
+INSTALLATION
+1. Faites un clic droit sur maefa-wamp.zip > "Extraire tout..."
+2. Ouvrez le dossier obtenu : il contient un dossier "maefa".
+3. Copiez ce dossier "maefa" dans C:\wamp\www
+   Verification : le fichier C:\wamp\www\maefa\index.html doit exister.
+   (Attention : PAS C:\wamp\www\maefa-wamp\maefa\index.html
+    ni C:\wamp\www\maefa\maefa\index.html)
+4. Lancez WAMP (l'icone doit etre verte).
+5. Ouvrez dans le navigateur :  http://localhost/maefa/
+
+Espace gerant : http://localhost/maefa/#/admin   (code PIN de demonstration : 2026)
+
+SI VOUS VOYEZ "Not Found - The requested URL was not found on this server"
+- Le dossier n'est pas au bon endroit : ouvrez http://localhost/ ; dans
+  "Vos projets" (Your Projects), vous devez voir "maefa". Si vous voyez
+  "maefa-wamp", l'adresse est http://localhost/maefa-wamp/maefa/
+  (ou deplacez le dossier "maefa" directement dans C:\wamp\www).
+- Les adresses du site contiennent un "#" : http://localhost/maefa/#/compte
+  Une adresse sans "#" (ex. http://localhost/maefa/compte) est corrigee
+  automatiquement si le module "rewrite_module" d'Apache est actif
+  (icone WAMP > Apache > Modules Apache > rewrite_module coche).
+- Apres une mise a jour : Ctrl + F5 pour vider le cache du navigateur.
+
+Cette version tourne sans le serveur Maefa : paniers, commandes et
+modifications restent dans ce navigateur. L'envoi de videos, WhatsApp
+et l'assistante IA ont besoin du serveur complet (voir README du projet).
+
+VIDEOS
+Pour ajouter une video a une piece : copiez le fichier (MP4 ou WebM) dans
+C:\wamp\www\maefa\videos\ puis, dans l'espace gerant, ecrivez simplement
+son nom (ex. : sandale-rose.mp4) dans le champ Video de la piece.
+Vous pouvez aussi coller un lien https vers une video en ligne.

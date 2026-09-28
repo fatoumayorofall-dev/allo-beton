@@ -1,0 +1,342 @@
+/**
+ * Appels au serveur Maefa (assistant IA + notifications WhatsApp).
+ * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
+ * et l'interface bascule sur le mode manuel ou hors ligne.
+ */
+import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
+
+const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+
+export interface ServerStatus {
+  ok: boolean;
+  /** Stockage partagé disponible (vitrine du statut, notes vocales, compteurs) */
+  storage?: boolean;
+  /** Comptes clientes par numéro de téléphone disponibles */
+  accounts?: boolean;
+  assistant: boolean;
+  whatsapp: boolean;
+  ownerNotifications: boolean;
+  adminApi: boolean;
+  /** Commandes enregistrées sur le serveur (suivi du livreur en direct) */
+  orders?: boolean;
+  /** Catalogue partagé (produits, stocks, avis) */
+  catalog?: boolean;
+  /** Le Marché (dropshipping) */
+  market?: boolean;
+}
+
+const OFFLINE: ServerStatus = { ok: false, assistant: false, whatsapp: false, ownerNotifications: false, adminApi: false };
+let statusPromise: Promise<ServerStatus> | null = null;
+
+/** État du serveur, mis en cache pour la durée de la visite. */
+export function getServerStatus(): Promise<ServerStatus> {
+  statusPromise ??= fetch(`${API}/api/health`, { signal: AbortSignal.timeout(4000) })
+    .then(r => (r.ok ? r.json() : OFFLINE))
+    .then(s => (s && typeof s === 'object' && 'assistant' in s ? s as ServerStatus : OFFLINE))
+    .catch(() => OFFLINE);
+  return statusPromise;
+}
+
+export interface ChatTurn { role: 'user' | 'assistant'; content: string }
+
+export interface ChatPayload {
+  messages: ChatTurn[];
+  shop: unknown;
+  products: Product[];
+  visitor: unknown;
+}
+
+/**
+ * Envoie la conversation à l'assistante et appelle `onText` à chaque fragment reçu.
+ * Rejette l'erreur si le serveur est injoignable ou refuse la requête.
+ */
+export async function streamChat(payload: ChatPayload, onText: (chunk: string) => void, signal?: AbortSignal): Promise<void> {
+  const res = await fetch(`${API}/api/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    signal,
+  });
+  if (!res.ok || !res.body) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error || `HTTP ${res.status}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let idx;
+    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+      const line = buffer.slice(0, idx).trim();
+      buffer = buffer.slice(idx + 2);
+      if (!line.startsWith('data:')) continue;
+      const event = JSON.parse(line.slice(5));
+      if (event.type === 'text') onText(event.text);
+      if (event.type === 'error') throw new Error(event.message);
+    }
+  }
+}
+
+async function post<T>(path: string, body: unknown, pin?: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${API}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(pin ? { 'x-admin-pin': pin } : {}) },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(15000),
+    });
+    return res.ok ? (await res.json()) as T : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Connexion à l'espace gérant : le code est vérifié par le serveur, qui renvoie un jeton de 12 h.
+ * `null` : serveur injoignable (version sans serveur, ex. WAMP).
+ */
+export async function adminLogin(pin: string): Promise<{ token: string } | { error: string; status: number } | null> {
+  try {
+    const res = await fetch(`${API}/api/admin/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin }), signal: AbortSignal.timeout(8000),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (res.ok && typeof body.token === 'string') return { token: body.token };
+    if (res.status === 404) return null;
+    return { error: body.error || 'Connexion impossible', status: res.status };
+  } catch {
+    return null;
+  }
+}
+
+interface SendResult { ok: boolean; simulated?: boolean; error?: string }
+
+/** Nouvelle commande : message à la gérante + accusé de réception à la cliente. */
+export const notifyOrder = (order: Order) => post<{ owner: SendResult; customer: SendResult }>('/api/notify/order', { order });
+
+/** Changement de statut : message à la cliente (PIN gérante exigé par le serveur). */
+export const notifyStatus = (order: Order, status: OrderStatus, pin: string) => post<SendResult>('/api/notify/status', { order, status }, pin);
+
+/** Retour en stock : message aux clientes qui ont demandé une alerte. */
+export const notifyRestock = (product: Product, contacts: string[], pin: string) =>
+  post<{ sent: number; total: number }>('/api/notify/restock', { product: { name: product.name, slug: product.slug }, contacts }, pin);
+
+/* ---------- Statut WhatsApp : vitrine, visites, notes vocales ---------- */
+
+export interface ShowcaseItem { slug: string; addedAt: string }
+export type VisitSource = 'statut' | 'partage' | 'vitrine';
+export type VisitStats = Record<string, { statut: number; partage: number; vitrine: number; last: string | null }>;
+
+async function getJson<T>(path: string, pin?: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${API}${path}`, { headers: pin ? { 'x-admin-pin': pin } : {}, signal: AbortSignal.timeout(6000) });
+    return res.ok ? (await res.json()) as T : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Pièces mises en statut (vitrine du jour), partagées par toutes les visiteuses. */
+export const getShowcase = () => getJson<{ items: ShowcaseItem[] }>('/api/showcase').then(r => r?.items ?? null);
+export const setShowcase = (slug: string, action: 'add' | 'remove', pin: string) =>
+  post<{ items: ShowcaseItem[] }>('/api/showcase', { slug, action }, pin).then(r => r?.items ?? null);
+
+/** Compte une visite arrivée depuis un statut ou un lien partagé (sans bloquer l'affichage). */
+export function trackVisit(slug: string, source: VisitSource) {
+  fetch(`${API}/api/track`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug, source }), keepalive: true }).catch(() => {});
+}
+export const getVisitStats = (pin: string) => getJson<{ visits: VisitStats }>('/api/stats', pin).then(r => r?.visits ?? null);
+
+/** Notes vocales enregistrées par la gérante. */
+export const listVoices = () => getJson<{ slugs: string[] }>('/api/voice').then(r => r?.slugs ?? []);
+export const voiceUrl = (slug: string) => `${API}/api/voice/${encodeURIComponent(slug)}`;
+export async function uploadVoice(slug: string, blob: Blob, pin: string): Promise<boolean> {
+  try {
+    const res = await fetch(voiceUrl(slug), { method: 'PUT', headers: { 'Content-Type': blob.type.split(';')[0] || 'audio/webm', 'x-admin-pin': pin }, body: blob });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+/* ---------- Vidéos des pièces ---------- */
+export const MAX_VIDEO_MB = 40;
+/**
+ * Envoie une vidéo au serveur (espace gérant) et renvoie son adresse (/media/…).
+ * `onProgress` reçoit le pourcentage envoyé : utile sur une connexion mobile lente.
+ */
+export function uploadVideo(file: Blob, pin: string, onProgress?: (pct: number) => void): Promise<{ url: string } | { error: string }> {
+  return new Promise(resolve => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API}/api/admin/media`);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.setRequestHeader('x-admin-pin', pin);
+    xhr.upload.onprogress = e => { if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => {
+      let body: { url?: string; error?: string } = {};
+      try { body = JSON.parse(xhr.responseText); } catch { /* réponse vide */ }
+      resolve(xhr.status < 300 && body.url ? { url: body.url } : { error: body.error || (xhr.status === 413 ? `Vidéo trop lourde (${MAX_VIDEO_MB} Mo au maximum)` : 'Envoi impossible, réessayez') });
+    };
+    xhr.onerror = () => resolve({ error: 'Pas de connexion au serveur : réessayez' });
+    xhr.send(file);
+  });
+}
+
+export async function deleteVoice(slug: string, pin: string): Promise<boolean> {
+  try {
+    return (await fetch(voiceUrl(slug), { method: 'DELETE', headers: { 'x-admin-pin': pin } })).ok;
+  } catch {
+    return false;
+  }
+}
+
+/* ---------- Comptes clientes (numéro de téléphone + code WhatsApp) ---------- */
+
+export interface Account {
+  phone: string;
+  firstName: string;
+  lastName: string;
+  zone: string;
+  address: string;
+  /** Dernier point de livraison choisi sur la carte */
+  location?: DeliveryLocation | null;
+  wishlist: string[];
+  createdAt: string;
+}
+
+type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string; status: number };
+
+async function call<T>(path: string, init: RequestInit & { token?: string } = {}): Promise<ApiResult<T>> {
+  const { token, headers, ...rest } = init;
+  try {
+    const res = await fetch(`${API}${path}`, {
+      ...rest,
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
+      signal: AbortSignal.timeout(15000),
+    });
+    const body = res.status === 204 ? null : await res.json().catch(() => null);
+    return res.ok ? { ok: true, data: body as T } : { ok: false, error: body?.error || 'Une erreur est survenue', status: res.status };
+  } catch {
+    return { ok: false, error: 'Pas de connexion. Vérifiez votre internet et réessayez.', status: 0 };
+  }
+}
+
+export const authStart = (phone: string) =>
+  call<{ sent: boolean; channel?: 'whatsapp'; devCode?: string; isNew: boolean }>('/api/auth/start', { method: 'POST', body: JSON.stringify({ phone }) });
+export const authVerify = (phone: string, code: string) =>
+  call<{ token: string; user: Account }>('/api/auth/verify', { method: 'POST', body: JSON.stringify({ phone, code }) });
+export const authLogout = (token: string) => call<null>('/api/auth/logout', { method: 'POST', token });
+export const fetchMe = (token: string) => call<{ user: Account; orders: Order[] }>('/api/me', { token });
+export const updateMe = (token: string, patch: Partial<Omit<Account, 'phone' | 'createdAt'>>) =>
+  call<{ user: Account }>('/api/me', { method: 'PATCH', token, body: JSON.stringify(patch) });
+export const saveMyOrder = (token: string, order: Order) => call<{ ok: true }>('/api/me/orders', { method: 'POST', token, body: JSON.stringify({ order }) });
+
+export interface CustomerRow extends Account { lastLogin?: string; orders: number; spent: number }
+export const fetchCustomers = (pin: string) => getJson<{ customers: CustomerRow[] }>('/api/admin/customers', pin).then(r => r?.customers ?? null);
+
+/* ---------- Commandes enregistrées sur le serveur + livraison suivie en direct ---------- */
+
+/** Enregistre la commande sur le serveur (visible par la gérante) et envoie les messages WhatsApp. */
+export const createOrder = (order: Order) => post<{ order: Order; owner: SendResult; customer: SendResult }>('/api/orders', { order });
+
+export type TrackingResult = { order: Order; delivery: DeliveryInfo | null };
+/** Suivi d'une commande (numéro + téléphone). `null` si introuvable ou serveur absent. */
+export const lookupOrder = (id: string, phone: string) =>
+  getJson<TrackingResult>(`/api/orders/lookup?id=${encodeURIComponent(id.trim())}&phone=${encodeURIComponent(phone)}`);
+
+/* Gérante */
+export const fetchAdminOrders = (pin: string) => getJson<{ orders: Order[] }>('/api/admin/orders', pin).then(r => r?.orders ?? null);
+export const patchAdminOrder = (id: string, patch: { status?: OrderStatus; paymentStatus?: 'paye' | 'en_attente' }, pin: string) =>
+  call<{ order: Order; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
+export interface PlanLeg { name: string; phone: string; vehicle: Vehicle; to?: RelayPoint | null }
+/** Plan de livraison : un livreur (direct) ou plusieurs à la suite (relais). Chaque nouveau livreur reçoit son lien. */
+export const saveDeliveryPlan = (id: string, legs: PlanLeg[], pin: string) =>
+  call<{ delivery: DeliveryInfo; messages: { leg: number; driverPhone: string; text: string }[]; sent: SendResult | null; sentAll: { leg: number; result: SendResult | null }[] }>(
+    `/api/admin/orders/${encodeURIComponent(id)}/relay`, { method: 'PUT', body: JSON.stringify({ legs }), headers: { 'x-admin-pin': pin } });
+
+/* Livreur (lien secret) */
+export interface DriverJob {
+  order: {
+    id: string; status: OrderStatus; total: number; paymentMethod: Order['paymentMethod']; paymentStatus: Order['paymentStatus']; items: number;
+    customer: { firstName: string; lastName: string; phone: string; zone: string; address: string; notes?: string; location: DeliveryLocation | null };
+  };
+  /** Mon étape : où je récupère le colis (pickup) et où je l'amène (target) */
+  leg: { index: number; total: number; final: boolean; vehicle: Vehicle; to: RelayPoint | null; state: DeliveryLeg['state']; target: { lat: number; lng: number; label?: string } | null; pickup: RelayPoint | null };
+  /** Livreur précédent (qui m'apporte le colis) */
+  prev: (Omit<DeliveryLeg, 'startedAt' | 'doneAt'> & { position: { lat: number; lng: number } | null; etaMin: number | null }) | null;
+  /** Livreur suivant (à qui je remets le colis) */
+  next: Omit<DeliveryLeg, 'startedAt' | 'doneAt'> | null;
+  delivery: DeliveryInfo;
+}
+export interface GpsFix { lat: number; lng: number; accuracy?: number; heading?: number | null; speed?: number | null }
+const driverPath = (token: string, action = '') => `/api/driver/${encodeURIComponent(token)}${action}`;
+export const fetchDriverJob = (token: string) => call<DriverJob>(driverPath(token));
+export const driverStart = (token: string, fix?: GpsFix) => call<DriverJob>(driverPath(token, '/start'), { method: 'POST', body: JSON.stringify(fix ?? {}) });
+export const driverPosition = (token: string, fix: GpsFix) =>
+  call<{ distanceM: number | null; etaMin: number | null }>(driverPath(token, '/position'), { method: 'POST', body: JSON.stringify(fix) });
+export const driverDelivered = (token: string) => call<DriverJob>(driverPath(token, '/delivered'), { method: 'POST' });
+
+/* Carte : recherche d'adresse (OpenStreetMap via le serveur) */
+export interface PlaceResult { label: string; kind: string; lat: number; lng: number }
+export async function searchPlaces(q: string, near?: { lat: number; lng: number }, signal?: AbortSignal): Promise<PlaceResult[] | null> {
+  try {
+    const bias = near ? `&lat=${near.lat}&lng=${near.lng}` : '';
+    const res = await fetch(`${API}/api/geo/search?q=${encodeURIComponent(q)}${bias}`, { signal });
+    return res.ok ? ((await res.json()).results as PlaceResult[]) : null;
+  } catch {
+    return null;
+  }
+}
+export const reverseGeocode = (p: { lat: number; lng: number }) =>
+  getJson<{ label: string; area: string; city: string }>(`/api/geo/reverse?lat=${p.lat.toFixed(6)}&lng=${p.lng.toFixed(6)}`);
+
+/* ---------- Le Marché (dropshipping) ---------- */
+
+/** Produits du Marché visibles par les clientes (null si le serveur est injoignable). */
+export const fetchMarket = () => getJson<{ products: MarketProduct[]; delay: { min: number; max: number } }>('/api/marche');
+
+export const fetchAdminMarket = (pin: string) => getJson<{ products: MarketProduct[]; settings: MarketSettings }>('/api/admin/marche', pin);
+export const saveMarketProduct = (product: Partial<MarketProduct>, pin: string) =>
+  call<{ product: MarketProduct }>('/api/admin/marche/products', { method: 'POST', body: JSON.stringify(product), headers: { 'x-admin-pin': pin } });
+export const deleteMarketProduct = (id: string, pin: string) =>
+  call<null>(`/api/admin/marche/products/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
+export const saveMarketSettings = (settings: Partial<MarketSettings>, pin: string) =>
+  call<{ settings: MarketSettings }>('/api/admin/marche/settings', { method: 'PUT', body: JSON.stringify(settings), headers: { 'x-admin-pin': pin } });
+export interface ImportDraft { name: string; description: string; images: string[]; cost?: number; currency?: 'XOF' | 'EUR' | 'USD' | 'CNY'; supplierName: string; url: string }
+export const importMarketProduct = (url: string, pin: string) =>
+  call<{ draft: ImportDraft }>('/api/admin/marche/import', { method: 'POST', body: JSON.stringify({ url }), headers: { 'x-admin-pin': pin } });
+export const patchSupplier = (orderId: string, patch: { status?: SupplierStatus; ref?: string; tracking?: string; trackingUrl?: string }, pin: string) =>
+  call<{ order: Order; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(orderId)}/supplier`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
+/** Vérification avant paiement : pièces en ligne, prix à jour, stock ou « sur commande », moyen de paiement accepté. */
+export const checkOrder = (items: { productId: string; name: string; price: number; quantity: number; color?: string }[], paymentMethod: string) =>
+  call<{ ok: true; preorder: Record<string, number> }>('/api/orders/check', { method: 'POST', body: JSON.stringify({ items, paymentMethod }) });
+
+/* ---------- Catalogue partagé, avis, alertes de retour en stock ---------- */
+
+/** Catalogue publié par la gérante (products = null tant qu'il n'a pas été publié). */
+export const fetchCatalog = () => getJson<{ products: Product[] | null; updatedAt: string | null }>('/api/catalog');
+export const publishCatalog = (products: Product[], pin: string) =>
+  call<{ products: Product[] }>('/api/admin/catalog', { method: 'PUT', body: JSON.stringify({ products }), headers: { 'x-admin-pin': pin } });
+export const saveCatalogProduct = (product: Product, pin: string) =>
+  call<{ product: Product }>(`/api/admin/catalog/products/${encodeURIComponent(product.id)}`, { method: 'PUT', body: JSON.stringify(product), headers: { 'x-admin-pin': pin } });
+export const removeCatalogProduct = (id: string, pin: string) =>
+  call<null>(`/api/admin/catalog/products/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
+export const postReview = (productId: string, review: { author: string; rating: number; comment: string }) =>
+  call<{ product: Product }>(`/api/catalog/products/${encodeURIComponent(productId)}/reviews`, { method: 'POST', body: JSON.stringify(review) });
+export const postStockAlert = (productId: string, contact: string) => post<{ ok: true }>('/api/stock-alerts', { productId, contact });
+export const fetchStockAlerts = (pin: string) => getJson<{ alerts: StockAlert[] }>('/api/admin/stock-alerts', pin).then(r => r?.alerts ?? null);
+export const clearStockAlerts = (productId: string, pin: string) =>
+  call<null>(`/api/admin/stock-alerts/${encodeURIComponent(productId)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
+
+/* ---------- Authenticité (étiquettes numérotées anti-contrefaçon) ---------- */
+
+export interface AuthCode { code: string; productId?: string; productSlug?: string; productName: string; orderId?: string; createdAt: string; scans: number; firstScanAt?: string; lastScanAt?: string }
+export interface AuthCheck { status: 'authentique' | 'deja-verifie' | 'suspect' | 'inconnu' | 'invalide'; code?: string; productName?: string; productSlug?: string; issuedAt?: string; scans?: number; firstScanAt?: string }
+export const createAuthCodes = (input: { productId?: string; productSlug?: string; productName: string; quantity: number; orderId?: string }, pin: string) =>
+  call<{ codes: AuthCode[] }>('/api/admin/authenticite', { method: 'POST', body: JSON.stringify(input), headers: { 'x-admin-pin': pin } });
+export const fetchAuthCodes = (pin: string) => getJson<{ codes: AuthCode[] }>('/api/admin/authenticite', pin).then(r => r?.codes ?? null);
+export const verifyAuthCode = (code: string) => call<AuthCheck>(`/api/authentique/${encodeURIComponent(code)}`);
+/** Écrin sécurisé avec les marques secrètes de la boutique (espace gérant seulement). */
+export const fetchSecureMark = (pin: string) => getJson<{ svg: string; marks: string[] }>('/api/admin/marque-securisee', pin);
