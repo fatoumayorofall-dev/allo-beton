@@ -1,0 +1,249 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<style>
+@font-face{font-family:Bodoni;src:url(fonts/bodoni-moda-latin.woff2)}
+@font-face{font-family:Bodoni;src:url(fonts/bodoni-moda-latin-ext.woff2);unicode-range:U+0100-024F}
+@font-face{font-family:Bodoni;font-style:italic;src:url(fonts/bodoni-moda-italic-latin.woff2)}
+@font-face{font-family:Bodoni;font-style:italic;src:url(fonts/bodoni-moda-italic-latin-ext.woff2);unicode-range:U+0100-024F}
+@font-face{font-family:Jost;src:url(fonts/jost-latin.woff2)}
+@font-face{font-family:Jost;src:url(fonts/jost-latin-ext.woff2);unicode-range:U+0100-024F}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#12070d}
+.abs{position:absolute}
+#world{position:absolute;inset:0;overflow:hidden;transform-origin:540px 960px}
+.act{position:absolute;inset:0;overflow:hidden;display:none}
+.kick{font:500 26px Jost;letter-spacing:.38em;text-transform:uppercase}
+.kick .c{display:inline-block}
+.ln{display:block;overflow:hidden;padding:0 .06em;margin:0 -.06em}
+.ln>.in{display:block;will-change:transform}
+.w{display:inline-block}
+.ttl{font:400 96px/1.02 Bodoni}
+.ttl i{font-style:italic}
+
+/* ACTE 1 — la porte */
+#a1bg{background:radial-gradient(1100px 1000px at 50% 40%,#3d1b2d 0,#1d0b15 58%,#10060b 100%)}
+#a1fg{background:transparent}
+#logo1{position:absolute;inset:0;transform-origin:540px 700px}
+#m1{position:absolute;left:350px;top:470px;width:380px;height:518px;overflow:visible}
+#n1{position:absolute;left:215px;top:1030px;width:650px;height:144px}
+#tag1{position:absolute;left:0;width:1080px;top:1215px;text-align:center;color:#e9bcb1}
+.glint{position:absolute;width:420px;height:420px;margin:-210px 0 0 -210px;pointer-events:none;mix-blend-mode:screen}
+.glint::before,.glint::after{content:"";position:absolute;left:0;top:50%;width:100%;height:3px;margin-top:-1.5px;background:linear-gradient(90deg,transparent,rgba(255,236,226,.95) 50%,transparent)}
+.glint::after{transform:rotate(90deg)}
+.glint i{position:absolute;left:50%;top:50%;width:90px;height:90px;margin:-45px;border-radius:50%;background:radial-gradient(circle,rgba(255,244,236,.95),rgba(240,201,193,.5) 35%,transparent 70%)}
+
+/* ACTE 2 — éditorial */
+#a2{background:#fbf3ef}
+#a2 .bgGlow{position:absolute;inset:-200px;background:radial-gradient(900px 800px at 80% 10%,#f6d9d2 0,transparent 70%),radial-gradient(900px 900px at 10% 90%,#f3d0d4 0,transparent 70%)}
+#footWrap{position:absolute;inset:0;-webkit-mask-image:url(arch-inner.svg);-webkit-mask-repeat:no-repeat}
+#foot1{position:absolute;left:0;top:0;width:1080px;height:1920px;object-fit:cover;transform-origin:540px 1100px}
+#archLine{position:absolute;overflow:visible}
+#belle{position:absolute;left:0;width:1080px;top:215px;text-align:center;font:400 330px/1 Bodoni;color:#3a1f2d;letter-spacing:-.01em}
+#belle .ln{display:inline-block;overflow:hidden;padding:0 .02em}
+#chaque{position:absolute;left:0;width:1080px;top:1655px;text-align:center;font:italic 400 136px/1.05 Bodoni;color:#b03a64;paint-order:stroke;-webkit-text-stroke:10px #fbf3ef}
+#chaque .ln{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .08em .1em}
+#a2kick{left:80px;top:120px;color:#8f544e}
+#a2coord{left:0;width:1080px;text-align:center;top:1850px;color:#8f544e;letter-spacing:.2em}
+#noir{position:absolute;left:0;width:1080px;top:250px;text-align:center;font:400 220px/1 Bodoni;color:#3a1f2d;white-space:nowrap}
+#noir i{color:#b03a64}
+#noir .ln{display:inline-block;overflow:hidden;padding:0 .04em .06em}
+#noirKick{position:absolute;left:0;width:1080px;top:170px;text-align:center;color:#8f544e}
+.chip{position:absolute;display:flex;align-items:center;gap:18px;height:96px;padding:0 40px 0 20px;border-radius:999px;background:rgba(255,255,255,.94);box-shadow:0 30px 60px -20px rgba(58,31,45,.45),0 0 0 1px rgba(58,31,45,.06);font:500 32px Jost;color:#3a1f2d;white-space:nowrap}
+.chip .ico{width:58px;height:58px;border-radius:50%;background:#fbeeea;color:#8f544e;display:grid;place-items:center}
+.chip .ico svg{width:30px;height:30px}
+
+/* ACTE 3 — montage */
+.pnl{position:absolute;inset:0;overflow:hidden}
+.pnl .idx{position:absolute;left:80px;top:120px;font:500 26px Jost;letter-spacing:.3em}
+.pnl .side{position:absolute;right:80px;top:120px;font:500 26px Jost;letter-spacing:.3em}
+.pnl .word{position:absolute;left:0;width:1080px;text-align:center;white-space:nowrap}
+.pnl .cap{position:absolute;left:0;width:1080px;text-align:center}
+.pnl .cap b{display:block;font:italic 400 64px Bodoni;letter-spacing:0;text-transform:none;margin-top:18px}
+#p1{background:radial-gradient(1000px 900px at 50% 45%,#4a2237 0,#2a1320 60%,#1a0b13 100%)}
+#w1{top:760px;font:400 212px/1 Bodoni;color:transparent;-webkit-background-clip:text;background-clip:text;background-size:1080px 1920px}
+#p1 .cap{top:1100px;color:#f0c9c1}
+#p2{background:#fbf3ef}
+#w2{top:600px;font:400 236px/1 Bodoni;color:transparent;-webkit-text-stroke:2px #3a1f2d}
+#w2f{top:600px;font:400 236px/1 Bodoni;color:#3a1f2d}
+#p2 .cap{top:900px;color:#8f544e}
+#arch2{position:absolute;left:390px;width:300px;top:1130px;height:463px;-webkit-mask-image:url(arch-inner.svg);-webkit-mask-size:100% 100%;overflow:hidden}
+#arch2 img{position:absolute;left:-150px;top:-170px;width:600px;height:1060px;object-fit:cover}
+#p3{background:linear-gradient(170deg,#f8dcdc,#efc3c6)}
+#w3{top:720px;font:italic 400 320px/1 Bodoni;color:#b03a64}
+#p3 .cap{top:1120px;color:#8f544e}
+#p4{background:linear-gradient(165deg,#c99088 0,#9c5d56 55%,#6e3a38 100%)}
+#w4{top:700px;font:400 360px/1 Bodoni;color:#fdf7f5;letter-spacing:.04em}
+#p4 .cap{top:1130px;color:#fdf7f5}
+#p4 .cap b{color:#fbe3dc}
+
+/* ACTE 4 — le site */
+#a4{background:radial-gradient(1200px 900px at 50% 60%,#fdf2ee 0,#f6e0da 60%,#efd0cb 100%)}
+#fan{position:absolute;inset:0;perspective:2600px;perspective-origin:540px 1150px}
+#fanIn{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:540px 1180px}
+.phone{position:absolute;left:225px;top:515px;width:630px;height:1330px;border-radius:78px;background:linear-gradient(145deg,#2c1621,#12080d);padding:15px;box-shadow:0 80px 140px -40px rgba(58,31,45,.55),0 0 0 2px #c48a82 inset,0 0 0 5px #3a1f2d inset;transform-origin:315px 665px}
+.phone::after{content:"";position:absolute;inset:0;border-radius:78px;background:linear-gradient(115deg,rgba(255,255,255,.2) 0,rgba(255,255,255,0) 26%,rgba(255,255,255,0) 72%,rgba(255,255,255,.08) 100%);pointer-events:none}
+.screen{position:relative;width:600px;height:1300px;border-radius:64px;overflow:hidden;background:#fdf7f5}
+.lay{position:absolute;inset:0;overflow:hidden}
+.lay img.shot{position:absolute;left:0;top:0;width:600px}
+.lay img.tab{position:absolute;left:0;bottom:0;width:600px}
+.notch{position:absolute;left:50%;top:14px;width:150px;height:40px;margin-left:-75px;background:#12080d;border-radius:24px;z-index:6}
+.shadow{position:absolute;width:560px;height:80px;border-radius:50%;background:radial-gradient(closest-side,rgba(58,31,45,.35),transparent);filter:blur(6px)}
+.card{position:absolute;left:0;top:0;background:#fdf7f5;border-radius:30px;box-shadow:0 40px 80px -24px rgba(58,31,45,.5),0 0 0 1px rgba(58,31,45,.05);overflow:hidden}
+.card img{display:block}
+#finger{position:absolute;left:0;top:0;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.96),rgba(255,255,255,.8) 60%,rgba(240,201,193,.85));box-shadow:0 14px 30px -6px rgba(58,31,45,.5),0 0 0 2px rgba(255,255,255,.9)}
+.ripple{position:absolute;left:0;top:0;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:3px solid rgba(176,58,100,.7);background:rgba(176,58,100,.12)}
+#badge{position:absolute;left:0;top:0;height:88px;padding:0 34px 0 16px;border-radius:999px;background:#b03a64;color:#fff;display:flex;align-items:center;gap:14px;font:600 34px Jost;box-shadow:0 26px 50px -16px rgba(176,58,100,.6)}
+#badge .ico{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center}
+#badge svg{width:30px;height:30px}
+#check{position:absolute;left:0;top:0;width:150px;height:150px;overflow:visible}
+.hl{position:absolute;left:80px;right:80px;top:150px}
+.hl .kick{color:#8f544e}
+.hl .ttl{color:#3a1f2d;margin-top:20px}
+.hl .ttl i{color:#b03a64}
+
+/* ACTE 5 — Sénégal */
+#a5{background:radial-gradient(1200px 1100px at 50% 55%,#452034 0,#2a1320 55%,#170a11 100%)}
+#topo,#route{position:absolute;inset:0;overflow:visible}
+.city{position:absolute;left:0;top:0;font:500 38px Jost;color:#fdf7f5;white-space:nowrap;letter-spacing:.02em;text-shadow:0 2px 12px rgba(20,8,14,.6)}
+#a5h{position:absolute;left:80px;right:80px;top:140px}
+#a5h .kick{color:#e9bcb1}
+#a5h .ttl{color:#fdf7f5;margin-top:20px}
+#a5h .ttl i{color:#f0c9c1}
+#a5sub{position:absolute;left:80px;top:420px;font:400 32px Jost;color:rgba(253,247,245,.78);letter-spacing:.04em}
+#fetes{position:absolute;left:0;width:1080px;top:0}
+.fete{position:absolute;left:0;width:1080px;text-align:center;font:italic 400 176px/1 Bodoni;color:#fdf7f5;white-space:nowrap}
+.fete.on{color:transparent;background:linear-gradient(100deg,#fbe3dc,#f0c9c1 40%,#c48a82 70%,#fbe3dc);-webkit-background-clip:text;background-clip:text}
+#fetesKick{position:absolute;left:0;width:1080px;top:260px;text-align:center;color:#e9bcb1}
+#wolof{position:absolute;left:0;width:1080px;top:1700px;text-align:center;font:italic 400 54px Bodoni;color:#f0c9c1}
+
+/* ACTE 6 — signature */
+#a6{background:radial-gradient(1100px 1000px at 50% 40%,#5e2d46 0,#3a1f2d 52%,#1e0d16 100%)}
+#logo6{position:absolute;inset:0;transform-origin:540px 900px}
+#m6{position:absolute;left:420px;top:420px;width:240px;height:327px;overflow:visible;filter:drop-shadow(0 0 30px rgba(240,201,193,.25))}
+#n6{position:absolute;left:250px;top:805px;width:580px;height:128px}
+#tag6{position:absolute;left:0;width:1080px;top:990px;text-align:center;font:italic 400 84px Bodoni;color:#fdf7f5}
+#tag6 i{color:#f0c9c1}
+#sub6{position:absolute;left:0;width:1080px;top:1125px;text-align:center;color:#e9bcb1}
+#cta{position:absolute;left:50%;top:1290px;height:116px;padding:0 56px 0 30px;border-radius:999px;background:#25d366;color:#05301a;display:flex;align-items:center;gap:22px;font:600 38px Jost;white-space:nowrap;box-shadow:0 34px 70px -22px rgba(0,0,0,.6)}
+#cta svg{width:62px;height:62px}
+#pay6{position:absolute;left:0;width:1080px;top:1500px;text-align:center;font:400 30px Jost;letter-spacing:.06em;color:rgba(253,247,245,.8)}
+
+/* calques globaux */
+#dust{position:absolute;inset:0;pointer-events:none;z-index:30}
+.sp{position:absolute;left:0;top:0;width:30px;height:30px;background:linear-gradient(135deg,#fff4ec,#f0c9c1 55%,#c48a82);clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)}
+.bokeh{position:absolute;left:0;top:0;border-radius:50%;background:radial-gradient(circle,rgba(255,236,226,.4),rgba(240,201,193,.08) 50%,transparent 70%);filter:blur(4px)}
+#leak{position:absolute;inset:0;z-index:40;pointer-events:none;mix-blend-mode:screen}
+#leak i{position:absolute;left:0;top:0;width:1400px;height:1400px;margin:-700px;border-radius:50%;background:radial-gradient(circle,rgba(255,200,170,.85),rgba(255,160,150,.35) 40%,transparent 70%)}
+#flash{position:absolute;inset:0;z-index:41;pointer-events:none;background:radial-gradient(900px 900px at 50% 42%,#fff6f0,rgba(255,230,220,.6) 45%,transparent 75%);opacity:0}
+#vig{position:absolute;inset:0;z-index:42;pointer-events:none;background:radial-gradient(1300px 1750px at 50% 50%,transparent 58%,rgba(20,8,14,.3) 100%)}
+#grain{position:absolute;left:-64px;top:-64px;width:1208px;height:2048px;z-index:43;opacity:.05;mix-blend-mode:overlay;pointer-events:none}
+</style></head><body>
+<div id="world">
+ <div class="act" id="a1bg"></div>
+
+ <!-- ACTE 2 (aussi visible à travers la porte de l'acte 1) -->
+ <div class="act" id="a2">
+  <div class="bgGlow"></div>
+  <div id="belle"></div>
+  <div id="noirKick" class="kick"></div>
+  <div id="noir"></div>
+  <div id="footWrap"><img id="foot1" alt=""></div>
+  <svg id="archLine" viewBox="23.2 11.2 53.6 82.8" preserveAspectRatio="none"><path id="archLineP" d="M23.2 94V38A26.8 26.8 0 0 1 76.8 38V94" fill="none" stroke="#c48a82" stroke-width="2" vector-effect="non-scaling-stroke" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+  <div id="chaque"></div>
+  <div id="a2kick" class="kick abs"></div>
+  <div id="a2coord" class="kick abs"></div>
+  <div id="chip2" class="chip">{{ICON_SPARK}}Sandales · cuir noir &amp; détails dorés</div>
+ </div>
+
+ <div class="act" id="a1fg">
+  <div id="logo1">
+   <svg id="m1" viewBox="17 5 66 90">{{MONO_DEFS}}
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="1.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <clipPath id="c1"><rect id="c1r" x="0" y="100" width="100" height="100"/></clipPath>
+    <clipPath id="c1s"><path d="{{ARCH}}"/></clipPath>
+    <clipPath id="c1p"><rect id="c1pr" x="30" y="70" width="0" height="20"/></clipPath>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <g id="m1fill"><g clip-path="url(#c1)"><path d="{{ARCH}}" fill="url(#mp)"/></g>
+     <path id="m1M" d="{{M}}" fill="url(#mg)" fill-opacity="0" stroke="url(#mg)" stroke-width=".35" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+     <path d="{{PAR}}" fill="url(#mg)" clip-path="url(#c1p)"/>
+     <g clip-path="url(#c1s)"><rect id="m1shine" x="-40" y="0" width="22" height="100" fill="url(#shine)" transform="skewX(-18)"/></g></g>
+    <path id="m1ring" d="{{RING}}" fill="none" stroke="url(#mg)" stroke-width=".9" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" filter="url(#glow)"/>
+    <path id="m1diam" d="{{DIAM}}" fill="url(#mg)"/>
+   </svg>
+   <svg id="n1" viewBox="-1 -1 271.2 60"><clipPath id="n1c"><rect id="n1r" x="-1" y="-1" width="0" height="62"/></clipPath><g clip-path="url(#n1c)">{{NOM_CLAIR}}</g></svg>
+   <div id="tag1" class="kick">Chaussures &amp; sacs · Dakar</div>
+  </div>
+  <div class="glint" id="glint1"><i></i></div>
+ </div>
+
+ <!-- ACTE 3 -->
+ <div class="act" id="a3">
+  <div class="pnl" id="p1"><div class="idx" style="color:#e9bcb1">01 / 04</div><div class="side" style="color:#e9bcb1">MAEFA</div><div class="word" id="w1"></div><div class="cap kick">Soirées · mariages<b>dès 32 000 FCFA</b></div></div>
+  <div class="pnl" id="p2"><div class="idx" style="color:#8f544e">02 / 04</div><div class="side" style="color:#8f544e">MAEFA</div><div class="word" id="w2"></div><div class="word" id="w2f"></div><div class="cap kick">Plates, dorées, à talons<b>dès 18 000 FCFA</b></div><div id="arch2"><img id="foot2" alt=""></div></div>
+  <div class="pnl" id="p3"><div class="idx" style="color:#8f544e">03 / 04</div><div class="side" style="color:#8f544e">MAEFA</div><div class="word" id="w3"></div><div class="cap kick">Chic sans effort<b>dès 24 500 FCFA</b></div></div>
+  <div class="pnl" id="p4"><div class="idx" style="color:#fbe3dc">04 / 04</div><div class="side" style="color:#fbe3dc">MAEFA</div><div class="word" id="w4"></div><div class="cap kick">Cabas · pochettes · sacs à main<b>dès 16 500 FCFA</b></div></div>
+ </div>
+
+ <!-- ACTE 4 -->
+ <div class="act" id="a4">
+  <div class="hl" id="h41"></div><div class="hl" id="h42"></div><div class="hl" id="h43"></div>
+  <div class="shadow" id="sh2" style="left:260px;top:1830px"></div>
+  <div id="fan"><div id="fanIn"></div></div>
+  <div class="card" id="u-price"><img src="el/price.png" style="width:300px;margin:26px 34px"></div>
+  <div class="card" id="u-colors"><img src="el/colors.png" style="width:470px;margin:22px 26px"></div>
+  <div class="card" id="u-add" style="background:transparent;box-shadow:0 40px 80px -24px rgba(58,31,45,.55);border-radius:999px"><img src="el/add.png" style="width:420px;margin:-8px -8px"></div>
+  <div class="card" id="u-wa" style="border-radius:999px"><img src="el/whatsapp.png" style="width:640px;margin:-4px -6px"></div>
+  <div class="card" id="t-wave" style="border-radius:28px"><img src="el/pay-wave.png" style="width:620px"></div>
+  <div class="card" id="t-om" style="border-radius:28px"><img src="el/pay-om.png" style="width:620px"></div>
+  <div class="card" id="t-card" style="border-radius:28px"><img src="el/pay-card.png" style="width:620px"></div>
+  <div class="card" id="t-cash" style="border-radius:28px"><img src="el/pay-cash.png" style="width:620px"></div>
+  <div class="card" id="u-merci" style="border-radius:34px"><img src="el/merci.png" style="width:440px;margin:8px 0"></div>
+  <svg id="check" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#b03a64"/><circle id="checkRing" cx="50" cy="50" r="46" fill="none" stroke="#f0c9c1" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 50 50)"/><path id="checkTick" d="M30 52l13 13 27-29" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+  <div id="badge"><span class="ico">{{ICON_BAG}}</span>+1 · ajouté au panier</div>
+  <div class="ripple" id="rip"></div>
+  <div id="finger"></div>
+ </div>
+
+ <!-- ACTE 5 -->
+ <div class="act" id="a5">
+  <svg id="topo" viewBox="0 0 1080 1920"></svg>
+  <svg id="route" viewBox="0 0 1080 1920">
+   <defs><mask id="routeMask"><path id="routeRev" fill="none" stroke="#fff" stroke-width="40" stroke-linecap="round"/></mask></defs>
+   <path id="routeGhost" fill="none" stroke="rgba(240,201,193,.12)" stroke-width="3"/>
+   <path id="routeDots" fill="none" stroke="#f0c9c1" stroke-width="8" stroke-linecap="round" stroke-dasharray="0.1 22" mask="url(#routeMask)"/>
+   <circle id="pulse" r="20" fill="none" stroke="#f0c9c1" stroke-width="3"/>
+   <circle id="courier" r="15" fill="#fdf7f5" stroke="#c48a82" stroke-width="5"/>
+  </svg>
+  <div id="cities"></div>
+  <div id="a5h"></div>
+  <div id="a5sub">24 h à Dakar · 48 à 72 h en régions</div>
+  <div id="fetesKick" class="kick"></div>
+  <div id="fetes"></div>
+  <div id="wolof">Dalal ak jàmm</div>
+ </div>
+
+ <!-- ACTE 6 -->
+ <div class="act" id="a6">
+  <div id="logo6">
+   <svg id="m6" viewBox="17 5 66 90">{{MONO_DEFS6}}
+    <linearGradient id="shine6" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <clipPath id="c6s"><path d="{{ARCH}}"/></clipPath>
+    <path d="{{ARCH}}" fill="url(#emp)" stroke="#c48a82" stroke-width=".6"/>
+    <path id="m6ring" d="{{RING}}" fill="none" stroke="url(#emg)" stroke-width=".85" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+    <path d="{{DIAM}}" fill="url(#emg)"/><path d="{{M}}" fill="url(#emg)"/><path d="{{PAR}}" fill="url(#emg)"/>
+    <g clip-path="url(#c6s)"><rect id="m6shine" x="-40" y="0" width="22" height="100" fill="url(#shine6)" transform="skewX(-18)"/></g>
+   </svg>
+   <svg id="n6" viewBox="-1 -1 271.2 60"><clipPath id="n6c"><rect id="n6r" x="-1" y="-1" width="0" height="62"/></clipPath><g clip-path="url(#n6c)">{{NOM_CLAIR}}</g></svg>
+   <div id="tag6"></div>
+   <div id="sub6" class="kick">Chaussures &amp; sacs · Dakar</div>
+   <div id="cta"><svg viewBox="0 0 256 258">{{WA}}</svg>Commander sur WhatsApp</div>
+   <div id="pay6">Wave · Orange Money · Carte · à la livraison</div>
+  </div>
+ </div>
+</div>
+<div id="dust"></div>
+<div id="leak"><i id="lk1"></i><i id="lk2"></i></div>
+<div id="flash"></div>
+<div id="vig"></div>
+<canvas id="grain" width="604" height="1024"></canvas>
+<script src="anim.js"></script>
+</body></html>
