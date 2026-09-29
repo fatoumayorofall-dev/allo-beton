@@ -273,9 +273,9 @@ export const ProductDetail: React.FC = () => {
               </div>
             )}
 
-            <p className={`mt-6 text-xs flex items-center gap-2 ${outOfStock ? 'text-wine' : preorder ? 'text-wine' : product.stock <= 5 ? 'text-amber-800' : 'text-emerald-800'}`} data-testid="stock-line">
-              <span className={`w-1.5 h-1.5 rounded-full ${outOfStock || preorder ? 'bg-wine' : product.stock <= 5 ? 'bg-amber-600 animate-pulse' : 'bg-emerald-600'}`} />
-              {outOfStock ? 'Épuisé — bientôt de retour' : preorder ? `Sur commande — livrée sous ${product.preorderDays} jours (paiement à la commande)` : product.stock <= 5 ? `Plus que ${product.stock} pièce${product.stock > 1 ? 's' : ''} disponible${product.stock > 1 ? 's' : ''}` : 'En stock — expédié sous 24h'}
+            <p className={`mt-6 text-xs flex items-center gap-2 ${outOfStock ? 'text-wine' : preorder ? 'text-wine' : 'text-emerald-800'}`} data-testid="stock-line">
+              <span className={`w-1.5 h-1.5 rounded-full ${outOfStock || preorder ? 'bg-wine' : 'bg-emerald-600'}`} />
+              {outOfStock ? 'Épuisé — bientôt de retour' : preorder ? `Sur commande — livrée sous ${product.preorderDays} jours (paiement à la commande)` : 'Disponible — expédié sous 24h'}
             </p>
 
             <div ref={buyRef} className="mt-5 flex gap-2">

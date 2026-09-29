@@ -59,7 +59,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
         <div className="absolute top-3 left-3 flex flex-col items-start gap-1.5 pointer-events-none">
           {outOfStock && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink/75">Épuisé</span>}
           {preorder && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink" data-testid="badge-preorder">Sur commande · {product.preorderDays} j</span>}
-          {!outOfStock && !preorder && product.stock <= 3 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink">Plus que {product.stock}</span>}
+          
           {off > 0 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">-{off}%</span>}
           {product.isNew && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink">Nouveau</span>}
           {!product.isNew && !off && product.isBestseller && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-gold-dark">Coup de cœur</span>}

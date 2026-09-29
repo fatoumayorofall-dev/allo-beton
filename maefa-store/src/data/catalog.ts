@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 12;
+export const CATALOG_VERSION = 13;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -54,6 +54,9 @@ export const COLORS = {
 /** Pointures proposées par défaut pour les chaussures. */
 export const SHOE_SIZES = ['36', '37', '38', '39', '40', '41'];
 
+/** Stock non affiché aux clientes : simple plafond de commande (0 = épuisé, réglable dans l'admin). */
+const STOCK = 20;
+
 let n = 100;
 const p = (data: Omit<Product, 'id' | 'createdAt'> & { createdAt?: string }): Product => {
   n += 1;
@@ -82,7 +85,7 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   video: video ? `/videos/sac-ndella-${key}.mp4` : undefined,
   colors: [color],
   sizes: [],
-  stock: 3,
+  stock: STOCK,
   description: `Le sac Ndella en ${color.name.toLowerCase()} : une silhouette structurée, un rabat aux lignes douces, une anse sur le dessus et une bandoulière amovible. Chic en toutes circonstances.`,
   details: ['Sac à main à rabat', `Couleur : ${color.name}`, 'Aspect daim, finitions lisses', 'Anse sur le dessus et bandoulière amovible', 'Livré dans un emballage Maefa'],
   rating: 0,
@@ -107,7 +110,7 @@ const mules = (color: ColorOption, key: string, photos = 1, video = false) => p(
   video: video ? `/videos/mules-croisees-strass-${key}.mp4` : undefined,
   colors: [color],
   sizes: SHOE_SIZES,
-  stock: 6,
+  stock: STOCK,
   description: `Des mules plates Zara en ${color.name.toLowerCase()} : une large bride croisée effet surpiqué et trois fines brides à strass. Faciles à enfiler, confortables et habillées à la fois.`,
   details: ['Marque : Zara', 'Mules plates à enfiler', `Couleur : ${color.name}`, 'Bride croisée surpiquée et brides à strass', 'Semelle plate confortable', 'Pointures du 36 au 41'],
   rating: 0,
@@ -131,7 +134,7 @@ const tongs = (color: ColorOption, key: string) => p({
   video: `/videos/tongs-anneau-dore-${key}.mp4`,
   colors: [color],
   sizes: SHOE_SIZES,
-  stock: 6,
+  stock: STOCK,
   description: `Des tongs plates Zara en ${color.name.toLowerCase()}, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir.`,
   details: ['Marque : Zara', 'Tongs plates, bride entre les doigts', `Couleur : ${color.name}`, 'Grand anneau en métal doré', 'Semelle plate confortable', 'Pointures du 36 au 41'],
   rating: 0,
@@ -154,7 +157,7 @@ const awa = (color: ColorOption, key: string) => p({
   images: [`/produits/sac-awa-${key}-1.jpg`],
   colors: [color],
   sizes: [],
-  stock: 3,
+  stock: STOCK,
   description: `Le sac Awa en ${color.name.toLowerCase()} : une forme bowling structurée, un fermoir doré façon sac de docteur, une bande plissée au centre et des finitions effet croco. Élégant et spacieux.`,
   details: ['Sac à main à fermoir doré', `Couleur : ${color.name}`, 'Bande centrale plissée', 'Bandes et anses effet croco', 'Deux anses portées main'],
   rating: 0,
@@ -178,7 +181,7 @@ const soxna = (color: ColorOption, key: string, price = 22000) => p({
   video: `/videos/sac-soxna-${key}.mp4`,
   colors: [color],
   sizes: [],
-  stock: 3,
+  stock: STOCK,
   description: `Le sac Soxna en ${color.name.toLowerCase()} : un rabat effet croco verni, des empiècements lisses en Y et une anse carrée en métal doré. Il se porte aussi en bandoulière.`,
   details: ['Sac à rabat', `Couleur : ${color.name}`, 'Effet croco verni et empiècements lisses', 'Anse carrée en métal doré', 'Bandoulière'],
   rating: 0,

@@ -383,9 +383,9 @@ const PinChanger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-/** Petit signal qui donne envie de ne pas attendre : prix en baisse ou dernières pièces. */
+/** Petit signal sur un favori : prix en baisse ou pièce sur commande (le stock n'est jamais affiché). */
 const favSignal = (p: Product) =>
-  p.stock > 0 && p.stock <= 3 ? `Plus que ${p.stock}` : p.oldPrice && p.oldPrice > p.price ? 'Prix doux' : p.stock <= 0 && p.preorderDays ? 'Sur commande' : null;
+  p.oldPrice && p.oldPrice > p.price ? 'Prix doux' : p.stock <= 0 && p.preorderDays ? 'Sur commande' : null;
 
 /** Étapes affichées pour la dernière commande. */
 const STEPS: { status: OrderStatus[]; label: string }[] = [

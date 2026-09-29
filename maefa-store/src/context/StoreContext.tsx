@@ -264,7 +264,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const preorder = isPreorder(product) ? { days: product.preorderDays! } : undefined;
     const available = (preorder ? PREORDER_MAX : product.stock) - inCart;
     if (available <= 0) {
-      notify(preorder ? `Maximum ${PREORDER_MAX} pièces sur commande` : product.stock <= 0 ? 'Cet article est épuisé' : `Stock maximum atteint (${product.stock})`, 'error');
+      notify(preorder ? `Maximum ${PREORDER_MAX} pièces sur commande` : product.stock <= 0 ? 'Cet article est épuisé' : 'Quantité maximale atteinte pour cette pièce', 'error');
       return false;
     }
     const qty = Math.min(quantity, available);
