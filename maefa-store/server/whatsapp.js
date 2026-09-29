@@ -9,7 +9,7 @@ const {
   TWILIO_ACCOUNT_SID = '',
   TWILIO_AUTH_TOKEN = '',
   TWILIO_WHATSAPP_FROM = '',          // ex : whatsapp:+14155238886 (bac à sable) ou votre numéro WhatsApp Business
-  OWNER_WHATSAPP = '',                // numéro de la gérante, ex : +221770000000
+  OWNER_WHATSAPP = '+221773093819',  // numéro de la gérante : reçoit chaque nouvelle commande
   SITE_URL = 'http://localhost:5174',
   // Modèles de messages approuvés par Meta (obligatoires hors fenêtre de 24 h en production)
   TWILIO_TPL_NEW_ORDER = '',
