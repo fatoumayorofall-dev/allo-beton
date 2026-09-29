@@ -7,9 +7,12 @@
 //  - relais : plusieurs livreurs à la suite (moto → car longue distance → moto…),
 //    chacun avec son lien ; la cliente suit le colis de main en main
 //  - WhatsApp : « en route », passage de relais, « il arrive », « livrée »
+//  - mieux que Yango : vrai trajet par les rues et temps d'arrivée selon les
+//    embouteillages de Dakar, code de remise à 4 chiffres (le colis n'est
+//    déclaré livré que si la cliente donne son code), note du livreur
 // ============================================================
 import crypto from 'node:crypto';
-import { distanceM, etaMinutes, reverseGeocode, searchPlaces, validPoint } from './geo.js';
+import { distanceM, etaMinutes, reverseGeocode, roadRoute, routeEtaMinutes, searchPlaces, validPoint } from './geo.js';
 import { checkMarketItems } from './market.js';
 import { applyStock, checkStock } from './catalog.js';
 
@@ -46,6 +49,70 @@ const legState = l => (l.doneAt ? 'remis' : l.startedAt ? 'en_route' : 'attente'
 /** Où va le livreur de cette étape : point de relais, ou la maison de la cliente pour la dernière étape. */
 const legTarget = (leg, order) => (leg.to ? (Number.isFinite(leg.to.lat) ? leg.to : null) : order.customer.location ?? null);
 
+/* ---------- Trajet par la route ---------- */
+const ROUTE_EVERY_MS = 30e3;   // recalcul régulier (trafic, raccourcis du livreur)…
+const ROUTE_MIN_MS = 8e3;      // …ou plus tôt s'il quitte le trajet prévu, jamais plus d'une fois par 8 s
+const ROUTE_OFF_M = 90;        // écart au trajet à partir duquel on recalcule
+const ROUTE_MAX_AGE_MS = 5 * 60e3;
+
+/**
+ * Tronçon du tracé le plus proche du livreur : { index (début du tronçon), distance en mètres }.
+ * Projection locale plate, largement assez précise à cette échelle.
+ */
+function nearestSegment(path, p) {
+  const kx = 111320 * Math.cos((p.lat * Math.PI) / 180), ky = 110540;
+  let best = { index: 0, distance: Infinity };
+  for (let k = 0; k < path.length - 1; k++) {
+    const ax = (path[k][1] - p.lng) * kx, ay = (path[k][0] - p.lat) * ky;
+    const bx = (path[k + 1][1] - p.lng) * kx, by = (path[k + 1][0] - p.lat) * ky;
+    const dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+    const t = len ? Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len)) : 0;
+    const d = Math.hypot(ax + t * dx, ay + t * dy);
+    if (d < best.distance) best = { index: k, distance: d };
+  }
+  return best;
+}
+
+/**
+ * Distance et temps restants : par la route quand l'itinéraire est connu
+ * (au prorata du chemin déjà fait), sinon à vol d'oiseau.
+ */
+function remaining(leg, target) {
+  const pos = leg.position;
+  if (!pos || !target) return null;
+  const straight = distanceM(pos, target);
+  const r = leg.route;
+  if (r && Date.now() - r.at < ROUTE_MAX_AGE_MS && r.straight > 0) {
+    const ratio = Math.min(1.15, straight / r.straight);
+    const route = { distanceM: r.distanceM * ratio, durationS: r.durationS * ratio };
+    return { distanceM: Math.round(route.distanceM), etaMin: routeEtaMinutes(route, leg.vehicle), routed: true };
+  }
+  return { distanceM: Math.round(straight), etaMin: etaMinutes(pos, target, leg.vehicle), routed: false };
+}
+
+/** Chemin restant, depuis la position exacte du livreur. */
+function pathLeft(leg) {
+  const path = leg.route.path, pos = leg.position;
+  return [[pos.lat, pos.lng], ...path.slice(nearestSegment(path, pos).index + 1)];
+}
+
+/** Recalcule l'itinéraire si besoin (sans jamais bloquer le livreur si le service ne répond pas). */
+async function refreshRoute(leg, target) {
+  const pos = leg.position;
+  if (!pos || !target) return;
+  const r = leg.route;
+  const age = r ? Date.now() - r.at : Infinity;
+  if (r && age < ROUTE_MIN_MS) return;
+  if (r && age < ROUTE_EVERY_MS) {
+    if (nearestSegment(r.path, pos).distance < ROUTE_OFF_M) return;
+  }
+  const got = await roadRoute(pos, target);
+  if (got) leg.route = { ...got, at: Date.now(), straight: distanceM(pos, target) };
+}
+
+/** Code de remise : 4 chiffres, donné par la cliente au livreur (jamais montré aux livreurs). */
+const newCode = () => String(crypto.randomInt(0, 10000)).padStart(4, '0');
+
 /** Vue « livraison » partagée avec la cliente et les livreurs (jamais les liens secrets). */
 function publicDelivery(d, order) {
   const legs = d?.legs ?? [];
@@ -74,11 +141,16 @@ function publicDelivery(d, order) {
   };
   if (state === 'en_route' && active.position) {
     out.position = { ...active.position, stale: Date.now() - Date.parse(active.position.at) >= POSITION_FRESH_MS };
-    if (target) {
-      out.distanceM = Math.round(distanceM(active.position, target));
-      out.etaMin = etaMinutes(active.position, target, active.vehicle);
+    const left = remaining(active, target);
+    if (left) {
+      out.distanceM = left.distanceM;
+      out.etaMin = left.etaMin;
+      out.routed = left.routed;
     }
+    // Le chemin qui reste, dessiné sur la carte
+    if (left?.routed) out.route = pathLeft(active);
   }
+  if (d.code) out.secured = true;
   return out;
 }
 
@@ -105,7 +177,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     const d = store.getDelivery(order.id);
     const legs = d?.legs ?? [];
     const r = status === 'expediee'
-      ? await wa.sendWhatsApp(order.customer.phone, wa.buildOnTheWayMessage(order, legs[0]?.driverName, legs))
+      ? await wa.sendWhatsApp(order.customer.phone, wa.buildOnTheWayMessage(order, legs[0]?.driverName, legs, d?.code))
       : await wa.notifyStatus(order, status);
     logSend(order, status, 'cliente', r);
     if (status === 'expediee' && legs.length) { legs[0].customerNotified = true; store.saveDelivery(order.id, d); }
@@ -158,7 +230,26 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     const { notifications: _n, supplier, ...rest } = order;
     // La cliente voit l'étape chez le fournisseur et le suivi, jamais le coût ni les liens fournisseurs
     if (supplier) rest.supplier = { status: supplier.status, history: supplier.history, tracking: supplier.tracking, trackingUrl: supplier.trackingUrl };
-    res.json({ order: rest, delivery: publicDelivery(store.getDelivery(order.id), order) });
+    const d = store.getDelivery(order.id);
+    const delivery = publicDelivery(d, order);
+    // Le code de remise n'est montré qu'à la cliente (numéro de commande + son téléphone)
+    if (delivery && d.code && delivery.state !== 'livree') delivery.code = d.code;
+    res.json({ order: rest, delivery });
+  });
+
+  /* ---------- Cliente : noter la livraison ---------- */
+  app.post('/api/orders/rating', (req, res) => {
+    if (!limit(`rating:${req.ip}`, 20, 3600e3)) return res.status(429).json({ error: 'Trop de demandes' });
+    const b = req.body || {};
+    const order = store.getShopOrder(clip(b.id, 20).toUpperCase());
+    if (!order || last9(order.customer.phone) !== last9(b.phone) || last9(b.phone).length < 9) return res.status(404).json({ error: 'Commande introuvable' });
+    if (order.status !== 'livree') return res.status(409).json({ error: 'La commande n\'est pas encore livrée' });
+    const stars = Math.round(Number(b.stars));
+    if (!(stars >= 1 && stars <= 5)) return res.status(400).json({ error: 'Note entre 1 et 5' });
+    const legs = store.getDelivery(order.id)?.legs ?? [];
+    order.rating = { stars, comment: clip(b.comment, 500) || undefined, driverName: legs[legs.length - 1]?.driverName, at: new Date().toISOString() };
+    store.saveShopOrder(order);
+    res.json({ rating: order.rating });
   });
 
   /* ---------- Gérante : toutes les commandes ---------- */
@@ -198,7 +289,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     const pub = publicDelivery(d, order);
     if (!pub) return null;
     const legs = d.legs.map((l, k) => ({ ...pub.legs[k], driverLink: driverLink(l) }));
-    return { ...pub, legs, driverLink: legs[pub.current].driverLink };
+    return { ...pub, legs, driverLink: legs[pub.current].driverLink, code: d.code, proof: d.proof };
   };
   const driverMessage = (order, legs, k) => wa.buildDriverMessage(order, driverLink(legs[k]), { index: k, total: legs.length, leg: legs[k], prev: legs[k - 1], next: legs[k + 1] });
 
@@ -252,7 +343,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
       legs.push(leg);
     }
     if (legs[legs.length - 1].to) return res.status(400).json({ error: 'La dernière étape doit aller jusqu\'à la cliente' });
-    const d = store.saveDelivery(order.id, { legs });
+    const d = store.saveDelivery(order.id, { ...(store.getDelivery(order.id) ?? {}), legs, code: store.getDelivery(order.id)?.code ?? newCode() });
     const send = req.body?.send !== false;
     const sent = [];
     for (const k of fresh) {
@@ -298,7 +389,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
           ? { firstName: c.firstName, lastName: c.lastName, phone: c.phone, zone: c.zone, address: c.address, notes: c.notes, location: c.location ?? null }
           : { firstName: c.firstName, lastName: '', phone: '', zone: c.zone, address: '', location: c.location ? { lat: c.location.lat, lng: c.location.lng, label: c.location.label } : null },
       },
-      leg: { index: i, total: legs.length, final, vehicle: leg.vehicle, to: leg.to ?? null, state: legState(leg), target, pickup: prev?.to ?? null },
+      leg: { index: i, total: legs.length, final, vehicle: leg.vehicle, to: leg.to ?? null, state: legState(leg), target, pickup: prev?.to ?? null, needsCode: final && !!d.code },
       prev: prevInfo || null,
       next: next ? summary(next) : null,
       delivery: publicDelivery(d, order),
@@ -315,7 +406,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     next.startedAt ??= now;
     if (!next.customerNotified) {
       next.customerNotified = true;
-      logSend(order, 'expediee', 'cliente', await wa.sendWhatsApp(order.customer.phone, wa.buildHandoverMessage(order, next, k + 1, legs.length)));
+      logSend(order, 'expediee', 'cliente', await wa.sendWhatsApp(order.customer.phone, wa.buildHandoverMessage(order, next, k + 1, legs.length, d.code)));
     }
     // Remis par le livreur précédent : le suivant est invité à ouvrir son lien
     if (by === 'giver') await wa.sendWhatsApp(next.driverPhone, wa.buildRelayMessage('remis', order, legs[k], driverLink(next)));
@@ -336,7 +427,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     for (let k = 0; k < i; k++) if (!d.legs[k].doneAt) await handover(order, d, k, 'receiver');
     leg.startedAt ??= new Date().toISOString();
     const pos = cleanPosition(req.body);
-    if (pos) leg.position = pos;
+    if (pos) { leg.position = pos; await refreshRoute(leg, legTarget(leg, order)); }
     store.saveDelivery(order.id, d);
     setStatus(order, 'expediee');
     if (i === 0 && !leg.customerNotified) await notifyCustomer(order, 'expediee');
@@ -373,8 +464,9 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     if (!pos) return res.status(400).json({ error: 'Position invalide' });
     leg.position = pos;
     const dest = legTarget(leg, order);
+    await refreshRoute(leg, dest);
     const dist = dest ? distanceM(pos, dest) : null;
-    const eta = dest ? etaMinutes(pos, dest, leg.vehicle) : null;
+    const eta = remaining(leg, dest)?.etaMin ?? null;
     if (dist !== null && !leg.nearNotified) {
       if (!leg.to && dist < NEAR_M) {
         leg.nearNotified = true;
@@ -386,7 +478,8 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
       }
     }
     store.saveDelivery(order.id, d);
-    res.json({ distanceM: dist === null ? null : Math.round(dist), etaMin: eta });
+    const left = remaining(leg, dest);
+    res.json({ distanceM: left?.distanceM ?? null, etaMin: eta, route: left?.routed ? pathLeft(leg) : null });
   });
 
   /** « Colis remis » : à la cliente (dernière étape) ou au livreur suivant (relais). */
@@ -398,6 +491,12 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
       if (leg.to) {
         await handover(order, d, i, 'giver');
       } else {
+        // Code de remise : la preuve que la cliente a bien reçu son colis
+        if (d.code) {
+          if (!limit(`code:${req.params.token}`, 6, 15 * 60e3)) return res.status(429).json({ error: 'Trop d\'essais. Appelez la boutique.' });
+          if (String(req.body?.code ?? '').replace(/\D/g, '') !== d.code) return res.status(403).json({ error: 'Code incorrect. Demandez à la cliente le code reçu par WhatsApp.' });
+          d.proof = { by: 'code', at: new Date().toISOString(), position: leg.position ? { lat: leg.position.lat, lng: leg.position.lng } : null };
+        }
         for (let k = 0; k < i; k++) d.legs[k].doneAt ??= new Date().toISOString();
         leg.startedAt ??= new Date().toISOString();
         leg.doneAt = new Date().toISOString();

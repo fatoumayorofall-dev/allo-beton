@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
+import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, DeliveryRating, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -263,7 +263,7 @@ export interface DriverJob {
     customer: { firstName: string; lastName: string; phone: string; zone: string; address: string; notes?: string; location: DeliveryLocation | null };
   };
   /** Mon étape : où je récupère le colis (pickup) et où je l'amène (target) */
-  leg: { index: number; total: number; final: boolean; vehicle: Vehicle; to: RelayPoint | null; state: DeliveryLeg['state']; target: { lat: number; lng: number; label?: string } | null; pickup: RelayPoint | null };
+  leg: { index: number; total: number; final: boolean; vehicle: Vehicle; to: RelayPoint | null; state: DeliveryLeg['state']; target: { lat: number; lng: number; label?: string } | null; pickup: RelayPoint | null; needsCode?: boolean };
   /** Livreur précédent (qui m'apporte le colis) */
   prev: (Omit<DeliveryLeg, 'startedAt' | 'doneAt'> & { position: { lat: number; lng: number } | null; etaMin: number | null }) | null;
   /** Livreur suivant (à qui je remets le colis) */
@@ -275,8 +275,11 @@ const driverPath = (token: string, action = '') => `/api/driver/${encodeURICompo
 export const fetchDriverJob = (token: string) => call<DriverJob>(driverPath(token));
 export const driverStart = (token: string, fix?: GpsFix) => call<DriverJob>(driverPath(token, '/start'), { method: 'POST', body: JSON.stringify(fix ?? {}) });
 export const driverPosition = (token: string, fix: GpsFix) =>
-  call<{ distanceM: number | null; etaMin: number | null }>(driverPath(token, '/position'), { method: 'POST', body: JSON.stringify(fix) });
-export const driverDelivered = (token: string) => call<DriverJob>(driverPath(token, '/delivered'), { method: 'POST' });
+  call<{ distanceM: number | null; etaMin: number | null; route: [number, number][] | null }>(driverPath(token, '/position'), { method: 'POST', body: JSON.stringify(fix) });
+export const driverDelivered = (token: string, code?: string) => call<DriverJob>(driverPath(token, '/delivered'), { method: 'POST', body: JSON.stringify(code ? { code } : {}) });
+/** La cliente note sa livraison (numéro de commande + son téléphone). */
+export const rateDelivery = (id: string, phone: string, stars: number, comment: string) =>
+  call<{ rating: DeliveryRating }>('/api/orders/rating', { method: 'POST', body: JSON.stringify({ id, phone, stars, comment }) });
 
 /* Carte : recherche d'adresse (OpenStreetMap via le serveur) */
 export interface PlaceResult { label: string; kind: string; lat: number; lng: number }

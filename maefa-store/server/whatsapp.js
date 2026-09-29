@@ -160,7 +160,10 @@ export function buildDriverMessage(order, link, ctx = {}) {
   return lines.join('\n');
 }
 
-export function buildOnTheWayMessage(order, driverName, legs = []) {
+/** Code de remise : la cliente le donne au livreur, seulement quand elle a son colis en main. */
+const codeLines = code => (code ? [``, `🔐 Votre code de remise : *${code}*`, `Donnez-le au livreur seulement quand vous avez votre colis en main.`] : []);
+
+export function buildOnTheWayMessage(order, driverName, legs = [], code) {
   const lines = [
     `Bonjour ${order.customer.firstName} 🌸`,
     ``,
@@ -168,12 +171,13 @@ export function buildOnTheWayMessage(order, driverName, legs = []) {
   ];
   if (legs.length > 1) lines.push(`Elle voyage en relais jusqu'à vous : ${legs.map(who).join(' → ')}.`);
   lines.push(`Suivez-la en direct sur la carte, comme un taxi :`, trackingUrl(order), ``,
-    legs.length > 1 ? `Vous recevrez un message à chaque passage de relais.` : `Il vient à l'endroit que vous avez indiqué sur la carte, pas besoin d'expliquer le chemin.`);
+    legs.length > 1 ? `Vous recevrez un message à chaque passage de relais.` : `Il vient à l'endroit que vous avez indiqué sur la carte, pas besoin d'expliquer le chemin.`,
+    ...codeLines(code));
   return lines.join('\n');
 }
 
 /** La cliente est prévenue à chaque passage de relais. */
-export function buildHandoverMessage(order, leg, index, total) {
+export function buildHandoverMessage(order, leg, index, total, code) {
   const final = index === total - 1;
   return [
     `Bonjour ${order.customer.firstName} 🌸`,
@@ -182,6 +186,7 @@ export function buildHandoverMessage(order, leg, index, total) {
     final ? `il est maintenant avec ${who(leg)}, qui vous l'apporte jusqu'à chez vous.` : `il est maintenant avec ${who(leg)}, en route vers ${leg.to?.label}.`,
     ``,
     `Suivez-le : ${trackingUrl(order)}`,
+    ...(final ? codeLines(code) : []),
   ].join('\n');
 }
 

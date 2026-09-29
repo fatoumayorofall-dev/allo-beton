@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Phone } from 'lucide-react';
+import { Phone, ShieldCheck } from 'lucide-react';
 import type { DeliveryInfo, DeliveryLocation } from '../data/types';
 import { SHOP_LOCATION } from '../config/site';
 import { VEHICLE_ICONS, formatDistance, formatEta } from '../utils/format';
@@ -55,7 +55,7 @@ export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delive
 
   return (
     <div className={`overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white ${compact ? '' : 'shadow-soft'}`} data-testid="live-tracking">
-      <MapView center={markers[0]} zoom={16} markers={markers} fitMarkers className={compact ? 'h-56' : 'h-80 sm:h-96'} />
+      <MapView center={markers[0]} zoom={16} markers={markers} path={driver ? delivery?.route : null} fitMarkers className={compact ? 'h-56' : 'h-80 sm:h-96'} />
       {delivery && (
         <div className="p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap items-center gap-4">
@@ -74,6 +74,7 @@ export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delive
                     {driver?.stale && ` · position d'il y a ${minutesAgo(driver.at)} min`}
                     {!driver && ' · en attente du GPS'}
                   </p>
+                  {delivery.routed && <p className="text-xs text-ink/65 mt-0.5" data-testid="eta-routed">Calculé par les rues, embouteillages compris</p>}
                 </>
               )}
               {delivery.state === 'assignee' && <><p className="font-display text-2xl leading-tight">{delivery.relay ? 'Livraison en relais prévue' : `Livreur choisi : ${delivery.driverName}`}</p><p className="text-sm text-ink/75">Vous pourrez suivre votre colis ici dès son départ.</p></>}
@@ -85,6 +86,16 @@ export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delive
               </a>
             )}
           </div>
+          {delivery.code && delivery.state !== 'livree' && (
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-ivory border border-ink/[0.07]" data-testid="delivery-code">
+              <ShieldCheck className="w-6 h-6 text-emerald-700 shrink-0" />
+              <div className="flex-1 min-w-0 text-sm">
+                <p className="font-semibold">Votre code de remise</p>
+                <p className="text-ink/70">À donner au livreur seulement quand vous avez votre colis en main.</p>
+              </div>
+              <span className="font-display text-3xl tracking-[0.3em] tabular-nums">{delivery.code}</span>
+            </div>
+          )}
           {!compact && <RelaySteps delivery={delivery} />}
         </div>
       )}

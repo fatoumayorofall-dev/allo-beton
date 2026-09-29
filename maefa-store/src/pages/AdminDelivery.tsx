@@ -146,6 +146,11 @@ export const DeliveryPanel: React.FC<{ order: Order; pin: string; onChanged: () 
               <p><strong>{d.driverName}</strong> · {d.driverPhone} · <span className="text-wine">{STATE_LABELS[legs[0]?.state ?? 'attente']}</span></p>
             )}
             {d.state === 'en_route' && d.etaMin != null && <p className="text-ink/75">{d.final ? 'Chez la cliente' : `Au relais ${d.target?.label ?? ''}`} dans ~{formatEta(d.etaMin)}</p>}
+            {d.code && d.state !== 'livree' && <p className="text-ink/75" data-testid="admin-code">🔐 Code de remise de la cliente : <strong className="tracking-[0.2em]">{d.code}</strong> <span className="text-xs">(à lui redonner si elle l'a perdu)</span></p>}
+            {d.proof && <p className="text-emerald-800">✅ Remise confirmée par le code de la cliente · {new Date(d.proof.at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</p>}
+            {order.rating && (
+              <p data-testid="admin-rating"><span className="text-amber-500 tracking-wider">{'★'.repeat(order.rating.stars)}<span className="text-ink/20">{'★'.repeat(5 - order.rating.stars)}</span></span> <span className="text-ink/75">note de la cliente{order.rating.driverName && ` pour ${order.rating.driverName}`}</span>{order.rating.comment && <span className="block italic text-ink/75">« {order.rating.comment} »</span>}</p>
+            )}
             {legs.map((l, k) => l.state !== 'remis' && l.driverLink && (
               <div key={k} className="flex flex-wrap items-center gap-2">
                 <a href={buildWhatsAppLink(driverText(order, legs, k), waNumber(l.driverPhone))} target="_blank" rel="noopener noreferrer"

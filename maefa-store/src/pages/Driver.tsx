@@ -42,7 +42,8 @@ export const Driver: React.FC = () => {
   const [me, setMe] = useState<GpsFix | null>(null);
   const [gpsError, setGpsError] = useState('');
   const [lastSent, setLastSent] = useState<number | null>(null);
-  const [live, setLive] = useState<{ distanceM: number | null; etaMin: number | null } | null>(null);
+  const [live, setLive] = useState<{ distanceM: number | null; etaMin: number | null; route?: [number, number][] | null } | null>(null);
+  const [code, setCode] = useState('');
   const [, tick] = useState(0);
   const lastPost = useRef(0);
 
@@ -111,11 +112,14 @@ export const Driver: React.FC = () => {
     );
   };
 
-  const delivered = async () => {
+  const delivered = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     const who = job?.next ? job.next.driverName : 'la cliente';
-    if (!window.confirm(`Le colis est bien remis à ${who} ?`)) return;
+    // Avec le code de la cliente, pas besoin de confirmer : le code est la preuve
+    if (!job?.leg.needsCode && !window.confirm(`Le colis est bien remis à ${who} ?`)) return;
     setBusy('done');
-    const r = await driverDelivered(token);
+    setError('');
+    const r = await driverDelivered(token, job?.leg.needsCode ? code : undefined);
     setBusy('');
     if (r.ok) setJob(r.data); else setError(r.error);
   };
@@ -153,6 +157,7 @@ export const Driver: React.FC = () => {
     </div>
   );
   const mapCenter = markers[0] ?? target ?? c.location;
+  const route = driving ? live?.route ?? job.delivery?.route ?? null : null;
 
   return (
     <div className="min-h-screen bg-ivory pb-10" data-testid="driver-page">
@@ -199,7 +204,7 @@ export const Driver: React.FC = () => {
 
         {mapCenter && markers.length > 0 && (
           <Suspense fallback={<div className="h-72 rounded-[1.5rem] bg-blush/30 animate-pulse" />}>
-            <MapView center={mapCenter} zoom={15} markers={markers} fitMarkers className="h-72 rounded-[1.5rem] border border-ink/10" />
+            <MapView center={mapCenter} zoom={15} markers={markers} path={route} fitMarkers className="h-72 rounded-[1.5rem] border border-ink/10" />
           </Suspense>
         )}
         {state === 'attente' && prev && pickup && (
@@ -228,14 +233,26 @@ export const Driver: React.FC = () => {
                 <span className={`w-3 h-3 rounded-full ${secondsAgo !== null && secondsAgo < every / 1000 + 30 ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`} />
                 {secondsAgo !== null && secondsAgo < every / 1000 + 30 ? 'La cliente vous voit sur la carte' : 'En attente du GPS…'}
               </p>
-              {live?.distanceM != null && live.etaMin != null && <p className="mt-1 text-ink/75">Encore {formatDistance(live.distanceM)} · ~{formatEta(live.etaMin)}</p>}
+              {live?.distanceM != null && live.etaMin != null && <p className="mt-1 text-ink/75">Encore {formatDistance(live.distanceM)} {live.route ? 'par la route' : ''} · ~{formatEta(live.etaMin)}</p>}
               {gpsError && <p className="mt-1 text-amber-800">{gpsError}</p>}
               <p className="mt-1 text-ink/70 text-xs">Gardez cette page ouverte pendant le trajet{leg.vehicle !== 'moto' && ' (téléphone branché si le trajet est long)'}.</p>
             </div>
             {next && call(next.driverPhone, `Appeler ${next.driverName}`)}
-            <button onClick={delivered} disabled={!!busy} className="w-full flex items-center justify-center gap-3 h-20 rounded-[1.5rem] bg-emerald-700 text-white text-xl font-bold active:scale-[.98] transition-transform">
-              {busy === 'done' ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />} {next ? `Colis remis à ${next.driverName}` : 'Colis remis'}
-            </button>
+            {leg.needsCode ? (
+              <form onSubmit={delivered} className="bg-white rounded-[1.5rem] p-5 shadow-soft space-y-3" data-testid="driver-code">
+                <label htmlFor="handover-code" className="block font-semibold text-lg">🔐 Code de remise de la cliente</label>
+                <p className="text-sm text-ink/70">Remettez le colis, puis demandez à {c.firstName} le code à 4 chiffres reçu sur WhatsApp.</p>
+                <input id="handover-code" value={code} onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{4}" required
+                  placeholder="• • • •" className="w-full h-16 rounded-2xl border border-ink/15 text-center font-display text-4xl tracking-[0.5em] tabular-nums focus:outline-none focus:border-ink" />
+                <button disabled={!!busy || code.length !== 4} className="w-full flex items-center justify-center gap-3 h-20 rounded-[1.5rem] bg-emerald-700 text-white text-xl font-bold active:scale-[.98] transition-transform disabled:opacity-50">
+                  {busy === 'done' ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />} Colis remis
+                </button>
+              </form>
+            ) : (
+              <button onClick={() => delivered()} disabled={!!busy} className="w-full flex items-center justify-center gap-3 h-20 rounded-[1.5rem] bg-emerald-700 text-white text-xl font-bold active:scale-[.98] transition-transform">
+                {busy === 'done' ? <Loader2 className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />} {next ? `Colis remis à ${next.driverName}` : 'Colis remis'}
+              </button>
+            )}
           </>
         )}
 

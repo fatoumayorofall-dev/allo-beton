@@ -142,6 +142,23 @@ export interface DeliveryInfo {
   /** Point de relais visé par l'étape en cours */
   target?: RelayPoint | null;
   legs?: DeliveryLeg[];
+  /** Chemin restant par les rues ([lat, lng]…), quand l'itinéraire est connu */
+  route?: [number, number][];
+  /** Temps d'arrivée calculé par la route (embouteillages compris) plutôt qu'à vol d'oiseau */
+  routed?: boolean;
+  /** Remise protégée par un code à 4 chiffres */
+  secured?: boolean;
+  /** Code de remise (vue cliente et gérante uniquement) */
+  code?: string;
+  /** Preuve de remise (vue gérante) */
+  proof?: { by: 'code'; at: string; position: { lat: number; lng: number } | null };
+}
+
+export interface DeliveryRating {
+  stars: number;
+  comment?: string;
+  driverName?: string;
+  at: string;
 }
 
 export interface StockAlert {
@@ -174,6 +191,8 @@ export interface Order {
   notifications?: OrderNotification[];
   /** Livreur et position (commandes enregistrées sur le serveur, vue gérante) */
   delivery?: DeliveryInfo | null;
+  /** Note laissée par la cliente après la livraison */
+  rating?: DeliveryRating;
   /** Articles du Marché : commande passée chez le fournisseur */
   supplier?: OrderSupplier;
 }

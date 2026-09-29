@@ -46,6 +46,8 @@ interface Props {
   /** Épingle fixe au centre : la cliente déplace la carte sous l'épingle (comme Yango) */
   pinCenter?: boolean;
   onCenterChange?: (c: LatLng, byUser: boolean) => void;
+  /** Chemin par les rues ([lat, lng]…) dessiné entre le livreur et l'arrivée */
+  path?: [number, number][] | null;
   /** Recadrer automatiquement sur tous les marqueurs */
   fitMarkers?: boolean;
   interactive?: boolean;
@@ -67,11 +69,12 @@ function glide(marker: L.Marker, to: L.LatLng) {
   requestAnimationFrame(step);
 }
 
-export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, pinCenter, onCenterChange, fitMarkers, interactive = true, className = '', children }) => {
+export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, interactive = true, className = '', children }) => {
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layers = useRef(new Map<string, L.Marker>());
   const circleRef = useRef<L.Circle | null>(null);
+  const pathRef = useRef<L.Polyline[]>([]);
   const onChange = useRef(onCenterChange);
   onChange.current = onCenterChange;
   // vrai seulement quand la cliente fait glisser la carte (les déplacements faits par le code ne comptent pas)
@@ -97,7 +100,7 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     // La carte peut apparaître dans un bloc qui change de taille (formulaire, fenêtre)
     const ro = new ResizeObserver(() => m.invalidateSize());
     ro.observe(el.current);
-    return () => { ro.disconnect(); m.remove(); map.current = null; layers.current.clear(); circleRef.current = null; fitted.current = false; };
+    return () => { ro.disconnect(); m.remove(); map.current = null; layers.current.clear(); circleRef.current = null; pathRef.current = []; fitted.current = false; };
   }, []); // la carte est créée une seule fois
 
   // Recentrer quand le centre change depuis le code
@@ -137,6 +140,20 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
       fitted.current = true;
     }
   }, [markers, fitMarkers]);
+
+  // Trajet : un liseré blanc sous un trait prune, comme sur une appli de VTC
+  const pathKey = path && path.length > 1 ? `${path.length}:${path[0]}:${path[path.length - 1]}` : '';
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+    const pts = path && path.length > 1 ? path : null;
+    if (!pts) { pathRef.current.forEach(l => l.remove()); pathRef.current = []; return; }
+    if (pathRef.current.length) { pathRef.current.forEach(l => l.setLatLngs(pts)); return; }
+    pathRef.current = [
+      L.polyline(pts, { color: '#ffffff', weight: 9, opacity: 0.95, lineCap: 'round', lineJoin: 'round', interactive: false, className: 'maefa-route-casing' }).addTo(m),
+      L.polyline(pts, { color: '#7a2e4a', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false, className: 'maefa-route' }).addTo(m),
+    ];
+  }, [pathKey]);
 
   // Cercle de précision
   useEffect(() => {

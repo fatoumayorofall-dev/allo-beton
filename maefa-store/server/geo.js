@@ -81,3 +81,63 @@ export function etaMinutes(from, to, vehicle = 'moto') {
 }
 
 export const validPoint = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
+
+/* ---------- Itinéraire par la route (OSRM, gratuit, sans clé) ----------
+ * Le vrai chemin du livreur (pas la ligne droite) : distance et durée par les rues,
+ * puis corrigées selon l'heure (embouteillages de Dakar) et le véhicule.
+ * OSRM_URL pour un serveur auto-hébergé en production ; ROUTING=off pour s'en passer.
+ */
+const OSRM_URL = process.env.OSRM_URL || 'https://router.project-osrm.org';
+const ROUTING = process.env.ROUTING !== 'off';
+
+/**
+ * Embouteillages : coefficient appliqué à la durée « route libre » d'OSRM.
+ * Heures de pointe à Dakar (heure GMT = heure de Dakar) : 7 h-10 h et 17 h-20 h 30 en semaine.
+ * La moto se faufile ; la voiture et le car subissent le trafic.
+ */
+export function trafficFactor(vehicle = 'moto', date = new Date()) {
+  const h = date.getUTCHours() + date.getUTCMinutes() / 60;
+  const day = date.getUTCDay();
+  const weekday = day >= 1 && day <= 5;
+  const rush = weekday && ((h >= 7 && h < 10) || (h >= 17 && h < 20.5));
+  const busy = !rush && h >= 10 && h < 17;
+  if (vehicle === 'moto') return rush ? 1.25 : busy ? 1.1 : 1;
+  return rush ? 1.9 : busy ? 1.35 : 1.15;
+}
+
+/** Garde au plus `max` points du tracé (assez pour la carte, léger pour le téléphone). */
+function thin(coords, max = 220) {
+  if (coords.length <= max) return coords;
+  const step = (coords.length - 1) / (max - 1);
+  return Array.from({ length: max }, (_, k) => coords[Math.round(k * step)]);
+}
+
+/**
+ * Itinéraire routier : { path: [[lat, lng]…], distanceM, durationS } ou null si indisponible.
+ * Mis en cache par points arrondis (~50 m) pendant 2 minutes.
+ */
+export function roadRoute(from, to) {
+  if (!ROUTING) return Promise.resolve(null);
+  const k = `rt:${round(from.lat, 3.3)},${round(from.lng, 3.3)}>${round(to.lat, 4)},${round(to.lng, 4)}`;
+  return cached(k, 120e3, async () => {
+    const url = `${OSRM_URL}/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&alternatives=false&steps=false`;
+    const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error(`osrm ${res.status}`);
+    const r = (await res.json()).routes?.[0];
+    if (!r?.geometry?.coordinates?.length) return null;
+    return {
+      path: thin(r.geometry.coordinates.map(([lng, lat]) => [round(lat), round(lng)])),
+      distanceM: Math.round(r.distance),
+      durationS: Math.round(r.duration),
+    };
+  }).catch(() => null);
+}
+
+/** Durée par la route en minutes, embouteillages compris. */
+export function routeEtaMinutes(route, vehicle = 'moto', date = new Date()) {
+  const [kmh] = SPEEDS[vehicle] ?? SPEEDS.moto;
+  // OSRM compte en voiture ; à moto en ville on ne dépasse guère 25 km/h de moyenne
+  const floor = vehicle === 'moto' ? (route.distanceM / 1000 / Math.max(kmh, 22)) * 3600 * 0.85 : 0;
+  const s = Math.max(route.durationS, floor) * trafficFactor(vehicle, date);
+  return Math.max(1, Math.round(s / 60));
+}

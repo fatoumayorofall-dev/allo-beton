@@ -11,6 +11,7 @@ import { SupplierSteps } from '../components/SupplierSteps';
 import { useAccount } from '../context/AccountContext';
 import { ProductImage } from '../components/ProductImage';
 import { ForYou } from '../components/ForYou';
+import { RateDelivery } from '../components/RateDelivery';
 
 const LiveTracking = lazy(() => import('../components/LiveTracking'));
 
@@ -118,6 +119,10 @@ export const Tracking: React.FC = () => {
               <Suspense fallback={<div className="h-80 rounded-[1.5rem] bg-ivory-deep animate-pulse" />}>
                 <LiveTracking location={order.customer.location} delivery={delivery} />
               </Suspense>
+            )}
+            {order.status === 'livree' && delivery && query.current && (
+              <RateDelivery orderId={order.id} phone={query.current.phone} driverName={delivery.driverName} rating={order.rating}
+                onRated={rating => setOrder(o => (o ? { ...o, rating } : o))} />
             )}
             {order.supplier && order.status !== 'annulee' && order.status !== 'livree' && <SupplierSteps supplier={order.supplier} />}
             <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-7 sm:p-10">
