@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ExternalLink, Headphones, Lock, RefreshCw, ShieldCheck, Truck } from 'lucide-react';
+import { ExternalLink, Headphones, Lock, PackageCheck, ShieldCheck, Truck } from 'lucide-react';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { BrandMark, Logo, Wordmark } from './Logo';
 import { PaymentLogos, WhatsAppGlyph } from './BrandLogos';
@@ -38,7 +38,7 @@ export const CheckoutFooter: React.FC = () => (
       <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs text-ink/75">
         {[
           { Icon: Truck, t: 'Livraison 24 h à Dakar', d: '48 à 72 h dans les régions' },
-          { Icon: RefreshCw, t: 'Échange sous 7 jours', d: 'Taille ou couleur, sans frais' },
+          { Icon: PackageCheck, t: 'Contrôlée avant envoi', d: 'À vérifier à la réception' },
           { Icon: ShieldCheck, t: 'Pièces authentiques', d: 'Étiquette vérifiable en ligne' },
         ].map(({ Icon, t, d }) => (
           <li key={t} className="flex items-center gap-3">
@@ -51,7 +51,7 @@ export const CheckoutFooter: React.FC = () => (
     </div>
     <p className="max-w-6xl mx-auto px-4 sm:px-8 pb-8 text-[11px] text-ink/70 flex flex-wrap gap-x-4 gap-y-1">
       <span>© {new Date().getFullYear()} {SITE_CONFIG.name}</span>
-      <Link to="/faq" className="hover:text-ink">Livraison &amp; échanges</Link>
+      <Link to="/faq" className="hover:text-ink">Livraison &amp; réception</Link>
       <Link to="/authentique" className="hover:text-ink">Vérifier l'authenticité</Link>
       <a href={buildWhatsAppLink('Bonjour Maefa Store, j\'ai besoin d\'aide pour ma commande.')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-ink">
         <WhatsAppGlyph className="w-3.5 h-3.5 text-[#177a41]" /> Aide sur WhatsApp

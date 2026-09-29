@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, Plus, QrCode, RefreshCw, ScanSearch, ShieldCheck, ShoppingBag, Smartphone, Truck } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, Plus, QrCode, ScanSearch, ShieldCheck, ShoppingBag, Smartphone, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
 import type { Product } from '../data/types';
@@ -184,7 +184,7 @@ export const Home: React.FC = () => {
             { Icon: Truck, t: 'Livraison 24 h', d: `Dakar · offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}` },
             { Icon: MapPin, t: 'Suivi en direct', d: 'Votre livreur sur la carte' },
             { Icon: Smartphone, t: 'Wave · Orange Money', d: 'ou espèces à la livraison' },
-            { Icon: RefreshCw, t: 'Échange 7 jours', d: 'Taille ou couleur, sans frais' },
+            { Icon: PackageCheck, t: 'Contrôlée avant envoi', d: 'À vérifier à la réception' },
           ].map(({ Icon, t, d }) => (
             <li key={t} className="flex flex-col items-start sm:flex-row sm:items-center gap-2.5 sm:gap-4 p-4 lg:px-7 rounded-[1.25rem] bg-white lg:bg-transparent border border-ink/[0.06] lg:border-0">
               <Icon className="w-6 h-6 text-gold-dark shrink-0" strokeWidth={1.1} />

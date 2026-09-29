@@ -46,7 +46,7 @@ export const About: React.FC = () => {
 
       <section className="bg-ink text-ivory mt-20">
         <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-20 grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
-          {[['5 000+', 'clientes conquises'], ['300+', 'pièces en boutique'], ['24h', 'livraison à Dakar'], ['4,8/5', 'note moyenne']].map(([n, l]) => (
+          {[['5 000+', 'clientes conquises'], ['300+', 'pièces en ligne'], ['24h', 'livraison à Dakar'], ['4,8/5', 'note moyenne']].map(([n, l]) => (
             <Reveal key={l}><p className="font-display text-5xl sm:text-6xl text-gold-light">{n}</p><p className="text-[10px] uppercase tracking-luxe text-ivory/60 mt-3">{l}</p></Reveal>
           ))}
         </div>
@@ -54,7 +54,7 @@ export const About: React.FC = () => {
 
       <section className="text-center pt-24 px-5">
         <h2 className="font-display text-4xl sm:text-5xl">Venez nous rendre visite</h2>
-        <p className="text-ink/75 mt-3">Sacré-Cœur 3, Dakar — ou découvrez la boutique en ligne.</p>
+        <p className="text-ink/75 mt-3">Boutique 100 % en ligne — livraison partout au Sénégal.</p>
         <Link to="/boutique" className="btn-dark mt-8">Entrer dans la boutique <ArrowRight className="w-4 h-4" /></Link>
       </section>
     </div>

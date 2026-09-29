@@ -15,7 +15,7 @@ export const SITE_CONFIG = {
   phoneRaw: '+221773093819',
   whatsappRaw: '221773093819', // format wa.me
   email: 'contact@maefastore.sn',
-  address: 'Sacré-Cœur 3, Dakar, Sénégal',
+  address: 'Boutique en ligne · Livraison partout au Sénégal',
   hours: {
     weekdays: '9h00 — 20h00',
     saturday: '10h00 — 20h00',

@@ -83,7 +83,7 @@ const ALL_ARTICLES: Article[] = [
       { type: 'products', slugs: ['grand-boubou-diarra', 'kaftan-brode-femme', 'robe-wax-dior'] },
       { type: 'h', text: 'Les accessoires' },
       { type: 'p', text: 'Reprenez l\'or des broderies dans vos bijoux et vos chaussures. Une pochette perlée et des sandales à talons assorties terminent la silhouette.' },
-      { type: 'tip', text: 'Commandez au moins 10 jours avant la fête : cela laisse le temps d\'un éventuel échange de taille.' },
+      { type: 'tip', text: 'Commandez au moins 10 jours avant la fête : vous recevez vos pièces sereinement, bien avant le jour J.' },
       { type: 'products', slugs: ['sandales-talons-perlees-linguere', 'pochette-soiree-perles', 'collier-plaque-or'] },
     ],
   },

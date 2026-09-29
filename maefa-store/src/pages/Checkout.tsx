@@ -316,6 +316,7 @@ export const Checkout: React.FC = () => {
                   : <><Lock className="w-3.5 h-3.5" /> {method === 'cash' ? 'Confirmer la commande' : `Payer ${formatPrice(t.total)}`}</>}
               </button>
               <p className="text-[11px] text-center text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Paiement chiffré · Vos données bancaires ne sont jamais conservées</p>
+              <p className="text-[11px] text-center text-ink/70" data-testid="checkout-policy">Chaque pièce est contrôlée avant l'envoi. Vérifiez votre commande à la réception, devant le livreur : aucun échange ni retour après la livraison.</p>
             </div>
           )}
         </div>

@@ -27,7 +27,7 @@ const ANNOUNCEMENTS = [
   'Paiement Wave, Orange Money ou à la livraison',
   'Code BIENVENUE : -10 % sur votre première commande',
   'Emballage cadeau avec votre mot doux',
-  'Échange gratuit sous 7 jours',
+  'Chaque pièce contrôlée avant l\'envoi',
 ];
 
 export const Navbar: React.FC = () => {

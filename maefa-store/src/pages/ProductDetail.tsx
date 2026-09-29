@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Bell, ChevronDown, ChevronRight, Heart, Minus, Plus, RefreshCw, Ruler, Share2, ShieldCheck, Truck } from 'lucide-react';
+import { Bell, ChevronDown, ChevronRight, Heart, Minus, Plus, Ruler, Share2, ShieldCheck, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { SITE_CONFIG, buildProductWhatsAppMessage, buildWhatsAppLink } from '../config/site';
@@ -298,7 +298,7 @@ export const ProductDetail: React.FC = () => {
             <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/75">
               {[
                 { Icon: Truck, t: `Offerte dès ${(SITE_CONFIG.freeShippingThreshold / 1000).toFixed(0)} 000 F` },
-                { Icon: RefreshCw, t: 'Échange 7 jours' },
+                { Icon: PackageCheck, t: 'Contrôlée avant envoi' },
                 { Icon: ShieldCheck, t: 'Paiement sécurisé' },
               ].map(({ Icon, t }) => (
                 <li key={t} className="py-4 px-2"><Icon className="w-4 h-4 mx-auto text-gold-dark mb-2" strokeWidth={1.4} />{t}</li>
@@ -317,10 +317,11 @@ export const ProductDetail: React.FC = () => {
                 <p><strong className="text-ink">Matière</strong> : {product.material}</p>
                 <p className="mt-2"><strong className="text-ink">Entretien</strong> : {product.care}</p>
               </Accordion>
-              <Accordion title="Livraison & échanges" open={openSection === 'livraison'} onToggle={() => toggle('livraison')}>
+              <Accordion title="Livraison & réception" open={openSection === 'livraison'} onToggle={() => toggle('livraison')}>
                 <p><strong className="text-ink">Dakar</strong> : livraison en 24h, de 1 500 à 2 000 FCFA selon le quartier.</p>
                 <p className="mt-2"><strong className="text-ink">Régions</strong> : de 48h à 5 jours selon la destination.</p>
-                <p className="mt-2">Livraison <strong className="text-ink">offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</strong>. Échange gratuit sous 7 jours pour toute pièce non portée.</p>
+                <p className="mt-2">Livraison <strong className="text-ink">offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</strong>.</p>
+                <p className="mt-2">Chaque pièce est contrôlée avant l'envoi. <strong className="text-ink">Vérifiez votre commande à la réception</strong>, en présence du livreur : aucun échange ni retour n'est possible après la livraison.</p>
               </Accordion>
               <Accordion id="avis" title={`Avis clientes (${product.reviewCount})`} open={openSection === 'avis'} onToggle={() => toggle('avis')}>
                 <div className="flex items-center gap-4 mb-5">

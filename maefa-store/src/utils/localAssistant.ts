@@ -1,6 +1,6 @@
 /**
  * Assistante « hors ligne » : répond sans IA aux questions les plus fréquentes
- * (livraison, paiement, échanges, codes promo, suivi, recherche de pièces).
+ * (livraison, paiement, réception, codes promo, suivi, recherche de pièces).
  * Utilisée quand le serveur IA n'est pas configuré ou injoignable.
  */
 import type { Category, Order, Product } from '../data/types';
@@ -92,7 +92,7 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
     return 'Vous pouvez payer par **Wave, Orange Money, carte bancaire** ou **en espèces à la livraison**. Le paiement mobile se valide directement sur votre téléphone ✨';
   }
   if (has(q, 'echange', 'retour', 'rembours', 'pas la bonne taille', 'trop petit', 'trop grand')) {
-    return 'Vous avez **7 jours** après réception pour échanger une pièce (taille ou couleur), gratuitement, si elle n\'a pas été portée et reste dans son emballage d\'origine. Écrivez-nous sur WhatsApp pour organiser l\'échange 🌸';
+    return 'Chaque pièce est contrôlée avant l\'envoi. Vérifiez votre commande **à la réception, en présence du livreur** : une fois la livraison acceptée, **aucun échange ni retour** n\'est possible. Un doute sur la pointure ? Écrivez-nous sur WhatsApp **avant** de commander, nous vous conseillons 🌸';
   }
   if (has(q, 'promo', 'code', 'reduction', 'remise', 'solde')) {
     return `Nos codes du moment : ${Object.entries(PROMO_CODES).map(([k, v]) => `**${k}** (${v.label})`).join(', ')}. À saisir dans votre panier ! Découvrez aussi [nos offres](/boutique?promo=1).`;
@@ -105,7 +105,7 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
     return `Bonne idée 🎁 Pensez à l'**emballage cadeau signature** (${formatPrice(SITE_CONFIG.giftWrapFee)}) avec votre mot doux, à cocher dans le panier. Quelques idées appréciées :\n${gifts.map(p => `- ${link(p)}`).join('\n')}`;
   }
   if (has(q, 'horaire', 'ouvert', 'adresse', 'ou etes', 'boutique physique', 'magasin')) {
-    return `Notre boutique se trouve à **${SITE_CONFIG.address}**. Ouverte du lundi au vendredi ${SITE_CONFIG.hours.weekdays}, le samedi ${SITE_CONFIG.hours.saturday} et le dimanche ${SITE_CONFIG.hours.sunday}.`;
+    return `Maefa est une **boutique 100 % en ligne** : commandez sur le site, sur WhatsApp ou au ${SITE_CONFIG.phone}, nous livrons partout au Sénégal. Notre équipe vous répond du lundi au vendredi ${SITE_CONFIG.hours.weekdays}, le samedi ${SITE_CONFIG.hours.saturday} et le dimanche ${SITE_CONFIG.hours.sunday}.`;
   }
 
   // Catégorie pas encore en vente (bijoux, vêtements…) : on le dit simplement et on propose le reste
@@ -131,5 +131,5 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
   }
   if (has(q, 'merci')) return 'Avec plaisir ! Belle journée à vous 🌸';
 
-  return 'Je ne suis pas sûre de bien comprendre. Je peux vous aider pour : une tenue selon l\'occasion, la livraison, le paiement, les échanges ou le suivi de commande. Pour tout le reste, notre équipe vous répond sur WhatsApp.';
+  return 'Je ne suis pas sûre de bien comprendre. Je peux vous aider pour : une tenue selon l\'occasion, la livraison, le paiement, la réception ou le suivi de commande. Pour tout le reste, notre équipe vous répond sur WhatsApp.';
 }

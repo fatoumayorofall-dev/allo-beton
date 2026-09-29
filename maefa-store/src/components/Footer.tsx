@@ -97,7 +97,7 @@ export const Footer: React.FC = () => {
             <li><Link to="/mes-commandes" className={lnk}>Mes commandes</Link></li>
             <li><Link to="/suivi" className={lnk}>Suivre une commande</Link></li>
             <li><Link to="/authentique" className={lnk}>Vérifier l'authenticité</Link></li>
-            <li><Link to="/faq" className={lnk}>Livraison & échanges</Link></li>
+            <li><Link to="/faq" className={lnk}>Livraison & réception</Link></li>
             <li><Link to="/faq#tailles" className={lnk}>Guide des tailles</Link></li>
             <li><Link to="/a-propos" className={lnk}>Notre maison</Link></li>
           </ul>
@@ -107,7 +107,7 @@ export const Footer: React.FC = () => {
           <p className={col}>La boutique à Dakar</p>
           <address className="not-italic text-sm text-ivory/65 space-y-3 leading-relaxed">
             <p>{SITE_CONFIG.address}</p>
-            <p>Lun–Ven {SITE_CONFIG.hours.weekdays}<br />Sam {SITE_CONFIG.hours.saturday} · Dim {SITE_CONFIG.hours.sunday}</p>
+            <p>Service client sur WhatsApp<br />Lun–Ven {SITE_CONFIG.hours.weekdays} · Sam {SITE_CONFIG.hours.saturday} · Dim {SITE_CONFIG.hours.sunday}</p>
             <p><a href={`tel:${SITE_CONFIG.phoneRaw}`} className={lnk}>{SITE_CONFIG.phone}</a><br /><a href={`mailto:${SITE_CONFIG.email}`} className={lnk}>{SITE_CONFIG.email}</a></p>
           </address>
         </div>

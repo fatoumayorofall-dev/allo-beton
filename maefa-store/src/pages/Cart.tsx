@@ -2,7 +2,7 @@ import { delayLabel } from '../utils/market';
 import { PREORDER_MAX } from '../utils/stock';
 import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, Lock, Minus, Plus, RefreshCw, ShieldCheck, Tag, Truck, X } from 'lucide-react';
+import { ArrowRight, Check, Lock, Minus, Plus, ShieldCheck, Tag, Truck, X, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
@@ -141,7 +141,7 @@ export const Cart: React.FC = () => {
           <ul className="border-t border-ink/10 pt-6 space-y-3 text-xs text-ink/75">
             {[
               { Icon: Truck, t: 'Livraison 24 h à Dakar', d: '48 à 72 h dans les régions' },
-              { Icon: RefreshCw, t: 'Échange sous 7 jours', d: 'Taille ou couleur, sans frais' },
+              { Icon: PackageCheck, t: 'Contrôlée avant envoi', d: 'À vérifier à la réception, devant le livreur' },
               { Icon: ShieldCheck, t: 'Pièces authentiques', d: 'Étiquette vérifiable en ligne' },
             ].map(({ Icon, t: title, d }) => (
               <li key={title} className="flex items-center gap-3"><Icon className="w-4 h-4 text-gold-dark shrink-0" strokeWidth={1.5} /><span><strong className="text-ink font-semibold">{title}</strong> · {d}</span></li>

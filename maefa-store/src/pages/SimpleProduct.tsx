@@ -1,7 +1,7 @@
 import { canBuy, isPreorder } from '../utils/stock';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { Banknote, Check, ChevronLeft, Home, Phone, RefreshCw, ShoppingBag, Truck } from 'lucide-react';
+import { Banknote, Check, ChevronLeft, Home, Phone, ShoppingBag, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import type { Product } from '../data/types';
@@ -190,12 +190,12 @@ export const SimpleProduct: React.FC = () => {
           </section>
         )}
 
-        {/* Pictogrammes : livraison, paiement, échange */}
+        {/* Pictogrammes : livraison, paiement, contrôle */}
         <section className="mt-4 grid grid-cols-3 gap-3 text-center">
           {[
             { Icon: Truck, t: 'Livraison 24h' },
             { Icon: Banknote, t: 'Payer à la livraison' },
-            { Icon: RefreshCw, t: 'Échange 7 jours' },
+            { Icon: PackageCheck, t: 'Contrôlée avant envoi' },
           ].map(({ Icon, t }) => (
             <div key={t} className="bg-white rounded-3xl py-4 px-2">
               <Icon className="w-8 h-8 mx-auto text-gold-dark" strokeWidth={1.6} />
