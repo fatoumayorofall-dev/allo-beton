@@ -47,9 +47,9 @@ export const OrderSuccess: React.FC = () => {
             <SparkleTrio className="text-gold" />
           </span>
           <p className="eyebrow mt-8 animate-fade-up" style={{ animationDelay: '100ms' }}>Commande {order.id}</p>
-          <h1 className="font-display text-5xl sm:text-7xl mt-4 animate-fade-up" style={{ animationDelay: '200ms' }}>Merci, <span className="font-script text-gold-dark text-magic text-[1.15em]">{order.customer.firstName}</span></h1>
+          <h1 className="font-display text-5xl sm:text-7xl mt-4 animate-fade-up" style={{ animationDelay: '200ms' }}>Jërëjëf, <span className="font-script text-gold-dark text-magic text-[1.15em]">{order.customer.firstName}</span></h1>
           <p className="mt-5 text-ink/75 max-w-lg mx-auto animate-fade-up" style={{ animationDelay: '300ms' }}>
-            Votre commande est entre de bonnes mains. Nous vous appelons très vite au <strong className="text-ink">{order.customer.phone}</strong> pour convenir de la livraison.
+            Merci ! Votre commande est entre de bonnes mains. Nous vous appelons très vite au <strong className="text-ink">{order.customer.phone}</strong> pour convenir de la livraison.
           </p>
         </div>
 

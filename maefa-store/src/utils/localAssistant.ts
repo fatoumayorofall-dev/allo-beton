@@ -7,6 +7,7 @@ import type { Category, Order, Product } from '../data/types';
 import { ALL_CATEGORIES, CATEGORIES, OCCASIONS } from '../data/catalog';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, isOnSale } from '../config/site';
 import { formatPrice } from './format';
+import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from './fetes';
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const has = (q: string, ...words: string[]) => words.some(w => q.includes(w));
@@ -71,7 +72,18 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
     return 'Je ne trouve pas cette commande sur cet appareil. Rendez-vous sur [Suivre ma commande](/suivi) avec votre numéro (MAE-…) et votre téléphone, ou écrivez-nous sur WhatsApp.';
   }
 
-  if (has(q, 'livraison', 'livrer', 'delai', 'frais de port', 'combien de temps', 'expedi')) {
+  // Date d'une fête : « c'est quand la Tabaski ? », « Korité kañ ? »
+  const FETE_WORDS: Record<string, string[]> = { korite: ['korite'], tabaski: ['tabaski'], magal: ['magal'], gamou: ['gamou', 'maouloud', 'mawlid'], noel: ['noel'], reveillon: ['reveillon', 'nouvel an'], 'saint-valentin': ['saint-valentin', 'saint valentin'], independance: ['independance', '4 avril'] };
+  const feteId = Object.keys(FETE_WORDS).find(id => has(q, ...FETE_WORDS[id]));
+  if (feteId && has(q, 'quand', 'date', 'quel jour', 'kan ', 'kan?', 'kanj', 'dans combien')) {
+    const f = upcomingFetes().find(x => x.id === feteId);
+    if (f) {
+      const n = daysUntil(f.date);
+      return `La prochaine **${f.name}** tombe ${f.lunar ? 'vers le' : 'le'} **${formatDay(f.date)}** (${inDays(n)})${f.lunar ? ', selon l\'observation de la lune' : ''}.${n > 3 ? ` Pour être livrée à temps, commandez avant le **${formatDay(orderBy(f.date))}** à Dakar ou le **${formatDay(orderBy(f.date, true))}** en régions.` : ''} Notre [sélection pour les fêtes](/boutique?occasion=${f.occasion}) vous attend ✨`;
+    }
+  }
+
+  if (has(q, 'livraison', 'livrer', 'yobbu', 'delai', 'frais de port', 'combien de temps', 'expedi')) {
     const zone = DELIVERY_ZONES.find(z => q.includes(norm(z.name).split(/[\s/]/)[0]));
     if (zone) return `Pour **${zone.name}**, la livraison coûte ${formatPrice(zone.fee)} et prend ${zone.delay}. Elle est offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)} d'achat 🛵`;
     return `Nous livrons en 24h à Dakar (1 500 à 2 000 FCFA selon le quartier) et en 48h à 5 jours en régions. La livraison est **offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}**. Tous les tarifs sont sur [la page d'aide](/faq).`;
@@ -108,8 +120,14 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
       ? `Voici ce que je vous conseille ✨\n${found.map(p => `- ${link(p)}`).join('\n')}\n\nVoulez-vous d'autres suggestions ?`
       : 'Je n\'ai pas de pièce qui corresponde exactement. Essayez [toute la boutique](/boutique) ou demandez conseil à notre équipe sur WhatsApp.';
   }
-  if (has(q, 'bonjour', 'salut', 'bonsoir', 'hello', 'coucou', 'salam', 'nanga def')) {
-    return 'Bonjour et bienvenue chez Maefa 🌸 Je peux vous conseiller une tenue, vous parler de la livraison ou suivre votre commande. Que recherchez-vous ?';
+  // Wolof : salutations, remerciements, au revoir
+  if (has(q, 'nanga def', 'na nga def', 'nangadef', 'jamm nga am', 'jam nga am')) {
+    return 'Maa ngi fi rekk, jërëjëf ! Dalal ak jàmm chez Maefa 🌸 Je peux vous conseiller une paire ou un sac, vous parler de la livraison ou suivre votre commande. Lan nga bëgg ? (Que recherchez-vous ?)';
+  }
+  if (has(q, 'jerejef', 'jarajef', 'jerrejef', 'dieuredieuf', 'diaradieuf', 'jerejeuf')) return 'Ñoo ko bokk ! Avec plaisir 🌸 Ba beneen yoon !';
+  if (has(q, 'ba beneen', 'ba benen', 'ba ci kanam')) return 'Ba beneen yoon ! Merci de votre visite chez Maefa 🌸';
+  if (has(q, 'bonjour', 'salut', 'bonsoir', 'hello', 'coucou', 'salam')) {
+    return 'Bonjour et dalal ak jàmm chez Maefa 🌸 Je peux vous conseiller une tenue, vous parler de la livraison ou suivre votre commande. Que recherchez-vous ?';
   }
   if (has(q, 'merci')) return 'Avec plaisir ! Belle journée à vous 🌸';
 

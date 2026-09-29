@@ -11,7 +11,7 @@ Chaque correction a été vérifiée par un test automatisé dans un navigateur 
 | 2 | Le panier gardait l'ancien prix quand le gérant modifiait un produit | Commande facturée à un prix périmé | Le panier se réaligne automatiquement sur le catalogue (prix, nom, image) |
 | 3 | Un article supprimé ou épuisé restait commandable depuis le panier | Commande d'un produit inexistant | Retiré du panier automatiquement ; quantité plafonnée au stock |
 | 4 | L'ajout répété au panier pouvait dépasser le stock (plusieurs tailles/couleurs d'un même article) | Survente | Contrôle du stock total par article, message explicite |
-| 5 | Le code `EFA5000` s'appliquait sous 40 000 FCFA sans aucune réduction ni message | Client perdu, sentiment de bug | Minimum défini dans `config/site.ts`, montant manquant affiché |
+| 5 | Le code `MAEFA5000` s'appliquait sous 40 000 FCFA sans aucune réduction ni message | Client perdu, sentiment de bug | Minimum défini dans `config/site.ts`, montant manquant affiché |
 
 ## 2. Défauts d'expérience (corrigés)
 

@@ -1,5 +1,5 @@
 // ============================================================
-//  ASSISTANT IA « MAÉ » — conseillère virtuelle d'Maefa Store
+//  ASSISTANT IA « MAÉ » — conseillère virtuelle de Maefa Store
 //  Claude (Anthropic) avec le catalogue et les infos boutique en contexte.
 // ============================================================
 import Anthropic from '@anthropic-ai/sdk';
@@ -15,7 +15,7 @@ function getClient() {
   return client;
 }
 
-const INSTRUCTIONS = `Tu es « Maé », la conseillère virtuelle d'Maefa Store, boutique de mode féminine en ligne basée à Dakar (Sénégal). Les catégories en vente sont listées dans le contexte (« categories_en_vente »).
+const INSTRUCTIONS = `Tu es « Maé », la conseillère virtuelle de Maefa Store, boutique de mode féminine en ligne basée à Dakar (Sénégal). Les catégories en vente sont listées dans le contexte (« categories_en_vente »).
 
 Ta façon de répondre :
 - Tu réponds dans la langue de la cliente (français par défaut ; wolof ou anglais si elle écrit ainsi), avec chaleur et élégance. Tu vouvoies toujours.
@@ -23,6 +23,7 @@ Ta façon de répondre :
 - Quand tu recommandes une pièce, cite-la TOUJOURS sous forme de lien Markdown vers sa fiche : [Nom exact](/produit/slug). Propose 1 à 3 pièces pertinentes, avec leur prix en FCFA.
 - Appuie-toi uniquement sur le catalogue et les informations fournis : n'invente jamais un produit, un prix, un stock, une taille, une couleur, une remise ou un délai. Si une pièce est épuisée (stock 0), dis-le et propose l'alerte de retour en stock sur sa fiche ou une alternative.
 - Si la cliente demande un type d'article que la boutique ne vend pas encore (par exemple bijoux, accessoires ou vêtements quand seules les chaussures et les sacs sont en vente), dis-le gentiment : ils arrivent bientôt ; propose une pièce des catégories en vente qui irait avec sa demande.
+- Tu connais la vie au Sénégal : Korité, Tabaski, Magal, Gamou, mariages et baptêmes. Pour une fête, donne sa date (« prochaines_fetes », estimée selon la lune pour les fêtes musulmanes) et rappelle de commander au moins 3 jours avant à Dakar, 6 jours avant en régions.
 - Pour une question de suivi de commande, utilise les commandes de la cliente fournies dans le contexte. Sans numéro correspondant, oriente vers la page /suivi.
 - Tu peux répondre brièvement à des questions générales (mode, conseils de style, entretien, culture), puis ramener gentiment vers la boutique si c'est pertinent.
 - Pour une réclamation, un problème de paiement, une demande sur mesure ou si la cliente demande une personne : propose l'équipe sur WhatsApp au ${'{WHATSAPP}'}.
@@ -40,6 +41,7 @@ function buildShopContext(shop, products) {
     politiques: (shop?.faq || []).slice(0, 15).map(f => ({ q: clip(f.q, 160), r: clip(f.a, 500) })),
     occasions: (shop?.occasions || []).slice(0, 10).map(o => clip(o, 40)),
     categories_en_vente: (shop?.categories || []).slice(0, 10).map(c => clip(c, 40)),
+    prochaines_fetes: (shop?.fetes || []).slice(0, 6).map(f => clip(f, 80)),
   };
   const catalog = (products || []).slice(0, 150)
     .map(p => ({

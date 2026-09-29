@@ -90,7 +90,7 @@ modifier une teinte à cet endroit la change sur tout le site.
 | Point de livraison sur la carte (GPS, recherche, épingle), suivi du livreur en direct | Carte de la commande, livreur avec lien de suivi, WhatsApp « en route / il arrive » |
 | FAQ, frais de livraison, guide des tailles, page « Notre maison » | |
 
-Codes promo de démonstration : `BIENVENUE` (-10 %), `EFA5000` (-5 000 FCFA dès 40 000), `LIVRAISON` (livraison offerte).
+Codes promo de démonstration : `BIENVENUE` (-10 %), `MAEFA5000` (-5 000 FCFA dès 40 000), `LIVRAISON` (livraison offerte).
 
 ## Organisation
 

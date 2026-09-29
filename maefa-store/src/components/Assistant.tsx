@@ -4,6 +4,7 @@ import { ArrowUp, MessageCircle, RotateCcw, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { OCCASIONS, CATEGORIES } from '../data/catalog';
+import { formatDay, upcomingFetes } from '../utils/fetes';
 import { FAQ_ITEMS } from '../data/faq';
 import type { Product } from '../data/types';
 import { getServerStatus, streamChat, type ChatTurn } from '../services/api';
@@ -120,6 +121,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
     freeShippingThreshold: SITE_CONFIG.freeShippingThreshold, giftWrapFee: SITE_CONFIG.giftWrapFee,
     zones: DELIVERY_ZONES, promos: PROMO_CODES, faq: FAQ_ITEMS, occasions: OCCASIONS.map(o => `${o.id} = ${o.name}`),
     categories: CATEGORIES.map(c => c.name),
+    fetes: upcomingFetes().slice(0, 6).map(f => `${f.name} : ${f.lunar ? 'vers le ' : ''}${formatDay(f.date)} ${f.date.getFullYear()}`),
   }), []);
 
   const ask = async (question: string) => {

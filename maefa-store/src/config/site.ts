@@ -49,8 +49,13 @@ export const DELIVERY_ZONES: { name: string; fee: number; delay: string; center?
   { name: 'Parcelles Assainies', fee: 2000, delay: '24h', center: { lat: 14.7650, lng: -17.4400 }, radiusKm: 3.5 },
   { name: 'Pikine / Guédiawaye', fee: 2500, delay: '24–48h', center: { lat: 14.7600, lng: -17.3900 }, radiusKm: 5 },
   { name: 'Rufisque', fee: 3000, delay: '48h', center: { lat: 14.7200, lng: -17.2750 }, radiusKm: 6 },
+  { name: 'Keur Massar', fee: 3000, delay: '48h', center: { lat: 14.7820, lng: -17.3160 }, radiusKm: 4 },
   { name: 'Diamniadio', fee: 3000, delay: '48h', center: { lat: 14.7230, lng: -17.1830 }, radiusKm: 7 },
   { name: 'Thiès', fee: 4000, delay: '48–72h', center: { lat: 14.7900, lng: -16.9300 }, radiusKm: 12 },
+  { name: 'Mbour / Saly', fee: 4500, delay: '48–72h', center: { lat: 14.4300, lng: -16.9900 }, radiusKm: 12 },
+  { name: 'Touba', fee: 5000, delay: '48–72h', center: { lat: 14.8600, lng: -15.8800 }, radiusKm: 10 },
+  { name: 'Kaolack', fee: 5000, delay: '48–72h', center: { lat: 14.1500, lng: -16.0700 }, radiusKm: 10 },
+  { name: 'Saint-Louis', fee: 5000, delay: '48–72h', center: { lat: 16.0300, lng: -16.4900 }, radiusKm: 10 },
   { name: 'Autres régions', fee: 5000, delay: '3–5 jours' },
 ];
 
@@ -90,7 +95,7 @@ export interface PromoCode {
 
 export const PROMO_CODES: Record<string, PromoCode> = {
   BIENVENUE: { label: '-10 % sur votre 1re commande', percent: 10 },
-  EFA5000: { label: '-5 000 FCFA dès 40 000 FCFA', amount: 5000, minSubtotal: 40000 },
+  MAEFA5000: { label: '-5 000 FCFA dès 40 000 FCFA', amount: 5000, minSubtotal: 40000 },
   LIVRAISON: { label: 'Livraison offerte', freeShipping: true },
 };
 

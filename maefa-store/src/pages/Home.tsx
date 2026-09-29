@@ -13,6 +13,7 @@ import { ProductImage } from '../components/ProductImage';
 import { Reveal } from '../components/Reveal';
 import { useMarket } from '../utils/market';
 import { StyleStories } from '../components/StyleStories';
+import { FetesCalendar } from '../components/FetesCalendar';
 import { CountUp } from '../components/CountUp';
 import { MarketCard } from '../components/MarketCard';
 import { GoldDust, Twinkles } from '../components/Magic';
@@ -195,6 +196,9 @@ export const Home: React.FC = () => {
 
       {/* ───────────── STYLES (bulles façon stories) ───────────── */}
       <StyleStories />
+
+      {/* ───────────── CALENDRIER DES FÊTES (Korité, Tabaski, Magal…) ───────────── */}
+      <FetesCalendar />
 
       {/* ───────────── UNIVERS (bento) ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">

@@ -16,7 +16,9 @@ export const Footer: React.FC = () => {
 
   const subscribe = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!/^\S+@\S+\.\S+$/.test(email)) { notify('Adresse e-mail invalide', 'error'); return; }
+    // Au Sénégal, WhatsApp avant l'e-mail : on accepte l'un ou l'autre
+    const phone = email.replace(/[\s.-]/g, '').replace(/^(\+|00)?221/, '');
+    if (!/^\S+@\S+\.\S+$/.test(email) && !/^7[05678]\d{7}$/.test(phone)) { notify('Numéro WhatsApp ou e-mail invalide', 'error'); return; }
     try {
       const list: string[] = JSON.parse(localStorage.getItem(NEWSLETTER_KEY) ?? '[]');
       if (!list.includes(email)) localStorage.setItem(NEWSLETTER_KEY, JSON.stringify([...list, email]));
@@ -44,9 +46,9 @@ export const Footer: React.FC = () => {
           <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl leading-[1.02]">Recevez nos nouveautés<br />{' '}<em className="text-gold-light text-magic-light">en avant-première</em></h2>
         </div>
         <form onSubmit={subscribe} className="w-full">
-          <label htmlFor="nl-email" className="text-sm text-ivory/60">Ventes privées, lancements de collection et conseils de style — une fois par mois, jamais plus.</label>
+          <label htmlFor="nl-email" className="text-sm text-ivory/60">Ventes privées, arrivages avant la Korité et la Tabaski, conseils de style — sur WhatsApp ou par e-mail, une fois par mois.</label>
           <div className="mt-5 flex border-b border-ivory/40 focus-within:border-gold-light transition-colors">
-            <input id="nl-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Votre adresse e-mail"
+            <input id="nl-email" type="text" inputMode="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Votre numéro WhatsApp ou e-mail"
               className="flex-1 min-w-0 bg-transparent py-4 text-ivory placeholder:text-ivory/35 outline-none" />
             <button aria-label="S'inscrire" className="px-2 text-[11px] uppercase tracking-[0.22em] font-semibold inline-flex items-center gap-2 hover:text-gold-light">
               S'inscrire <ArrowRight className="w-4 h-4" />

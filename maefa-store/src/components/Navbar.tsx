@@ -7,6 +7,7 @@ import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId } from '../data/types';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { formatPrice } from '../utils/format';
+import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from '../utils/fetes';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { Logo } from './Logo';
 import { CurrencySwitch } from './CurrencySwitch';
@@ -14,7 +15,13 @@ import { SearchOverlay } from './SearchOverlay';
 import { ProductImage } from './ProductImage';
 import { FacebookLogo, InstagramLogo, SnapchatLogo, TikTokLogo, WhatsAppLogo } from './BrandLogos';
 
+// Fête proche (moins de 30 jours) : annoncée en premier, avec la date limite pour être livrée à temps
+const NEXT_FETE = upcomingFetes(new Date(), 30)[0];
 const ANNOUNCEMENTS = [
+  ...(NEXT_FETE ? [daysUntil(NEXT_FETE.date) > 3
+    ? `${NEXT_FETE.name} ${inDays(daysUntil(NEXT_FETE.date))} · commandez avant le ${formatDay(orderBy(NEXT_FETE.date))}`
+    : `${NEXT_FETE.name} ${inDays(daysUntil(NEXT_FETE.date))} · livraison express à Dakar`] : []),
+  'Dalal ak jàmm · bienvenue chez Maefa',
   `Livraison offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}`,
   'Nouvelle collection · Automne 2026',
   'Paiement Wave, Orange Money ou à la livraison',
