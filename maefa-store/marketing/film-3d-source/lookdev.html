@@ -1,0 +1,58 @@
+<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#000}canvas{display:block}</style>
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script></head><body>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { MAT, makeLogo, makeBag, loadShoe, makePhone, makeArchFrame, makeDust } from './assets.js';
+const A = new URLSearchParams(location.search).get('a');
+const r = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true }); r.setSize(1080, 1920); r.setPixelRatio(1);
+r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1; r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; document.body.appendChild(r.domElement);
+const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new RoomEnvironment(), .04).texture;
+function bgTex(inner, outer) { const c = document.createElement('canvas'); c.width = 540; c.height = 960; const g = c.getContext('2d'); const gr = g.createRadialGradient(270, 400, 20, 270, 480, 720); gr.addColorStop(0, inner); gr.addColorStop(1, outer); g.fillStyle = gr; g.fillRect(0, 0, 540, 960); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; }
+const scene = new THREE.Scene(); scene.environment = env;
+const cam = new THREE.PerspectiveCamera(30, 1080 / 1920, .05, 200);
+let bloom = .12, thr = .95;
+function floorMirror(color = '#2a1320', op = .72, rough = .25) {
+  const m = new Reflector(new THREE.PlaneGeometry(60, 60), { textureWidth: 540, textureHeight: 960, color: '#777' }); m.rotation.x = -Math.PI / 2; scene.add(m);
+  const f = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshPhysicalMaterial({ color, roughness: rough, transparent: true, opacity: op, clearcoat: 1 })); f.rotation.x = -Math.PI / 2; f.position.y = .003; f.receiveShadow = true; scene.add(f);
+}
+function key(x, y, z, int = 120, color = '#fff0e6', tx = 0, ty = .5, tz = 0) { const s = new THREE.SpotLight(color, int, 30, .45, .7, 1.6); s.position.set(x, y, z); s.target.position.set(tx, ty, tz); s.castShadow = true; s.shadow.mapSize.set(1024, 1024); s.shadow.bias = -.0005; scene.add(s, s.target); return s; }
+if (A === 'logo') {
+  scene.background = bgTex('#3b1a2b', '#0f060a'); scene.fog = new THREE.Fog('#150910', 6, 18);
+  const L = await makeLogo(.04); scene.add(L.grp); L.grp.rotation.y = -.35;
+  floorMirror('#1a0a12', .8);
+  key(2.5, 5, 4, 160, '#ffe6d8', 0, 1.8, 0); const rim = new THREE.PointLight('#f0a0bf', 30, 10); rim.position.set(-2.5, 3, -2); scene.add(rim);
+  scene.add(makeDust(400, [-4, 0, -4, 4, 5, 3], .05));
+  cam.position.set(1.1, 1.9, 10); cam.lookAt(0, 1.85, 0); bloom = .55; thr = .8;
+} else if (A === 'bag' || A === 'shoe') {
+  scene.background = bgTex('#f4ddd7', '#b98e8a'); scene.fog = new THREE.Fog('#dcbab4', 8, 22); r.toneMappingExposure = .82;
+  const ped = new THREE.Mesh(new THREE.CylinderGeometry(1.25, 1.3, .32, 128), MAT.marble); ped.position.y = .16; ped.receiveShadow = ped.castShadow = true; scene.add(ped);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.275, .02, 12, 128), MAT.gold); ring.rotation.x = Math.PI / 2; ring.position.y = .32; scene.add(ring);
+  floorMirror('#d9b8b2', .8, .3);
+  key(2.5, 6, 4, 170, '#fff4ec', 0, .8, 0); const rim = new THREE.SpotLight('#ffc9d6', 80, 20, .6, .8); rim.position.set(-3, 4, -3); rim.target.position.set(0, .8, 0); scene.add(rim, rim.target);
+  scene.add(new THREE.HemisphereLight('#fff6f0', '#e8c6c0', .25));
+  if (A === 'bag') { const b = makeBag('#1c1418'); b.position.y = .38; b.rotation.y = -.5; scene.add(b); cam.position.set(0, 1.4, 5.2); cam.lookAt(0, .95, 0); }
+  else { const s = await loadShoe(); s.setVariant(+(new URLSearchParams(location.search).get('v') || 0)); s.grp.scale.setScalar(1.9); s.grp.position.y = .32 + s.grp.userData.size.y * 1.9 / 2; s.grp.rotation.y = -2.5; scene.add(s.grp); cam.position.set(0, 1.3, 5.2); cam.lookAt(0, .75, 0); }
+} else if (A === 'phone') {
+  scene.background = bgTex('#f7e4df', '#c49b97'); r.toneMappingExposure = .85;
+  const ph = makePhone([{ img: 'shots/home.png', h: 7200, tab: 'shots/home-tab.png' }]); ph.screens[0].set(0); scene.add(ph.grp); ph.grp.rotation.set(-.08, -.35, .04); ph.grp.position.y = 1.2;
+  floorMirror('#dcbcb6', .82, .3); key(2, 5, 4, 110, '#fff4ec', 0, 1.2, 0); scene.add(new THREE.HemisphereLight('#fff6f0', '#e8c6c0', .35));
+  cam.position.set(0, 1.3, 4.4); cam.lookAt(0, 1.2, 0);
+} else if (A === 'gallery') {
+  scene.background = bgTex('#f6dfd8', '#b88c88'); scene.fog = new THREE.Fog('#e3c2bb', 10, 48); r.toneMappingExposure = .85;
+  for (let i = 0; i < 9; i++) { const a = makeArchFrame(.07); a.position.z = -i * 5; a.castShadow = a.receiveShadow = true; scene.add(a); }
+  floorMirror('#d8b5ae', .74, .2);
+  for (let i = 0; i < 9; i++) { const l = new THREE.PointLight('#ffe8dc', 25, 9); l.position.set(0, 5.5, -i * 5 - 2.5); scene.add(l); }
+  key(4, 9, 6, 260, '#fff0e6', 0, 0, -10); scene.add(new THREE.HemisphereLight('#fff6f0', '#d9aea8', .35));
+  scene.add(makeDust(600, [-4, 0, -40, 4, 7, 4], .06));
+  cam.position.set(0, 2.2, 6); cam.lookAt(0, 2.4, -10);
+}
+const comp = new EffectComposer(r); comp.addPass(new RenderPass(scene, cam)); comp.addPass(new UnrealBloomPass(new THREE.Vector2(540, 960), bloom, .6, thr)); comp.addPass(new OutputPass());
+window.render = t => { scene.traverse(o => o.userData.update && o.userData.update(t)); comp.render(); };
+window.ready = true;
+</script></body></html>

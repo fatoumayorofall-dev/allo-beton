@@ -1,0 +1,111 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8">
+<script type="importmap">{"imports":{"three":"./node_modules/three/build/three.module.js","three/addons/":"./node_modules/three/examples/jsm/"}}</script>
+<style>
+@font-face{font-family:Bodoni;src:url(fonts/bodoni-moda-latin.woff2)}
+@font-face{font-family:Bodoni;src:url(fonts/bodoni-moda-latin-ext.woff2);unicode-range:U+0100-024F}
+@font-face{font-family:Bodoni;font-style:italic;src:url(fonts/bodoni-moda-italic-latin.woff2)}
+@font-face{font-family:Bodoni;font-style:italic;src:url(fonts/bodoni-moda-italic-latin-ext.woff2);unicode-range:U+0100-024F}
+@font-face{font-family:Jost;src:url(fonts/jost-latin.woff2)}
+@font-face{font-family:Jost;src:url(fonts/jost-latin-ext.woff2);unicode-range:U+0100-024F}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;background:#12070d}
+#gl{position:absolute;left:0;top:0;width:1080px;height:1920px}
+#ov{position:absolute;inset:0;overflow:hidden}
+.abs{position:absolute}
+.hide{display:none}
+.kick{font:500 26px Jost;letter-spacing:.38em;text-transform:uppercase}
+.kick .c{display:inline-block}
+.ln{display:block;overflow:hidden;padding:0 .06em;margin:0 -.06em}
+.ln>.in{display:block}
+.ttl{font:400 100px/1.02 Bodoni}
+.ttl i{font-style:italic}
+.shadowTxt{text-shadow:0 4px 30px rgba(20,8,14,.35)}
+.hl{position:absolute;left:80px;right:80px;top:140px}
+.hl.light .kick{color:#8f544e}.hl.light .ttl{color:#3a1f2d}.hl.light .ttl i{color:#b03a64}
+.hl.dark .kick{color:#f0c9c1}.hl.dark .ttl{color:#fdf7f5}.hl.dark .ttl i{color:#f0c9c1}
+#wm1{position:absolute;left:250px;top:1560px;width:580px;height:128px}
+#tag1{position:absolute;left:0;width:1080px;top:1730px;text-align:center;color:#e9bcb1}
+#belle{position:absolute;left:0;width:1080px;top:150px;text-align:center;font:400 300px/1 Bodoni;color:#3a1f2d}
+#belle .ln,#chaque .ln,#noir .ln,#tag6 .ln{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .12em}
+#chaque{position:absolute;left:0;width:1080px;top:1640px;text-align:center;font:italic 400 140px/1.05 Bodoni;color:#b03a64}
+#a2kick{position:absolute;left:0;width:1080px;top:110px;text-align:center;color:#8f544e}
+#noirKick{position:absolute;left:0;width:1080px;top:110px;text-align:center;color:#8f544e}
+#noir{position:absolute;left:0;width:1080px;top:160px;text-align:center;font:400 210px/1 Bodoni;color:#3a1f2d;white-space:nowrap}
+#noir i{color:#b03a64}
+.chip{position:absolute;left:0;top:0;display:flex;align-items:center;gap:18px;height:96px;padding:0 40px 0 20px;border-radius:999px;background:rgba(255,255,255,.94);box-shadow:0 30px 60px -20px rgba(58,31,45,.45),0 0 0 1px rgba(58,31,45,.06);font:500 32px Jost;color:#3a1f2d;white-space:nowrap}
+.chip .ico{width:58px;height:58px;border-radius:50%;background:#fbeeea;color:#8f544e;display:grid;place-items:center}
+.chip .ico svg{width:30px;height:30px}
+.prod{position:absolute;left:0;width:1080px;text-align:center}
+.prod .idx{font:500 24px Jost;letter-spacing:.34em;color:#8f544e}
+.prod .name{font:400 150px/1 Bodoni;color:#3a1f2d;margin-top:18px}
+.prod .name i{color:#b03a64}
+.prod .ln{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .14em}
+.price{position:absolute;left:0;width:1080px;top:1640px;text-align:center}
+.price .v{font:italic 400 72px Bodoni;color:#3a1f2d}
+.price .ln{display:inline-block;overflow:hidden;vertical-align:top;padding:0 .04em .14em}
+#shade6{position:absolute;left:0;right:0;bottom:0;height:1000px;background:linear-gradient(to top,rgba(18,7,12,.92) 0,rgba(18,7,12,.75) 45%,transparent 100%)}
+.price .k{font:500 26px Jost;letter-spacing:.34em;color:#8f544e;text-transform:uppercase;margin-bottom:14px}
+.swatches{display:flex;gap:22px;justify-content:center;margin-top:26px}
+.swatches span{width:46px;height:46px;border-radius:50%;box-shadow:0 0 0 2px #fff,0 6px 16px -4px rgba(58,31,45,.4)}
+#finger{position:absolute;left:0;top:0;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,255,255,.96),rgba(255,255,255,.8) 60%,rgba(240,201,193,.85));box-shadow:0 14px 30px -6px rgba(58,31,45,.5),0 0 0 2px rgba(255,255,255,.9)}
+.ripple{position:absolute;left:0;top:0;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:3px solid rgba(176,58,100,.7);background:rgba(176,58,100,.12)}
+#badge{position:absolute;left:0;top:0;height:88px;padding:0 34px 0 16px;border-radius:999px;background:#b03a64;color:#fff;display:flex;align-items:center;gap:14px;font:600 34px Jost;box-shadow:0 26px 50px -16px rgba(176,58,100,.6)}
+#badge .ico{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);display:grid;place-items:center}
+#badge svg{width:30px;height:30px}
+#check{position:absolute;left:0;top:0;width:150px;height:150px;overflow:visible}
+#merci{position:absolute;left:0;top:0;background:#fdf7f5;border-radius:34px;overflow:hidden;box-shadow:0 40px 80px -24px rgba(58,31,45,.5)}
+#merci img{display:block;width:460px;margin:8px 0}
+.city{position:absolute;left:0;top:0;font:500 40px Jost;color:#fdf7f5;white-space:nowrap;letter-spacing:.02em;text-shadow:0 2px 14px rgba(10,4,8,.8)}
+#a5sub{position:absolute;left:80px;top:420px;font:400 32px Jost;color:rgba(253,247,245,.82);letter-spacing:.04em}
+.fete{position:absolute;left:0;top:0;width:1080px;text-align:center;font:italic 400 176px/1 Bodoni;color:#fdf7f5;white-space:nowrap}
+.fete.on{color:transparent;background:linear-gradient(100deg,#fbe3dc,#f0c9c1 40%,#c48a82 70%,#fbe3dc);-webkit-background-clip:text;background-clip:text}
+#fetesKick{position:absolute;left:0;width:1080px;top:300px;text-align:center;color:#f0c9c1}
+#wolof{position:absolute;left:0;width:1080px;top:1660px;text-align:center;font:italic 400 58px Bodoni;color:#f0c9c1}
+#wm6{position:absolute;left:250px;top:1080px;width:580px;height:128px}
+#tag6{position:absolute;left:0;width:1080px;top:1255px;text-align:center;font:italic 400 86px Bodoni;color:#fdf7f5}
+#tag6 i{color:#f0c9c1}
+#sub6{position:absolute;left:0;width:1080px;top:1395px;text-align:center;color:#e9bcb1}
+#cta{position:absolute;left:50%;top:1510px;height:116px;padding:0 56px 0 30px;border-radius:999px;background:#25d366;color:#05301a;display:flex;align-items:center;gap:22px;font:600 38px Jost;white-space:nowrap;box-shadow:0 34px 70px -22px rgba(0,0,0,.6)}
+#cta svg{width:62px;height:62px}
+#pay6{position:absolute;left:0;width:1080px;top:1700px;text-align:center;font:400 30px Jost;letter-spacing:.06em;color:rgba(253,247,245,.82)}
+.glint{position:absolute;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;pointer-events:none;mix-blend-mode:screen}
+.glint::before,.glint::after{content:"";position:absolute;left:0;top:50%;width:100%;height:3px;margin-top:-1.5px;background:linear-gradient(90deg,transparent,rgba(255,236,226,.95) 50%,transparent)}
+.glint::after{transform:rotate(90deg)}
+.glint i{position:absolute;left:50%;top:50%;width:110px;height:110px;margin:-55px;border-radius:50%;background:radial-gradient(circle,rgba(255,244,236,.95),rgba(240,201,193,.5) 35%,transparent 70%)}
+#leak{position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen}
+#leak i{position:absolute;left:0;top:0;width:1400px;height:1400px;margin:-700px;border-radius:50%;background:radial-gradient(circle,rgba(255,200,170,.85),rgba(255,160,150,.35) 40%,transparent 70%)}
+#flash{position:absolute;inset:0;pointer-events:none;background:radial-gradient(900px 900px at 50% 42%,#fff6f0,rgba(255,230,220,.6) 45%,transparent 75%);opacity:0}
+#vig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(1300px 1750px at 50% 50%,transparent 60%,rgba(20,8,14,.32) 100%)}
+#grain{position:absolute;left:-64px;top:-64px;width:1208px;height:2048px;opacity:.045;mix-blend-mode:overlay;pointer-events:none}
+</style></head><body>
+<canvas id="gl" width="1080" height="1920"></canvas>
+<div id="ov">
+ <svg id="wm1" viewBox="-1 -1 271.2 60"><clipPath id="wm1c"><rect id="wm1r" x="-1" y="-1" width="0" height="62"/></clipPath><g clip-path="url(#wm1c)" id="wm1g"></g></svg>
+ <div id="tag1" class="kick"></div>
+ <div id="a2kick" class="kick"></div>
+ <div id="belle"></div><div id="chaque"></div>
+ <div id="noirKick" class="kick"></div><div id="noir"></div>
+ <div class="chip" id="chip2"></div>
+ <div class="prod" id="prodA" style="top:120px"><div class="idx kick"></div><div class="name"></div></div>
+ <div class="prod" id="prodB" style="top:120px"><div class="idx kick"></div><div class="name"></div></div>
+ <div class="price" id="priceA"><div class="k"></div><div class="v"></div></div>
+ <div class="price" id="priceB"><div class="k"></div><div class="v"></div><div class="swatches"><span style="background:#1c1418"></span><span style="background:#b5835a"></span><span style="background:#e7b7b8"></span></div></div>
+ <div class="hl light" id="h41"></div><div class="hl light" id="h42"></div><div class="hl light" id="h43"></div>
+ <div id="badge"></div>
+ <svg id="check" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#b03a64"/><circle id="checkRing" cx="50" cy="50" r="46" fill="none" stroke="#f0c9c1" stroke-width="3" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" transform="rotate(-90 50 50)"/><path id="checkTick" d="M30 52l13 13 27-29" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/></svg>
+ <div id="merci"><img src="el/merci.png" alt=""></div>
+ <div class="ripple" id="rip"></div><div id="finger"></div>
+ <div class="hl dark" id="a5h"></div><div id="a5sub">24 h à Dakar · 48 à 72 h en régions</div>
+ <div id="cities"></div>
+ <div id="fetesKick" class="kick"></div><div id="fetes"></div><div id="wolof">Dalal ak jàmm</div>
+ <div id="shade6"></div>
+ <svg id="wm6" viewBox="-1 -1 271.2 60"><clipPath id="wm6c"><rect id="wm6r" x="-1" y="-1" width="0" height="62"/></clipPath><g clip-path="url(#wm6c)" id="wm6g"></g></svg>
+ <div id="tag6"></div><div id="sub6" class="kick"></div>
+ <div id="cta"></div><div id="pay6">Wave · Orange Money · Carte · à la livraison</div>
+ <div class="glint" id="glint"><i></i></div>
+ <div id="leak"><i id="lk1"></i><i id="lk2"></i></div>
+ <div id="flash"></div><div id="vig"></div>
+ <canvas id="grain" width="604" height="1024"></canvas>
+</div>
+<script type="module" src="film.js"></script>
+</body></html>
