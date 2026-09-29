@@ -113,13 +113,17 @@ export function registerSeoRoutes(app, { store, dist }) {
       `<meta property="og:image:alt" content="${esc(meta.title)}" />`,
       '<meta name="twitter:card" content="summary_large_image" />',
       ...(meta.price ? [`<meta property="product:price:amount" content="${meta.price}" />`, '<meta property="product:price:currency" content="XOF" />'] : []),
-      ...(PRIVATE.test(req.path) ? ['<meta name="robots" content="noindex, nofollow" />'] : []),
+      ...(PRIVATE.test(req.path) || HIDDEN ? ['<meta name="robots" content="noindex, nofollow" />'] : []),
     ];
     return tags.join('\n    ');
   }
 
+  /* Site de test (NOINDEX=1) : invisible pour Google, le vrai site gardera seul le référencement */
+  const HIDDEN = process.env.NOINDEX === '1';
+
   /* robots.txt : tout est ouvert sauf les espaces privés */
   app.get('/robots.txt', (req, res) => {
+    if (HIDDEN) return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
     res.type('text/plain').set('Cache-Control', 'public, max-age=3600').send([
       'User-agent: *',
       'Allow: /',

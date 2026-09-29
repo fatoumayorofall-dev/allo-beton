@@ -12,6 +12,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 try { process.loadEnvFile(path.join(here, '.env')); } catch { /* pas de fichier .env : variables d'environnement du système */ }
+// Hébergement Render : l'adresse publique du site est fournie automatiquement
+if (!process.env.SITE_URL && process.env.RENDER_EXTERNAL_URL) process.env.SITE_URL = process.env.RENDER_EXTERNAL_URL;
 
 const { assistantEnabled, sanitizeMessages, streamAssistant, Anthropic } = await import('./assistant.js');
 const wa = await import('./whatsapp.js');
