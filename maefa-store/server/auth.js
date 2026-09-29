@@ -19,10 +19,12 @@ const sha256 = s => crypto.createHash('sha256').update(s).digest('hex');
 const devMode = () => process.env.OTP_DEV_MODE === '1';
 const PIN_MAX_FAILS = 10;
 const hashPin = (pin, salt) => crypto.scryptSync(`${pin}`, salt, 32).toString('hex');
+/** Codes trop faciles à deviner */
+const WEAK_PINS = new Set(['0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999', '1234', '4321', '0123', '1212', '2580']);
 
 function publicUser(u) {
   if (!u) return null;
-  return { phone: u.phone, firstName: u.firstName ?? '', lastName: u.lastName ?? '', zone: u.zone ?? '', address: u.address ?? '', location: u.location ?? null, wishlist: u.wishlist ?? [], createdAt: u.createdAt };
+  return { phone: u.phone, firstName: u.firstName ?? '', lastName: u.lastName ?? '', zone: u.zone ?? '', address: u.address ?? '', location: u.location ?? null, hasPin: !!u.pinHash, wishlist: u.wishlist ?? [], createdAt: u.createdAt };
 }
 
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : undefined);
@@ -140,6 +142,28 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     }
     if (Array.isArray(b.wishlist)) patch.wishlist = b.wishlist.filter(x => typeof x === 'string' && x.length <= 40).slice(0, 200);
     res.json({ user: publicUser(store.saveUser(user.phone, patch)) });
+  });
+
+  // Changer son code secret depuis son espace (l'ancien code est demandé s'il existe)
+  app.post('/api/me/pin', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Non connectée' });
+    const current = String(req.body?.current ?? '');
+    const next = String(req.body?.next ?? '');
+    if (!/^\d{4}$/.test(next)) return res.status(400).json({ error: 'Le code secret fait 4 chiffres' });
+    if (WEAK_PINS.has(next)) return res.status(400).json({ error: 'Ce code est trop facile à deviner : choisissez-en un autre' });
+    if (!limit(`pin-change:${user.phone}`, 6, 15 * 60e3)) return res.status(429).json({ error: 'Trop d\'essais. Réessayez dans 15 minutes.' });
+    if (user.pinHash) {
+      const ok = /^\d{4}$/.test(current) && crypto.timingSafeEqual(Buffer.from(hashPin(current, user.pinSalt)), Buffer.from(user.pinHash));
+      if (!ok) {
+        const fails = (user.pinFails ?? 0) + 1;
+        store.saveUser(user.phone, { pinFails: fails });
+        return res.status(400).json({ error: 'Code actuel incorrect' });
+      }
+    }
+    const salt = crypto.randomBytes(16).toString('hex');
+    store.saveUser(user.phone, { pinSalt: salt, pinHash: hashPin(next, salt), pinFails: 0 });
+    res.json({ ok: true });
   });
 
   // Commande passée par une cliente connectée : rattachée à son compte

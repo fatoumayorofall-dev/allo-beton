@@ -202,6 +202,8 @@ export interface Account {
   address: string;
   /** Dernier point de livraison choisi sur la carte */
   location?: DeliveryLocation | null;
+  /** Un code secret est enregistré (sinon connexion par WhatsApp seulement) */
+  hasPin?: boolean;
   wishlist: string[];
   createdAt: string;
 }
@@ -236,6 +238,8 @@ export const authLogout = (token: string) => call<null>('/api/auth/logout', { me
 export const fetchMe = (token: string) => call<{ user: Account; orders: Order[] }>('/api/me', { token });
 export const updateMe = (token: string, patch: Partial<Omit<Account, 'phone' | 'createdAt'>>) =>
   call<{ user: Account }>('/api/me', { method: 'PATCH', token, body: JSON.stringify(patch) });
+export const changeMyPin = (token: string, current: string, next: string) =>
+  call<{ ok: true }>('/api/me/pin', { method: 'POST', token, body: JSON.stringify({ current, next }) });
 export const saveMyOrder = (token: string, order: Order) => call<{ ok: true }>('/api/me/orders', { method: 'POST', token, body: JSON.stringify({ order }) });
 
 export interface CustomerRow extends Account { lastLogin?: string; hasPin?: boolean; locked?: boolean; orders: number; spent: number }

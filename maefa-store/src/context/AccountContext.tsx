@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Order } from '../data/types';
-import { authLogout, authPin, authStart, authVerify, fetchMe, getServerStatus, saveMyOrder, updateMe, type Account } from '../services/api';
+import { authLogout, authPin, authStart, authVerify, changeMyPin, fetchMe, getServerStatus, saveMyOrder, updateMe, type Account } from '../services/api';
 import { useStore } from './StoreContext';
 
 const TOKEN_KEY = 'maefa_token';
@@ -18,6 +18,7 @@ interface AccountContextValue {
   /** Connexion par code secret à 4 chiffres (créé à la première visite) */
   loginWithPin: (phone: string, pin: string) => Promise<{ ok: boolean; error?: string; isNew?: boolean }>;
   saveProfile: (patch: Partial<Omit<Account, 'phone' | 'createdAt'>>) => Promise<boolean>;
+  changePin: (current: string, next: string) => Promise<{ ok: boolean; error?: string }>;
   recordOrder: (order: Order) => void;
   logout: () => void;
 }
@@ -94,6 +95,14 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return r.ok;
   }, [token]);
 
+  const changePin = useCallback(async (current: string, next: string) => {
+    if (!token) return { ok: false, error: 'Non connectée' };
+    const r = await changeMyPin(token, current, next);
+    if (!r.ok) return { ok: false, error: r.error };
+    setUser(u => (u ? { ...u, hasPin: true } : u));
+    return { ok: true };
+  }, [token]);
+
   const recordOrder = useCallback((order: Order) => {
     if (!token || status !== 'user') return;
     saveMyOrder(token, order).then(r => { if (r.ok) setRemoteOrders(list => [order, ...list.filter(o => o.id !== order.id)]); });
@@ -110,8 +119,8 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [token]);
 
   const value = useMemo<AccountContextValue>(() => ({
-    status, user, remoteOrders, startLogin: authStart, verifyCode, loginWithPin, saveProfile, recordOrder, logout,
-  }), [status, user, remoteOrders, verifyCode, loginWithPin, saveProfile, recordOrder, logout]);
+    status, user, remoteOrders, startLogin: authStart, verifyCode, loginWithPin, saveProfile, changePin, recordOrder, logout,
+  }), [status, user, remoteOrders, verifyCode, loginWithPin, saveProfile, changePin, recordOrder, logout]);
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;
 };

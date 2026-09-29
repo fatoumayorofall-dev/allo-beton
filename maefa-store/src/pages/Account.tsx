@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, ChevronLeft, Heart, KeyRound, Loader2, Lock, LogOut, MapPin, MessageCircle, Package, Pencil, RotateCcw, Ruler, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Volume2, Zap } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Heart, KeyRound, Loader2, Lock, LogOut, MapPin, MessageCircle, Package, Pencil, RotateCcw, Ruler, ShieldCheck, ShoppingBag, Smartphone, Sparkles, UserRound, Volume2, Zap } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
 import { useStore } from '../context/StoreContext';
-import { DELIVERY_ZONES, buildWhatsAppLink } from '../config/site';
+import { DELIVERY_ZONES, SHOP_LOCATION, buildWhatsAppLink, zoneForPoint } from '../config/site';
+import { LocationPicker } from '../components/LocationPicker';
 import { usePageTitle } from '../utils/usePageTitle';
 import { speak } from '../utils/speak';
 import { InstallButton } from '../components/InstallApp';
@@ -14,7 +15,7 @@ import { ForYou, pickForHer } from '../components/ForYou';
 import { canBuy } from '../utils/stock';
 import type { Product } from '../data/types';
 import { formatPrice } from '../utils/format';
-import type { OrderStatus } from '../data/types';
+import type { DeliveryLocation, OrderStatus } from '../data/types';
 import { WhatsAppGlyph } from '../components/BrandLogos';
 
 /** Numéro saisi → 9 chiffres (on accepte « 77 123 45 67 », « +221 77… », « 00221… »). */
@@ -265,18 +266,23 @@ const Welcome: React.FC = () => (
 const NameStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const { saveProfile } = useAccount();
   const [name, setName] = useState('');
+  const [busy, setBusy] = useState(false);
   return (
-    <Card>
-      <span className="w-12 h-12 rounded-full border border-gold/50 grid place-items-center text-gold-dark"><Sparkles className="w-5 h-5" strokeWidth={1.3} /></span>
-      <h1 className="font-display text-4xl mt-4">Bienvenue chez Maefa !</h1>
-      <p className="text-ink/75 mt-2">Comment vous appelez-vous ?</p>
-      <form onSubmit={async e => { e.preventDefault(); if (name.trim()) await saveProfile({ firstName: name.trim() }); onDone(); }} className="mt-6">
-        <input value={name} onChange={e => setName(e.target.value)} placeholder="Votre prénom" aria-label="Votre prénom" autoFocus autoComplete="given-name"
+    <div data-testid="name-step">
+      <span className="w-12 h-12 rounded-full bg-blush/60 grid place-items-center text-gold-dark"><Sparkles className="w-5 h-5" strokeWidth={1.4} /></span>
+      <p className="eyebrow mt-6">Compte créé</p>
+      <h1 className="font-display text-4xl sm:text-[2.75rem] mt-3 leading-[1.05]">Enchantée ! <em className="text-gold-dark">Comment vous appelez-vous ?</em></h1>
+      <p className="text-ink/70 mt-3 leading-relaxed">Votre prénom, pour que le livreur et nous sachions à qui parler.</p>
+      <form onSubmit={async e => { e.preventDefault(); if (!name.trim()) return; setBusy(true); await saveProfile({ firstName: name.trim() }); setBusy(false); onDone(); }} className="mt-8">
+        <label htmlFor="first-name" className="field-label">Votre prénom</label>
+        <input id="first-name" value={name} onChange={e => setName(e.target.value)} placeholder="Ex. : Awa" autoFocus autoComplete="given-name" maxLength={40}
           className="field !h-16 !text-2xl font-display" />
-        <button className="btn-dark mt-5 w-full !h-14">Continuer <ArrowRight className="w-5 h-5" /></button>
-        <button type="button" onClick={onDone} className="mt-3 w-full text-sm text-ink/70">Plus tard</button>
+        <button disabled={!name.trim() || busy} className="btn-dark mt-6 w-full !h-16 !text-[13px]">
+          {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Entrer dans mon espace <ArrowRight className="w-4 h-4" /></>}
+        </button>
+        <button type="button" onClick={onDone} className="mt-3 w-full h-11 text-sm text-ink/65 hover:text-ink">Plus tard</button>
       </form>
-    </Card>
+    </div>
   );
 };
 
@@ -284,27 +290,96 @@ const NameStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
 /*  Espace de la cliente                                               */
 /* ------------------------------------------------------------------ */
 
-const AddressEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+/** Mes informations : prénom, nom, point GPS de la maison, quartier et précisions. */
+const ProfileEditor: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const { user, saveProfile } = useAccount();
   const { saveCustomer, savedCustomer, notify } = useStore();
-  const [zone, setZone] = useState(user?.zone || DELIVERY_ZONES[0].name);
-  const [address, setAddress] = useState(user?.address ?? '');
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
+  const [location, setLocation] = useState<DeliveryLocation | undefined>(user?.location ?? savedCustomer?.location ?? undefined);
+  const [zone, setZone] = useState(user?.zone || savedCustomer?.zone || DELIVERY_ZONES[0].name);
+  const [address, setAddress] = useState(user?.address ?? '');
+  const [busy, setBusy] = useState(false);
+  const center = location ?? DELIVERY_ZONES.find(z => z.name === zone)?.center ?? SHOP_LOCATION;
+  const pick = (loc: DeliveryLocation | undefined) => { setLocation(loc); if (loc) setZone(zoneForPoint(loc)); };
+
   return (
-    <form className="mt-4 space-y-3" onSubmit={async e => {
+    <form className="mt-6 space-y-5" data-testid="profile-editor" onSubmit={async e => {
       e.preventDefault();
-      await saveProfile({ zone, address, lastName });
-      saveCustomer({ ...(savedCustomer ?? {}), firstName: user?.firstName ?? savedCustomer?.firstName ?? '', lastName, phone: user!.phone.replace(/^\+221/, ''), zone, address });
-      notify('Adresse enregistrée');
+      setBusy(true);
+      const ok = await saveProfile({ firstName: firstName.trim(), lastName: lastName.trim(), zone, address: address.trim(), location: location ?? null });
+      setBusy(false);
+      if (!ok) { notify('Enregistrement impossible, vérifiez votre connexion', 'error'); return; }
+      saveCustomer({ ...(savedCustomer ?? {}), firstName: firstName.trim(), lastName: lastName.trim(), phone: user!.phone.replace(/^\+221/, ''), zone, address: address.trim(), location });
+      notify('Informations enregistrées');
       onClose();
     }}>
-      <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nom de famille" aria-label="Nom de famille" className="field !h-14 text-lg" />
-      <select value={zone} onChange={e => setZone(e.target.value)} aria-label="Quartier" className="field !h-14 text-lg">
-        {DELIVERY_ZONES.map(z => <option key={z.name}>{z.name}</option>)}
-      </select>
-      <input value={address} onChange={e => setAddress(e.target.value)} placeholder="Rue, villa, point de repère" aria-label="Adresse" className="field !h-14 text-lg" />
-      <button className="btn-dark w-full">Enregistrer</button>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div><label htmlFor="pf-first" className="field-label">Prénom</label><input id="pf-first" value={firstName} onChange={e => setFirstName(e.target.value)} maxLength={40} autoComplete="given-name" className="field !h-14 text-lg" /></div>
+        <div><label htmlFor="pf-last" className="field-label">Nom de famille</label><input id="pf-last" value={lastName} onChange={e => setLastName(e.target.value)} maxLength={40} autoComplete="family-name" className="field !h-14 text-lg" /></div>
+      </div>
+      <div>
+        <p className="field-label">Ma maison sur la carte</p>
+        <LocationPicker value={location} onChange={pick} initialCenter={center} />
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div><label htmlFor="pf-zone" className="field-label">Quartier / ville</label>
+          <select id="pf-zone" value={zone} onChange={e => setZone(e.target.value)} className="field !h-14 text-lg">
+            {DELIVERY_ZONES.map(z => <option key={z.name}>{z.name}</option>)}
+          </select></div>
+        <div><label htmlFor="pf-address" className="field-label">Précisions</label><input id="pf-address" value={address} onChange={e => setAddress(e.target.value)} maxLength={160} placeholder="Villa n°, étage, point de repère" autoComplete="street-address" className="field !h-14 text-lg" /></div>
+      </div>
+      <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+        <button type="button" onClick={onClose} className="btn-outline !border-ink/15">Annuler</button>
+        <button disabled={busy} className="btn-dark sm:min-w-48">{busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Check className="w-4 h-4" /> Enregistrer</>}</button>
+      </div>
     </form>
+  );
+};
+
+/** Changer son code secret : ancien code, nouveau, confirmation. */
+const PinChanger: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { user, changePin } = useAccount();
+  const { notify } = useStore();
+  const [step, setStep] = useState<'current' | 'next' | 'confirm'>(user?.hasPin ? 'current' : 'next');
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [code, setCode] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => { ref.current?.focus(); }, [step]);
+
+  const onDigits = async (v: string) => {
+    setCode(v);
+    setError('');
+    if (v.length < 4) return;
+    if (step === 'current') { setCurrent(v); setCode(''); setStep('next'); return; }
+    if (step === 'next') {
+      if (WEAK_PINS.has(v)) { setError('Ce code est trop facile à deviner : choisissez-en un autre'); setCode(''); return; }
+      setNext(v); setCode(''); setStep('confirm'); return;
+    }
+    if (v !== next) { setError('Les deux codes ne sont pas pareils. Recommencez.'); setCode(''); setStep('next'); return; }
+    setBusy(true);
+    const r = await changePin(current, v);
+    setBusy(false);
+    if (r.ok) { notify('Nouveau code secret enregistré'); onClose(); return; }
+    setError(r.error ?? 'Changement impossible');
+    setCode('');
+    setStep(/actuel/i.test(r.error ?? '') ? 'current' : 'next');
+  };
+  const label = { current: 'Mon code actuel', next: 'Mon nouveau code', confirm: 'Le nouveau code, une seconde fois' }[step];
+
+  return (
+    <div className="mt-5 p-5 rounded-3xl bg-ivory/70 border border-ink/[0.06]" data-testid="pin-changer">
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-semibold">{label}</p>
+        <span className="text-[11px] text-ink/60 tabular-nums">{['current', 'next', 'confirm'].indexOf(step) + (user?.hasPin ? 1 : 0)}/{user?.hasPin ? 3 : 2}</span>
+      </div>
+      <div className="mt-4 max-w-xs"><DigitBoxes key={step} ref={ref} id="new-pin" label={label} value={code} onChange={onDigits} error={!!error} disabled={busy} secret autoComplete="off" /></div>
+      <p className="mt-3 min-h-5 text-sm" role="alert">{busy ? <Loader2 className="w-4 h-4 animate-spin text-gold" /> : error && <span className="text-wine">{error}</span>}</p>
+      <button type="button" onClick={onClose} className="mt-1 text-sm underline underline-offset-4 text-ink/65 hover:text-ink">Annuler</button>
+    </div>
   );
 };
 
@@ -320,16 +395,34 @@ const STEPS: { status: OrderStatus[]; label: string }[] = [
   { status: ['livree'], label: 'Livrée' },
 ];
 
+const Panel: React.FC<{ title: string; action?: React.ReactNode; children: React.ReactNode; id?: string; className?: string }> = ({ title, action, children, id, className = '' }) => (
+  <section id={id} className={`scroll-mt-28 bg-white rounded-[2rem] border border-ink/[0.06] shadow-[0_1px_2px_rgba(36,20,30,.04),0_12px_40px_-18px_rgba(36,20,30,.18)] p-6 sm:p-7 ${className}`}>
+    <div className="flex items-center justify-between gap-3">
+      <h2 className="font-display text-2xl">{title}</h2>
+      {action}
+    </div>
+    {children}
+  </section>
+);
+
+const EmptyState: React.FC<{ Icon: typeof Package; text: string; children?: React.ReactNode }> = ({ Icon, text, children }) => (
+  <div className="mt-5 rounded-3xl border border-dashed border-ink/15 bg-ivory/50 p-6 text-center">
+    <span className="mx-auto w-14 h-14 rounded-full bg-white shadow-soft grid place-items-center text-gold-dark"><Icon className="w-6 h-6" strokeWidth={1.3} /></span>
+    <p className="mt-4 text-sm text-ink/75 leading-relaxed max-w-xs mx-auto">{text}</p>
+    {children}
+  </div>
+);
+
 /**
  * Espace cliente : un salon à son nom.
- * - carte d'accueil prune (prénom, ancienneté, chiffres clés)
- * - la dernière commande et ses étapes, suivie en un toucher
- * - ses favoris en photos, des raccourcis utiles, son adresse
+ * - accueil (prénom, ancienneté, chiffres clés) avec photo
+ * - profil à compléter, la dernière commande et ses étapes, ses favoris
+ * - ses informations (adresse + point GPS, code secret), des raccourcis utiles
  */
 const Dashboard: React.FC = () => {
   const { user, remoteOrders, logout } = useAccount();
   const { orders, wishlist, getProduct, products, addToCart, setCartOpen, notify, openQuickView } = useStore();
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState<'profile' | 'pin' | null>(null);
   const allOrders = [...new Map([...remoteOrders, ...orders].map(o => [o.id, o])).values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   const pending = allOrders.filter(o => !['livree', 'annulee'].includes(o.status)).length;
   if (!user) return null;
@@ -349,55 +442,84 @@ const Dashboard: React.FC = () => {
     else addToCart(p, { size: p.sizes[0], color: p.colors[0]?.name });
   };
   const since = user.createdAt ? new Date(user.createdAt).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : null;
+  const open = (what: 'profile' | 'pin') => {
+    setEditing(what);
+    setTimeout(() => document.getElementById('mes-infos')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+  };
+
+  // Profil à compléter : ce qui rend la prochaine commande plus rapide
+  const todo = [
+    { done: !!user.firstName, label: 'Mon prénom', act: () => open('profile') },
+    { done: !!(user.location || user.address), label: 'Mon adresse', act: () => open('profile') },
+    { done: wishlist.length > 0, label: 'Un coup de cœur', to: '/boutique' },
+    { done: allOrders.length > 0, label: 'Ma 1re commande', to: '/boutique?tri=nouveautes' },
+  ];
+  const doneCount = todo.filter(t => t.done).length;
 
   const links = [
     { to: '/mes-commandes', Icon: Package, label: 'Mes commandes', hint: pending ? `${pending} en cours` : `${allOrders.length} au total` },
     { to: '/favoris', Icon: Heart, label: 'Mes favoris', hint: `${wishlist.length} pièce${wishlist.length > 1 ? 's' : ''}` },
-    { to: '/s', Icon: Sparkles, label: 'Nouveautés', hint: 'Vues sur le statut' },
-    { to: '/authentique', Icon: ShieldCheck, label: 'Authenticité', hint: 'Vérifier une pièce' },
     { to: '/faq#tailles', Icon: Ruler, label: 'Guide des tailles', hint: 'Trouver ma pointure' },
     { href: buildWhatsAppLink(`Bonjour Maefa, c'est ${user.firstName || 'une cliente'} (+221 ${local}).`), Icon: MessageCircle, label: 'Aide', hint: 'Sur WhatsApp' },
   ];
+  const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+  const addressLine = [user.location?.label, user.address].filter(Boolean).join(' · ');
 
   return (
     <div className="space-y-5 pb-24 lg:pb-0" data-testid="account-dashboard">
       {/* Accueil */}
-      <section className="relative overflow-hidden rounded-[2.25rem] bg-ink text-ivory p-7 sm:p-10" data-dark>
-        <Twinkles count={22} seed={5} />
-        <span className="pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full bg-wine/40 blur-[90px]" aria-hidden />
-        <BrandMark light className="pointer-events-none absolute -bottom-8 right-6 h-44 w-auto opacity-[0.14] rotate-[8deg]" />
-        <div className="relative">
-          <p className="font-script text-4xl text-gold-light leading-none">Bonjour</p>
-          <h1 className="font-display text-4xl sm:text-5xl mt-1">{user.firstName || 'chère cliente'}</h1>
-          <p className="text-ivory/70 text-sm mt-2">+221 {pretty(local)}{since && <> · cliente Maefa depuis {since}</>}</p>
-          <dl className="mt-7 grid grid-cols-3 gap-3 max-w-md">
+      <section className="relative overflow-hidden rounded-[2.25rem] bg-ink text-ivory" data-dark>
+        <ProductImage src="/produits/sac-awa-taupe-1.jpg" alt="" label="" className="absolute inset-y-0 right-0 w-[62%] sm:w-1/2 h-full object-[50%_30%] opacity-80" sizes="(min-width: 640px) 50vw, 62vw" />
+        <div className="absolute inset-0 bg-gradient-to-r from-ink from-35% via-ink/85 via-55% to-ink/10" aria-hidden />
+        <Twinkles count={14} seed={5} />
+        <div className="relative p-7 sm:p-10 lg:p-12 max-w-xl">
+          <BrandMark light className="h-9 w-auto" />
+          <p className="font-script text-4xl text-gold-light leading-none mt-7">Bonjour</p>
+          <h1 className="font-display text-4xl sm:text-5xl mt-1 break-words">{user.firstName || 'chère cliente'}</h1>
+          <p className="text-ivory/70 text-sm mt-3 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="inline-flex items-center gap-1.5"><Smartphone className="w-3.5 h-3.5" /> +221 {pretty(local)}</span>
+            {since && <span className="text-ivory/55">Cliente depuis {since}</span>}
+          </p>
+          <dl className="mt-7 inline-grid grid-cols-3 rounded-2xl bg-white/[0.07] backdrop-blur-sm border border-white/10 divide-x divide-white/10">
             {[[String(allOrders.length), 'commande' + (allOrders.length > 1 ? 's' : '')], [String(pending), 'en cours'], [String(wishlist.length), 'favori' + (wishlist.length > 1 ? 's' : '')]].map(([n, l]) => (
-              <div key={l} className="border-l border-gold/40 pl-4 py-1">
-                <dt className="sr-only">{l}</dt>
-                <dd className="font-sans font-light text-3xl tabular-nums leading-none">{n}</dd>
-                <dd className="text-[10px] uppercase tracking-[0.2em] text-ivory/65 mt-2">{l}</dd>
+              <div key={l} className="px-4 sm:px-6 py-3.5 flex flex-col-reverse">
+                <dt className="text-[10px] uppercase tracking-[0.18em] text-ivory/65 mt-1.5">{l}</dt>
+                <dd className="font-display text-3xl tabular-nums leading-none">{n}</dd>
               </div>
             ))}
           </dl>
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-wrap gap-3">
             <Link to="/boutique?tri=nouveautes" className="btn-light !h-12">Les nouveautés <ArrowRight className="w-4 h-4" /></Link>
             {picks.length > 0 && <a href="#pour-vous" className="btn-ghost-light !h-12">Ma sélection</a>}
           </div>
         </div>
       </section>
 
+      {/* Profil à compléter */}
+      {doneCount < todo.length && (
+        <section className="rounded-[2rem] bg-blush/40 border border-gold/20 p-5 sm:p-6" data-testid="account-todo">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-semibold">Mon compte est prêt à <span className="text-gold-dark tabular-nums">{Math.round((doneCount / todo.length) * 100)} %</span></p>
+            <span className="text-xs text-ink/60 tabular-nums">{doneCount}/{todo.length}</span>
+          </div>
+          <div className="mt-3 h-1.5 rounded-full bg-white overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-gold to-gold-dark transition-[width] duration-700" style={{ width: `${(doneCount / todo.length) * 100}%` }} /></div>
+          <ul className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {todo.map(t => {
+              const cls = `w-full h-full min-h-12 px-3 py-2 rounded-2xl text-sm flex items-center gap-2 text-left transition-colors ${t.done ? 'bg-white/60 text-ink/55' : 'bg-white text-ink font-semibold hover:bg-ink hover:text-ivory shadow-soft'}`;
+              const inner = <>{t.done ? <Check className="w-4 h-4 text-emerald-700 shrink-0" /> : <span className="w-4 h-4 rounded-full border-2 border-gold shrink-0" />}<span className={t.done ? 'line-through decoration-ink/25' : ''}>{t.label}</span></>;
+              return <li key={t.label}>{t.done ? <span className={cls}>{inner}</span> : t.to ? <Link to={t.to} className={cls}>{inner}</Link> : <button type="button" onClick={t.act} className={cls}>{inner}</button>}</li>;
+            })}
+          </ul>
+        </section>
+      )}
+
       <div className="grid lg:grid-cols-[1.25fr_1fr] gap-5 items-start">
         {/* Dernière commande */}
-        <Card>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-2xl">Ma dernière commande</h2>
-            {allOrders.length > 1 && <Link to="/mes-commandes" className="text-xs font-semibold underline underline-offset-4">Toutes</Link>}
-          </div>
+        <Panel title="Ma dernière commande" action={allOrders.length > 1 && <Link to="/mes-commandes" className="text-xs font-semibold underline underline-offset-4">Toutes</Link>}>
           {!last ? (
-            <div className="mt-4 text-sm text-ink/75">
-              <p>Vous n'avez pas encore commandé. Nos nouveautés vous attendent.</p>
+            <EmptyState Icon={ShoppingBag} text="Vous n'avez pas encore commandé. Livraison à Dakar en 24 h, paiement Wave, Orange Money ou à la livraison.">
               <Link to="/boutique?tri=nouveautes" className="btn-dark mt-5">Découvrir la boutique <ArrowRight className="w-4 h-4" /></Link>
-            </div>
+            </EmptyState>
           ) : (
             <div className="mt-4" data-testid="last-order">
               <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
@@ -407,13 +529,13 @@ const Dashboard: React.FC = () => {
               {last.status === 'annulee' ? (
                 <p className="mt-4 text-sm text-wine">Commande annulée.</p>
               ) : (
-                <ol className="mt-5 grid grid-cols-4" aria-label="Étapes de la commande">
+                <ol className="mt-6 grid grid-cols-4" aria-label="Étapes de la commande">
                   {STEPS.map((st, i) => {
                     const done = i <= stepIndex;
                     return (
                       <li key={st.label} className="relative flex flex-col items-center text-center" aria-current={i === stepIndex ? 'step' : undefined}>
-                        {i > 0 && <span className={`absolute top-3.5 right-1/2 w-full h-0.5 -z-0 ${i <= stepIndex ? 'bg-gold' : 'bg-ink/10'}`} aria-hidden />}
-                        <span className={`relative w-7 h-7 rounded-full grid place-items-center text-[11px] font-bold ${done ? 'bg-ink text-gold-light' : 'bg-white border border-ink/15 text-ink/65'}`}>
+                        {i > 0 && <span className={`absolute top-4 right-1/2 w-full h-0.5 ${i <= stepIndex ? 'bg-gold' : 'bg-ink/10'}`} aria-hidden />}
+                        <span className={`relative w-8 h-8 rounded-full grid place-items-center text-[11px] font-bold ${done ? 'bg-ink text-gold-light' : 'bg-white border border-ink/15 text-ink/65'} ${i === stepIndex ? 'ring-4 ring-gold/25' : ''}`}>
                           {done ? <Check className="w-3.5 h-3.5" /> : i + 1}
                         </span>
                         <span className={`mt-2 text-[11px] ${i === stepIndex ? 'font-semibold text-ink' : 'text-ink/60'}`}>{st.label}</span>
@@ -424,9 +546,9 @@ const Dashboard: React.FC = () => {
               )}
               <ul className="mt-6 flex gap-2">
                 {last.items.slice(0, 4).map(i => (
-                  <li key={i.key}><ProductImage src={i.image} alt={i.name} label="" className="w-14 h-16 rounded-xl" /></li>
+                  <li key={i.key}><ProductImage src={i.image} alt={i.name} label="" className="w-14 h-[4.4rem] rounded-xl" /></li>
                 ))}
-                {last.items.length > 4 && <li className="w-14 h-16 rounded-xl bg-ivory-deep grid place-items-center text-xs">+{last.items.length - 4}</li>}
+                {last.items.length > 4 && <li className="w-14 h-[4.4rem] rounded-xl bg-ivory-deep grid place-items-center text-xs">+{last.items.length - 4}</li>}
               </ul>
               <div className="mt-6 grid sm:grid-cols-2 gap-2">
                 <Link to={`/suivi?commande=${encodeURIComponent(last.id)}&tel=${encodeURIComponent(local)}`} className="btn-dark !px-5">Suivre <ArrowRight className="w-4 h-4" /></Link>
@@ -434,16 +556,14 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
           )}
-        </Card>
+        </Panel>
 
         {/* Favoris */}
-        <Card>
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-2xl">Mes favoris</h2>
-            {favs.length > 0 && <Link to="/favoris" className="text-xs font-semibold underline underline-offset-4">Tout voir</Link>}
-          </div>
+        <Panel title="Mes favoris" action={favs.length > 0 && <Link to="/favoris" className="text-xs font-semibold underline underline-offset-4">Tout voir</Link>}>
           {favs.length === 0 ? (
-            <p className="mt-4 text-sm text-ink/75">Touchez le cœur sur une pièce pour la garder ici.</p>
+            <EmptyState Icon={Heart} text="Touchez le cœur sur une pièce pour la garder ici, sur tous vos téléphones.">
+              <Link to="/boutique" className="btn-outline mt-5 !h-11">Voir les sacs</Link>
+            </EmptyState>
           ) : (
             <ul className="mt-4 grid grid-cols-2 gap-3" data-testid="account-favs">
               {favs.map(p => (
@@ -466,44 +586,55 @@ const Dashboard: React.FC = () => {
               ))}
             </ul>
           )}
-        </Card>
+        </Panel>
       </div>
 
-      {/* Sélection personnelle */}
-      <ForYou id="pour-vous" className="pt-6" />
+      {/* Mes informations */}
+      <Panel id="mes-infos" title="Mes informations" action={editing !== 'profile' && (
+        <button onClick={() => open('profile')} className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-ink/15 hover:border-ink text-sm font-semibold" data-testid="edit-profile"><Pencil className="w-3.5 h-3.5" /> Modifier</button>
+      )}>
+        {editing === 'profile' ? <ProfileEditor onClose={() => setEditing(null)} /> : (
+          <dl className="mt-5 grid sm:grid-cols-2 gap-x-8 divide-y divide-ink/[0.06] sm:divide-y-0">
+            {[
+              { Icon: UserRound, label: 'Nom', value: fullName || <span className="text-ink/50">À compléter</span> },
+              { Icon: Smartphone, label: 'Téléphone', value: `+221 ${pretty(local)}` },
+              { Icon: MapPin, label: 'Adresse de livraison', value: addressLine || user.zone ? <>{user.location?.label ? addressLine : [user.address, user.zone].filter(Boolean).join(', ')}{user.location && <span className="mt-1 flex items-center gap-1 text-xs text-emerald-800"><Check className="w-3.5 h-3.5" /> Point GPS enregistré : le livreur vient directement</span>}</> : <span className="text-ink/50">Pas encore enregistrée</span> },
+              ...(user.hasPin ? [{ Icon: KeyRound, label: 'Code secret', value: <span className="flex gap-1.5 py-1.5" aria-label="Enregistré">{[0, 1, 2, 3].map(i => <span key={i} className="w-2 h-2 rounded-full bg-ink" />)}</span>, action: editing !== 'pin' && <button onClick={() => setEditing('pin')} className="text-xs font-semibold underline underline-offset-4" data-testid="change-pin">Changer</button> }] : []),
+            ].map(({ Icon, label, value, action }: { Icon: typeof Package; label: string; value: React.ReactNode; action?: React.ReactNode }) => (
+              <div key={label} className="py-4 flex items-start gap-3.5 sm:border-b sm:border-ink/[0.06]">
+                <span className="w-10 h-10 rounded-full bg-ivory grid place-items-center shrink-0 text-gold-dark"><Icon className="w-[18px] h-[18px]" strokeWidth={1.4} /></span>
+                <div className="min-w-0 flex-1"><dt className="text-[10px] uppercase tracking-[0.18em] text-ink/55 font-semibold">{label}</dt><dd className="mt-0.5 text-[15px] break-words">{value}</dd></div>
+                {action}
+              </div>
+            ))}
+          </dl>
+        )}
+        {editing === 'pin' && <PinChanger onClose={() => setEditing(null)} />}
+      </Panel>
 
       {/* Raccourcis */}
-      <nav aria-label="Mon compte" className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      <nav aria-label="Mon compte" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {links.map(({ to, href, Icon, label, hint }) => {
           const inner = (
             <>
-              <span className="w-11 h-11 rounded-full border border-gold/50 grid place-items-center text-gold-dark group-hover:bg-ink group-hover:border-ink group-hover:text-gold-light transition-colors"><Icon className="w-5 h-5" strokeWidth={1.3} /></span>
-              <span className="mt-3 block font-semibold leading-tight">{label}</span>
-              <span className="text-xs text-ink/70">{hint}</span>
+              <span className="w-11 h-11 rounded-full bg-ivory grid place-items-center text-gold-dark group-hover:bg-ink group-hover:text-gold-light transition-colors"><Icon className="w-5 h-5" strokeWidth={1.3} /></span>
+              <span className="min-w-0"><span className="block font-semibold leading-tight">{label}</span><span className="text-xs text-ink/65">{hint}</span></span>
+              <ArrowRight className="hidden sm:block w-4 h-4 ml-auto text-ink/30 group-hover:text-ink group-hover:translate-x-0.5 transition-all" />
             </>
           );
-          const cls = 'group block p-5 rounded-[1.75rem] bg-white border border-ink/[0.06] hover:shadow-soft hover:-translate-y-0.5 transition-all duration-500';
+          const cls = 'group flex flex-col sm:flex-row sm:items-center gap-3 p-4 sm:p-5 rounded-[1.5rem] bg-white border border-ink/[0.06] hover:shadow-soft hover:-translate-y-0.5 transition-all duration-500';
           return to
             ? <Link key={label} to={to} className={cls}>{inner}</Link>
             : <a key={label} href={href} target="_blank" rel="noopener noreferrer" className={cls}>{inner}</a>;
         })}
       </nav>
 
-      <div className="grid lg:grid-cols-2 gap-5 items-start">
-        <Card>
-          <div className="flex items-start justify-between gap-3">
-            <p className="flex items-start gap-3"><span className="w-11 h-11 rounded-full border border-gold/50 grid place-items-center shrink-0"><MapPin className="w-5 h-5 text-gold-dark" strokeWidth={1.3} /></span>
-              <span><strong className="block">Mon adresse de livraison</strong>
-                <span className="text-sm text-ink/75">{user.address ? `${user.address}, ${user.zone}` : 'Pas encore enregistrée'}</span></span>
-            </p>
-            <button onClick={() => setEditing(e => !e)} aria-label="Modifier mon adresse" className="w-11 h-11 rounded-full border border-ink/15 hover:border-ink grid place-items-center shrink-0"><Pencil className="w-4 h-4" /></button>
-          </div>
-          {editing && <AddressEditor onClose={() => setEditing(false)} />}
-        </Card>
-        <div className="space-y-3">
-          <InstallButton big />
-          <button onClick={logout} className="w-full h-14 rounded-full border border-ink/15 text-ink/70 hover:text-ink hover:border-ink/40 inline-flex items-center justify-center gap-2"><LogOut className="w-4 h-4" /> Me déconnecter</button>
-        </div>
+      {/* Sélection personnelle */}
+      <ForYou id="pour-vous" className="pt-8" />
+
+      <div className="pt-4 grid sm:grid-cols-2 gap-3 max-w-2xl mx-auto">
+        <InstallButton big />
+        <button onClick={logout} className="w-full h-14 rounded-full border border-ink/15 text-ink/70 hover:text-ink hover:border-ink/40 inline-flex items-center justify-center gap-2"><LogOut className="w-4 h-4" /> Me déconnecter</button>
       </div>
     </div>
   );
@@ -519,11 +650,12 @@ export const Account: React.FC = () => {
   const [askName, setAskName] = useState(false);
   const back = params.get('retour');
 
+  const naming = status === 'user' && askName && !user?.firstName;
   const done = () => { setAskName(false); if (back?.startsWith('/')) navigate(back); };
 
   return (
     <div className="bg-ivory min-h-[80vh]">
-      <div className={`${status === 'user' && !(askName && !user?.firstName) ? 'max-w-5xl' : status === 'guest' ? 'max-w-5xl' : 'max-w-md'} mx-auto px-4 py-8 sm:py-14`}>
+      <div className={`${status === 'user' || status === 'guest' ? 'max-w-5xl' : 'max-w-md'} mx-auto px-4 py-8 sm:py-14`}>
         {status === 'loading' && <div className="grid place-items-center py-24"><Loader2 className="w-8 h-8 animate-spin text-gold" /></div>}
         {status === 'off' && (
           <Card>
@@ -536,15 +668,15 @@ export const Account: React.FC = () => {
             </div>
           </Card>
         )}
-        {status === 'guest' && (
+        {(status === 'guest' || naming) && (
           <div className="grid lg:grid-cols-[0.95fr_1.05fr] gap-5 items-stretch">
             <Welcome />
             <div className="bg-white rounded-[2rem] shadow-soft border border-ink/[0.05] p-6 sm:p-10 flex flex-col justify-center">
-              <Login onDone={isNew => (isNew ? setAskName(true) : done())} />
+              {naming ? <NameStep onDone={done} /> : <Login onDone={isNew => (isNew ? setAskName(true) : done())} />}
             </div>
           </div>
         )}
-        {status === 'user' && (askName && !user?.firstName ? <NameStep onDone={done} /> : <Dashboard />)}
+        {status === 'user' && !naming && <Dashboard />}
       </div>
     </div>
   );
