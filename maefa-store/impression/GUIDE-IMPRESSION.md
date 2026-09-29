@@ -16,7 +16,7 @@
 - Les fichiers en 2 pages sont soit recto / verso, soit deux variantes (ex. étiquette colis thermique noire / prune, carnet original / duplicata, ruban kraft / blanc, pochon crème / prune) : voir la colonne Conseil.
 
 ## À compléter
-Modifier `source/config.json` (e-mail, Instagram, site, NINEA, RC…) puis `node source/build.cjs && python3 source/previews.py` — ou demander à Claude de régénérer.
+Modifier `source/config.json` (e-mail, Instagram, site ; NINEA et RC plus tard : ils s’impriment automatiquement dès qu’ils sont renseignés) puis `node source/build.cjs && python3 source/previews.py` — ou demander à Claude de régénérer.
 
 | Fichier | Support | Format fini | Fonds perdus | Pages | Conseil |
 |---|---|---|---|---|---|
