@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 7;
+export const CATALOG_VERSION = 8;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -139,6 +139,30 @@ const awa = (color: ColorOption, key: string) => p({
   createdAt: '2026-09-29T12:00:00Z',
 });
 
+/** Sac Soxna : sac à rabat effet croco verni, anse carrée en métal doré, bandoulière. */
+const soxna = (color: ColorOption, key: string) => p({
+  slug: `sac-soxna-${key}`,
+  name: `Sac Soxna effet croco — ${color.name}`,
+  category: 'sacs',
+  subcategory: 'Sacs à anse dorée',
+  occasions: ['soiree', 'ceremonie', 'mariage', 'bureau'],
+  material: 'Aspect cuir verni embossé effet croco, anse carrée en métal doré',
+  care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau et la chaleur, ranger dans une housse pour préserver le vernis.',
+  styleTip: 'À la main par son anse dorée pour une cérémonie, en bandoulière pour la journée : une couleur vive suffit à illuminer une tenue simple.',
+  price: 22000,
+  images: [`/produits/sac-soxna-${key}-1.jpg`, `/produits/sac-soxna-${key}-2.jpg`],
+  video: `/videos/sac-soxna-${key}.mp4`,
+  colors: [color],
+  sizes: [],
+  stock: 3,
+  description: `Le sac Soxna en ${color.name.toLowerCase()} : un rabat effet croco verni, des empiècements lisses en Y et une anse carrée en métal doré. Il se porte aussi en bandoulière.`,
+  details: ['Sac à rabat', `Couleur : ${color.name}`, 'Effet croco verni et empiècements lisses', 'Anse carrée en métal doré', 'Bandoulière'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-30T10:00:00Z',
+});
+
 /** Catalogue complet, y compris les pièces des catégories pas encore en vente. */
 export const ALL_PRODUCTS: Product[] = [
   ndella({ name: 'Camel', hex: '#a8683a' }, 'camel', 2),
@@ -152,6 +176,11 @@ export const ALL_PRODUCTS: Product[] = [
   awa({ name: 'Cognac', hex: '#9a5a2c' }, 'cognac'),
   awa({ name: 'Taupe', hex: '#8f7a63' }, 'taupe'),
   awa({ name: 'Bordeaux', hex: '#7a1f27' }, 'bordeaux'),
+  soxna({ name: 'Cognac', hex: '#8f4a22' }, 'cognac'),
+  soxna({ name: 'Vert émeraude', hex: '#11694f' }, 'vert-emeraude'),
+  soxna({ name: 'Rouge', hex: '#b3122e' }, 'rouge'),
+  soxna({ name: 'Violet', hex: '#6e3a9c' }, 'violet'),
+  soxna({ name: 'Bleu roi', hex: '#2743b8' }, 'bleu-roi'),
   tongs(COLORS.or, 'dore'),
   tongs(COLORS.noir, 'noir'),
   tongs(COLORS.blanc, 'blanc'),
