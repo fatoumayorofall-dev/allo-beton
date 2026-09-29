@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, QrCode, ScanSearch, ShieldCheck, Smartphone, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
-import { SITE_CONFIG } from '../config/site';
+import { FEATURES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePrefersReducedMotion } from '../utils/hooks';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -207,7 +207,7 @@ export const Home: React.FC = () => {
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">
         <SectionHead eyebrow="La sélection" title="Nos coups" accent="de cœur" link={{ to: '/boutique', label: 'Voir tout' }} />
         <div className="-mt-4 mb-8 flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0" role="tablist" aria-label="Sélection">
-          {([['bestsellers', 'Coups de cœur'], ['nouveautes', 'Nouveautés'], ['promos', 'L\'essentiel']] as const).map(([id, label]) => (
+          {([['bestsellers', 'Coups de cœur'], ['nouveautes', 'Nouveautés'], ...(FEATURES.offres ? [['promos', 'L\'essentiel']] as const : [])] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
               className={`shrink-0 px-5 h-10 rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold border transition-colors ${tab === id ? 'bg-ink text-ivory border-ink' : 'border-ink/15 text-ink/75 hover:border-ink/40'}`}>{label}</button>
           ))}

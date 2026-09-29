@@ -1,6 +1,7 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter, HashRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { StoreProvider } from './context/StoreContext';
+import { FEATURES } from './config/site';
 import { AccountProvider } from './context/AccountContext';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
@@ -128,16 +129,16 @@ export default function App() {
                 <Route path="/compte" element={<Account />} />
                 <Route path="/p/:code" element={<SimpleProduct />} />
                 <Route path="/s" element={<Showcase />} />
-                <Route path="/journal" element={<Journal />} />
-                <Route path="/journal/:slug" element={<ArticlePage />} />
+                <Route path="/journal" element={FEATURES.journal ? <Journal /> : <Navigate to="/boutique" replace />} />
+                <Route path="/journal/:slug" element={FEATURES.journal ? <ArticlePage /> : <Navigate to="/boutique" replace />} />
                 <Route path="/a-propos" element={<About />} />
                 <Route path="/faq" element={<FAQ />} />
                 <Route path="/authentique" element={<Authenticity />} />
                 <Route path="/authentique/:code" element={<Authenticity />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/livreur/:token" element={<Driver />} />
-                <Route path="/marche" element={<Market />} />
-                <Route path="/marche/:slug" element={<MarketProduct />} />
+                <Route path="/marche" element={FEATURES.marche ? <Market /> : <Navigate to="/boutique" replace />} />
+                <Route path="/marche/:slug" element={FEATURES.marche ? <MarketProduct /> : <Navigate to="/boutique" replace />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </PageFade>

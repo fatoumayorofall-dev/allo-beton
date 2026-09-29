@@ -8,6 +8,19 @@ import type { CategoryId } from '../data/types';
 export const SHOP_CATEGORIES: CategoryId[] = ['chaussures', 'sacs'];
 export const isOnSale = (category: CategoryId) => SHOP_CATEGORIES.includes(category);
 
+/**
+ * Rubriques du site. Éteintes pour le lancement (rien à y montrer pour l'instant) ;
+ * passer à true pour les rallumer : menus, pied de page, accueil et pages reviennent.
+ */
+export const FEATURES = {
+  /** Le Marché · monde : articles commandés chez des fournisseurs étrangers */
+  marche: false,
+  /** Le journal : articles de conseils */
+  journal: false,
+  /** Lien « Offres » (pièces en promotion) */
+  offres: false,
+};
+
 export const SITE_CONFIG = {
   name: 'Maefa Store',
   tagline: 'La mode au féminin',

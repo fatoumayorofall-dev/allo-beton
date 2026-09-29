@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { Currency, MarketProduct, MarketSettings, Product } from '../data/types';
 import { fetchMarket } from '../services/api';
 import { CATEGORIES } from '../data/catalog';
+import { FEATURES } from '../config/site';
 
 /** Le Marché suit la boutique : seules les catégories en vente (chaussures, sacs…) sont proposées. */
 export const marketCategoryOnSale = (category: string) => CATEGORIES.some(c => c.name.toLowerCase() === category.trim().toLowerCase());
@@ -38,6 +39,8 @@ export function useMarket() {
   const [state, setState] = useState<{ products: MarketProduct[] | null; loading: boolean; offline: boolean }>({ products: null, loading: true, offline: false });
   useEffect(() => {
     let alive = true;
+    // Marché éteint : aucune pièce du Marché sur l'accueil ni dans la boutique
+    if (!FEATURES.marche) { setState({ products: [], loading: false, offline: false }); return; }
     cache ??= fetchMarket();
     cache.then(r => {
       if (!alive) return;

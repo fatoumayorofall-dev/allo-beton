@@ -3,7 +3,7 @@ import { AlertTriangle, ArrowRight, BarChart3, Check, Film, Globe2, Download, Lo
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
-import { buildWhatsAppLink } from '../config/site';
+import { FEATURES, buildWhatsAppLink } from '../config/site';
 import { formatDate, formatPrice, slugify } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { PAYMENT_LABELS, STATUS_LABELS } from '../components/OrderTimeline';
@@ -93,7 +93,7 @@ export const Admin: React.FC = () => {
           className="inline-flex items-center gap-2 text-sm text-ink/75 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
       <div className="sticky top-14 z-30 -mx-4 px-4 sm:mx-0 sm:px-0 py-3 mb-6 bg-ivory/95 backdrop-blur flex gap-2 overflow-x-auto no-scrollbar border-b border-ink/[0.06]" role="navigation" aria-label="Rubriques">
-        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ['market', 'Le Marché', Globe2], ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send], ['authenticity', 'Authenticité', ShieldCheck]] as const).map(([id, label, Icon]) => (
+        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ...(FEATURES.marche ? [['market', 'Le Marché', Globe2]] as const : []), ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send], ['authenticity', 'Authenticité', ShieldCheck]] as const).map(([id, label, Icon]) => (
           <button key={id} onClick={() => { setTab(id); window.scrollTo({ top: 0 }); }} aria-current={tab === id ? 'page' : undefined}
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap border transition-colors ${tab === id ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/[0.07] hover:border-ink/25'}`}>
             <Icon className="w-4 h-4" /> {label}

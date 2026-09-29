@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
+import { FEATURES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { CATEGORIES } from '../data/catalog';
 import { useStore } from '../context/StoreContext';
 import { BrandMark, Wordmark } from './Logo';
@@ -84,9 +84,9 @@ export const Footer: React.FC = () => {
           <p className={col}>La boutique</p>
           <ul className="space-y-1">
             {CATEGORIES.map(c => <li key={c.id}><Link to={`/boutique/${c.id}`} className={lnk}>{c.name}</Link></li>)}
-            <li><Link to="/marche" className={lnk}>Le Marché · monde</Link></li>
-            <li><Link to="/boutique?promo=1" className={lnk}>Offres</Link></li>
-            <li><Link to="/journal" className={lnk}>Le journal</Link></li>
+            {FEATURES.marche && <li><Link to="/marche" className={lnk}>Le Marché · monde</Link></li>}
+            {FEATURES.offres && <li><Link to="/boutique?promo=1" className={lnk}>Offres</Link></li>}
+            {FEATURES.journal && <li><Link to="/journal" className={lnk}>Le journal</Link></li>}
           </ul>
         </div>
 

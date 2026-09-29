@@ -5,7 +5,7 @@ import { useStore } from '../context/StoreContext';
 import { useAccount } from '../context/AccountContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId } from '../data/types';
-import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
+import { FEATURES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from '../utils/fetes';
 import { useEscape, useLockBody } from '../utils/hooks';
@@ -134,12 +134,16 @@ export const Navbar: React.FC = () => {
               {c.name}
             </NavLink>
           ))}
-          <NavLink to="/marche" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap inline-flex items-center gap-1.5 ${isActive ? 'is-active' : ''}`}>
-            Le Marché <sup className="text-[8px] tracking-[0.18em] text-gold-dark">MONDE</sup>
-          </NavLink>
-          <NavLink to="/journal" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap ${isActive ? 'is-active' : ''}`}>Le journal</NavLink>
-          <NavLink to="/boutique?promo=1" onMouseEnter={() => setMega(null)}
-            className={`link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2`}>Offres</NavLink>
+          {FEATURES.marche && (
+            <NavLink to="/marche" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap inline-flex items-center gap-1.5 ${isActive ? 'is-active' : ''}`}>
+              Le Marché <sup className="text-[8px] tracking-[0.18em] text-gold-dark">MONDE</sup>
+            </NavLink>
+          )}
+          {FEATURES.journal && <NavLink to="/journal" onMouseEnter={() => setMega(null)} className={({ isActive }) => `link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2 whitespace-nowrap ${isActive ? 'is-active' : ''}`}>Le journal</NavLink>}
+          {FEATURES.offres && (
+            <NavLink to="/boutique?promo=1" onMouseEnter={() => setMega(null)}
+              className={`link-luxe text-[11px] uppercase tracking-[0.2em] font-medium py-2`}>Offres</NavLink>
+          )}
         </nav>
 
         {/* Méga-menu */}
@@ -198,15 +202,17 @@ export const Navbar: React.FC = () => {
               {CATEGORIES.map(c => (
                 <Link key={c.id} to={`/boutique/${c.id}`} className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">{c.name} <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
               ))}
-              <Link to="/boutique?promo=1" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl text-ink">Offres <ArrowRight className="w-4 h-4" /></Link>
-              <Link to="/marche" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">
-                <span>Le Marché <sup className="font-sans text-[9px] ml-1 text-gold-dark tracking-[0.18em]">MONDE</sup></span> <ArrowRight className="w-4 h-4 text-ink/30" />
-              </Link>
+              {FEATURES.offres && <Link to="/boutique?promo=1" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl text-ink">Offres <ArrowRight className="w-4 h-4" /></Link>}
+              {FEATURES.marche && (
+                <Link to="/marche" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">
+                  <span>Le Marché <sup className="font-sans text-[9px] ml-1 text-gold-dark tracking-[0.18em]">MONDE</sup></span> <ArrowRight className="w-4 h-4 text-ink/30" />
+                </Link>
+              )}
               <p className="eyebrow mt-8 mb-3">Par occasion</p>
               <div className="flex flex-wrap gap-2">
                 {OCCASIONS.map(o => <Link key={o.id} to={`/boutique?occasion=${o.id}`} className="px-3.5 h-9 inline-flex items-center rounded-full border border-ink/15 text-xs">{o.name}</Link>)}
               </div>
-              <Link to="/journal" className="flex items-center justify-between py-4 mt-6 border-y border-ink/10 font-display text-2xl">Le journal <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
+              {FEATURES.journal && <Link to="/journal" className="flex items-center justify-between py-4 mt-6 border-y border-ink/10 font-display text-2xl">Le journal <ArrowRight className="w-4 h-4 text-ink/30" /></Link>}
               <div className="mt-8 space-y-4 text-sm">
                 <Link to="/compte" className="flex items-center gap-3"><User className="w-4 h-4" strokeWidth={1.5} /> {account.user ? `Mon compte · ${account.user.firstName || 'connectée'}` : 'Mon compte (avec mon numéro)'}</Link>
                 <Link to="/mes-commandes" className="flex items-center gap-3"><Package className="w-4 h-4" strokeWidth={1.5} /> Mes commandes</Link>
