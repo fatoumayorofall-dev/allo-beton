@@ -11,9 +11,9 @@ export const isOnSale = (category: CategoryId) => SHOP_CATEGORIES.includes(categ
 export const SITE_CONFIG = {
   name: 'Maefa Store',
   tagline: 'La mode au féminin',
-  phone: '+221 77 000 00 00',
-  phoneRaw: '+221770000000',
-  whatsappRaw: '221770000000', // format wa.me
+  phone: '+221 77 309 38 19',
+  phoneRaw: '+221773093819',
+  whatsappRaw: '221773093819', // format wa.me
   email: 'contact@maefastore.sn',
   address: 'Sacré-Cœur 3, Dakar, Sénégal',
   hours: {
