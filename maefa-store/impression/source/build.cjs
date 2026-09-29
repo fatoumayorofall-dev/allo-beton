@@ -57,7 +57,23 @@ table{border-collapse:collapse;width:100%}
 const DOCS = [];
 /** doc(fichier, titre, largeur, hauteur (mm, format fini), fonds perdus (mm), pages[]) */
 function doc(file, title, w, h, bleed, pages, note) { DOCS.push({ file, title, w, h, bleed, pages, note }); }
-const P = (bleed, cls, inner, style = '') => ({ bleed, cls, inner, style });
+const P = (bleed, cls, inner, style = '', deco) => ({ bleed, cls, inner, style, deco });
+// ───────── finitions luxe ─────────
+const ICON = {
+  phone: '<path d="M5 4h3l1.5 4-2 1.2a11 11 0 0 0 5.3 5.3l1.2-2 4 1.5v3a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  wa: '<path d="M4 20l1.2-3.6A8 8 0 1 1 8 19.1z"/><path d="M9 8.5c0 3 2.5 5.5 5.5 5.5l1-1.4-1.6-.9-.8.8a4 4 0 0 1-2.3-2.3l.8-.8-.9-1.6z"/>',
+  mail: '<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+  ig: '<rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".9"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.4"/>',
+  web: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.8 3 2.8 15 0 18M12 3c-2.8 3-2.8 15 0 18"/>',
+};
+const ico = (k, c = GOLDD, w = '3mm') => `<svg viewBox="0 0 24 24" style="width:${w};height:${w};flex:none" fill="none" stroke="${c}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
+const monoLineURI = c => 'data:image/svg+xml,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><g transform="translate(35 30) scale(.43)">${monoSvg('line', c).replace(/^<svg[^>]*>|<\/svg>$/g, '')}</g></svg>`);
+/** motif de monogrammes ton sur ton, en quinconce */
+const pattern = (c, op, tile) => `<div class="abs" style="inset:0;opacity:${op};background-image:url(&quot;${monoLineURI(c)}&quot;),url(&quot;${monoLineURI(c)}&quot;);background-size:${tile}mm ${tile}mm;background-position:0 0,${tile / 2}mm ${tile / 2}mm"></div>`;
+/** double filet or, inset en mm depuis le bord fini */
+const frame = (inset, c = GOLD, gap = .9) => `<div class="abs" style="inset:${inset}mm;border:.22mm solid ${c};pointer-events:none"></div><div class="abs" style="inset:${inset + gap}mm;border:.12mm solid ${c};opacity:.7;pointer-events:none"></div>`;
+const contactRows = (c = PLUM, ic = GOLDD, size = 2.45, gap = 1.6) => [['phone', cfg.phone], ['wa', cfg.whatsappAffiche], ['mail', cfg.email], ['ig', cfg.instagram], ['web', cfg.site], ['pin', cfg.adresse]].filter(r => r[1]).map(([k, v]) => `<div style="display:flex;align-items:center;gap:2mm;margin:${gap}mm 0;font-size:${size}mm;color:${c}">${ico(k, ic, (size * 1.2) + 'mm')}<span>${v}</span></div>`).join('');
 const contact = (sep = '<span class="dia"></span>') => [cfg.phone, cfg.email, cfg.instagram].filter(Boolean).join(sep);
 
 (async () => {
@@ -65,52 +81,54 @@ const contact = (sep = '<span class="dia"></span>') => [cfg.phone, cfg.email, cf
 
   // 1. CARTE DE VISITE 85 × 55
   doc('01-carte-de-visite', 'Carte de visite', 85, 55, 3, [
-    P(3, 'plum center', `<div style="width:15mm">${monoSvg()}</div><div style="width:44mm;margin-top:4mm">${nomSvg(IVORY, '#e9bcb1')}</div><div class="it gold" style="font-size:3.4mm;margin-top:3mm">Belle à chaque pas</div>`),
-    P(3, 'ivory', `<div class="abs" style="left:9mm;top:8mm;right:9mm">
-        <div class="disp" style="font-size:5mm;letter-spacing:.02em">${cfg.personne || cfg.nom}</div>
-        <div class="kick goldd" style="font-size:1.9mm;margin-top:1.3mm">${cfg.fonction}</div>
-        <div class="rule" style="margin:3.2mm 0 3mm;width:30mm;background:${GOLD}"></div>
-        <div style="font-size:2.45mm;line-height:1.75">${[cfg.phone && `<b style="font-weight:500">T</b>&nbsp; ${cfg.phone}`, cfg.whatsappAffiche && `<b style="font-weight:500">W</b>&nbsp; ${cfg.whatsappAffiche}`, cfg.email && `<b style="font-weight:500">@</b>&nbsp; ${cfg.email}`, cfg.instagram && `<b style="font-weight:500">IG</b>&nbsp; ${cfg.instagram}`, cfg.adresse].filter(Boolean).join('<br>')}</div></div>
-      <div class="abs" style="right:9mm;bottom:9mm;width:15mm;text-align:center"><div>${qWa}</div><div class="kick" style="font-size:1.3mm;margin-top:1mm;letter-spacing:.2em">WhatsApp</div></div>
-      <div class="abs" style="right:9mm;top:8mm;width:7mm">${monoSvg()}</div>`),
-  ], 'Papier couché mat 350 g, pelliculage soft-touch. Idéal : dorure à chaud or rose sur le recto.');
+    P(3, 'plum center', `<div style="width:14mm">${monoSvg()}</div><div style="width:44mm;margin-top:4mm">${nomSvg(IVORY, '#e9bcb1')}</div><div class="it gold" style="font-size:3.3mm;margin-top:2.6mm">Belle à chaque pas</div>`, '', { pattern: [GOLD, .07, 11], frame: 4.2 }),
+    P(3, 'ivory', `<div class="abs" style="left:10.5mm;top:9.5mm;right:10.5mm;bottom:9.5mm;display:grid;grid-template-columns:1fr 17mm;gap:4mm">
+        <div><div class="disp" style="font-size:4.6mm;line-height:1">${cfg.personne || cfg.nom}</div><div class="kick goldd" style="font-size:1.75mm;margin-top:1.4mm">${cfg.fonction}</div>
+          <div style="height:.25mm;width:12mm;background:${GOLD};margin:2.6mm 0 1.6mm"></div>${contactRows(PLUM, GOLDD, 2.3, 1.15)}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:space-between"><div style="width:7.5mm">${monoSvg()}</div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1.2mm"><div style="width:17mm;padding:1.4mm;background:#fff;border-radius:1.4mm;box-shadow:0 0 0 .2mm ${GOLD}">${qWa}</div><div class="kick" style="font-size:1.25mm;letter-spacing:.14em;color:${GOLDD};text-align:center;line-height:1.3">Commander<br>sur WhatsApp</div></div></div></div>`, '', { frame: 4.2 }),
+  ], 'Papier couché mat 350 g, pelliculage soft-touch. Idéal : dorure à chaud or rose sur le monogramme, le nom et le filet du recto.');
 
-  // 2. FACTURE A4 (bureau) et carnet A5 (à la main)
+  // 2. FACTURE A4 (bureau) et carnet A5 (à la main) ; 3. BON DE LIVRAISON A5
+  const header = (s, title, fields) => `<div style="background:radial-gradient(120% 140% at 20% 0,#56283f,${PLUM} 70%);color:${IVORY};padding:${7 * s}mm ${14 * s}mm;display:flex;justify-content:space-between;align-items:center;position:relative;overflow:hidden">
+      ${pattern(GOLD, .06, 16 * s)}
+      <div style="display:flex;gap:${4 * s}mm;align-items:center;position:relative"><div style="width:${12 * s}mm">${monoSvg()}</div><div><div style="width:${46 * s}mm">${nomSvg(IVORY, '#e9bcb1')}</div><div class="it gold" style="font-size:${3 * s}mm;margin-top:${1.6 * s}mm">Belle à chaque pas</div></div></div>
+      <div style="text-align:right;position:relative"><div class="disp" style="font-size:${9 * s}mm;line-height:1">${title}</div>
+        <div style="display:flex;gap:${2 * s}mm;justify-content:flex-end;margin-top:${3 * s}mm">${fields.map(([l, w]) => `<div style="background:rgba(253,247,245,.1);border:.2mm solid rgba(240,201,193,.5);border-radius:${1.2 * s}mm;padding:${1.4 * s}mm ${2.2 * s}mm;text-align:left;min-width:${w * s}mm"><div class="kick" style="font-size:${1.5 * s}mm;color:#f0c9c1">${l}</div><div style="height:${4 * s}mm"></div></div>`).join('')}</div></div></div>`;
+  const footer = (s) => `<div style="border-top:.25mm solid ${GOLD};padding-top:${2.5 * s}mm;display:flex;justify-content:space-between;align-items:center;font-size:${2.2 * s}mm;color:#6b4a58"><div style="display:flex;gap:${4 * s}mm;flex-wrap:wrap">${[['pin', cfg.adresse], ['phone', cfg.phone], ['mail', cfg.email], ['ig', cfg.instagram]].filter(r => r[1]).map(([k, v]) => `<span style="display:inline-flex;align-items:center;gap:${1.2 * s}mm">${ico(k, GOLDD, (2.6 * s) + 'mm')}${v}</span>`).join('')}</div><div>${[cfg.ninea && 'NINEA ' + cfg.ninea, cfg.rc && 'RC ' + cfg.rc].filter(Boolean).join(' · ') || 'NINEA ……………… · RC ………………'}</div></div>`;
+  const water = (s) => `<div class="abs" style="left:50%;top:55%;width:${80 * s}mm;transform:translate(-50%,-50%);opacity:.045">${monoSvg('line', PLUM)}</div>`;
   const factureBody = (a5) => {
-    const s = a5 ? .72 : 1, rows = a5 ? 8 : 12;
-    return `<div class="abs" style="left:${14 * s}mm;right:${14 * s}mm;top:${12 * s}mm;bottom:${12 * s}mm;display:flex;flex-direction:column;font-size:${3 * s}mm">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start">
-        <div style="display:flex;gap:${4 * s}mm;align-items:center"><div style="width:${13 * s}mm">${monoSvg()}</div><div><div style="width:${50 * s}mm">${nomSvg()}</div><div style="font-size:${2.4 * s}mm;margin-top:${2 * s}mm;line-height:1.5;color:#6b4a58">${cfg.adresse}<br>${contact(' · ')}${cfg.ninea ? `<br>NINEA ${cfg.ninea}` : ''}${cfg.rc ? ` · RC ${cfg.rc}` : ''}</div></div></div>
-        <div style="text-align:right"><div class="disp" style="font-size:${9 * s}mm">Facture</div><div style="margin-top:${2 * s}mm">N° <span style="display:inline-block;width:${28 * s}mm;border-bottom:.25mm solid ${PLUM}"></span></div><div style="margin-top:${2 * s}mm">Date <span style="display:inline-block;width:${26 * s}mm;border-bottom:.25mm solid ${PLUM}"></span></div></div></div>
-      <div class="rule" style="margin:${5 * s}mm 0"></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:${6 * s}mm">
-        <div><div class="kick goldd" style="font-size:${2 * s}mm">Cliente</div><div class="line" style="height:${7 * s}mm"></div><div class="line" style="height:${7 * s}mm"></div></div>
-        <div><div class="kick goldd" style="font-size:${2 * s}mm">Téléphone · Livraison</div><div class="line" style="height:${7 * s}mm"></div><div class="line" style="height:${7 * s}mm"></div></div></div>
-      <table style="margin-top:${6 * s}mm"><thead><tr style="background:${PLUM};color:${IVORY}">${['Article', 'Réf.', 'Taille / couleur', 'Qté', 'Prix unitaire', 'Total'].map((h, i) => `<th class="kick" style="font-size:${1.9 * s}mm;font-weight:500;padding:${2.2 * s}mm ${2 * s}mm;text-align:${i > 2 ? 'right' : 'left'}">${h}</th>`).join('')}</tr></thead>
-        <tbody>${Array.from({ length: rows }, (_, i) => `<tr style="background:${i % 2 ? '#fbf1ee' : '#fff'}">${[40, 14, 22, 8, 18, 18].map(w => `<td style="width:${w}%;height:${7.5 * s}mm;border-bottom:.2mm solid rgba(58,31,45,.15)"></td>`).join('')}</tr>`).join('')}</tbody></table>
-      <div style="display:flex;justify-content:space-between;gap:${8 * s}mm;margin-top:${5 * s}mm">
-        <div style="flex:1"><div class="kick goldd" style="font-size:${2 * s}mm;margin-bottom:${2 * s}mm">Paiement</div>
-          <div style="line-height:2">${['Wave', 'Orange Money', 'Espèces', 'Carte bancaire'].map(m => `<span style="margin-right:${5 * s}mm"><span class="check" style="width:${3.2 * s}mm;height:${3.2 * s}mm"></span>${m}</span>`).join('')}</div>
-          <div style="margin-top:${4 * s}mm;font-size:${2.4 * s}mm;color:#6b4a58;line-height:1.5">Échange sous 7 jours, pièce non portée, dans son emballage d'origine, avec cette facture.</div></div>
-        <div style="width:${70 * s}mm">${['Sous-total', 'Livraison', 'Remise'].map(l => `<div style="display:flex;justify-content:space-between;padding:${1.6 * s}mm 0;border-bottom:.2mm solid rgba(58,31,45,.2)"><span>${l}</span><span>FCFA</span></div>`).join('')}
-          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:${2.5 * s}mm ${3 * s}mm;margin-top:${2 * s}mm;background:${PLUM};color:${IVORY};border-radius:${1.5 * s}mm"><span class="kick" style="font-size:${2.2 * s}mm">Total</span><span class="disp" style="font-size:${5 * s}mm">FCFA</span></div></div></div>
-      <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end">
-        <div class="it goldd" style="font-size:${4.6 * s}mm">Jërëjëf ! Merci pour votre confiance.</div>
-        <div class="box" style="width:${48 * s}mm;height:${24 * s}mm;padding:${2 * s}mm;font-size:${2 * s}mm;color:#8b6f7b">Cachet &amp; signature</div></div></div>`;
+    const s = a5 ? .705 : 1, rows = a5 ? 10 : 14;
+    return `${water(s)}<div class="abs" style="inset:0;display:flex;flex-direction:column;font-size:${3 * s}mm">${header(s, 'Facture', [['N°', 30], ['Date', 26]])}
+      <div style="flex:1;display:flex;flex-direction:column;padding:${7 * s}mm ${14 * s}mm ${8 * s}mm">
+      <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:${5 * s}mm">
+        ${[['Facturé à', ['Nom de la cliente', 'Adresse / quartier']], ['Contact', ['Téléphone', 'Mode de livraison']]].map(([t, ls]) => `<div style="background:#fbf1ee;border-radius:${2 * s}mm;padding:${3 * s}mm ${4 * s}mm"><div class="kick goldd" style="font-size:${1.9 * s}mm">${t}</div>${ls.map(l => `<div style="display:flex;align-items:flex-end;gap:${2 * s}mm;margin-top:${2.6 * s}mm"><span style="font-size:${2.2 * s}mm;color:#8b6f7b;white-space:nowrap">${l}</span><span style="flex:1;border-bottom:.2mm solid rgba(58,31,45,.35);height:${4 * s}mm"></span></div>`).join('')}</div>`).join('')}</div>
+      <table style="margin-top:${6 * s}mm"><thead><tr>${['Article', 'Réf.', 'Taille / couleur', 'Qté', 'Prix unitaire', 'Montant'].map((h, i) => `<th class="kick" style="font-size:${1.8 * s}mm;font-weight:500;color:${GOLDD};padding:${2 * s}mm ${1.5 * s}mm;border-bottom:.35mm solid ${PLUM};text-align:${i > 2 ? 'right' : 'left'}">${h}</th>`).join('')}</tr></thead>
+        <tbody>${Array.from({ length: rows }, () => `<tr>${[38, 12, 20, 8, 11, 11].map(w => `<td style="width:${w}%;height:${7.2 * s}mm;border-bottom:.15mm solid rgba(58,31,45,.18)"></td>`).join('')}</tr>`).join('')}</tbody></table>
+      <div style="display:grid;grid-template-columns:1fr ${70 * s}mm;gap:${8 * s}mm;margin-top:${5 * s}mm">
+        <div><div class="kick goldd" style="font-size:${1.9 * s}mm;margin-bottom:${2 * s}mm">Mode de paiement</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;row-gap:${1.8 * s}mm">${['Wave', 'Orange Money', 'Espèces', 'Carte bancaire'].map(m => `<span><span class="check" style="width:${3.2 * s}mm;height:${3.2 * s}mm"></span>${m}</span>`).join('')}</div>
+          <div style="margin-top:${4 * s}mm;font-size:${2.3 * s}mm;line-height:1.5;color:#6b4a58">Arrêtée la présente facture à la somme de :</div><div style="border-bottom:.2mm solid rgba(58,31,45,.35);height:${6 * s}mm"></div><div style="border-bottom:.2mm solid rgba(58,31,45,.35);height:${6 * s}mm"></div></div>
+        <div>${['Sous-total', 'Livraison', 'Remise'].map(l => `<div style="display:flex;justify-content:space-between;padding:${1.7 * s}mm 0;border-bottom:.15mm solid rgba(58,31,45,.2)"><span>${l}</span><span style="color:#8b6f7b">FCFA</span></div>`).join('')}
+          <div style="display:flex;justify-content:space-between;align-items:baseline;padding:${3 * s}mm ${3.5 * s}mm;margin-top:${2.5 * s}mm;background:${PLUM};color:${IVORY};border-radius:${1.6 * s}mm"><span class="kick" style="font-size:${2.1 * s}mm;color:#f0c9c1">Total à payer</span><span class="disp" style="font-size:${5 * s}mm">FCFA</span></div></div></div>
+      <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:${6 * s}mm;padding-top:${6 * s}mm">
+        <div><div class="it goldd" style="font-size:${5 * s}mm">Jërëjëf !</div><div style="font-size:${2.2 * s}mm;color:#6b4a58;margin-top:${1 * s}mm;max-width:${95 * s}mm;line-height:1.5">Échange sous 7 jours : pièce non portée, dans son emballage d'origine, avec cette facture.</div></div>
+        <div style="width:${52 * s}mm;height:${26 * s}mm;border:.25mm dashed ${GOLD};border-radius:${2 * s}mm;display:flex;align-items:flex-end;justify-content:center;padding-bottom:${2 * s}mm"><span class="kick" style="font-size:${1.7 * s}mm;color:${GOLDD}">Cachet &amp; signature</span></div></div>
+      <div style="margin-top:${5 * s}mm">${footer(s)}</div></div></div>`;
   };
   doc('02-facture-A4', 'Facture A4', 210, 297, 0, [P(0, '', factureBody(false), 'background:#fff')], 'À remplir à l’ordinateur ou à la main. Papier 90 g.');
   doc('03-carnet-factures-A5', 'Carnet de factures A5', 148, 210, 0, [P(0, '', factureBody(true), 'background:#fff')], 'Carnet autocopiant (original + duplicata), 50 liasses numérotées, reliure en tête.');
-
-  // 3. BON DE LIVRAISON A5
-  doc('04-bon-de-livraison-A5', 'Bon de livraison A5', 148, 210, 0, [P(0, '', `<div class="abs" style="left:10mm;right:10mm;top:9mm;bottom:9mm;display:flex;flex-direction:column;font-size:2.4mm">
-    <div style="display:flex;justify-content:space-between;align-items:center"><div style="width:44mm">${nomSvg()}</div><div class="disp" style="font-size:6.5mm">Bon de livraison</div></div>
-    <div class="rule" style="margin:4mm 0"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4mm">${['N° de commande (MAE-…)', 'Date', 'Cliente', 'Téléphone', 'Quartier / zone', 'Point de repère'].map(l => `<div><div class="kick goldd" style="font-size:1.6mm">${l}</div><div class="line" style="height:6mm"></div></div>`).join('')}</div>
-    <table style="margin-top:5mm"><tr style="background:${PLUM};color:${IVORY}">${['Article', 'Taille / couleur', 'Qté'].map((h, i) => `<th class="kick" style="font-size:1.6mm;font-weight:500;padding:1.8mm;text-align:${i === 2 ? 'right' : 'left'}">${h}</th>`).join('')}</tr>${Array.from({ length: 6 }, (_, i) => `<tr style="background:${i % 2 ? '#fbf1ee' : '#fff'}"><td style="height:6.5mm;width:55%"></td><td></td><td></td></tr>`).join('')}</table>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:5mm">
-      <div class="box" style="padding:2.5mm"><div class="kick goldd" style="font-size:1.6mm;margin-bottom:1.6mm">À encaisser</div><div class="disp" style="font-size:5mm">…………… FCFA</div><div style="margin-top:2mm;line-height:1.9">${['Déjà payé', 'Wave', 'Orange Money', 'Espèces'].map(m => `<span style="margin-right:3mm"><span class="check"></span>${m}</span>`).join('')}</div></div>
-      <div class="box" style="padding:2.5mm"><div class="kick goldd" style="font-size:1.6mm">Reçu en bon état</div><div style="margin-top:1.5mm">Nom &amp; signature de la cliente</div></div></div>
-    <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end;font-size:2.1mm;color:#6b4a58"><div>${cfg.adresse}<br>${contact(' · ')}</div><div style="width:13mm">${qWa}</div></div></div>`, 'background:#fff')], 'Carnet autocopiant (un exemplaire pour la cliente, un pour la boutique).');
+  { const s = .705;
+  doc('04-bon-de-livraison-A5', 'Bon de livraison A5', 148, 210, 0, [P(0, '', `${water(s)}<div class="abs" style="inset:0;display:flex;flex-direction:column;font-size:${3 * s}mm">${header(s, 'Bon de livraison', [['Commande MAE-', 30], ['Date', 22]])}
+    <div style="flex:1;display:flex;flex-direction:column;padding:${7 * s}mm ${14 * s}mm ${8 * s}mm">
+    <div style="background:#fbf1ee;border-radius:${2 * s}mm;padding:${3 * s}mm ${4 * s}mm;display:grid;grid-template-columns:1fr 1fr;column-gap:${6 * s}mm">${['Cliente', 'Téléphone', 'Quartier / zone', 'Point de repère'].map(l => `<div style="display:flex;align-items:flex-end;gap:${2 * s}mm;margin:${1.6 * s}mm 0"><span style="font-size:${2.2 * s}mm;color:#8b6f7b;white-space:nowrap">${l}</span><span style="flex:1;border-bottom:.2mm solid rgba(58,31,45,.35);height:${4.5 * s}mm"></span></div>`).join('')}</div>
+    <table style="margin-top:${6 * s}mm"><thead><tr>${['Article', 'Taille / couleur', 'Qté'].map((h, i) => `<th class="kick" style="font-size:${1.8 * s}mm;font-weight:500;color:${GOLDD};padding:${2 * s}mm;border-bottom:.35mm solid ${PLUM};text-align:${i === 2 ? 'right' : 'left'}">${h}</th>`).join('')}</tr></thead>${Array.from({ length: 8 }, () => `<tr><td style="height:${7.2 * s}mm;width:58%;border-bottom:.15mm solid rgba(58,31,45,.18)"></td><td style="border-bottom:.15mm solid rgba(58,31,45,.18)"></td><td style="border-bottom:.15mm solid rgba(58,31,45,.18)"></td></tr>`).join('')}</table>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:${5 * s}mm;margin-top:${6 * s}mm">
+      <div style="background:${PLUM};color:${IVORY};border-radius:${2 * s}mm;padding:${3.5 * s}mm ${4 * s}mm"><div class="kick" style="font-size:${1.8 * s}mm;color:#f0c9c1">À encaisser</div><div class="disp" style="font-size:${6 * s}mm;margin-top:${1.5 * s}mm">…………… FCFA</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;row-gap:${1.4 * s}mm;margin-top:${2.5 * s}mm;font-size:${2.4 * s}mm">${['Déjà payé', 'Wave', 'Orange Money', 'Espèces'].map(m => `<span><span class="check" style="border-color:#f0c9c1;width:${3 * s}mm;height:${3 * s}mm"></span>${m}</span>`).join('')}</div></div>
+      <div style="border:.25mm dashed ${GOLD};border-radius:${2 * s}mm;padding:${3.5 * s}mm ${4 * s}mm"><div class="kick goldd" style="font-size:${1.8 * s}mm">Reçu en bon état</div><div style="font-size:${2.3 * s}mm;color:#8b6f7b;margin-top:${1.5 * s}mm">Nom &amp; signature de la cliente</div></div></div>
+    <div style="margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:${5 * s}mm"><div class="it goldd" style="font-size:${4.6 * s}mm">Jërëjëf, à très vite !</div><div style="width:${15 * s}mm;padding:${1 * s}mm;background:#fff;box-shadow:0 0 0 .2mm ${GOLD};border-radius:${1 * s}mm">${qWa}</div></div>
+    <div style="margin-top:${4 * s}mm">${footer(s)}</div></div></div>`, 'background:#fff')], 'Carnet autocopiant (un exemplaire pour la cliente, un pour la boutique).'); }
 
   // 4. TAMPONS (une couleur, taille réelle)
   const stampRound = (c = PLUM) => `<svg viewBox="0 0 100 100" style="width:100%;display:block"><defs><path id="st" d="M50 50 m-35 0 a35 35 0 1 1 70 0"/><path id="sb" d="M50 50 m-39.5 0 a39.5 39.5 0 1 0 79 0"/></defs>
@@ -132,15 +150,17 @@ const contact = (sep = '<span class="dia"></span>') => [cfg.phone, cfg.email, cf
 
   // 5. CARTE DE REMERCIEMENT 10 × 15 (glissée dans chaque colis)
   doc('08-carte-remerciement-10x15', 'Carte de remerciement 10 × 15 cm', 100, 150, 3, [
-    P(3, 'plum center', `<div style="width:26mm">${monoSvg()}</div><div class="it" style="font-size:13mm;margin-top:9mm;color:${IVORY}">Jërëjëf</div><div class="kick gold" style="font-size:2.4mm;margin-top:3mm">Merci d'avoir choisi Maefa</div><div style="width:40mm;margin-top:14mm">${nomSvg(IVORY, '#e9bcb1')}</div>`),
-    P(3, 'ivory', `<div class="abs" style="left:12mm;right:12mm;top:14mm;bottom:12mm;display:flex;flex-direction:column">
-      <div class="kick goldd" style="font-size:2.2mm">Un mot pour vous</div>
-      <div class="it" style="font-size:6mm;line-height:1.25;margin-top:3mm">Votre pièce a été choisie, vérifiée et emballée avec soin, à Dakar.</div>
-      <div style="margin-top:6mm">${Array.from({ length: 4 }, () => '<div class="line" style="height:7.5mm"></div>').join('')}</div>
-      <div class="rule" style="margin:7mm 0 5mm"></div>
-      <div class="kick goldd" style="font-size:2mm">Prendre soin de vos pièces</div>
-      <div style="font-size:2.6mm;line-height:1.6;margin-top:2mm">Rangez-les dans leur pochon, à l'abri du soleil. Essuyez le cuir avec un chiffon doux et sec. Évitez l'eau et le parfum sur les sacs.</div>
-      <div style="margin-top:auto;display:flex;gap:5mm;align-items:center"><div style="width:18mm">${qAuth}</div><div style="font-size:2.5mm;line-height:1.5"><b style="font-weight:500">Vérifiez l'authenticité</b> de votre pièce et retrouvez-nous :<br>${contact('<br>')}</div></div></div>`),
+    P(3, 'plum center', `<div style="width:24mm">${monoSvg()}</div><div class="it" style="font-size:14mm;margin-top:9mm;color:${IVORY};line-height:1">Jërëjëf</div><div class="kick gold" style="font-size:2.2mm;margin-top:4mm">Merci d'avoir choisi Maefa</div><div style="width:12mm;height:.25mm;background:${GOLD};margin:9mm 0"></div><div style="width:38mm">${nomSvg(IVORY, '#e9bcb1')}</div>`, '', { pattern: [GOLD, .07, 18], frame: 6 }),
+    P(3, 'ivory', `<div class="abs" style="left:13mm;right:13mm;top:14mm;bottom:13mm;display:flex;flex-direction:column">
+      <div class="kick goldd" style="font-size:2.1mm">Un mot pour vous</div>
+      <div class="it" style="font-size:5.6mm;line-height:1.3;margin-top:3mm;text-wrap:balance">Votre pièce a été choisie, vérifiée et emballée avec soin, à&nbsp;Dakar.</div>
+      <div style="margin-top:5mm">${Array.from({ length: 4 }, () => '<div style="height:7.5mm;border-bottom:.2mm solid rgba(58,31,45,.3)"></div>').join('')}</div>
+      <div style="margin-top:7mm;background:#fbf1ee;border-radius:2mm;padding:4mm 4.5mm">
+        <div class="kick goldd" style="font-size:1.9mm">Prendre soin de vos pièces</div>
+        <div style="font-size:2.5mm;line-height:1.6;margin-top:1.8mm;text-wrap:pretty">Rangez-les dans leur pochon, à l'abri du soleil. Essuyez le cuir avec un chiffon doux et sec. Évitez l'eau et le parfum sur les sacs.</div></div>
+      <div style="margin-top:auto;display:flex;gap:5mm;align-items:center">
+        <div style="width:19mm;flex:none;padding:1.3mm;background:#fff;border-radius:1.4mm;box-shadow:0 0 0 .2mm ${GOLD}">${qAuth}</div>
+        <div><div style="font-size:2.6mm;font-weight:500">Vérifiez l'authenticité</div><div style="font-size:2.3mm;color:#6b4a58;margin-bottom:.8mm">de votre pièce en scannant ce code</div>${contactRows(PLUM, GOLDD, 2.25, .7).split('<div').slice(0, 4).join('<div')}</div></div></div>`, '', { frame: 6 }),
   ], 'Carte 350 g mat. Écrivez le prénom de la cliente sur les lignes : l’effet est garanti.');
 
   // 6. ÉTIQUETTE VOLANTE 50 × 90
@@ -184,28 +204,32 @@ const contact = (sep = '<span class="dia"></span>') => [cfg.phone, cfg.email, cf
 
   // 12. CARTE CADEAU 85 × 55
   doc('21-carte-cadeau', 'Carte cadeau 85 × 55 mm', 85, 55, 3, [
-    P(3, 'plum', `<div class="abs" style="left:8mm;top:8mm;width:10mm">${monoSvg()}</div><div class="abs" style="left:8mm;bottom:10mm"><div class="kick gold" style="font-size:2mm">Carte cadeau</div><div class="it" style="font-size:8mm;margin-top:1mm">Offrez l'élégance</div></div><div class="abs" style="right:8mm;top:9mm;width:26mm">${nomSvg(IVORY, '#e9bcb1')}</div>`),
-    P(3, 'ivory', `<div class="abs" style="left:9mm;right:9mm;top:8mm;font-size:2.6mm">${['Pour', 'De la part de', 'Montant'].map((l, i) => `<div style="display:flex;gap:3mm;align-items:flex-end;margin:2.2mm 0"><span class="kick goldd" style="font-size:1.7mm;width:20mm">${l}</span><span style="flex:1;border-bottom:.25mm solid ${PLUM};height:5mm;text-align:right;font-size:2.4mm">${i === 2 ? 'FCFA' : ''}</span></div>`).join('')}
+    P(3, 'plum', `<div class="abs" style="left:10.5mm;top:10mm;width:9mm">${monoSvg()}</div><div class="abs" style="left:10.5mm;bottom:10.5mm"><div class="kick gold" style="font-size:2mm">Carte cadeau</div><div class="it" style="font-size:7mm;margin-top:1mm">Offrez l'élégance</div></div><div class="abs" style="right:10.5mm;top:11mm;width:24mm">${nomSvg(IVORY, '#e9bcb1')}</div>`),
+    P(3, 'ivory', `<div class="abs" style="left:10.5mm;right:10.5mm;top:9.5mm;font-size:2.6mm">${['Pour', 'De la part de', 'Montant'].map((l, i) => `<div style="display:flex;gap:3mm;align-items:flex-end;margin:2.2mm 0"><span class="kick goldd" style="font-size:1.7mm;width:20mm">${l}</span><span style="flex:1;border-bottom:.25mm solid ${PLUM};height:5mm;text-align:right;font-size:2.4mm">${i === 2 ? 'FCFA' : ''}</span></div>`).join('')}
       <div style="display:flex;justify-content:space-between;margin-top:3mm;font-size:2.2mm;color:#6b4a58"><span>N° ……………</span><span>Valable jusqu'au …… / …… / ……</span></div></div>
-      <div class="abs" style="left:9mm;right:9mm;bottom:5mm;font-size:1.9mm;color:#8b6f7b;text-align:center">Utilisable en boutique, sur le site et sur WhatsApp · ${cfg.phone}</div>`),
+      <div class="abs" style="left:10.5mm;right:10.5mm;bottom:9mm;font-size:1.9mm;color:#8b6f7b;text-align:center">Utilisable en boutique, sur le site et sur WhatsApp · ${cfg.phone}</div>`),
   ], 'Carte 350 g, numérotée à la main. Idéale pour Korité, Tabaski, mariages et baptêmes.');
 
   // 13. CARTE DE FIDÉLITÉ 85 × 55
   doc('22-carte-fidelite', 'Carte de fidélité 85 × 55 mm', 85, 55, 3, [
     P(3, 'plum center', `<div style="width:12mm">${monoSvg()}</div><div class="kick gold" style="font-size:2mm;margin-top:3mm">Le cercle Maefa</div><div class="it" style="font-size:6mm;margin-top:1.4mm">Carte de fidélité</div>`),
-    P(3, 'ivory', `<div class="abs" style="left:8mm;right:8mm;top:7mm"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="kick goldd" style="font-size:1.8mm">Nom</span><span style="flex:1;margin-left:3mm;border-bottom:.25mm solid ${PLUM};height:4mm"></span></div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2.4mm;margin-top:4.5mm">${Array.from({ length: 10 }, (_, i) => `<div style="aspect-ratio:1;border-radius:50%;border:.3mm solid ${i === 9 ? WINE : GOLD};display:flex;align-items:center;justify-content:center;font-family:Bodoni;font-size:${i === 9 ? 2.4 : 3}mm;color:${i === 9 ? WINE : GOLD}">${i === 9 ? 'Cadeau' : i + 1}</div>`).join('')}</div>
-      <div style="font-size:2.1mm;text-align:center;margin-top:3mm;color:#6b4a58">${cfg.fideliteRegle}</div></div>`),
+    P(3, 'ivory', `<div class="abs" style="left:10.5mm;right:10.5mm;top:9.5mm"><div style="display:flex;justify-content:space-between;align-items:baseline"><span class="kick goldd" style="font-size:1.8mm">Nom</span><span style="flex:1;margin-left:3mm;border-bottom:.25mm solid ${PLUM};height:4mm"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:2mm;margin-top:3.2mm">${Array.from({ length: 10 }, (_, i) => `<div style="aspect-ratio:1;border-radius:50%;border:.3mm solid ${i === 9 ? WINE : GOLD};display:flex;align-items:center;justify-content:center;font-family:Bodoni;font-size:${i === 9 ? 2.4 : 3}mm;color:${i === 9 ? WINE : GOLD}">${i === 9 ? 'Cadeau' : i + 1}</div>`).join('')}</div>
+      <div style="font-size:2.1mm;text-align:center;margin-top:2.2mm;color:#6b4a58">${cfg.fideliteRegle}</div></div>`),
   ], 'À tamponner avec le tampon rond à chaque achat. Règle modifiable dans config.json.');
 
   // 14. FLYER A5 recto/verso
+  const chip = (t, bg, fg) => `<span style="display:inline-flex;align-items:center;height:6.4mm;padding:0 3mm;border-radius:3.2mm;background:${bg};color:${fg};font-size:2.5mm;font-weight:500">${t}</span>`;
   doc('23-flyer-A5', 'Flyer A5', 148, 210, 3, [
-    P(3, 'plum center', `<div style="width:30mm">${monoSvg()}</div><div style="width:92mm;margin-top:9mm">${nomSvg(IVORY, '#e9bcb1')}</div><div class="disp" style="font-size:15mm;line-height:1.05;margin-top:14mm">Belle</div><div class="it gold" style="font-size:12mm;line-height:1.05">à chaque pas</div><div class="kick" style="font-size:2.6mm;margin-top:12mm;color:#e9bcb1">Chaussures &amp; sacs · Dakar</div>`),
-    P(3, 'ivory', `<div class="abs" style="left:14mm;right:14mm;top:16mm;bottom:14mm;display:flex;flex-direction:column">
-      <div class="kick goldd" style="font-size:2.4mm">La boutique en ligne</div><div class="disp" style="font-size:9mm;line-height:1.1;margin-top:2mm">Commandez <span class="it wine">en un geste</span></div>
-      <div style="margin-top:8mm;display:grid;gap:5mm">${[['Livraison 24 h à Dakar', 'et 48 à 72 h en régions'], ['Wave · Orange Money', 'ou en espèces à la livraison'], ['Pièces authentiques', 'étiquette avec QR code sur chaque article'], ['Échange sous 7 jours', 'taille ou couleur'], ['Prête pour chaque fête', 'Korité, Tabaski, mariages, baptêmes']].map(([a, b]) => `<div style="display:flex;gap:4mm;align-items:flex-start"><span class="dia" style="margin:1.6mm 0 0"></span><div><div class="disp" style="font-size:5mm">${a}</div><div style="font-size:3mm;color:#6b4a58">${b}</div></div></div>`).join('')}</div>
-      <div style="margin-top:auto;display:flex;gap:6mm;align-items:center;padding:5mm;background:${PLUM};color:${IVORY};border-radius:3mm"><div style="width:24mm;background:${IVORY};padding:2mm;border-radius:1.5mm">${qSite}</div><div style="font-size:3.2mm;line-height:1.6">${[cfg.site, cfg.phone, cfg.instagram].filter(Boolean).join('<br>')}</div></div></div>`),
-  ], 'Papier couché brillant 135 g ou mat 170 g.');
+    P(3, 'plum center', `<div style="width:28mm">${monoSvg()}</div><div style="width:88mm;margin-top:9mm">${nomSvg(IVORY, '#e9bcb1')}</div><div class="disp" style="font-size:17mm;line-height:1;margin-top:15mm">Belle</div><div class="it gold" style="font-size:13mm;line-height:1.1">à chaque pas</div><div style="width:14mm;height:.25mm;background:${GOLD};margin:10mm 0 6mm"></div><div class="kick" style="font-size:2.5mm;color:#e9bcb1">Chaussures &amp; sacs · Dakar</div>`, '', { pattern: [GOLD, .06, 22], frame: 7 }),
+    P(3, 'ivory', `<div class="abs" style="left:15mm;right:15mm;top:16mm;bottom:15mm;display:flex;flex-direction:column">
+      <div class="kick goldd" style="font-size:2.3mm">La boutique en ligne</div><div class="disp" style="font-size:9.5mm;line-height:1.08;margin-top:2mm">Commandez <span class="it wine">en un geste</span></div>
+      <div style="margin-top:7mm;display:grid;grid-template-columns:1fr 1fr;gap:4mm">${[['pin', 'Livraison 24 h', 'à Dakar · 48 à 72 h en régions'], ['phone', 'Paiement mobile', 'Wave, Orange Money ou à la livraison'], ['web', 'Pièces authentiques', 'étiquette QR sur chaque article'], ['wa', 'Échange 7 jours', 'taille ou couleur, sans frais']].map(([k, a, b]) => `<div style="background:#fbf1ee;border-radius:2.4mm;padding:3.6mm"><div style="width:7mm;height:7mm;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 .2mm ${GOLD}">${ico(k, GOLDD, '3.8mm')}</div><div class="disp" style="font-size:4.4mm;margin-top:2.4mm">${a}</div><div style="font-size:2.4mm;color:#6b4a58;margin-top:.6mm;line-height:1.4">${b}</div></div>`).join('')}</div>
+      <div style="margin-top:6mm;text-align:center"><div class="kick goldd" style="font-size:2mm">Prête pour chaque fête</div><div class="it" style="font-size:6mm;margin-top:1.5mm">Korité <span class="dia"></span> Tabaski <span class="dia"></span> Mariages <span class="dia"></span> Baptêmes</div></div>
+      <div style="margin-top:5mm;display:flex;gap:2mm;justify-content:center;flex-wrap:wrap">${chip('Wave', '#1dc8ff', '#06263a')}${chip('Orange Money', '#ff7900', '#111')}${chip('Carte', PLUM, IVORY)}${chip('À la livraison', '#11694f', '#fff')}</div>
+      <div style="margin-top:auto;display:flex;gap:5mm;align-items:center;padding:4.5mm 5mm;background:radial-gradient(120% 140% at 20% 0,#56283f,${PLUM} 70%);color:${IVORY};border-radius:3mm">
+        <div style="width:22mm;flex:none;background:${IVORY};padding:1.8mm;border-radius:1.5mm">${qWa}</div><div><div class="kick" style="font-size:1.9mm;color:#f0c9c1">Commandez sur WhatsApp</div><div class="disp" style="font-size:6mm;margin-top:1mm">${cfg.phone}</div><div style="font-size:2.6mm;margin-top:1.2mm;opacity:.85">${[cfg.site, cfg.instagram].filter(Boolean).join('  ·  ')}</div></div></div></div>`, '', { frame: 7 }),
+  ], 'Papier couché mat 170 g, ou brillant 135 g.');
 
   // 15. PAPIER À EN-TÊTE A4
   doc('24-papier-en-tete-A4', 'Papier à en-tête A4', 210, 297, 0, [P(0, '', `<div class="abs" style="left:18mm;right:18mm;top:14mm;display:flex;justify-content:space-between;align-items:center"><div style="display:flex;gap:4mm;align-items:center"><div style="width:12mm">${monoSvg()}</div><div style="width:48mm">${nomSvg()}</div></div><div class="it goldd" style="font-size:4.4mm">Belle à chaque pas</div></div>
@@ -215,23 +239,19 @@ const contact = (sep = '<span class="dia"></span>') => [cfg.phone, cfg.email, cf
   // 16. POCHON EN TISSU (dust bag) 30 × 40 — sérigraphie une couleur
   doc('25-pochon-tissu-30x40', 'Pochon en tissu 30 × 40 cm (sérigraphie)', 300, 400, 0, [P(0, 'center', `<div style="width:70mm">${monoSvg('line', GOLD)}</div><div style="width:150mm;margin-top:16mm">${nomSvg(GOLD, GOLD)}</div>`, 'background:#e9ddd2')], 'Coton ou suédine couleur crème ou prune ; marquage une couleur or rose (sérigraphie ou transfert). Fond beige = couleur du tissu, à ne pas imprimer.');
 
+  // finitions par défaut : motif + filet sur les fonds prune, filet sur les cartes claires
+  const DEF = { '09-etiquette-volante-50x90': [3.5, 9], '12-autocollant-merci-70x30': [2.5, 0], '14-sac-shopping-face-26x33': [12, 34], '15-sac-shopping-soufflet-10x33': [7, 22], '16-sachet-bijou-pochette-15x20': [8, 0], '17-boite-chaussures-couvercle-33x20': [10, 30], '18-boite-chaussures-cote-33x12': [6, 26], '19-boite-sac-couvercle-35x28': [12, 34], '21-carte-cadeau': [2.4, 11], '22-carte-fidelite': [2.4, 11] };
+  for (const d of DOCS) { const k = DEF[d.file]; if (!k) continue; d.pages.forEach(p => { if (p.deco) return; const dark = /plum/.test(p.cls); p.deco = { frame: k[0], pattern: dark && k[1] ? [GOLD, .07, k[1]] : null }; }); }
+  function deco(d, p) { if (!p.deco) return ''; const b = d.bleed; let h = ''; if (p.deco.pattern) h += pattern(...p.deco.pattern); if (p.deco.frame) h += frame(p.deco.frame + b, /plum/.test(p.cls) ? GOLD : GOLD); return h; }
   // ───────── rendu
   const b = await chromium.launch(); const pg = await b.newPage();
   const previews = [];
   for (const d of DOCS) {
     const W = d.w + 2 * d.bleed, H = d.h + 2 * d.bleed;
-    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${d.title}</title><style>${CSS}@page{size:${W}mm ${H}mm;margin:0}.pg{width:${W}mm;height:${H}mm}</style></head><body>${d.pages.map(p => `<section class="pg ${p.cls}" style="${p.style}"><div class="abs ${/center/.test(p.cls) ? 'center' : ''}" style="inset:0">${p.inner}</div></section>`).join('')}</body></html>`;
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${d.title}</title><style>${CSS}@page{size:${W}mm ${H}mm;margin:0}.pg{width:${W}mm;height:${H}mm}</style></head><body>${d.pages.map(p => `<section class="pg ${p.cls}" style="${p.style}">${deco(d, p)}<div class="abs ${/center/.test(p.cls) ? 'center' : ''}" style="inset:0">${p.inner}</div></section>`).join('')}</body></html>`;
     const hf = path.join(HTML, d.file + '.html'); fs.writeFileSync(hf, html);
     await pg.goto('file://' + hf); await pg.evaluate(() => document.fonts.ready);
     await pg.pdf({ path: path.join(OUT, d.file + '.pdf'), width: W + 'mm', height: H + 'mm', printBackground: true, preferCSSPageSize: true });
-    // aperçus PNG (sans fonds perdus)
-    const px = 3.78, scale = Math.min(1, 1400 / (W * px));
-    await pg.setViewportSize({ width: Math.ceil(W * px * scale), height: Math.ceil(H * px * scale) });
-    await pg.evaluate(s => { document.body.style.zoom = s; }, scale);
-    const secs = await pg.$$('section');
-    for (let i = 0; i < secs.length; i++) { const f = path.join(OUT, 'apercus', `${d.file}${secs.length > 1 ? '-' + (i ? 'verso' : 'recto') : ''}.png`); fs.mkdirSync(path.dirname(f), { recursive: true });
-      await secs[i].screenshot({ path: f, clip: undefined }); previews.push({ f, d, i }); }
-    await pg.evaluate(() => { document.body.style.zoom = 1; });
     console.log('OK', d.file);
   }
   await b.close();

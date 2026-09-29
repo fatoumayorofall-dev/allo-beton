@@ -5,10 +5,10 @@ Tous les fichiers sont dans `pdf/` (texte vectoriel, polices intégrées) ; des 
 **À dire à l'imprimeur**
 - Les fichiers avec fonds perdus ont 3 mm de plus de chaque côté (2 mm pour les autocollants) : c'est normal, c'est la marge de coupe.
 - Les couleurs sont en RVB : demander la conversion en quadri (CMJN). Couleurs de la marque : prune #3A1F2D, crème #FDF7F5, or rose #C48A82, framboise #B03A64.
-- Pour un rendu luxe : dorure à chaud or rose sur le monogramme et le nom (cartes de visite, boîtes, sacs).
+- Pour un rendu luxe : dorure à chaud or rose sur le monogramme, le nom et les doubles filets (cartes de visite, cartes cadeau, boîtes, sacs). Le motif de monogrammes ton sur ton peut être fait en vernis sélectif.
 - Boîtes et sacs : caler les visuels sur le gabarit (plan de découpe) du fournisseur.
 
-**Vos coordonnées** : modifier `source/config.json` (téléphone, WhatsApp, e-mail, Instagram, site, adresse, NINEA, RC), puis relancer `node source/build.cjs` — ou demander à Claude de régénérer.
+**Vos coordonnées** : modifier `source/config.json` (téléphone, WhatsApp, e-mail, Instagram, site, adresse, NINEA, RC), puis relancer `node source/build.cjs` puis `python3 source/previews.py` — ou demander à Claude de régénérer.
 
 | Fichier | Support | Format fini | Fonds perdus | Pages | Conseil |
 |---|---|---|---|---|---|
