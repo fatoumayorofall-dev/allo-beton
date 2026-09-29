@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { BrandMark } from './Logo';
+import { mediaUrl } from '../utils/media';
 
 const TONES = [
   'from-[#fbe9e7] via-[#f5d5d6] to-[#e8b4b8]',
@@ -55,7 +56,7 @@ export const ProductImage: React.FC<{ src?: string; alt: string; className?: str
   }
   const srcSet = sizes ? srcSetFor(src) : undefined;
   return (
-    <img ref={img} src={src} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt}
+    <img ref={img} src={mediaUrl(src)} srcSet={srcSet} sizes={srcSet ? sizes : undefined} alt={alt}
       loading={priority ? 'eager' : 'lazy'} decoding={priority ? 'sync' : 'async'}
       {...(priority ? { fetchpriority: 'high' } : {})}
       onLoad={() => setLoaded(true)} onError={() => setFailed(true)}

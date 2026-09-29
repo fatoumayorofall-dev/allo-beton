@@ -60,7 +60,7 @@ export const QuickView: React.FC = () => {
               <p className={`sm:hidden mt-1.5 font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}{product.oldPrice && <span className="ml-2 text-ink/70 line-through text-xs font-normal">{formatPrice(product.oldPrice)}</span>}</p>
             </div>
           </div>
-          <div className="hidden sm:flex mt-3 items-center gap-2 text-xs text-ink/70"><Stars rating={product.rating} /> {product.reviewCount} avis</div>
+          {product.reviewCount > 0 && <div className="hidden sm:flex mt-3 items-center gap-2 text-xs text-ink/70"><Stars rating={product.rating} /> {product.reviewCount} avis</div>}
           <div className="hidden sm:flex mt-5 items-baseline gap-3">
             <span className={`text-xl font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
             {product.oldPrice && <span className="text-ink/70 line-through text-sm">{formatPrice(product.oldPrice)}</span>}

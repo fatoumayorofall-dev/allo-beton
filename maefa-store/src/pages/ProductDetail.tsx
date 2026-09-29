@@ -137,7 +137,7 @@ export const ProductDetail: React.FC = () => {
     el.text = JSON.stringify({
       '@context': 'https://schema.org', '@type': 'Product', name: product.name, description: product.description,
       image: product.images, sku: product.id, brand: { '@type': 'Brand', name: 'Maefa Store' }, material: product.material,
-      aggregateRating: { '@type': 'AggregateRating', ratingValue: product.rating, reviewCount: product.reviewCount },
+      ...(product.reviewCount > 0 ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: product.rating, reviewCount: product.reviewCount } } : {}),
       offers: { '@type': 'Offer', priceCurrency: 'XOF', price: product.price, url: window.location.href,
         availability: product.stock > 0 ? 'https://schema.org/InStock' : isPreorder(product) ? 'https://schema.org/PreOrder' : 'https://schema.org/OutOfStock' },
     });
@@ -217,10 +217,12 @@ export const ProductDetail: React.FC = () => {
               <button onClick={share} aria-label="Partager" className="w-9 h-9 -mt-2 grid place-items-center rounded-full hover:bg-ink/5"><Share2 className="w-4 h-4" strokeWidth={1.5} /></button>
             </div>
             <h1 className="font-display text-5xl sm:text-6xl mt-3 leading-[0.98]">{product.name}</h1>
-            <button onClick={() => { setOpenSection('avis'); document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
-              className="tap mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink">
-              <Stars rating={product.rating} /> <span>{product.rating.toFixed(1)} · {product.reviewCount} avis</span>
-            </button>
+            {product.reviewCount > 0 && (
+              <button onClick={() => { setOpenSection('avis'); document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
+                className="tap mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink">
+                <Stars rating={product.rating} /> <span>{product.rating.toFixed(1)} · {product.reviewCount} avis</span>
+              </button>
+            )}
 
             <div className="mt-7 flex items-baseline gap-4">
               <span className="text-2xl font-medium tracking-wide" data-testid="detail-price">{formatPrice(product.price)}</span>
@@ -327,10 +329,12 @@ export const ProductDetail: React.FC = () => {
                 <p className="mt-2">Chaque pièce est contrôlée avant l'envoi. <strong className="text-ink">Vérifiez votre commande à la réception</strong>, en présence du livreur : aucun échange ni retour n'est possible après la livraison.</p>
               </Accordion>
               <Accordion id="avis" title={`Avis clientes (${product.reviewCount})`} open={openSection === 'avis'} onToggle={() => toggle('avis')}>
-                <div className="flex items-center gap-4 mb-5">
-                  <span className="font-display text-5xl text-ink">{product.rating.toFixed(1)}</span>
-                  <span><Stars rating={product.rating} size={15} /><span className="block text-xs mt-1">{product.reviewCount} avis vérifiés</span></span>
-                </div>
+                {product.reviewCount > 0 ? (
+                  <div className="flex items-center gap-4 mb-5">
+                    <span className="font-display text-5xl text-ink">{product.rating.toFixed(1)}</span>
+                    <span><Stars rating={product.rating} size={15} /><span className="block text-xs mt-1">{product.reviewCount} avis vérifiés</span></span>
+                  </div>
+                ) : <p className="mb-5">Pas encore d'avis sur cette pièce : soyez la première à donner le vôtre.</p>}
                 {product.reviews?.length ? (
                   <ul className="space-y-5 mb-6">
                     {product.reviews.slice(0, 5).map(r => (

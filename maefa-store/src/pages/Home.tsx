@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, Plus, QrCode, ScanSearch, ShieldCheck, ShoppingBag, Smartphone, Truck, PackageCheck } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, QrCode, ScanSearch, ShieldCheck, Smartphone, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
-import type { Product } from '../data/types';
 import { SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePrefersReducedMotion } from '../utils/hooks';
@@ -14,13 +13,10 @@ import { Reveal } from '../components/Reveal';
 import { useMarket } from '../utils/market';
 import { StyleStories } from '../components/StyleStories';
 import { FetesCalendar } from '../components/FetesCalendar';
-import { CountUp } from '../components/CountUp';
 import { MarketCard } from '../components/MarketCard';
 import { GoldDust, Twinkles } from '../components/Magic';
 import { ProductVideo } from '../components/ProductVideo';
 import { Sparkle } from '../components/Decor';
-
-const px = (id: number, w = 1600) => `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=${w}`;
 
 /**
  * Diapositives du héros. `video` (facultatif) : film en boucle, sans le son, joué à la place de la photo
@@ -33,39 +29,25 @@ type HeroSlide = {
 
 const HERO_SLIDES: HeroSlide[] = [
   {
-    kicker: 'Collection Automne 2026 · Pour elle',
-    title: ['Belle', 'à chaque', 'pas'],
+    kicker: 'Polène · Numéro Dix',
+    title: ['Le daim', 'dans tous', 'ses états'],
     accent: 1,
-    text: 'Escarpins en velours, sandales dorées et mules raffinées : la nouvelle saison se porte avec grâce.',
-    cta: { label: 'Découvrir les chaussures', to: '/boutique/chaussures' },
-    image: '/videos/accueil-sandales.jpg',
-    video: ['/videos/accueil-sandales.webm', '/videos/accueil-sandales.mp4'],
-    featured: 'escarpins-velours-aminata',
+    text: 'Le sac structuré de la maison parisienne Polène, en camel, bordeaux, noir et chocolat. Livré dans sa boîte, partout au Sénégal.',
+    cta: { label: 'Voir les 4 couleurs', to: '/boutique/sacs' },
+    image: '/produits/polene-numero-dix-camel-1.jpg',
+    video: ['/videos/polene-numero-dix-camel.webm', '/videos/polene-numero-dix-camel.mp4'],
+    featured: 'polene-numero-dix-camel',
   },
   {
-    kicker: 'Maroquinerie',
-    title: ['Le sac', 'qui vous', 'ressemble'],
+    kicker: 'Nouveauté · Bordeaux',
+    title: ['Une anse,', 'une allure', 'folle'],
     accent: 1,
-    text: 'Sacs structurés, cabas en wax façonnés à Dakar et pochettes de soirée perlées.',
-    cta: { label: 'Explorer les sacs', to: '/boutique/sacs' },
-    image: px(1152077),
-    featured: 'sac-a-main-fatou',
+    text: 'Porté à la main ou en bandoulière, le Numéro Dix bordeaux accompagne vos journées comme vos cérémonies.',
+    cta: { label: 'Découvrir le bordeaux', to: '/produit/polene-numero-dix-bordeaux' },
+    image: '/produits/polene-numero-dix-bordeaux-1.jpg',
+    video: ['/videos/polene-numero-dix-bordeaux.webm', '/videos/polene-numero-dix-bordeaux.mp4'],
+    featured: 'polene-numero-dix-bordeaux',
   },
-  {
-    kicker: 'Le duo parfait',
-    title: ['Sac', '& souliers', 'assortis'],
-    accent: 1,
-    text: 'Pochettes perlées et sandales à talons, cabas et mules : des duos pensés pour aller ensemble, du bureau aux cérémonies.',
-    cta: { label: 'Voir les pochettes', to: '/boutique/sacs' },
-    image: px(2081199),
-    featured: 'pochette-soiree-perles',
-  },
-];
-
-const TESTIMONIALS = [
-  { name: 'Aïssatou N.', city: 'Mermoz, Dakar', text: 'Commande reçue le lendemain dans un écrin magnifique. Le sac Fatou est encore plus beau en vrai — on me demande sans cesse d\'où il vient.' },
-  { name: 'Ndèye F.', city: 'Thiès', text: 'Des sandales dorées d\'une qualité rare, payées avec Wave en deux minutes. Une équipe douce et attentionnée, toujours à l\'écoute sur WhatsApp.' },
-  { name: 'Coumba S.', city: 'Almadies, Dakar', text: 'J\'ai échangé ma pointure sans aucune difficulté. Les escarpins Aminata étaient parfaits pour le mariage de ma sœur.' },
 ];
 
 const DURATION = 7000;
@@ -89,7 +71,6 @@ export const Home: React.FC = () => {
     return products.filter(p => p.isBestseller).slice(0, 8);
   }, [tab, products]);
 
-  const look = useMemo(() => ['sac-a-main-fatou', 'sandales-talons-perlees-linguere', 'pochette-soiree-perles', 'escarpins-velours-aminata'].map(getProduct).filter((p): p is NonNullable<typeof p> => !!p), [getProduct]);
   const recent = recentlyViewed.map(getProduct).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 4);
   const current = HERO_SLIDES[slide];
   const featured = getProduct(current.featured);
@@ -117,7 +98,7 @@ export const Home: React.FC = () => {
             </div>
             <p className="mt-8 flex items-center gap-4 text-[10px] uppercase tracking-luxe text-ink/65">
               <span className="w-10 h-px bg-gold" aria-hidden />
-              <span>Maison fondée à Dakar · 4,8/5 sur plus de 800 avis</span>
+              <span>Sacs de marque · Livraison partout au Sénégal</span>
             </p>
             {/* Contrôles du diaporama */}
             <div className="mt-8 flex items-center gap-5 max-w-xs">
@@ -236,72 +217,6 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ───────────── SHOP THE LOOK ───────────── */}
-      {look.length > 0 && (
-        <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">
-          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-            <Reveal className="relative aspect-[4/5] overflow-hidden arch">
-              <ProductImage src={px(1536619, 1200)} alt="Look de cérémonie Maefa" label="Le look cérémonie" className="w-full h-full" sizes="(min-width: 1024px) 50vw, 100vw" />
-              {look.map((p, i) => {
-                const pos = [['30%', '38%'], ['62%', '58%'], ['44%', '86%'], ['48%', '22%']][i];
-                return (
-                  <Link key={p.id} to={`/produit/${p.slug}`} style={{ left: pos[0], top: pos[1] }} aria-label={p.name}
-                    className="group absolute -translate-x-1/2 -translate-y-1/2">
-                    <span className="relative w-8 h-8 rounded-full bg-ivory grid place-items-center shadow-luxe">
-                      <span className="absolute inset-0 rounded-full bg-ivory/60 animate-ping" />
-                      <Plus className="relative w-3.5 h-3.5 group-hover:rotate-90 transition-transform" />
-                    </span>
-                    <span className="absolute left-10 top-1/2 -translate-y-1/2 bg-ivory px-4 py-2 rounded-full whitespace-nowrap text-xs opacity-0 group-hover:opacity-100 transition-opacity shadow-soft">
-                      {p.name} · {formatPrice(p.price)}
-                    </span>
-                  </Link>
-                );
-              })}
-            </Reveal>
-            <Reveal delay={120}>
-              <p className="eyebrow">Shop the look · mariage & baptême</p>
-              <h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">Invitée <em className="text-gold-dark text-magic">d'honneur</em></h2>
-              <p className="mt-5 text-ink/75 max-w-md">Un sac structuré, une pochette perlée et des souliers qui brillent à chaque pas.</p>
-              <ul className="mt-8 divide-y divide-ink/10 border-y border-ink/10">
-                {look.map(p => (
-                  <li key={p.id}>
-                    <Link to={`/produit/${p.slug}`} className="group flex items-center gap-5 py-3.5">
-                      <ProductImage src={p.images[0]} alt="" label="" className="w-14 h-16 shrink-0 rounded-2xl" />
-                      <span className="flex-1"><span className="eyebrow !text-ink/70">{p.subcategory}</span><span className="block font-display text-xl mt-0.5 group-hover:text-gold-dark transition-colors">{p.name}</span></span>
-                      <span className="text-sm">{formatPrice(p.price)}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <LookAdder look={look} />
-            </Reveal>
-          </div>
-        </section>
-      )}
-
-      {/* ───────────── ATELIER TERANGA ───────────── */}
-      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">
-        <div className="grid lg:grid-cols-12 gap-10 lg:gap-6 items-center rounded-[2.5rem] bg-ivory-deep/70 p-5 sm:p-10 lg:p-14">
-          <Reveal className="lg:col-span-5">
-            <div className="aspect-[4/5] overflow-hidden arch"><ProductImage src={px(6044266, 1000)} alt="Artisane de l'atelier Teranga" label="Atelier Teranga" className="w-full h-full" sizes="(min-width: 1024px) 40vw, 100vw" /></div>
-          </Reveal>
-          <Reveal className="lg:col-span-6 lg:col-start-7" delay={120}>
-            <p className="eyebrow">Fait main à Dakar</p>
-            <h2 className="font-display text-5xl sm:text-6xl leading-[0.95] mt-4">L'atelier <em className="text-gold-dark text-magic">Teranga</em></h2>
-            <p className="mt-6 text-ink/75 leading-relaxed max-w-lg">
-              Au cœur de la Médina, nos artisanes façonnent des cabas en wax et des sacs aux imprimés vibrants, cousus main.
-              Chaque pièce est coupée à la main, numérotée et ne sera jamais tout à fait identique à une autre.
-            </p>
-            <dl className="mt-8 grid grid-cols-3 gap-6 max-w-md">
-              {[['12', 'artisanes'], ['100 %', 'coton wax'], ['1', 'pièce unique']].map(([n, l]) => (
-                <div key={l}><dt className="font-display text-4xl text-gold-dark"><CountUp value={n} /></dt><dd className="text-xs text-ink/70 mt-1">{l}</dd></div>
-              ))}
-            </dl>
-            <Link to="/boutique?q=wax" className="btn-outline mt-8">Découvrir la collection <ArrowRight className="w-4 h-4" /></Link>
-          </Reveal>
-        </div>
-      </section>
-
       {/* ───────────── AUTHENTICITÉ GARANTIE ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28" aria-labelledby="authentique-titre" data-testid="home-authentic">
         <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
@@ -340,28 +255,6 @@ export const Home: React.FC = () => {
               <span className="text-xs text-ink/70 max-w-[16rem]">Le code figure sur l'étiquette glissée dans votre sac ou collée sur la boîte.</span>
             </div>
           </Reveal>
-        </div>
-      </section>
-
-      {/* ───────────── AVIS ───────────── */}
-      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28" aria-labelledby="avis-titre">
-        <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
-          <div>
-            <p className="eyebrow">Elles nous aiment</p>
-            <h2 id="avis-titre" className="font-display text-5xl sm:text-6xl mt-3">4,8<span className="text-gold-dark">/5</span> <em className="text-3xl sm:text-4xl text-ink/75">· plus de 800 avis</em></h2>
-          </div>
-          <p className="text-sm text-ink/70 max-w-xs">Avis laissés après livraison, sur la fiche de chaque pièce.</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-4 sm:gap-5">
-          {TESTIMONIALS.map((t, i) => (
-            <Reveal key={t.name} delay={i * 90}>
-              <figure className="h-full p-7 sm:p-8 rounded-[2rem] bg-white border border-ink/[0.05] flex flex-col">
-                <p className="flex items-center gap-3 text-[10px] uppercase tracking-luxe text-gold-dark"><span className="w-6 h-px bg-gold" aria-hidden />Avis vérifié · 5/5</p>
-                <blockquote className="font-display text-[1.45rem] leading-snug mt-4 flex-1">« {t.text} »</blockquote>
-                <figcaption className="mt-6 text-[11px] uppercase tracking-[0.22em] font-semibold text-gold-dark">{t.name} <span className="text-ink/70 font-normal">· {t.city}</span></figcaption>
-              </figure>
-            </Reveal>
-          ))}
         </div>
       </section>
 
@@ -420,40 +313,3 @@ const CategoryTile: React.FC<{ id: string; name: string; description: string; im
   </Link>
 );
 
-/** Ajoute toutes les pièces du look au panier, en demandant les tailles quand il en faut. */
-const LookAdder: React.FC<{ look: Product[] }> = ({ look }) => {
-  const { addToCart, setCartOpen, notify } = useStore();
-  const [sizes, setSizes] = useState<Record<string, string>>({});
-  const sized = look.filter(p => p.sizes.length > 0 && p.stock > 0);
-  const total = look.reduce((s, p) => s + p.price, 0);
-
-  const addAll = () => {
-    const missing = sized.find(p => !sizes[p.id]);
-    if (missing) { notify(`Choisissez la taille : ${missing.name}`, 'error'); return; }
-    let added = 0;
-    look.forEach(p => { if (p.stock > 0 && addToCart(p, { size: sizes[p.id], color: p.colors[0]?.name, silent: true })) added += 1; });
-    if (added) { notify(`${added} pièces du look ajoutées au panier`); setCartOpen(true); }
-  };
-
-  return (
-    <div className="mt-8 p-6 rounded-[2rem] bg-white border border-ink/[0.06]">
-      {sized.length > 0 && (
-        <div className="grid sm:grid-cols-2 gap-3 mb-5">
-          {sized.map(p => (
-            <label key={p.id} className="text-xs">
-              <span className="field-label">Taille · {p.subcategory}</span>
-              <select value={sizes[p.id] ?? ''} onChange={e => setSizes(s => ({ ...s, [p.id]: e.target.value }))} className="field !h-11">
-                <option value="">Choisir</option>
-                {p.sizes.map(sz => <option key={sz} value={sz}>{sz}</option>)}
-              </select>
-            </label>
-          ))}
-        </div>
-      )}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <p className="text-sm text-ink/75">Le look complet<br /><strong className="font-display text-3xl text-ink">{formatPrice(total)}</strong></p>
-        <button onClick={addAll} className="btn-dark"><ShoppingBag className="w-4 h-4" strokeWidth={1.5} /> Ajouter tout le look</button>
-      </div>
-    </div>
-  );
-};
