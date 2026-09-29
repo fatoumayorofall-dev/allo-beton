@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 6;
+export const CATALOG_VERSION = 7;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -72,7 +72,7 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   slug: `sac-ndella-${key}`,
   name: `Sac Ndella — ${color.name}`,
   category: 'sacs',
-  subcategory: 'Sacs à main',
+  subcategory: 'Sacs à rabat',
   occasions: ['bureau', 'quotidien', 'ceremonie', 'mariage'],
   material: 'Aspect daim, finitions lisses, coutures contrastées',
   care: 'Brosser à sec avec une brosse douce, éviter la pluie et les taches grasses, ranger à l\'abri de la chaleur.',
@@ -121,7 +121,7 @@ const awa = (color: ColorOption, key: string) => p({
   slug: `sac-awa-${key}`,
   name: `Sac Awa à fermoir doré — ${color.name}`,
   category: 'sacs',
-  subcategory: 'Sacs à main',
+  subcategory: 'Sacs à fermoir',
   occasions: ['bureau', 'ceremonie', 'mariage', 'soiree'],
   material: 'Aspect cuir lisse, bande centrale plissée, bandes et anses effet croco, fermoir en métal doré',
   care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau et la chaleur, ranger rembourré pour garder sa forme.',
