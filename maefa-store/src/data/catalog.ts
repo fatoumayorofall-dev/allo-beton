@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 11;
+export const CATALOG_VERSION = 12;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -90,6 +90,30 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   isNew: true,
   isBestseller: true,
   createdAt: '2026-09-29T10:00:00Z',
+});
+
+/** Mules Zara croisées : brides croisées effet surpiqué et brides à strass, semelle plate. */
+const mules = (color: ColorOption, key: string, photos = 1, video = false) => p({
+  slug: `mules-croisees-strass-${key}`,
+  name: `Mules Zara croisées à strass — ${color.name}`,
+  category: 'chaussures',
+  subcategory: 'Sandales plates',
+  occasions: ['quotidien', 'soiree', 'ceremonie', 'vacances'],
+  material: 'Dessus aspect cuir métallisé surpiqué, brides ornées de strass, semelle plate',
+  care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau sur les strass, ranger à plat dans leur pochette.',
+  styleTip: 'Avec un boubou léger ou une robe longue : les strass font briller la tenue sans talons.',
+  price: 15000,
+  images: media(`mules-croisees-strass-${key}`, photos),
+  video: video ? `/videos/mules-croisees-strass-${key}.mp4` : undefined,
+  colors: [color],
+  sizes: SHOE_SIZES,
+  stock: 6,
+  description: `Des mules plates Zara en ${color.name.toLowerCase()} : une large bride croisée effet surpiqué et trois fines brides à strass. Faciles à enfiler, confortables et habillées à la fois.`,
+  details: ['Marque : Zara', 'Mules plates à enfiler', `Couleur : ${color.name}`, 'Bride croisée surpiquée et brides à strass', 'Semelle plate confortable', 'Pointures du 36 au 41'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-29T12:00:00Z',
 });
 
 /** Tongs Zara à anneau doré : semelle plate, bride entre les doigts, gros anneau doré sculpté. */
@@ -185,6 +209,10 @@ export const ALL_PRODUCTS: Product[] = [
   soxna(COLORS.blanc, 'blanc'),
   soxna({ name: 'Fuchsia', hex: '#d2268a' }, 'fuchsia'),
   soxna({ name: 'Orange', hex: '#e8641c' }, 'orange'),
+  mules({ name: 'Noir et doré', hex: 'linear-gradient(135deg,#1c1418 50%,#c9a24d 50%)' }, 'noir-dore'),
+  mules(COLORS.noir, 'noir', 2, true),
+  mules({ name: 'Bronze', hex: '#8a5a3c' }, 'bronze'),
+  mules(COLORS.or, 'dore'),
   tongs(COLORS.or, 'dore'),
   tongs(COLORS.noir, 'noir'),
   tongs(COLORS.blanc, 'blanc'),
