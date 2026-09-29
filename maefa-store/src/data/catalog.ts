@@ -9,12 +9,12 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 3;
+export const CATALOG_VERSION = 4;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
-  { id: 'chaussures', name: 'Chaussures', description: 'Escarpins, sandales, mules, ballerines & sneakers', image: px(1598505, 700) },
-  { id: 'sacs', name: 'Sacs', description: 'Sacs à main de marque', image: '/produits/polene-numero-dix-camel-1.jpg' },
+  { id: 'chaussures', name: 'Chaussures', description: 'Sandales, tongs & mules', image: '/produits/tongs-anneau-dore-dore-1.jpg' },
+  { id: 'sacs', name: 'Sacs', description: 'Sacs à main, rabats & bandoulières', image: '/produits/sac-ndella-camel-1.jpg' },
   { id: 'accessoires', name: 'Accessoires', description: 'Lunettes, montres, foulards & chapeaux', image: px(1161268, 700) },
   { id: 'bijoux', name: 'Bijoux', description: 'Colliers, créoles, bracelets & parures', image: px(1191531, 700) },
   { id: 'vetements', name: 'Prêt-à-porter', description: 'Robes, kaftans, boubous & ensembles', image: px(994523, 700) },
@@ -67,37 +67,65 @@ const p = (data: Omit<Product, 'id' | 'createdAt'> & { createdAt?: string }): Pr
  */
 const media = (slug: string, n: number) => Array.from({ length: n }, (_, i) => `/produits/${slug}-${i + 1}.jpg`);
 
-/** Polène · Numéro Dix : le même modèle dans chaque couleur (une fiche par couleur, avec sa vidéo). */
-const numeroDix = (color: ColorOption, key: string, photos: number, extra: Partial<Product> = {}) => p({
-  slug: `polene-numero-dix-${key}`,
-  name: `Polène Numéro Dix — ${color.name}`,
+/** Sac Ndella : sac à rabat structuré, aspect daim ; une fiche par couleur, avec sa vidéo. */
+const ndella = (color: ColorOption, key: string, photos: number, video = true) => p({
+  slug: `sac-ndella-${key}`,
+  name: `Sac Ndella — ${color.name}`,
   category: 'sacs',
   subcategory: 'Sacs à main',
   occasions: ['bureau', 'quotidien', 'ceremonie', 'mariage'],
-  material: 'Daim, finitions en cuir lisse, coutures contrastées',
-  care: 'Brosser le daim à sec avec une brosse douce, éviter la pluie et les taches grasses, ranger dans sa pochette de protection à l\'abri de la chaleur.',
+  material: 'Aspect daim, finitions lisses, coutures contrastées',
+  care: 'Brosser à sec avec une brosse douce, éviter la pluie et les taches grasses, ranger à l\'abri de la chaleur.',
   styleTip: 'À la main pour une tenue habillée, en bandoulière pour les journées chargées : il passe du bureau aux cérémonies.',
-  price: 285000,
-  images: media(`polene-numero-dix-${key}`, photos),
-  video: `/videos/polene-numero-dix-${key}.mp4`,
+  price: 25000,
+  images: media(`sac-ndella-${key}`, photos),
+  video: video ? `/videos/sac-ndella-${key}.mp4` : undefined,
   colors: [color],
   sizes: [],
   stock: 3,
-  description: `Le Numéro Dix de la maison parisienne Polène, en daim ${color.name.toLowerCase()} : une silhouette structurée, un rabat aux lignes douces et une anse sur le dessus. Livré dans sa boîte avec sa pochette de protection.`,
-  details: ['Marque : Polène (Paris)', 'Modèle : Numéro Dix', `Couleur : ${color.name}`, 'Daim avec finitions en cuir lisse', 'Anse sur le dessus et bandoulière amovible', 'Livré dans sa boîte, avec pochette de protection'],
+  description: `Le sac Ndella en ${color.name.toLowerCase()} : une silhouette structurée, un rabat aux lignes douces, une anse sur le dessus et une bandoulière amovible. Chic en toutes circonstances.`,
+  details: ['Sac à main à rabat', `Couleur : ${color.name}`, 'Aspect daim, finitions lisses', 'Anse sur le dessus et bandoulière amovible', 'Livré dans un emballage Maefa'],
   rating: 0,
   reviewCount: 0,
   isNew: true,
+  isBestseller: true,
   createdAt: '2026-09-29T10:00:00Z',
-  ...extra,
+});
+
+/** Tongs à anneau doré : semelle plate, bride entre les doigts, gros anneau doré sculpté. */
+const tongs = (color: ColorOption, key: string) => p({
+  slug: `tongs-anneau-dore-${key}`,
+  name: `Tongs à anneau doré — ${color.name}`,
+  category: 'chaussures',
+  subcategory: 'Sandales plates',
+  occasions: ['quotidien', 'vacances', 'soiree'],
+  material: 'Dessus et semelle intérieure aspect cuir, anneau en métal doré',
+  care: 'Essuyer avec un chiffon doux légèrement humide, éviter l\'eau de mer sur l\'anneau, ranger à plat.',
+  styleTip: 'Avec une robe longue ou un ensemble en lin : l\'anneau doré suffit comme bijou.',
+  price: 15000,
+  images: media(`tongs-anneau-dore-${key}`, 2),
+  video: `/videos/tongs-anneau-dore-${key}.mp4`,
+  colors: [color],
+  sizes: SHOE_SIZES,
+  stock: 6,
+  description: `Des tongs plates en ${color.name.toLowerCase()}, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir.`,
+  details: ['Tongs plates, bride entre les doigts', `Couleur : ${color.name}`, 'Grand anneau en métal doré', 'Semelle plate confortable', 'Pointures du 36 au 41'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-29T11:00:00Z',
 });
 
 /** Catalogue complet, y compris les pièces des catégories pas encore en vente. */
 export const ALL_PRODUCTS: Product[] = [
-  numeroDix({ name: 'Camel', hex: '#a8683a' }, 'camel', 2, { isBestseller: true }),
-  numeroDix({ name: 'Bordeaux', hex: '#6e1f34' }, 'bordeaux', 2, { isBestseller: true }),
-  numeroDix(COLORS.noir, 'noir', 3, { isBestseller: true }),
-  numeroDix({ name: 'Chocolat', hex: '#5a3526' }, 'chocolat', 2, { isBestseller: true }),
+  ndella({ name: 'Camel', hex: '#a8683a' }, 'camel', 2),
+  ndella({ name: 'Bordeaux', hex: '#6e1f34' }, 'bordeaux', 1, false),
+  ndella(COLORS.noir, 'noir', 2),
+  ndella({ name: 'Chocolat', hex: '#5a3526' }, 'chocolat', 2),
+  tongs(COLORS.or, 'dore'),
+  tongs(COLORS.noir, 'noir'),
+  tongs(COLORS.blanc, 'blanc'),
+  tongs({ name: 'Bordeaux', hex: '#5b2430' }, 'bordeaux'),
 ];
 
 export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category));

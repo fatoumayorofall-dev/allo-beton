@@ -29,24 +29,24 @@ type HeroSlide = {
 
 const HERO_SLIDES: HeroSlide[] = [
   {
-    kicker: 'Polène · Numéro Dix',
+    kicker: 'Nouveauté · Le sac Ndella',
     title: ['Le daim', 'dans tous', 'ses états'],
     accent: 1,
-    text: 'Le sac structuré de la maison parisienne Polène, en camel, bordeaux, noir et chocolat. Livré dans sa boîte, partout au Sénégal.',
+    text: 'Un sac à rabat structuré, en camel, bordeaux, noir et chocolat : à la main ou en bandoulière, du bureau aux cérémonies.',
     cta: { label: 'Voir les 4 couleurs', to: '/boutique/sacs' },
-    image: '/produits/polene-numero-dix-camel-1.jpg',
-    video: ['/videos/polene-numero-dix-camel.webm', '/videos/polene-numero-dix-camel.mp4'],
-    featured: 'polene-numero-dix-camel',
+    image: '/produits/sac-ndella-camel-1.jpg',
+    video: ['/videos/sac-ndella-camel.webm', '/videos/sac-ndella-camel.mp4'],
+    featured: 'sac-ndella-camel',
   },
   {
-    kicker: 'Nouveauté · Bordeaux',
-    title: ['Une anse,', 'une allure', 'folle'],
+    kicker: 'Nouveauté · Sandales',
+    title: ['L\'or', 'à vos', 'pieds'],
     accent: 1,
-    text: 'Porté à la main ou en bandoulière, le Numéro Dix bordeaux accompagne vos journées comme vos cérémonies.',
-    cta: { label: 'Découvrir le bordeaux', to: '/produit/polene-numero-dix-bordeaux' },
-    image: '/produits/polene-numero-dix-bordeaux-1.jpg',
-    video: ['/videos/polene-numero-dix-bordeaux.webm', '/videos/polene-numero-dix-bordeaux.mp4'],
-    featured: 'polene-numero-dix-bordeaux',
+    text: 'Des tongs plates au grand anneau doré sculpté, en doré, noir, blanc et bordeaux : confort le jour, élégance le soir.',
+    cta: { label: 'Voir les tongs', to: '/boutique/chaussures' },
+    image: '/produits/tongs-anneau-dore-dore-1.jpg',
+    video: ['/videos/tongs-anneau-dore-dore.webm', '/videos/tongs-anneau-dore-dore.mp4'],
+    featured: 'tongs-anneau-dore-dore',
   },
 ];
 
@@ -98,7 +98,7 @@ export const Home: React.FC = () => {
             </div>
             <p className="mt-8 flex items-center gap-4 text-[10px] uppercase tracking-luxe text-ink/65">
               <span className="w-10 h-px bg-gold" aria-hidden />
-              <span>Sacs de marque · Livraison partout au Sénégal</span>
+              <span>Nouvelle collection · Livraison partout au Sénégal</span>
             </p>
             {/* Contrôles du diaporama */}
             <div className="mt-8 flex items-center gap-5 max-w-xs">
