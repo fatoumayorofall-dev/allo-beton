@@ -108,8 +108,12 @@ export const PROMO_CODES: Record<string, PromoCode> = {
   LIVRAISON: { label: 'Livraison offerte', freeShipping: true },
 };
 
+/**
+ * Lien WhatsApp avec message pré-rempli. api.whatsapp.com plutôt que wa.me : la redirection de wa.me
+ * abîme certains émojis sur WhatsApp pour ordinateur (ils s'affichent « � »).
+ */
 export function buildWhatsAppLink(message: string, phone = SITE_CONFIG.whatsappRaw): string {
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 }
 
 export function buildProductWhatsAppMessage(opts: { name: string; price: number; size?: string; color?: string; url?: string }): string {

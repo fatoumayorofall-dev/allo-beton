@@ -4,6 +4,7 @@ import { Bell, ChevronDown, ChevronRight, Heart, Minus, Plus, Ruler, Share2, Shi
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { SITE_CONFIG, buildProductWhatsAppMessage, buildWhatsAppLink } from '../config/site';
+import { WhatsAppWithPhoto } from '../components/WhatsAppWithPhoto';
 import { discountPercent, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { useInView } from '../utils/hooks';
@@ -187,9 +188,10 @@ export const ProductDetail: React.FC = () => {
     } catch { /* partage annulé */ }
   };
 
-  const waLink = buildWhatsAppLink(buildProductWhatsAppMessage({
+  const waMessage = buildProductWhatsAppMessage({
     name: product.name, price: product.price, size: size || undefined, color: color || undefined, url: window.location.href,
-  }));
+  });
+  const waLink = buildWhatsAppLink(waMessage);
   const toggle = (id: string) => setOpenSection(s => (s === id ? null : id));
 
   return (
@@ -293,6 +295,7 @@ export const ProductDetail: React.FC = () => {
               className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#177a41] hover:text-[#177a41] transition-colors">
               <WhatsAppGlyph className="w-4 h-4 text-[#177a41]" /> Commander sur WhatsApp
             </a>
+            <WhatsAppWithPhoto message={waMessage} image={product.images[0]} video={product.video} name={product.name} className="mt-1" />
             {!outOfStock && !preorder && <DeliveryEstimate />}
 
             <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/75">

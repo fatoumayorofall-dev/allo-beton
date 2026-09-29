@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ChevronRight, CreditCard, Globe2, MessageCircle, Minus, PackageCheck, Plus, ShoppingBag, Truck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { buildProductWhatsAppMessage, buildWhatsAppLink } from '../config/site';
+import { WhatsAppWithPhoto } from '../components/WhatsAppWithPhoto';
 import { discountPercent, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { delayLabel, marketAsProduct, useMarket } from '../utils/market';
@@ -43,7 +44,8 @@ export const MarketProduct: React.FC = () => {
     const ok = addToCart(marketAsProduct(product), { color: variant || undefined, quantity: qty, market: { delayMin: product.delayMin, delayMax: product.delayMax } });
     if (ok && buyNow) setCartOpen(true);
   };
-  const wa = buildWhatsAppLink(buildProductWhatsAppMessage({ name: `${product.name} (Marché)`, price: product.price, color: variant || undefined, url: window.location.href }));
+  const waMessage = buildProductWhatsAppMessage({ name: `${product.name} (Marché)`, price: product.price, color: variant || undefined, url: window.location.href });
+  const wa = buildWhatsAppLink(waMessage);
 
   return (
     <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-8">
@@ -108,6 +110,7 @@ export const MarketProduct: React.FC = () => {
           <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-3 w-full inline-flex items-center justify-center gap-2 h-12 rounded-full border border-[#177a41] text-[#177a41] text-sm font-semibold">
             <MessageCircle className="w-4 h-4" /> Une question ? WhatsApp
           </a>
+          <WhatsAppWithPhoto message={waMessage} image={product.images[0]} name={product.name} className="mt-1" />
 
           <ul className="mt-8 grid gap-2 text-sm">
             {[

@@ -14,6 +14,7 @@ import { ProductVideo } from '../components/ProductVideo';
 import { ListenButton } from '../components/ListenButton';
 import { BrandMark, Wordmark } from '../components/Logo';
 import { WhatsAppGlyph } from '../components/BrandLogos';
+import { WhatsAppWithPhoto } from '../components/WhatsAppWithPhoto';
 
 /** En-tête minimal des pages « statut » : logo + retour à la boutique. */
 export const SimpleHeader: React.FC<{ back?: string }> = ({ back }) => (
@@ -81,7 +82,7 @@ export const SimpleProduct: React.FC = () => {
     });
   }, [products, product?.id]);
 
-  const whatsappOrder = useMemo(() => {
+  const orderMessage = useMemo(() => {
     if (!product) return '';
     const lines = [
       'Bonjour Maefa 🌸 Je veux commander :',
@@ -91,8 +92,9 @@ export const SimpleProduct: React.FC = () => {
     if (color) lines.push(`🎨 Couleur : ${color}`);
     if (product.sizes.length) lines.push(`📏 Taille : ${size || 'je ne sais pas encore'}`);
     lines.push(`🔗 ${shortLink(product)}`);
-    return buildWhatsAppLink(lines.join('\n'));
+    return lines.join('\n');
   }, [product, color, size]);
+  const whatsappOrder = buildWhatsAppLink(orderMessage);
 
   if (!product) {
     return (
@@ -222,6 +224,8 @@ export const SimpleProduct: React.FC = () => {
           </section>
         )}
       </main>
+
+      <WhatsAppWithPhoto message={orderMessage} image={product.images[0]} video={product.video} name={product.name} className="max-w-md mx-auto px-4 mt-6" />
 
       {/* Actions fixes en bas de l'écran */}
       <div className="fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/[0.06] pb-[env(safe-area-inset-bottom)]">
