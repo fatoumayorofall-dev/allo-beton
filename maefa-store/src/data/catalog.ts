@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 4;
+export const CATALOG_VERSION = 5;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -116,12 +116,40 @@ const tongs = (color: ColorOption, key: string) => p({
   createdAt: '2026-09-29T11:00:00Z',
 });
 
+/** Sac Awa : sac bowling à fermoir doré, bande plissée au centre, bandes effet croco. */
+const awa = (color: ColorOption, key: string) => p({
+  slug: `sac-awa-${key}`,
+  name: `Sac Awa à fermoir doré — ${color.name}`,
+  category: 'sacs',
+  subcategory: 'Sacs à main',
+  occasions: ['bureau', 'ceremonie', 'mariage', 'soiree'],
+  material: 'Aspect cuir lisse, bande centrale plissée, bandes et anses effet croco, fermoir en métal doré',
+  care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau et la chaleur, ranger rembourré pour garder sa forme.',
+  styleTip: 'Tenu à la main avec une robe portefeuille ou un tailleur : l\'allure d\'un sac de créatrice, du bureau aux cérémonies.',
+  price: 18500,
+  images: [`/produits/sac-awa-${key}-1.jpg`],
+  colors: [color],
+  sizes: [],
+  stock: 3,
+  description: `Le sac Awa en ${color.name.toLowerCase()} : une forme bowling structurée, un fermoir doré façon sac de docteur, une bande plissée au centre et des finitions effet croco. Élégant et spacieux.`,
+  details: ['Sac à main à fermoir doré', `Couleur : ${color.name}`, 'Bande centrale plissée', 'Bandes et anses effet croco', 'Deux anses portées main'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-29T12:00:00Z',
+});
+
 /** Catalogue complet, y compris les pièces des catégories pas encore en vente. */
 export const ALL_PRODUCTS: Product[] = [
   ndella({ name: 'Camel', hex: '#a8683a' }, 'camel', 2),
   ndella({ name: 'Bordeaux', hex: '#6e1f34' }, 'bordeaux', 1, false),
   ndella(COLORS.noir, 'noir', 2),
   ndella({ name: 'Chocolat', hex: '#5a3526' }, 'chocolat', 2),
+  awa(COLORS.noir, 'noir'),
+  awa({ name: 'Crème & cognac', hex: '#ece3d3' }, 'creme-cognac'),
+  awa({ name: 'Vert olive', hex: '#6b7430' }, 'vert-olive'),
+  awa({ name: 'Bleu ciel', hex: '#7f9cc4' }, 'bleu'),
+  awa({ name: 'Cognac', hex: '#9a5a2c' }, 'cognac'),
   tongs(COLORS.or, 'dore'),
   tongs(COLORS.noir, 'noir'),
   tongs(COLORS.blanc, 'blanc'),
