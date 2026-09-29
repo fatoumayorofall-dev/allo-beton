@@ -92,10 +92,10 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   createdAt: '2026-09-29T10:00:00Z',
 });
 
-/** Tongs à anneau doré : semelle plate, bride entre les doigts, gros anneau doré sculpté. */
+/** Tongs Zara à anneau doré : semelle plate, bride entre les doigts, gros anneau doré sculpté. */
 const tongs = (color: ColorOption, key: string) => p({
   slug: `tongs-anneau-dore-${key}`,
-  name: `Tongs à anneau doré — ${color.name}`,
+  name: `Tongs Zara à anneau doré — ${color.name}`,
   category: 'chaussures',
   subcategory: 'Sandales plates',
   occasions: ['quotidien', 'vacances', 'soiree'],
@@ -108,8 +108,8 @@ const tongs = (color: ColorOption, key: string) => p({
   colors: [color],
   sizes: SHOE_SIZES,
   stock: 6,
-  description: `Des tongs plates en ${color.name.toLowerCase()}, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir.`,
-  details: ['Tongs plates, bride entre les doigts', `Couleur : ${color.name}`, 'Grand anneau en métal doré', 'Semelle plate confortable', 'Pointures du 36 au 41'],
+  description: `Des tongs plates Zara en ${color.name.toLowerCase()}, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir.`,
+  details: ['Marque : Zara', 'Tongs plates, bride entre les doigts', `Couleur : ${color.name}`, 'Grand anneau en métal doré', 'Semelle plate confortable', 'Pointures du 36 au 41'],
   rating: 0,
   reviewCount: 0,
   isNew: true,

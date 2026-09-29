@@ -42,7 +42,7 @@ const HERO_SLIDES: HeroSlide[] = [
     kicker: 'Nouveauté · Sandales',
     title: ['L\'or', 'à vos', 'pieds'],
     accent: 1,
-    text: 'Des tongs plates au grand anneau doré sculpté, en doré, noir, blanc et bordeaux : confort le jour, élégance le soir.',
+    text: 'Les tongs plates Zara au grand anneau doré sculpté, en doré, noir, blanc et bordeaux : confort le jour, élégance le soir.',
     cta: { label: 'Voir les tongs', to: '/boutique/chaussures' },
     image: '/produits/tongs-anneau-dore-dore-1.jpg',
     video: ['/videos/tongs-anneau-dore-dore.webm', '/videos/tongs-anneau-dore-dore.mp4'],
