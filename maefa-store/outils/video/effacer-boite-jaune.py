@@ -3,12 +3,13 @@
 import cv2, numpy as np, subprocess, sys
 FF='/usr/local/lib/python3.11/dist-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-v7.0.2'
 src, dst = sys.argv[1], sys.argv[2]
+HLO, HHI, SMIN, VMIN = (int(v) for v in (sys.argv[3:7] if len(sys.argv) > 6 else (20, 38, 110, 110)))
 cap = cv2.VideoCapture(src)   # OpenCV applique la rotation du téléphone
 ok, f = cap.read(); H, W = f.shape[:2]
 p = subprocess.Popen([FF,'-loglevel','error','-y','-f','rawvideo','-pix_fmt','bgr24','-s',f'{W}x{H}','-r','30','-i','-','-c:v','libx264','-crf','14','-pix_fmt','yuv420p',dst], stdin=subprocess.PIPE)
 while ok:
     hsv = cv2.cvtColor(f, cv2.COLOR_BGR2HSV)
-    y = ((hsv[...,0] >= 20) & (hsv[...,0] <= 38) & (hsv[...,1] > 110) & (hsv[...,2] > 110)).astype(np.uint8)
+    y = ((hsv[...,0] >= HLO) & (hsv[...,0] <= HHI) & (hsv[...,1] > SMIN) & (hsv[...,2] > VMIN)).astype(np.uint8)
     n, lab, st, _ = cv2.connectedComponentsWithStats(y)
     big = np.zeros_like(y)
     for k in range(1, n):

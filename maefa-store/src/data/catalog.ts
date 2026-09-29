@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 8;
+export const CATALOG_VERSION = 9;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -140,7 +140,7 @@ const awa = (color: ColorOption, key: string) => p({
 });
 
 /** Sac Soxna : sac à rabat effet croco verni, anse carrée en métal doré, bandoulière. */
-const soxna = (color: ColorOption, key: string) => p({
+const soxna = (color: ColorOption, key: string, price = 22000) => p({
   slug: `sac-soxna-${key}`,
   name: `Sac Soxna effet croco — ${color.name}`,
   category: 'sacs',
@@ -149,7 +149,7 @@ const soxna = (color: ColorOption, key: string) => p({
   material: 'Aspect cuir verni embossé effet croco, anse carrée en métal doré',
   care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau et la chaleur, ranger dans une housse pour préserver le vernis.',
   styleTip: 'À la main par son anse dorée pour une cérémonie, en bandoulière pour la journée : une couleur vive suffit à illuminer une tenue simple.',
-  price: 22000,
+  price,
   images: [`/produits/sac-soxna-${key}-1.jpg`, `/produits/sac-soxna-${key}-2.jpg`],
   video: `/videos/sac-soxna-${key}.mp4`,
   colors: [color],
@@ -181,6 +181,10 @@ export const ALL_PRODUCTS: Product[] = [
   soxna({ name: 'Rouge', hex: '#b3122e' }, 'rouge'),
   soxna({ name: 'Violet', hex: '#6e3a9c' }, 'violet'),
   soxna({ name: 'Bleu roi', hex: '#2743b8' }, 'bleu-roi'),
+  soxna(COLORS.noir, 'noir', 22500),
+  soxna(COLORS.blanc, 'blanc', 22500),
+  soxna({ name: 'Fuchsia', hex: '#d2268a' }, 'fuchsia', 22500),
+  soxna({ name: 'Orange', hex: '#e8641c' }, 'orange', 22500),
   tongs(COLORS.or, 'dore'),
   tongs(COLORS.noir, 'noir'),
   tongs(COLORS.blanc, 'blanc'),
