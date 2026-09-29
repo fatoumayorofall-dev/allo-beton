@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 9;
+export const CATALOG_VERSION = 10;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -181,10 +181,10 @@ export const ALL_PRODUCTS: Product[] = [
   soxna({ name: 'Rouge', hex: '#b3122e' }, 'rouge'),
   soxna({ name: 'Violet', hex: '#6e3a9c' }, 'violet'),
   soxna({ name: 'Bleu roi', hex: '#2743b8' }, 'bleu-roi'),
-  soxna(COLORS.noir, 'noir', 22500),
-  soxna(COLORS.blanc, 'blanc', 22500),
-  soxna({ name: 'Fuchsia', hex: '#d2268a' }, 'fuchsia', 22500),
-  soxna({ name: 'Orange', hex: '#e8641c' }, 'orange', 22500),
+  soxna(COLORS.noir, 'noir'),
+  soxna(COLORS.blanc, 'blanc'),
+  soxna({ name: 'Fuchsia', hex: '#d2268a' }, 'fuchsia'),
+  soxna({ name: 'Orange', hex: '#e8641c' }, 'orange'),
   tongs(COLORS.or, 'dore'),
   tongs(COLORS.noir, 'noir'),
   tongs(COLORS.blanc, 'blanc'),
