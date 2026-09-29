@@ -1,6 +1,6 @@
 import React, { Suspense, lazy, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
-import { Banknote, Check, ChevronDown, ChevronLeft, Clock, CreditCard, Gift, Globe2, Loader2, Lock, MapPin, Smartphone } from 'lucide-react';
+import { Banknote, Check, ChevronDown, ChevronLeft, Clock, Copy, CreditCard, Gift, Globe2, Loader2, Lock, MapPin, Smartphone } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, SHOP_LOCATION, SITE_CONFIG, zoneForPoint } from '../config/site';
 import type { DeliveryLocation, PaymentMethod } from '../data/types';
@@ -17,12 +17,13 @@ const LocationPicker = lazy(() => import('../components/LocationPicker'));
 
 /** Logos officiels déposés par la boutique (SITE_CONFIG.paymentLogos) : remplacent la pastille de couleur. */
 const OFFICIAL_LOGO: Partial<Record<PaymentMethod, string>> = { wave: SITE_CONFIG.paymentLogos.wave, orange_money: SITE_CONFIG.paymentLogos.orangeMoney };
-const PAYMENT_METHODS: { id: PaymentMethod; name: string; desc: string; color: string; Icon: typeof Smartphone }[] = [
-  { id: 'wave', name: 'Wave', desc: 'Instantané, sans frais', color: '#1dc4ff', Icon: Smartphone },
-  { id: 'orange_money', name: 'Orange Money', desc: 'Validation par code secret', color: '#ff7900', Icon: Smartphone },
+type PayOption = { id: PaymentMethod; name: string; desc: string; color: string; Icon: typeof Smartphone };
+const PAYMENT_METHODS: PayOption[] = ([
+  { id: 'wave', name: 'Wave', desc: `Envoi au ${SITE_CONFIG.paymentNumber}`, color: '#1dc4ff', Icon: Smartphone },
+  { id: 'orange_money', name: 'Orange Money', desc: `Envoi au ${SITE_CONFIG.paymentNumber}`, color: '#ff7900', Icon: Smartphone },
   { id: 'card', name: 'Carte bancaire', desc: 'Visa, Mastercard', color: '#16120f', Icon: CreditCard },
   { id: 'cash', name: 'À la livraison', desc: 'Espèces ou Wave à la réception', color: '#11694f', Icon: Banknote },
-];
+] as PayOption[]).filter(m => m.id !== 'card' || SITE_CONFIG.cardPayments);
 
 const PHONE_RE = /^(\+?221)?\s?(7[05678])\s?\d{3}\s?\d{2}\s?\d{2}$/;
 
@@ -134,8 +135,8 @@ export const Checkout: React.FC = () => {
         return;
       }
     }
-    // Simulation de la passerelle de paiement (à brancher sur l'API Wave / Orange Money / PayDunya en production)
-    await new Promise(r => setTimeout(r, method === 'cash' ? 600 : 2200));
+    // Pas de passerelle : la cliente envoie l'argent sur le numéro de la boutique, la gérante confirme le paiement
+    await new Promise(r => setTimeout(r, 400));
     const order = placeOrder({
       customer: { ...form, email: form.email || undefined, notes: form.notes || undefined, location: form.location },
       items: cart,
@@ -147,7 +148,8 @@ export const Checkout: React.FC = () => {
       total: t.total,
       promoCode: t.discount > 0 || (promoCode && t.promoShortfall === 0) ? promoCode ?? undefined : undefined,
       paymentMethod: method,
-      paymentStatus: method === 'cash' ? 'en_attente' : 'paye',
+      paymentStatus: 'en_attente',
+      payerPhone: isMobile ? payPhone.trim() : undefined,
     });
     // Messages WhatsApp automatiques (gérante + cliente) si le serveur est configuré ; sinon la page
     // de confirmation propose l'envoi manuel du récapitulatif.
@@ -289,11 +291,25 @@ export const Checkout: React.FC = () => {
               </fieldset>
 
               {isMobile && (
-                <label className="block animate-fade-in">
-                  <span className="field-label">Numéro {PAYMENT_METHODS.find(m => m.id === method)?.name}</span>
-                  <input value={payPhone} onChange={e => setPayPhone(e.target.value)} type="tel" placeholder="77 123 45 67" className="field" />
-                  <span className="text-xs text-ink/70 mt-2 block">Vous recevrez une demande de validation de {formatPrice(t.total)} sur votre téléphone.</span>
-                </label>
+                <div className="space-y-5 animate-fade-in">
+                  <div className="p-5 sm:p-6 rounded-2xl bg-white border border-ink/10 space-y-4" data-testid="pay-instructions">
+                    <p className="text-sm">Envoyez <strong>{formatPrice(t.total)}</strong> par <strong>{PAYMENT_METHODS.find(m => m.id === method)?.name}</strong> au numéro de la boutique :</p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="font-display text-3xl sm:text-4xl tabular-nums tracking-wide">{SITE_CONFIG.paymentNumber}</span>
+                      <button type="button" onClick={() => navigator.clipboard?.writeText(SITE_CONFIG.paymentNumber.replace(/\s/g, '')).then(() => notify('Numéro copié', 'success'))}
+                        className="inline-flex items-center gap-1.5 px-3 h-9 rounded-full border border-ink/15 text-xs"><Copy className="w-3.5 h-3.5" /> Copier</button>
+                    </div>
+                    <p className="text-xs text-ink/70">Au nom de <strong>{SITE_CONFIG.name}</strong>. Ensuite, validez votre commande : vous l'envoyez sur notre WhatsApp avec la capture du paiement, et nous confirmons tout de suite.</p>
+                    {method === 'wave' && SITE_CONFIG.waveLink && (
+                      <a href={SITE_CONFIG.waveLink} target="_blank" rel="noopener noreferrer" className="btn !bg-[#1dc4ff] text-white w-full sm:w-auto">Payer avec Wave</a>
+                    )}
+                  </div>
+                  <label className="block">
+                    <span className="field-label">Numéro {PAYMENT_METHODS.find(m => m.id === method)?.name} qui envoie l'argent</span>
+                    <input value={payPhone} onChange={e => setPayPhone(e.target.value)} type="tel" placeholder="77 123 45 67" className="field" />
+                    <span className="text-xs text-ink/70 mt-2 block">Pour retrouver votre paiement plus vite.</span>
+                  </label>
+                </div>
               )}
               {method === 'card' && (
                 <div className="grid grid-cols-2 gap-3 animate-fade-in">
@@ -312,10 +328,10 @@ export const Checkout: React.FC = () => {
               )}
 
               <button onClick={pay} disabled={processing} className="btn-dark w-full !h-14">
-                {processing ? <><Loader2 className="w-4 h-4 animate-spin" /> {method === 'cash' ? 'Validation…' : 'En attente de validation…'}</>
-                  : <><Lock className="w-3.5 h-3.5" /> {method === 'cash' ? 'Confirmer la commande' : `Payer ${formatPrice(t.total)}`}</>}
+                {processing ? <><Loader2 className="w-4 h-4 animate-spin" /> Validation…</>
+                  : <><Lock className="w-3.5 h-3.5" /> {method === 'cash' ? 'Confirmer la commande' : 'Valider ma commande'}</>}
               </button>
-              <p className="text-[11px] text-center text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Paiement chiffré · Vos données bancaires ne sont jamais conservées</p>
+              <p className="text-[11px] text-center text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> {method === 'card' ? 'Paiement chiffré · Vos données bancaires ne sont jamais conservées' : `Paiement direct à la boutique, au ${SITE_CONFIG.paymentNumber} · aucun code secret demandé`}</p>
               <p className="text-[11px] text-center text-ink/70" data-testid="checkout-policy">Chaque pièce est contrôlée avant l'envoi. Vérifiez votre commande à la réception, devant le livreur : aucun échange ni retour après la livraison.</p>
             </div>
           )}

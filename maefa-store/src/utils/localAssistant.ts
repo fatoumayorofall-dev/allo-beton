@@ -89,7 +89,7 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
     return `Nous livrons en 24h à Dakar (1 500 à 2 000 FCFA selon le quartier) et en 48h à 5 jours en régions. La livraison est **offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}**. Tous les tarifs sont sur [la page d'aide](/faq).`;
   }
   if (has(q, 'paiement', 'payer', 'wave', 'orange money', 'free money', 'carte', 'espece')) {
-    return 'Vous pouvez payer par **Wave, Orange Money, carte bancaire** ou **en espèces à la livraison**. Le paiement mobile se valide directement sur votre téléphone ✨';
+    return 'Vous pouvez payer par **Wave** ou **Orange Money** en envoyant le montant au **77 309 38 19** (Maefa Store), ou **en espèces à la livraison**. Envoyez ensuite la capture du paiement sur notre WhatsApp, nous confirmons tout de suite ✨';
   }
   if (has(q, 'echange', 'retour', 'rembours', 'pas la bonne taille', 'trop petit', 'trop grand')) {
     return 'Chaque pièce est contrôlée avant l\'envoi. Vérifiez votre commande **à la réception, en présence du livreur** : une fois la livraison acceptée, **aucun échange ni retour** n\'est possible. Un doute sur la pointure ? Écrivez-nous sur WhatsApp **avant** de commander, nous vous conseillons 🌸';

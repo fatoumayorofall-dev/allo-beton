@@ -547,6 +547,11 @@ const Orders: React.FC = () => {
                 </a>
               );
             })()}
+            {current.paymentStatus !== 'paye' && current.paymentMethod !== 'cash' && (
+              <p className="text-sm text-center text-amber-800" data-testid="admin-payer">
+                Vérifiez sur votre {PAYMENT_LABELS[current.paymentMethod]} l'arrivée de {formatPrice(current.total)}{current.payerPhone ? <> envoyés depuis le <strong>{current.payerPhone}</strong></> : ''}, puis :
+              </p>
+            )}
             {current.paymentStatus !== 'paye' && (
               <button onClick={() => { markOrderPaid(current.id); if (current.delivery !== undefined) patchAdminOrder(current.id, { paymentStatus: 'paye' }, adminPin()); }} className="w-full py-3 rounded-full bg-emerald-700 text-white font-semibold">Marquer comme payée</button>
             )}

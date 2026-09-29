@@ -58,7 +58,7 @@ export const PaymentLogos: React.FC<{ className?: string; cash?: boolean }> = ({
   <span className={`inline-flex flex-wrap items-center gap-1.5 ${className}`} data-testid="payment-logos">
     <span className={chip}><WaveLogo /></span>
     <span className={chip}><OrangeMoneyLogo /></span>
-    <CardLogos />
+    {SITE_CONFIG.cardPayments && <CardLogos />}
     {cash && <span className={chip}><span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-ink/80 leading-none"><span className="w-1.5 h-1.5 rounded-full bg-[#11694f]" aria-hidden />Espèces</span></span>}
   </span>
 );

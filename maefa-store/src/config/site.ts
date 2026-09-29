@@ -30,6 +30,15 @@ export const SITE_CONFIG = {
   // Logos officiels des moyens de paiement : déposer le fichier dans public/brand/ puis indiquer son chemin
   // (ex. '/brand/wave.png'). Tant qu'un chemin est vide, le nom s'affiche en toutes lettres.
   paymentLogos: { wave: '', orangeMoney: '', paydunya: '' },
+  /**
+   * Paiement : la cliente envoie l'argent directement sur le numéro de la boutique
+   * (Wave / Orange Money), puis envoie sa commande sur WhatsApp. La gérante coche « payé » dans l'admin.
+   */
+  paymentNumber: '77 309 38 19',
+  /** Lien de paiement Wave Business (ex. 'https://pay.wave.com/m/M_xxxx') : ajoute un bouton « Payer avec Wave » */
+  waveLink: '',
+  /** Carte bancaire : à activer seulement une fois une passerelle (PayDunya…) branchée */
+  cardPayments: false,
   freeShippingThreshold: 50000,
   giftWrapFee: 2000,
 };

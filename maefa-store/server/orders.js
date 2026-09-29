@@ -208,6 +208,9 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
       items: o.items.map(i => (stock.preorder.has(i.productId) ? { ...i, preorder: { days: stock.preorder.get(i.productId) } } : i)),
       createdAt: now,
       status: 'en_attente',
+      // Jamais « payé » à la création : la gérante le confirme quand l'argent est reçu
+      paymentStatus: 'en_attente',
+      payerPhone: clip(o.payerPhone, 30) || undefined,
       history: [{ status: 'en_attente', date: now }],
       notifications: [],
     };

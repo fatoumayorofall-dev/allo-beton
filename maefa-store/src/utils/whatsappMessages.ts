@@ -30,7 +30,11 @@ export function customerOrderSummaryLink(o: Order): string {
     `Bonjour Maefa Store 🌸 Je viens de passer la commande *${o.id}* :`,
     ...o.items.map(i => `• ${i.quantity}× ${i.name}${[i.color, i.size && `T.${i.size}`].filter(Boolean).length ? ` (${[i.color, i.size && `T.${i.size}`].filter(Boolean).join(', ')})` : ''}`),
     `Total : *${formatPrice(o.total)}*`,
-    `Livraison : ${o.customer.zone} — ${o.customer.address}`,
+    `Livraison : ${o.customer.zone}${o.customer.location?.label || o.customer.address ? ` — ${o.customer.location?.label || o.customer.address}` : ''}`,
+    ...(o.customer.location ? [`Position : https://maps.google.com/?q=${o.customer.location.lat},${o.customer.location.lng}`] : []),
+    o.paymentMethod === 'cash'
+      ? `Paiement : à la livraison`
+      : `Paiement : ${o.paymentMethod === 'wave' ? 'Wave' : o.paymentMethod === 'orange_money' ? 'Orange Money' : 'Free Money'}${o.payerPhone ? ` depuis le ${o.payerPhone}` : ''} — je joins la capture 📎`,
     `Merci de me confirmer 🙏`,
   ];
   return buildWhatsAppLink(lines.join('\n'));

@@ -146,7 +146,7 @@ export const CartDrawer: React.FC = () => {
               </div>
               <button onClick={() => { close(); navigate('/commande'); }} className="btn-dark w-full">Commander</button>
               <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70"><ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave · Orange Money · à la livraison</p>
-              <div className="flex justify-center -mt-1"><CardLogos /></div>
+              {SITE_CONFIG.cardPayments && <div className="flex justify-center -mt-1"><CardLogos /></div>}
               <Link to="/panier" onClick={close} className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Voir le panier détaillé</Link>
             </footer>
           </>

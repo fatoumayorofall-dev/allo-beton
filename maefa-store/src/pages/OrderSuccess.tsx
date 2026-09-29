@@ -10,6 +10,7 @@ import { customerOrderSummaryLink } from '../utils/whatsappMessages';
 import { SparkleTrio, sparkleRain } from '../components/Magic';
 import { ForYou } from '../components/ForYou';
 import { WhatsAppGlyph } from '../components/BrandLogos';
+import { SITE_CONFIG } from '../config/site';
 
 export const OrderSuccess: React.FC = () => {
   usePageTitle('Commande confirmée');
@@ -36,6 +37,7 @@ export const OrderSuccess: React.FC = () => {
   const wa = customerOrderSummaryLink(order);
   const shopNotified = order.notifications?.some(n => n.to === 'gerante' && (n.channel === 'auto' || n.channel === 'manuel'));
   const customerNotified = order.notifications?.some(n => n.to === 'cliente' && n.channel === 'auto');
+  const toSend = order.paymentStatus !== 'paye' && order.paymentMethod !== 'cash';
 
   return (
     <>
@@ -58,7 +60,7 @@ export const OrderSuccess: React.FC = () => {
             <div><dt className="field-label">Livraison</dt><dd className="font-medium">{order.customer.zone}</dd><dd className="text-ink/75">{[order.customer.location?.label, order.customer.address].filter(Boolean).join(' · ')}</dd>
               {order.customer.location && <dd className="text-emerald-800 text-xs mt-1">Point GPS enregistré</dd>}</div>
             <div><dt className="field-label">Paiement</dt><dd className="font-medium">{PAYMENT_LABELS[order.paymentMethod]}</dd>
-              <dd className={order.paymentStatus === 'paye' ? 'text-emerald-800' : 'text-amber-800'}>{order.paymentStatus === 'paye' ? 'Payé' : 'À régler à la livraison'}</dd></div>
+              <dd className={order.paymentStatus === 'paye' ? 'text-emerald-800' : 'text-amber-800'}>{order.paymentStatus === 'paye' ? 'Payé' : toSend ? `À envoyer au ${SITE_CONFIG.paymentNumber}` : 'À régler à la livraison'}</dd></div>
             <div><dt className="field-label">Total</dt><dd className="font-display text-4xl">{formatPrice(order.total)}</dd></div>
           </dl>
           <ul className="divide-y divide-ink/10">
@@ -81,6 +83,16 @@ export const OrderSuccess: React.FC = () => {
           )}
         </div>
 
+        {/* Paiement direct sur le numéro de la boutique */}
+        {toSend && (
+          <div className="mt-8 p-6 sm:p-7 rounded-[2rem] bg-white border border-gold/40 text-center print:hidden" data-testid="success-pay">
+            <p className="text-sm">Envoyez <strong>{formatPrice(order.total)}</strong> par <strong>{PAYMENT_LABELS[order.paymentMethod]}</strong> au</p>
+            <p className="font-display text-4xl sm:text-5xl mt-2 tabular-nums tracking-wide">{SITE_CONFIG.paymentNumber}</p>
+            <p className="text-xs text-ink/70 mt-2">{SITE_CONFIG.name} · puis envoyez la capture du paiement avec votre commande ci-dessous</p>
+            {order.paymentMethod === 'wave' && SITE_CONFIG.waveLink && <a href={SITE_CONFIG.waveLink} target="_blank" rel="noopener noreferrer" className="btn !bg-[#1dc4ff] text-white mt-4">Payer avec Wave</a>}
+          </div>
+        )}
+
         {/* WhatsApp : la boutique est-elle prévenue ? */}
         <div className={`mt-8 p-6 rounded-[2rem] border print:hidden ${shopNotified ? 'bg-emerald-50/70 border-emerald-100' : 'bg-white border-gold/30'}`}>
           {shopNotified ? (
@@ -88,7 +100,7 @@ export const OrderSuccess: React.FC = () => {
               <span><strong>La boutique a bien reçu votre commande sur WhatsApp.</strong>{customerNotified ? ' Vous venez aussi de recevoir un message de confirmation ; nous vous écrirons à chaque étape.' : ' Nous vous tiendrons informée à chaque étape.'}</span></p>
           ) : (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-              <p className="text-sm flex-1"><strong>Dernière étape (recommandée) :</strong> envoyez le récapitulatif sur WhatsApp, la boutique vous confirme la livraison plus vite.</p>
+              <p className="text-sm flex-1"><strong>Dernière étape :</strong> envoyez votre commande sur notre WhatsApp ({SITE_CONFIG.phone}){toSend ? ' avec la capture de votre paiement' : ''}. Nous vous confirmons la livraison tout de suite.</p>
               <a href={wa} target="_blank" rel="noopener noreferrer" onClick={() => logNotification(order.id, { event: 'nouvelle', to: 'gerante', channel: 'manuel' })}
                 className="btn !bg-[#177a41] text-white hover:!bg-[#12663a] shrink-0"><WhatsAppGlyph className="w-4 h-4" /> Envoyer sur WhatsApp</a>
             </div>

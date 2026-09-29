@@ -185,6 +185,8 @@ export interface Order {
   promoCode?: string;
   paymentMethod: PaymentMethod;
   paymentStatus: 'en_attente' | 'paye';
+  /** Numéro Wave / Orange Money qui envoie l'argent (pour retrouver le paiement) */
+  payerPhone?: string;
   status: OrderStatus;
   history: { status: OrderStatus; date: string }[];
   /** Journal des messages WhatsApp liés à la commande */
