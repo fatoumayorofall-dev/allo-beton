@@ -238,7 +238,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
 /** Colonne d'accueil (ordinateur) / bandeau (téléphone) : ce que le compte apporte. */
 const Welcome: React.FC = () => (
   <aside className="relative overflow-hidden rounded-[2rem] bg-ink text-ivory min-h-[13rem] lg:min-h-full" data-testid="account-welcome">
-    <ProductImage src="/produits/sac-awa-cognac-1.jpg" alt="" label="" className="absolute inset-0 w-full h-full opacity-55" sizes="(min-width: 1024px) 40vw, 100vw" />
+    <ProductImage src="/produits/sac-awa-taupe-1.jpg" alt="" label="" className="absolute inset-0 w-full h-full opacity-70 object-[50%_24%] lg:object-[50%_35%]" sizes="(min-width: 1024px) 40vw, 100vw" />
     <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/75 to-ink/20" aria-hidden />
     <div className="relative h-full flex flex-col justify-end p-6 sm:p-8 lg:p-10">
       <BrandMark light className="h-10 w-auto self-start" />
