@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 5;
+export const CATALOG_VERSION = 6;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -150,6 +150,8 @@ export const ALL_PRODUCTS: Product[] = [
   awa({ name: 'Vert olive', hex: '#6b7430' }, 'vert-olive'),
   awa({ name: 'Bleu ciel', hex: '#7f9cc4' }, 'bleu'),
   awa({ name: 'Cognac', hex: '#9a5a2c' }, 'cognac'),
+  awa({ name: 'Taupe', hex: '#8f7a63' }, 'taupe'),
+  awa({ name: 'Bordeaux', hex: '#7a1f27' }, 'bordeaux'),
   tongs(COLORS.or, 'dore'),
   tongs(COLORS.noir, 'noir'),
   tongs(COLORS.blanc, 'blanc'),
