@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Download, MessageCircle, Search, Users } from 'lucide-react';
 import { buildWhatsAppLink } from '../config/site';
-import { fetchCustomers, type CustomerRow } from '../services/api';
+import { fetchCustomers, resetCustomerPin, type CustomerRow } from '../services/api';
 import { formatPrice } from '../utils/format';
 
 const adminPin = () => { try { return sessionStorage.getItem('maefa_admin_pin') ?? ''; } catch { return ''; } };
@@ -58,12 +58,20 @@ export const CustomersTab: React.FC = () => {
             <tbody>
               {list.map(c => (
                 <tr key={c.phone} className="border-b border-ink/5">
-                  <td className="p-4"><strong>{[c.firstName, c.lastName].filter(Boolean).join(' ') || 'Sans prénom'}</strong><br /><span className="text-xs text-ink/70">{local(c.phone)}</span></td>
+                  <td className="p-4"><strong>{[c.firstName, c.lastName].filter(Boolean).join(' ') || 'Sans prénom'}</strong><br /><span className="text-xs text-ink/70">{local(c.phone)}</span>
+                    {c.locked && <span className="ml-2 px-2 py-0.5 rounded-full bg-wine/10 text-wine text-[10px] font-semibold">Bloqué</span>}</td>
                   <td className="p-4">{c.zone || '—'}</td>
                   <td className="p-4">{day(c.createdAt)}</td>
                   <td className="p-4">{c.orders}</td>
                   <td className="p-4 text-right font-semibold">{formatPrice(c.spent)}</td>
-                  <td className="p-4 text-right">
+                  <td className="p-4 text-right whitespace-nowrap">
+                    {c.hasPin && (
+                      <button type="button" onClick={async () => {
+                        if (!window.confirm(`Réinitialiser le code secret de ${c.firstName || local(c.phone)} ? Elle en choisira un nouveau à sa prochaine connexion.`)) return;
+                        const r = await resetCustomerPin(c.phone, adminPin());
+                        if (r.ok) setRows(list => list?.map(x => (x.phone === c.phone ? { ...x, hasPin: false, locked: false } : x)));
+                      }} className="mr-2 inline-flex items-center px-3 py-1.5 rounded-full border border-ink/15 text-xs hover:border-ink" data-testid="reset-pin">Nouveau code</button>
+                    )}
                     <a href={buildWhatsAppLink(`Bonjour ${c.firstName || ''} 🌸 C'est Maefa Store.`, c.phone.replace('+', ''))} target="_blank" rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#177a41] text-white text-xs"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</a>
                   </td>

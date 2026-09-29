@@ -1,8 +1,11 @@
 // ============================================================
 //  COMPTES CLIENTES PAR NUMÉRO DE TÉLÉPHONE
-//  1. la cliente saisit son numéro → code à 4 chiffres envoyé sur WhatsApp
-//  2. elle saisit le code → session de 6 mois (jeton aléatoire)
-//  Pas de mot de passe, pas d'e-mail.
+//  Avec WhatsApp relié (Twilio) :
+//    1. la cliente saisit son numéro → code à 4 chiffres envoyé sur WhatsApp
+//    2. elle saisit le code → session de 6 mois (jeton aléatoire)
+//  Sans WhatsApp relié : numéro + code secret à 4 chiffres choisi par la cliente
+//  (créé à la première visite, verrouillé après trop d'erreurs, remis à zéro par la gérante).
+//  Pas de mot de passe compliqué, pas d'e-mail.
 // ============================================================
 import crypto from 'node:crypto';
 
@@ -12,7 +15,10 @@ const SESSION_DAYS = 180;
 const otps = new Map(); // téléphone → { hash, expires, tries }
 
 const sha256 = s => crypto.createHash('sha256').update(s).digest('hex');
-const devMode = () => process.env.OTP_DEV_MODE === '1' || (process.env.NODE_ENV !== 'production' && process.env.OTP_DEV_MODE !== '0');
+// Mode test (code affiché à l'écran) : seulement si on le demande explicitement, jamais par défaut
+const devMode = () => process.env.OTP_DEV_MODE === '1';
+const PIN_MAX_FAILS = 10;
+const hashPin = (pin, salt) => crypto.scryptSync(`${pin}`, salt, 32).toString('hex');
 
 function publicUser(u) {
   if (!u) return null;
@@ -36,8 +42,13 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
   app.post('/api/auth/start', async (req, res) => {
     const phone = wa.toE164(req.body?.phone);
     if (!phone || !/^\+221(7[05678])\d{7}$/.test(phone)) return res.status(400).json({ error: 'Numéro sénégalais invalide' });
-    if (!limit(`otp-ip:${req.ip}`, 8, 3600e3) || !limit(`otp-phone:${phone}`, 3, 10 * 60e3)) {
+    if (!limit(`otp-ip:${req.ip}`, 20, 3600e3) || !limit(`otp-phone:${phone}`, 6, 10 * 60e3)) {
       return res.status(429).json({ error: 'Trop de demandes. Réessayez dans quelques minutes.' });
+    }
+    const existing = store.getUser(phone);
+    // WhatsApp pas encore relié : connexion par code secret choisi par la cliente
+    if (!wa.whatsappEnabled() && !devMode()) {
+      return res.json({ mode: 'pin', hasPin: !!existing?.pinHash, locked: (existing?.pinFails ?? 0) >= PIN_MAX_FAILS, isNew: !existing });
     }
     const code = String(crypto.randomInt(0, 10000)).padStart(4, '0');
     otps.set(phone, { hash: sha256(`${phone}:${code}`), expires: Date.now() + OTP_TTL_MS, tries: 0 });
@@ -67,6 +78,38 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     const token = crypto.randomBytes(32).toString('hex');
     store.saveSession(sha256(token), phone);
     res.json({ token, user: publicUser(user) });
+  });
+
+  // 2 bis. Code secret (quand WhatsApp n'est pas relié) : création à la première visite, puis vérification
+  app.post('/api/auth/pin', (req, res) => {
+    const phone = wa.toE164(req.body?.phone);
+    const pin = String(req.body?.pin ?? '');
+    if (!phone || !/^\+221(7[05678])\d{7}$/.test(phone)) return res.status(400).json({ error: 'Numéro sénégalais invalide' });
+    if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'Le code secret fait 4 chiffres' });
+    if (!limit(`pin-ip:${req.ip}`, 30, 3600e3) || !limit(`pin-phone:${phone}`, 8, 15 * 60e3)) {
+      return res.status(429).json({ error: 'Trop d\'essais. Réessayez dans 15 minutes.' });
+    }
+    const user = store.getUser(phone);
+    let isNew = false;
+    if (user?.pinHash) {
+      if ((user.pinFails ?? 0) >= PIN_MAX_FAILS) return res.status(423).json({ error: 'Compte bloqué après trop d\'erreurs. Écrivez-nous sur WhatsApp pour le débloquer.' });
+      const ok = crypto.timingSafeEqual(Buffer.from(hashPin(pin, user.pinSalt)), Buffer.from(user.pinHash));
+      if (!ok) {
+        const fails = (user.pinFails ?? 0) + 1;
+        store.saveUser(phone, { pinFails: fails });
+        return res.status(400).json({ error: fails >= PIN_MAX_FAILS ? 'Compte bloqué après trop d\'erreurs. Écrivez-nous sur WhatsApp pour le débloquer.' : 'Code secret incorrect', triesLeft: PIN_MAX_FAILS - fails });
+      }
+    } else {
+      // Création du code : seulement tant que WhatsApp n'est pas relié (sinon, vérification par WhatsApp)
+      if (wa.whatsappEnabled()) return res.status(409).json({ error: 'Connectez-vous avec le code reçu sur WhatsApp' });
+      isNew = !user?.firstName;
+      const salt = crypto.randomBytes(16).toString('hex');
+      store.saveUser(phone, { pinSalt: salt, pinHash: hashPin(pin, salt) });
+    }
+    const saved = store.saveUser(phone, { pinFails: 0, lastLogin: new Date().toISOString() });
+    const token = crypto.randomBytes(32).toString('hex');
+    store.saveSession(sha256(token), phone);
+    res.json({ token, user: publicUser(saved), isNew });
   });
 
   app.post('/api/auth/logout', (req, res) => {
@@ -113,12 +156,21 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     res.status(201).json({ ok: true });
   });
 
+  // Gérante : remettre à zéro le code secret d'une cliente (elle en choisira un nouveau)
+  app.post('/api/admin/customers/:phone/reset-pin', (req, res) => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+    const phone = wa.toE164(req.params.phone);
+    if (!phone || !store.getUser(phone)) return res.status(404).json({ error: 'Cliente introuvable' });
+    store.saveUser(phone, { pinHash: null, pinSalt: null, pinFails: 0 });
+    res.json({ ok: true });
+  });
+
   // Gérante : liste des clientes inscrites
   app.get('/api/admin/customers', (req, res) => {
     if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
     const customers = store.listUsers().map(u => {
       const orders = store.getOrders(u.phone);
-      return { ...publicUser(u), lastLogin: u.lastLogin, orders: orders.length, spent: orders.filter(o => o.status !== 'annulee').reduce((s, o) => s + (Number(o.total) || 0), 0) };
+      return { ...publicUser(u), lastLogin: u.lastLogin, hasPin: !!u.pinHash, locked: (u.pinFails ?? 0) >= PIN_MAX_FAILS, orders: orders.length, spent: orders.filter(o => o.status !== 'annulee').reduce((s, o) => s + (Number(o.total) || 0), 0) };
     }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     res.json({ customers });
   });

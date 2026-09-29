@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, Heart, Loader2, LogOut, MapPin, MessageCircle, Package, Pencil, RotateCcw, Ruler, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Volume2, Zap } from 'lucide-react';
+import { ArrowRight, Check, ChevronLeft, Heart, KeyRound, Loader2, Lock, LogOut, MapPin, MessageCircle, Package, Pencil, RotateCcw, Ruler, ShieldCheck, ShoppingBag, Smartphone, Sparkles, Volume2, Zap } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, buildWhatsAppLink } from '../config/site';
@@ -27,33 +27,57 @@ const localDigits = (v: string) => {
 const pretty = (d: string) => d.replace(/^(\d{2})(\d{0,3})(\d{0,2})(\d{0,2}).*/, (_, a, b, c, e) => [a, b, c, e].filter(Boolean).join(' '));
 const validLocal = (d: string) => /^7[05678]\d{7}$/.test(d);
 
-const HELP_PHONE = 'Pour créer votre compte Maefa, écrivez votre numéro de téléphone, puis touchez le bouton vert. Vous allez recevoir un code de quatre chiffres sur WhatsApp.';
+const HELP_PHONE = 'Pour entrer dans votre espace Maefa, écrivez votre numéro de téléphone, puis touchez le bouton Continuer.';
 const HELP_CODE = 'Ouvrez WhatsApp. Maefa vous a envoyé un code de quatre chiffres. Écrivez ces quatre chiffres dans les cases.';
+const HELP_PIN = 'Votre code secret, ce sont quatre chiffres que vous choisissez vous-même. Il protège votre compte : ne le donnez à personne.';
+/** Codes trop faciles à deviner */
+const WEAK_PINS = new Set(['0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999', '1234', '4321', '0123', '1212', '2580']);
 
 const Card: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div className="bg-white rounded-[2rem] shadow-soft border border-ink/[0.05] p-6 sm:p-8">{children}</div>
 );
 
 const HelpVoice: React.FC<{ text: string }> = ({ text }) => (
-  <button type="button" onClick={() => speak(text)} className="inline-flex items-center gap-2 px-4 h-10 rounded-full border border-ink/15 text-[11px] uppercase tracking-[0.18em] font-semibold text-ink/75 hover:border-ink hover:text-ink transition-colors">
-    <Volume2 className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Écouter
+  <button type="button" onClick={() => speak(text)} aria-label="Écouter l'explication"
+    className="shrink-0 w-11 h-11 grid place-items-center rounded-full border border-ink/15 text-gold-dark hover:border-ink transition-colors">
+    <Volume2 className="w-4 h-4" strokeWidth={1.5} />
   </button>
 );
 
-/* ------------------------------------------------------------------ */
-/*  Connexion / inscription                                            */
-/* ------------------------------------------------------------------ */
+/** 4 grosses cases pour un code (un seul champ caché : copier-coller et remplissage automatique marchent). */
+const DigitBoxes = React.forwardRef<HTMLInputElement, { value: string; onChange: (v: string) => void; error?: boolean; disabled?: boolean; secret?: boolean; label: string; id: string; autoComplete?: string }>(
+  ({ value, onChange, error, disabled, secret, label, id, autoComplete = 'one-time-code' }, ref) => (
+    <label className="relative block" htmlFor={id}>
+      <span className="sr-only">{label}</span>
+      <input id={id} ref={ref} value={value} onChange={e => onChange(e.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" autoComplete={autoComplete}
+        maxLength={4} disabled={disabled} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" data-testid={`${id}-input`} />
+      <span className="grid grid-cols-4 gap-3" aria-hidden>
+        {[0, 1, 2, 3].map(i => (
+          <span key={i} className={`h-[4.5rem] sm:h-20 rounded-2xl border-2 grid place-items-center font-display text-4xl bg-ivory/40 transition-all duration-300 ${
+            error ? 'border-wine/70 bg-wine/[0.03]' : value.length === i && !disabled ? 'border-ink bg-white shadow-[0_0_0_5px_rgba(196,138,130,.16)]' : value[i] ? 'border-gold/70 bg-white' : 'border-ink/[0.1]'}`}>
+            {value[i] ? (secret ? <span className="w-3.5 h-3.5 rounded-full bg-ink" /> : value[i]) : ''}
+          </span>
+        ))}
+      </span>
+    </label>
+  ),
+);
+
+type Step = 'phone' | 'code' | 'pin' | 'pin-new' | 'pin-confirm' | 'locked';
 
 const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
-  const { startLogin, verifyCode } = useAccount();
-  const [step, setStep] = useState<'phone' | 'code'>('phone');
+  const { startLogin, verifyCode, loginWithPin } = useAccount();
+  const [step, setStep] = useState<Step>('phone');
   const [digits, setDigits] = useState('');
   const [code, setCode] = useState('');
+  const [firstPin, setFirstPin] = useState('');
   const [devCode, setDevCode] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [wait, setWait] = useState(0);
   const codeRef = useRef<HTMLInputElement>(null);
+  const phone = `+221${digits}`;
+  const forgotLink = buildWhatsAppLink(`Bonjour Maefa Store 🌸 J'ai oublié le code secret de mon compte. Mon numéro : +221 ${pretty(digits)}`);
 
   useEffect(() => {
     if (wait <= 0) return;
@@ -61,115 +85,178 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
     return () => clearTimeout(t);
   }, [wait]);
 
+  const go = (next: Step) => { setStep(next); setCode(''); setError(''); setTimeout(() => codeRef.current?.focus(), 120); };
+
   const send = async () => {
     if (!validLocal(digits)) { setError('Écrivez un numéro sénégalais : 70, 75, 76, 77 ou 78 suivi de 7 chiffres'); return; }
     setBusy(true);
     setError('');
-    const r = await startLogin(`+221${digits}`);
+    const r = await startLogin(phone);
     setBusy(false);
     if (!r.ok) { setError(r.error); return; }
+    if (r.data.mode === 'pin') { go(r.data.locked ? 'locked' : r.data.hasPin ? 'pin' : 'pin-new'); return; }
     setDevCode(r.data.devCode ?? '');
-    setCode('');
-    setStep('code');
     setWait(30);
-    setTimeout(() => codeRef.current?.focus(), 100);
+    go('code');
   };
 
-  const check = async (value: string) => {
+  const finish = async (fn: () => Promise<{ ok: boolean; error?: string; isNew?: boolean }>, onFail: () => void) => {
     setBusy(true);
     setError('');
-    const r = await verifyCode(`+221${digits}`, value);
+    const r = await fn();
     setBusy(false);
     if (r.ok) onDone(!!r.isNew);
-    else { setError(r.error ?? 'Code incorrect'); setCode(''); codeRef.current?.focus(); }
+    else { setError(r.error ?? 'Code incorrect'); if (/bloqué/i.test(r.error ?? '')) setStep('locked'); else onFail(); }
   };
 
-  const onCode = (v: string) => {
-    const c = v.replace(/\D/g, '').slice(0, 4);
-    setCode(c);
+  const onDigits = (v: string) => {
+    setCode(v);
     setError('');
-    if (c.length === 4) check(c);
+    if (v.length < 4) return;
+    if (step === 'code') finish(() => verifyCode(phone, v), () => { setCode(''); codeRef.current?.focus(); });
+    else if (step === 'pin') finish(() => loginWithPin(phone, v), () => { setCode(''); codeRef.current?.focus(); });
+    else if (step === 'pin-new') {
+      if (WEAK_PINS.has(v)) { setError('Ce code est trop facile à deviner : choisissez-en un autre'); setCode(''); return; }
+      setFirstPin(v);
+      go('pin-confirm');
+    } else if (step === 'pin-confirm') {
+      if (v !== firstPin) { setError('Les deux codes ne sont pas pareils. Recommencez.'); setFirstPin(''); setStep('pin-new'); setCode(''); codeRef.current?.focus(); return; }
+      finish(() => loginWithPin(phone, v), () => { setCode(''); setStep('pin-new'); });
+    }
   };
+
+  const back = (
+    <button type="button" onClick={() => { setStep('phone'); setError(''); setCode(''); }} className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.18em] font-semibold text-ink/65 hover:text-ink">
+      <ChevronLeft className="w-4 h-4" /> +221 {pretty(digits)} · changer
+    </button>
+  );
+  const status = (
+    <p className="mt-3 min-h-6 text-sm text-center" role="alert" id="code-error">
+      {busy ? <Loader2 className="w-5 h-5 animate-spin inline text-gold" /> : error && <span className="text-wine">{error}</span>}
+    </p>
+  );
 
   if (step === 'phone') {
     return (
-      <Card>
-        <div className="flex items-start justify-between gap-3">
+      <div data-testid="login-phone">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="w-12 h-12 rounded-full border border-gold/50 grid place-items-center text-gold-dark"><Smartphone className="w-5 h-5" strokeWidth={1.3} /></span>
-            <h1 className="font-display text-4xl mt-4 leading-tight">Mon compte Maefa</h1>
-            <p className="text-ink/75 mt-2">Juste votre numéro. Pas de mot de passe.</p>
+            <p className="eyebrow">Espace cliente</p>
+            <h1 className="font-display text-4xl sm:text-[2.75rem] mt-3 leading-[1.05]">Bienvenue chez <em className="text-gold-dark">Maefa</em></h1>
+            <p className="text-ink/70 mt-3 leading-relaxed">Connexion ou création de compte : il suffit de votre numéro.</p>
           </div>
           <HelpVoice text={HELP_PHONE} />
         </div>
-        <form className="mt-7" onSubmit={e => { e.preventDefault(); send(); }}>
-          <label htmlFor="phone" className="field-label">Mon numéro de téléphone</label>
-          <div className={`flex items-center rounded-xl border bg-white overflow-hidden transition-[border-color,box-shadow] duration-300 ${error ? 'border-wine' : 'border-ink/[0.14] hover:border-ink/30 focus-within:border-ink focus-within:shadow-[0_0_0_4px_rgba(196,138,130,.18)]'}`}>
-            <span className="pl-4 pr-3 h-16 flex items-center gap-2 text-xl font-semibold border-r border-ink/10 bg-ivory-deep/60">🇸🇳 +221</span>
+        <form className="mt-8" onSubmit={e => { e.preventDefault(); send(); }}>
+          <label htmlFor="phone" className="field-label">Numéro de téléphone</label>
+          <div className={`flex items-center rounded-2xl border bg-white overflow-hidden transition-[border-color,box-shadow] duration-300 ${error ? 'border-wine' : 'border-ink/[0.14] hover:border-ink/30 focus-within:border-ink focus-within:shadow-[0_0_0_4px_rgba(196,138,130,.18)]'}`}>
+            <span className="pl-4 pr-3 h-16 flex items-center gap-2 text-lg font-semibold border-r border-ink/10 bg-ivory-deep/50">🇸🇳 +221</span>
             <input id="phone" value={pretty(digits)} onChange={e => { setDigits(localDigits(e.target.value)); setError(''); }}
               inputMode="numeric" autoComplete="tel-national" placeholder="77 123 45 67" autoFocus
               className="flex-1 min-w-0 h-16 px-4 text-2xl font-semibold tracking-wider outline-none bg-transparent" />
           </div>
           {error && <p className="mt-2 text-sm text-wine" role="alert">{error}</p>}
-          <button disabled={busy || !digits} className="mt-6 w-full h-16 rounded-full bg-[#177a41] text-white text-[15px] font-semibold tracking-wide inline-flex hover:bg-[#12663a] transition-colors items-center justify-center gap-3 disabled:opacity-40">
-            {busy ? <Loader2 className="w-6 h-6 animate-spin" /> : <WhatsAppGlyph className="w-6 h-6" />} Recevoir mon code sur WhatsApp
+          <button disabled={busy || !digits} className="btn-dark mt-6 w-full !h-16 !text-[13px]">
+            {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Continuer <ArrowRight className="w-4 h-4" /></>}
           </button>
         </form>
-        <ul className="mt-7 grid grid-cols-3 gap-3 text-center text-xs text-ink/75">
-          <li className="p-3 rounded-2xl border border-ink/[0.07]"><Package className="mx-auto mb-2 w-5 h-5 text-gold-dark" strokeWidth={1.3} />Suivre mes commandes</li>
-          <li className="p-3 rounded-2xl border border-ink/[0.07]"><Heart className="mx-auto mb-2 w-5 h-5 text-gold-dark" strokeWidth={1.3} />Garder mes favoris</li>
-          <li className="p-3 rounded-2xl border border-ink/[0.07]"><Zap className="mx-auto mb-2 w-5 h-5 text-gold-dark" strokeWidth={1.3} />Commander plus vite</li>
-        </ul>
-      </Card>
+        <p className="mt-6 flex items-center justify-center gap-2 text-xs text-ink/60"><Lock className="w-3.5 h-3.5" /> Vos informations restent privées et ne sont jamais revendues.</p>
+      </div>
     );
   }
 
+  if (step === 'locked') {
+    return (
+      <div data-testid="login-locked">
+        {back}
+        <span className="mt-6 w-14 h-14 rounded-full bg-wine/10 text-wine grid place-items-center"><Lock className="w-6 h-6" strokeWidth={1.5} /></span>
+        <h1 className="font-display text-3xl mt-4 leading-tight">Compte protégé</h1>
+        <p className="text-ink/75 mt-3 leading-relaxed">Trop de codes incorrects ont été saisis. Pour votre sécurité, le compte est bloqué. Écrivez-nous : nous le débloquons en quelques minutes.</p>
+        <a href={forgotLink} target="_blank" rel="noopener noreferrer" className="mt-6 w-full h-14 rounded-full bg-[#177a41] text-white font-semibold inline-flex items-center justify-center gap-2.5"><WhatsAppGlyph className="w-5 h-5" /> Débloquer sur WhatsApp</a>
+      </div>
+    );
+  }
+
+  const titles: Record<Exclude<Step, 'phone' | 'locked'>, { icon: React.ReactNode; title: string; text: React.ReactNode; help: string }> = {
+    code: { icon: <MessageCircle className="w-5 h-5" strokeWidth={1.4} />, title: 'Le code reçu sur WhatsApp', text: <>Nous venons de l'envoyer au <strong className="text-ink">+221 {pretty(digits)}</strong>.</>, help: HELP_CODE },
+    pin: { icon: <KeyRound className="w-5 h-5" strokeWidth={1.4} />, title: 'Votre code secret', text: 'Les 4 chiffres choisis lors de votre inscription.', help: HELP_PIN },
+    'pin-new': { icon: <Sparkles className="w-5 h-5" strokeWidth={1.4} />, title: 'Créez votre code secret', text: 'Première visite : choisissez 4 chiffres faciles à retenir pour vous, difficiles à deviner pour les autres.', help: HELP_PIN },
+    'pin-confirm': { icon: <ShieldCheck className="w-5 h-5" strokeWidth={1.4} />, title: 'Confirmez votre code', text: 'Écrivez les mêmes 4 chiffres une seconde fois.', help: HELP_PIN },
+  };
+  const t = titles[step];
+
   return (
-    <Card>
-      <div className="flex items-start justify-between gap-3">
+    <div data-testid={`login-${step}`}>
+      {back}
+      <div className="mt-6 flex items-start justify-between gap-4">
         <div>
-          <span className="w-12 h-12 rounded-full border border-gold/50 grid place-items-center text-gold-dark"><MessageCircle className="w-5 h-5" strokeWidth={1.3} /></span>
-          <h1 className="font-display text-3xl mt-4 leading-tight">Écrivez le code reçu sur WhatsApp</h1>
-          <p className="text-ink/75 mt-2">Envoyé au <strong className="text-ink">+221 {pretty(digits)}</strong></p>
+          <span className="w-12 h-12 rounded-full bg-blush/60 grid place-items-center text-gold-dark">{t.icon}</span>
+          <h1 className="font-display text-3xl sm:text-4xl mt-4 leading-tight">{t.title}</h1>
+          <p className="text-ink/70 mt-2 leading-relaxed">{t.text}</p>
         </div>
-        <HelpVoice text={HELP_CODE} />
+        <HelpVoice text={t.help} />
       </div>
 
-      {devCode && (
+      {step === 'pin-new' || step === 'pin-confirm' ? (
+        <ol className="mt-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] font-semibold" aria-label="Étapes">
+          <li className={`flex-1 h-1 rounded-full ${step === 'pin-new' ? 'bg-ink' : 'bg-gold'}`} />
+          <li className={`flex-1 h-1 rounded-full ${step === 'pin-confirm' ? 'bg-ink' : 'bg-ink/10'}`} />
+        </ol>
+      ) : null}
+
+      {devCode && step === 'code' && (
         <div className="mt-5 p-4 rounded-2xl bg-amber-50 text-amber-900 text-sm flex items-center justify-between gap-3">
-          <span>Mode test (WhatsApp non configuré) : votre code est <strong className="text-lg tracking-widest">{devCode}</strong></span>
-          <button onClick={() => onCode(devCode)} className="px-3 h-9 rounded-full bg-amber-900 text-white text-xs font-semibold shrink-0">Remplir</button>
+          <span>Mode test : votre code est <strong className="text-lg tracking-widest">{devCode}</strong></span>
+          <button onClick={() => onDigits(devCode)} className="px-3 h-9 rounded-full bg-amber-900 text-white text-xs font-semibold shrink-0">Remplir</button>
         </div>
       )}
 
-      {/* Un seul champ (remplissage automatique du code), affiché en 4 grosses cases */}
-      <label className="relative mt-7 block" htmlFor="otp">
-        <span className="sr-only">Code à 4 chiffres</span>
-        <input id="otp" ref={codeRef} value={code} onChange={e => onCode(e.target.value)} inputMode="numeric" autoComplete="one-time-code"
-          maxLength={4} disabled={busy} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" aria-describedby="otp-error" />
-        <span className="grid grid-cols-4 gap-3" aria-hidden>
-          {[0, 1, 2, 3].map(i => (
-            <span key={i} className={`h-20 rounded-xl border grid place-items-center font-display text-5xl bg-white transition-all duration-300 ${
-              error ? 'border-wine' : code.length === i ? 'border-ink shadow-[0_0_0_4px_rgba(196,138,130,.18)]' : code[i] ? 'border-gold' : 'border-ink/[0.14]'}`}>
-              {code[i] ?? ''}
-            </span>
-          ))}
-        </span>
-      </label>
-      <p id="otp-error" className="mt-3 min-h-5 text-sm text-center" role="alert">
-        {busy ? <Loader2 className="w-5 h-5 animate-spin inline text-gold" /> : error && <span className="text-wine">{error}</span>}
-      </p>
+      <div className="mt-7">
+        <DigitBoxes key={step} ref={codeRef} id={step === 'code' ? 'otp' : 'pin'} label={t.title} value={code} onChange={onDigits} error={!!error} disabled={busy}
+          secret={step !== 'code'} autoComplete={step === 'code' ? 'one-time-code' : 'off'} />
+      </div>
+      {status}
 
       <div className="mt-4 flex flex-col items-center gap-3 text-sm">
-        <a href="whatsapp://" className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-[#177a41]/10 text-[#177a41] font-semibold"><WhatsAppGlyph className="w-5 h-5" /> Ouvrir WhatsApp</a>
-        <button onClick={send} disabled={wait > 0 || busy} className="underline disabled:no-underline disabled:text-ink/40">
-          {wait > 0 ? `Renvoyer le code dans ${wait} s` : 'Je n\'ai rien reçu : renvoyer le code'}
-        </button>
-        <button onClick={() => { setStep('phone'); setError(''); }} className="text-ink/75">Changer de numéro</button>
+        {step === 'code' && (
+          <>
+            <a href="whatsapp://" className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-[#177a41]/10 text-[#177a41] font-semibold"><WhatsAppGlyph className="w-5 h-5" /> Ouvrir WhatsApp</a>
+            <button onClick={send} disabled={wait > 0 || busy} className="underline underline-offset-4 disabled:no-underline disabled:text-ink/40">
+              {wait > 0 ? `Renvoyer le code dans ${wait} s` : 'Je n\'ai rien reçu : renvoyer le code'}
+            </button>
+          </>
+        )}
+        {step === 'pin' && (
+          <a href={forgotLink} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 text-ink/75 hover:text-ink">J'ai oublié mon code secret</a>
+        )}
+        {step === 'pin-new' && <p className="text-xs text-ink/60 text-center">Évitez 0000, 1234 ou votre année de naissance.</p>}
       </div>
-    </Card>
+    </div>
   );
 };
+
+/** Colonne d'accueil (ordinateur) / bandeau (téléphone) : ce que le compte apporte. */
+const Welcome: React.FC = () => (
+  <aside className="relative overflow-hidden rounded-[2rem] bg-ink text-ivory min-h-[13rem] lg:min-h-full" data-testid="account-welcome">
+    <ProductImage src="/produits/sac-awa-cognac-1.jpg" alt="" label="" className="absolute inset-0 w-full h-full opacity-55" sizes="(min-width: 1024px) 40vw, 100vw" />
+    <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/75 to-ink/20" aria-hidden />
+    <div className="relative h-full flex flex-col justify-end p-6 sm:p-8 lg:p-10">
+      <BrandMark light className="h-10 w-auto self-start" />
+      <p className="font-display text-3xl lg:text-4xl leading-tight mt-5">Votre espace <em className="text-gold-light">privé</em></p>
+      <ul className="mt-6 space-y-3.5 text-sm text-ivory/85 hidden sm:block">
+        {[
+          [Package, 'Suivez vos commandes et votre livreur en direct'],
+          [Heart, 'Retrouvez vos favoris sur tous vos téléphones'],
+          [Zap, 'Commandez en un geste : adresse et point GPS mémorisés'],
+          [ShieldCheck, 'Sans mot de passe compliqué'],
+        ].map(([Icon, text]) => {
+          const I = Icon as typeof Package;
+          return <li key={text as string} className="flex items-center gap-3"><span className="w-8 h-8 rounded-full border border-gold-light/40 grid place-items-center shrink-0"><I className="w-4 h-4 text-gold-light" strokeWidth={1.5} /></span>{text as string}</li>;
+        })}
+      </ul>
+    </div>
+  </aside>
+);
 
 /* ------------------------------------------------------------------ */
 /*  Prénom (première connexion)                                        */
@@ -436,7 +523,7 @@ export const Account: React.FC = () => {
 
   return (
     <div className="bg-ivory min-h-[80vh]">
-      <div className={`${status === 'user' && !(askName && !user?.firstName) ? 'max-w-5xl' : 'max-w-md'} mx-auto px-4 py-10 sm:py-16`}>
+      <div className={`${status === 'user' && !(askName && !user?.firstName) ? 'max-w-5xl' : status === 'guest' ? 'max-w-5xl' : 'max-w-md'} mx-auto px-4 py-8 sm:py-14`}>
         {status === 'loading' && <div className="grid place-items-center py-24"><Loader2 className="w-8 h-8 animate-spin text-gold" /></div>}
         {status === 'off' && (
           <Card>
@@ -449,7 +536,14 @@ export const Account: React.FC = () => {
             </div>
           </Card>
         )}
-        {status === 'guest' && <Login onDone={isNew => (isNew ? setAskName(true) : done())} />}
+        {status === 'guest' && (
+          <div className="grid lg:grid-cols-[0.95fr_1.05fr] gap-5 items-stretch">
+            <Welcome />
+            <div className="bg-white rounded-[2rem] shadow-soft border border-ink/[0.05] p-6 sm:p-10 flex flex-col justify-center">
+              <Login onDone={isNew => (isNew ? setAskName(true) : done())} />
+            </div>
+          </div>
+        )}
         {status === 'user' && (askName && !user?.firstName ? <NameStep onDone={done} /> : <Dashboard />)}
       </div>
     </div>

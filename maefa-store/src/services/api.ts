@@ -224,7 +224,12 @@ async function call<T>(path: string, init: RequestInit & { token?: string } = {}
 }
 
 export const authStart = (phone: string) =>
-  call<{ sent: boolean; channel?: 'whatsapp'; devCode?: string; isNew: boolean }>('/api/auth/start', { method: 'POST', body: JSON.stringify({ phone }) });
+  call<{ sent?: boolean; channel?: 'whatsapp'; devCode?: string; isNew: boolean; mode?: 'pin'; hasPin?: boolean; locked?: boolean }>('/api/auth/start', { method: 'POST', body: JSON.stringify({ phone }) });
+/** Connexion par code secret (tant que WhatsApp n'est pas relié) : crée le code à la première visite. */
+export const authPin = (phone: string, pin: string) =>
+  call<{ token: string; user: Account; isNew: boolean }>('/api/auth/pin', { method: 'POST', body: JSON.stringify({ phone, pin }) });
+export const resetCustomerPin = (phone: string, pin: string) =>
+  call<{ ok: boolean }>(`/api/admin/customers/${encodeURIComponent(phone)}/reset-pin`, { method: 'POST', headers: { 'x-admin-pin': pin } });
 export const authVerify = (phone: string, code: string) =>
   call<{ token: string; user: Account }>('/api/auth/verify', { method: 'POST', body: JSON.stringify({ phone, code }) });
 export const authLogout = (token: string) => call<null>('/api/auth/logout', { method: 'POST', token });
@@ -233,7 +238,7 @@ export const updateMe = (token: string, patch: Partial<Omit<Account, 'phone' | '
   call<{ user: Account }>('/api/me', { method: 'PATCH', token, body: JSON.stringify(patch) });
 export const saveMyOrder = (token: string, order: Order) => call<{ ok: true }>('/api/me/orders', { method: 'POST', token, body: JSON.stringify({ order }) });
 
-export interface CustomerRow extends Account { lastLogin?: string; orders: number; spent: number }
+export interface CustomerRow extends Account { lastLogin?: string; hasPin?: boolean; locked?: boolean; orders: number; spent: number }
 export const fetchCustomers = (pin: string) => getJson<{ customers: CustomerRow[] }>('/api/admin/customers', pin).then(r => r?.customers ?? null);
 
 /* ---------- Commandes enregistrées sur le serveur + livraison suivie en direct ---------- */
