@@ -58,7 +58,7 @@ Thème **féminin** : rose poudré, vieux rose, prune et rose doré ; accents en
 titres en *Cormorant Garamond*, texte en *Manrope* (polices hébergées dans `public/fonts/`) ; formes arrondies et arches, ornements floraux.
 
 **Logo « L'Écrin »** (`src/components/Logo.tsx`) : une arche (la porte de la maison, le motif du site) traitée comme un écrin à bijou —
-filet or rose, clé de voûte en losange, F italique et paraphe — et le nom Maefa / STORE ◆ DAKAR. `BrandMark` (l'écrin, `compact` pour les petites tailles,
+filet or rose, clé de voûte en losange, M italique et paraphe — et le nom Maefa / STORE ◆ DAKAR. `BrandMark` (l'écrin, `compact` pour les petites tailles,
 `light` pour les fonds sombres) et `Wordmark` (le nom) se réutilisent partout. Favicon, icônes et image de partage sont dans `public/`.
 Fichiers pour l'impression et les réseaux dans `public/brand/` : logo horizontal (fond clair / sombre), logo empilé, monogramme (prune, or, une couleur),
 cachet rond, et l'**édition sécurisée** (`maefa-monogramme-securise.svg` : guilloché + micro-texte, sans les marques secrètes).

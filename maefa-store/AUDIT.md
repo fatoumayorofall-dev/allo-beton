@@ -148,7 +148,7 @@ Fichier Figma : « Maefa Store — Identité & Accueil 2026 » (page 01 · Logo 
 **Pourquoi changer encore ?** Le sac dessiné de la v2 restait littéral : il évoque une icône de panier d'application plus qu'une maison de mode. Les grandes maisons signent d'un emblème abstrait.
 Six pistes ont été comparées (écrin, filet, cachet, arche + sac…) ; l'écrin l'emporte : silhouette reconnaissable même à 16 px, lien direct avec les arches du site, et il reste juste si la boutique élargit son offre.
 
-- Arche 64 × 88 (proportion d'une porte), filet or rose intérieur, clé de voûte en losange (écho du ◆ de la signature), F italique Cormorant 700 centré optiquement, paraphe calligraphié effilé.
+- Arche 64 × 88 (proportion d'une porte), filet or rose intérieur, clé de voûte en losange (écho du ◆ de la signature), M italique Cormorant 700 centré optiquement, paraphe calligraphié effilé.
 - Version compacte (en-tête, favicon) : l'arche et un F plus grand, sans filet ni paraphe, pour rester net.
 - Déclinaisons : or rose sur fond prune, une couleur (tampon, marquage cuir), logo empilé, cachet rond « MAEFA STORE · DAKAR · SÉNÉGAL ».
 

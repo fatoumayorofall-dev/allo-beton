@@ -62,7 +62,7 @@ export const Authenticity: React.FC = () => {
           <div className="mt-6 grid grid-cols-[120px_1fr] sm:grid-cols-[150px_1fr] gap-5 items-center">
             <img src="/brand/maefa-securite.png" alt="L'écrin Maefa, édition sécurisée" className="w-full h-auto" loading="lazy" />
             <ul className="space-y-4 text-sm text-ink/75">
-              <li><strong className="block font-display text-lg text-ink">L'écrin</strong>Une arche prune, un F italique or rose et un paraphe.</li>
+              <li><strong className="block font-display text-lg text-ink">L'écrin</strong>Une arche prune, un M italique or rose et un paraphe.</li>
               <li><strong className="block font-display text-lg text-ink">Le guilloché</strong>Deux anneaux de lignes entrelacées, comme sur un billet de banque.</li>
             </ul>
           </div>
