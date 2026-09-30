@@ -42,6 +42,8 @@ export interface ChatTurn {
   content: string;
   /** Réponses toutes prêtes proposées en boutons (Maé sans IA payante) */
   chips?: string[];
+  /** Voix enregistrée (wolof) à faire écouter avec cette réponse */
+  voice?: string;
 }
 
 export interface ChatPayload {

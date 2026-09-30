@@ -5,6 +5,7 @@ import { useStore } from '../context/StoreContext';
 import type { Product } from '../data/types';
 import { ADVISOR_TEXT, nextQuestion, pitch, recommend, type Lang, type Wishes } from '../utils/shopAdvisor';
 import { ProductImage } from './ProductImage';
+import { maeVoiceSlug, questionVoice } from '../data/wolofVoices';
 
 const SIZE_KEY = 'maefa_pointure';
 const readSize = () => { try { return localStorage.getItem(SIZE_KEY) ?? undefined; } catch { return undefined; } };
@@ -22,7 +23,7 @@ const bold = (t: string) => t.split(/\*\*(.+?)\*\*/g).map((x, i) => (i % 2 ? <st
  * « Comme en boutique » : questions en gros boutons (sans rien écrire), puis 3 pièces présentées
  * comme la vendeuse les tend, avec « Ajouter au panier » dans la bonne pointure.
  */
-export const ShopAdvisor: React.FC<{ lang: Lang; onNavigate: () => void }> = ({ lang, onNavigate }) => {
+export const ShopAdvisor: React.FC<{ lang: Lang; onNavigate: () => void; playVoice?: (slug: string) => boolean }> = ({ lang, onNavigate, playVoice }) => {
   const { products, addToCart, openQuickView, notify } = useStore();
   const [wishes, setWishes] = useState<Wishes>(() => ({ size: readSize() }));
   const [answers, setAnswers] = useState<{ q: string; a: string }[]>([]);
@@ -35,7 +36,12 @@ export const ShopAdvisor: React.FC<{ lang: Lang; onNavigate: () => void }> = ({ 
   useEffect(() => {
     const el = result ? resultsRef.current : anchor.current;
     el?.scrollIntoView({ behavior: 'smooth', block: result ? 'start' : 'end' });
-  }, [answers.length, result]);
+    // En wolof : la question (ou « voici les pièces ») dite avec la voix de la gérante
+    if (playVoice) {
+      const slug = result ? (result.items.length ? maeVoiceSlug('pieces') : maeVoiceSlug('rien')) : q ? questionVoice(q.key) : null;
+      if (slug) playVoice(slug);
+    }
+  }, [answers.length, result]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const choose = (key: keyof Wishes, value: Wishes[keyof Wishes], label: string, question: string) => {
     if (key === 'size') saveSize(String(value ?? ''));

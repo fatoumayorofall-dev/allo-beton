@@ -12,6 +12,7 @@ import { getServerStatus, listVoices, streamChat, voiceUrl, type ChatTurn } from
 import { WOLOF_GUIDE, guideVoiceSlug, type GuideTopic } from '../data/wolofGuide';
 import { VoiceToWhatsApp } from './VoiceToWhatsApp';
 import { ShopAdvisor } from './ShopAdvisor';
+import { voiceForReply } from '../data/wolofVoices';
 import { ADVISOR_TEXT } from '../utils/shopAdvisor';
 import { newBrainState, reply as brainReply, type BrainState } from '../assistant/brain';
 import { formatPrice } from '../utils/format';
@@ -166,7 +167,11 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
         sessionStorage.setItem('maefa_brain', JSON.stringify(r.state));
         if (r.state.wishes.size) localStorage.setItem('maefa_pointure', r.state.wishes.size);
       } catch { /* ignore */ }
-      setMessages([...history, { role: 'assistant', content: r.text, chips: r.chips }]);
+      // En wolof : Maé répond aussi avec la voix de la gérante, si la phrase est enregistrée
+      const voice = r.state.lang === 'wo' ? voiceForReply(r) : null;
+      const withVoice = voice && voices.includes(voice) ? voice : undefined;
+      setMessages([...history, { role: 'assistant', content: r.text, chips: r.chips, voice: withVoice }]);
+      if (withVoice) playVoice(withVoice, `msg-${history.length}`);
     };
     if (!status.assistant) { answerLocally(); setBusy(false); return; }
 
@@ -214,6 +219,18 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
   }); // exécute la question demandée à l'ouverture
 
   /** Sujet du guide wolof : la note vocale de la gérante (si enregistrée) et le texte dans la conversation. */
+  /** Fait écouter une voix enregistrée par la gérante (une seule à la fois). */
+  const playVoice = (slug: string, tag = slug) => {
+    if (!voices.includes(slug)) return false;
+    player.current?.pause();
+    const a = new Audio(voiceUrl(slug));
+    player.current = a;
+    setPlaying(tag);
+    a.onended = () => setPlaying(p => (p === tag ? null : p));
+    a.play().catch(() => setPlaying(null));
+    return true;
+  };
+
   const playTopic = (g: GuideTopic) => {
     const slug = guideVoiceSlug(g.id);
     player.current?.pause();
@@ -273,7 +290,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
             <span><span className="block font-semibold">{ADVISOR_TEXT.start[lang].replace('🛍️ ', '')}</span><span className="block text-xs text-ivory/70 mt-0.5">{ADVISOR_TEXT.startHint[lang]}</span></span>
           </button>
         )}
-        {advisor && messages.length === 0 && <ShopAdvisor key={lang} lang={lang} onNavigate={close} />}
+        {advisor && messages.length === 0 && <ShopAdvisor key={lang} lang={lang} onNavigate={close} playVoice={lang === 'wo' ? playVoice : undefined} />}
         {lang === 'wo' && messages.length === 0 && !advisor && (
           <div className="grid grid-cols-2 gap-2.5" data-testid="wolof-guide">
             {WOLOF_GUIDE.map(g => {
@@ -303,6 +320,12 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
                 ? <span className="inline-flex gap-1 py-1" role="status" aria-label="Maé écrit"><Dot /><Dot d={150} /><Dot d={300} /></span>
                 : m.role === 'assistant' ? <RichText text={m.content.replace(/\[\[pointure:\d*\]?\]?/g, '')} onNavigate={close} /> : m.content}
             </Bubble>
+            {m.role === 'assistant' && m.voice && (
+              <button onClick={() => playVoice(m.voice!, `msg-${i}`)} data-testid="deglu"
+                className={`ml-2 mt-1.5 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-semibold ${playing === `msg-${i}` ? 'bg-gold text-white animate-pulse' : 'bg-white border border-ink/15 text-gold-dark'}`}>
+                <Volume2 className="w-4 h-4" /> Déglu
+              </button>
+            )}
             {m.role === 'assistant' && m.content && lang === 'fr' && !(busy && i === messages.length - 1) && (
               <button onClick={() => speak(spoken(m.content))} className="ml-2 mt-1 inline-flex items-center gap-1 text-[11px] text-ink/60 hover:text-gold-dark" aria-label="Écouter la réponse" data-testid="listen">
                 <Volume2 className="w-3.5 h-3.5" /> Écouter

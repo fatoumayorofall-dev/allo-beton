@@ -45,8 +45,12 @@ phrase de la cliente
   et *Dewenati* autour de la Tabaski et de la Korité.
 - **Argent** : compte traditionnel, *junni* = 1 000 dërëm = 5 000 F (*ñetti junni* = 15 000 F) ;
   compte à la française avec *mille* (*fukk ak juróom mille* = 15 000 F). **À valider par la gérante.**
-- **Pas de synthèse vocale en wolof** : aucun téléphone ne sait lire le wolof à voix haute. Les réponses en
-  français ont un bouton « Écouter » ; le wolof s'appuie sur le guide vocal enregistré par la gérante.
+- **Voix en wolof = la voix de la gérante** : aucun téléphone ne sait lire le wolof à voix haute. La gérante
+  enregistre 17 phrases types (`src/data/wolofVoices.ts`, Admin > Statut WhatsApp) et les 6 sujets du guide.
+  En wolof, chaque réponse de Maé fait écouter la phrase qui correspond : accueil, question de la vendeuse, pièces
+  apportées, confiance, hésitation, paiement… (`voiceForReply`). Un bouton **Déglu** permet de réécouter.
+  Une phrase pas encore enregistrée reste seulement écrite. Les réponses en français ont un bouton « Écouter »
+  (voix du téléphone).
 
 ## Vente : règles d'honnêteté (testées automatiquement)
 

@@ -11,6 +11,7 @@ import { displayLink, productCode, showcaseLink, shortLink, statusCaption, statu
 import { renderStatusImageSafe } from '../utils/statusImage';
 import { ProductImage } from '../components/ProductImage';
 import { WOLOF_GUIDE, guideVoiceSlug } from '../data/wolofGuide';
+import { MAE_VOICES, maeVoiceSlug } from '../data/wolofVoices';
 
 const adminPin = () => { try { return sessionStorage.getItem('maefa_admin_pin') ?? ''; } catch { return ''; } };
 
@@ -90,12 +91,20 @@ export const StatusTab: React.FC = () => {
 
       {/* Guide vocal en wolof de l'assistante */}
       <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6" data-testid="wolof-voices">
-        <h2 className="font-display text-xl">Guide vocal en wolof 🇸🇳 <span className="text-ink/70 text-base">({WOLOF_GUIDE.filter(g => voices.includes(guideVoiceSlug(g.id))).length}/{WOLOF_GUIDE.length})</span></h2>
+        <h2 className="font-display text-xl">Voix en wolof 🇸🇳 — le guide <span className="text-ink/70 text-base">({WOLOF_GUIDE.filter(g => voices.includes(guideVoiceSlug(g.id))).length}/{WOLOF_GUIDE.length})</span></h2>
         <p className="text-xs text-ink/70 mt-1">Dans l'assistante, en mode « Wolof », les clientes touchent une image et entendent votre voix. Lisez ou dites le texte à votre façon, en wolof, puis « Mettre en ligne ».</p>
         <div className="mt-4 grid md:grid-cols-2 gap-3">
           {WOLOF_GUIDE.map(g => (
             <VoiceRecorder key={g.id} slug={guideVoiceSlug(g.id)} serverOk={serverOk} hasVoice={voices.includes(guideVoiceSlug(g.id))}
               title={`${g.emoji} ${g.wo} — ${g.fr}`} hint={g.textWo} />
+          ))}
+        </div>
+        <h3 className="font-display text-lg mt-8">La voix de Maé <span className="text-ink/70 text-base">({MAE_VOICES.filter(v => voices.includes(maeVoiceSlug(v.id))).length}/{MAE_VOICES.length})</span></h3>
+        <p className="text-xs text-ink/70 mt-1">Quand une cliente parle à Maé en wolof, Maé écrit sa réponse <strong>et fait écouter votre voix</strong>. Dites chaque phrase à votre façon, calmement, puis « Mettre en ligne ». Une phrase pas encore enregistrée reste seulement écrite.</p>
+        <div className="mt-4 grid md:grid-cols-2 gap-3" data-testid="mae-voices">
+          {MAE_VOICES.map(v => (
+            <VoiceRecorder key={v.id} slug={maeVoiceSlug(v.id)} serverOk={serverOk} hasVoice={voices.includes(maeVoiceSlug(v.id))}
+              title={`🎙 ${v.when}`} hint={`« ${v.wo} »\n(${v.fr})`} />
           ))}
         </div>
       </div>
@@ -265,6 +274,8 @@ const VoiceRecorder: React.FC<{ slug: string; serverOk: boolean; hasVoice: boole
   const [seconds, setSeconds] = useState(0);
   const [clip, setClip] = useState<Blob | null>(null);
   const [saved, setSaved] = useState(hasVoice);
+  // La liste des voix arrive du serveur après l'affichage : on suit sa mise à jour
+  useEffect(() => setSaved(hasVoice), [hasVoice]);
   const [busy, setBusy] = useState(false);
   const recRef = useRef<MediaRecorder | null>(null);
   const timerRef = useRef<number>();
