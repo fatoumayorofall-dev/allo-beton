@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 15;
+export const CATALOG_VERSION = 16;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -93,6 +93,54 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   isNew: true,
   isBestseller: true,
   createdAt: '2026-09-29T10:00:00Z',
+});
+
+/** Tongs Adja : bride fine entre les doigts, fermoir en métal argenté, semelle plate carrée. */
+const adja = (color: ColorOption, key: string) => p({
+  slug: `tongs-adja-${key}`,
+  name: `Tongs Adja à fermoir — ${color.name}`,
+  category: 'chaussures',
+  subcategory: 'Sandales plates',
+  occasions: ['quotidien', 'vacances', 'soiree'],
+  material: 'Aspect cuir lisse, fermoir en métal argenté, semelle plate à bout carré',
+  care: 'Essuyer avec un chiffon doux légèrement humide, éviter l\'eau sur le fermoir, ranger à plat.',
+  styleTip: 'Avec une robe fluide ou un ensemble en lin : le fermoir argenté fait tout le chic, sans effort.',
+  price: 15000,
+  images: media(`tongs-adja-${key}`, 2),
+  video: `/videos/tongs-adja-${key}.mp4`,
+  colors: [color],
+  sizes: SHOE_SIZES,
+  stock: STOCK,
+  description: `Des tongs plates en ${color.name.toLowerCase()} : une fine bride entre les doigts, un fermoir en métal argenté sur le dessus et une semelle au bout carré. Minimalistes, confortables, élégantes.`,
+  details: ['Tongs plates, bride entre les doigts', `Couleur : ${color.name}`, 'Fermoir en métal argenté', 'Semelle plate à bout carré', 'Pointures du 36 au 41'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-30T12:00:00Z',
+});
+
+/** Tongs Zara à anneau d'orteil : barre dorée sur le dessus et anneau doré autour de l'orteil. */
+const orteil = (color: ColorOption, key: string) => p({
+  slug: `tongs-zara-orteil-${key}`,
+  name: `Tongs Zara à anneau d'orteil — ${color.name}`,
+  category: 'chaussures',
+  subcategory: 'Sandales plates',
+  occasions: ['quotidien', 'vacances', 'soiree'],
+  material: 'Aspect cuir lisse, barre et anneau en métal doré, semelle plate',
+  care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau de mer sur le métal, ranger à plat.',
+  styleTip: 'Avec un kaftan ou une robe longue : la barre dorée sert de bijou de pied.',
+  price: 15000,
+  images: media(`tongs-zara-orteil-${key}`, 2),
+  video: `/videos/tongs-zara-orteil-${key}.mp4`,
+  colors: [color],
+  sizes: SHOE_SIZES,
+  stock: STOCK,
+  description: `Des sandales plates Zara en ${color.name.toLowerCase()} : une barre dorée sur le dessus du pied et un anneau doré autour de l'orteil. Légères, faciles à porter, avec une touche de bijou.`,
+  details: ['Marque : Zara', 'Sandales plates à anneau d\'orteil', `Couleur : ${color.name}`, 'Barre et anneau en métal doré', 'Pointures du 36 au 41'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-30T12:30:00Z',
 });
 
 /** Mules Zara à talon : large bride croisée bout ouvert, semelle vernie, talon fin. */
@@ -236,6 +284,15 @@ export const ALL_PRODUCTS: Product[] = [
   soxna(COLORS.blanc, 'blanc'),
   soxna({ name: 'Fuchsia', hex: '#d2268a' }, 'fuchsia'),
   soxna({ name: 'Orange', hex: '#e8641c' }, 'orange'),
+  orteil({ name: 'Cognac', hex: '#a8582a' }, 'cognac'),
+  orteil(COLORS.noir, 'noir'),
+  orteil(COLORS.blanc, 'blanc'),
+  orteil({ name: 'Bordeaux', hex: '#7a1f2e' }, 'bordeaux'),
+  orteil({ name: 'Chocolat', hex: '#4a2a26' }, 'chocolat'),
+  adja(COLORS.blanc, 'blanc'),
+  adja(COLORS.noir, 'noir'),
+  adja({ name: 'Chocolat', hex: '#5a4038' }, 'chocolat'),
+  adja({ name: 'Framboise', hex: '#b0283f' }, 'framboise'),
   mulesTalon({ name: 'Bordeaux', hex: '#6e1330' }, 'bordeaux'),
   mulesTalon({ name: 'Vert sapin', hex: '#1f3d33' }, 'vert-sapin'),
   mulesTalon({ name: 'Violet', hex: '#4a2166' }, 'violet'),
