@@ -10,3 +10,7 @@
     pièce Maefa avant une campagne publicitaire.
   - Logo en volume, galerie d'arches, sac à main en cuir et téléphones : modélisés pour Maefa avec Three.js
     (`film-3d-source/`).
+
+- **Film « Bientôt en ligne »** (`maefa-bientot.mp4`, sources `bientot-source/`) : motion design original ;
+  musique originale « Maefa — Bientôt » (`bientot-source/music.py`), rendue avec FluidR3 GM ; images : photos et
+  vidéos des pièces de la boutique (`public/produits`, `public/videos`). Polices Bodoni Moda et Jost (licence OFL).
