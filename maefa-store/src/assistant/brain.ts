@@ -6,10 +6,10 @@
 import type { Order, Product } from '../data/types';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { formatPrice } from '../utils/format';
-import { daysUntil, formatDay, inDays, upcomingFetes } from '../utils/fetes';
+import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from '../utils/fetes';
 import { canBuy } from '../utils/stock';
 import { FAQ_ITEMS } from '../data/faq';
-import { QUESTIONS, modelOf, recommend, type Wishes } from '../utils/shopAdvisor';
+import { QUESTIONS, colorFamilies, modelOf, recommend, type Wishes } from '../utils/shopAdvisor';
 import { NaiveBayes, detectLang, features, normalize } from './nlu';
 import { extractSlots, type Slots } from './slots';
 import { TRAINING, type Intent } from './training';
@@ -25,17 +25,37 @@ export interface BrainState {
   /** Pièces déjà montrées (pour « autres ») */
   shown: string[];
   lang: Lang;
+  /** Nombre de réponses (pour varier les tournures) */
+  turn?: number;
 }
 
 export interface BrainReply { text: string; chips: string[]; state: BrainState; intent: Intent | 'inconnu' }
 
-export const newBrainState = (lang: Lang = 'fr', size?: string): BrainState => ({ wishes: size ? { size } : {}, asked: [], shown: [], lang });
+export const newBrainState = (lang: Lang = 'fr', size?: string): BrainState => ({ wishes: size ? { size } : {}, asked: [], shown: [], lang, turn: 0 });
+
+export interface BrainCtx { products: Product[]; orders?: Order[]; lang?: Lang; /** Total du panier en cours (FCFA) */ cartTotal?: number }
 
 let model: NaiveBayes<Intent> | null = null;
 export const classifier = () => (model ??= new NaiveBayes<Intent>().train(TRAINING));
 
 /** Intention reconnue (avec sa probabilité), utile aussi pour les tests. */
+let exact: Map<string, Intent> | null = null;
+/** Phrases apprises mot pour mot (utile pour les messages très courts : « ok », « cc », « om »). */
+const exactMemory = () => {
+  if (exact) return exact;
+  const seen = new Map<string, Intent | null>();
+  for (const [intent, list] of Object.entries(TRAINING) as [Intent, string[]][]) {
+    for (const ex of list) { const k = normalize(ex); seen.set(k, seen.has(k) && seen.get(k) !== intent ? null : intent); }
+  }
+  exact = new Map([...seen].filter((e): e is [string, Intent] => e[1] !== null));
+  return exact;
+};
+
 export function understand(text: string) {
+  const key = normalize(text);
+  if (!key) return { intent: 'bof' as Intent, p: 1, second: undefined };
+  const known = exactMemory().get(key);
+  if (known) return { intent: known, p: 1, second: undefined };
   const r = classifier().rank(text);
   return { intent: r[0].label, p: r[0].p, second: r[1] };
 }
@@ -53,7 +73,9 @@ function otherColors(p: Product, products: Product[]) {
 }
 
 function present(p: Product, w: Wishes, products: Product[], lang: Lang): string {
-  const occ = w.occasion && w.occasion !== 'tout' && p.occasions.includes(w.occasion) ? w.occasion : p.occasions[0];
+  // Occasion demandée si la pièce y convient ; sinon on n'en parle pas (pas de « tous les jours » pour un mariage)
+  const asked = w.occasion && w.occasion !== 'tout' ? w.occasion : null;
+  const occ = asked ? (p.occasions.includes(asked) ? asked : null) : p.occasions[0];
   const others = otherColors(p, products).slice(0, 4);
   const size = w.size && p.sizes.includes(w.size) ? w.size : '';
   if (lang === 'wo') {
@@ -88,6 +110,68 @@ function answerPending(text: string, state: BrainState): boolean {
   return true;
 }
 
+/* ---------- Vendre avec des arguments vrais (jamais de fausse rareté ni de fausse promo) ---------- */
+
+const pick = <T,>(state: BrainState, list: T[]) => list[(state.turn ?? 0) % list.length];
+
+const BENEFITS = {
+  fr: [
+    '💚 Zéro risque : vous pouvez **payer en espèces à la livraison**, après avoir vu la pièce.',
+    '✅ Vous **vérifiez la pièce devant le livreur** avant de l\'accepter.',
+    '🛵 Livrée en **24 h à Dakar**, en 2 à 5 jours en régions.',
+    '💬 Une vraie équipe vous répond sur WhatsApp, avant et après la commande.',
+  ],
+  wo: [
+    '💚 Amul benn risque : mën nga **fey bu la ko indilee**, ginnaaw bi nga ko gis.',
+    '✅ Dinga ko **seet ci kanam livreur bi** balaa ngay nangu.',
+    '🛵 **24 waxtu** rekk ci Dakar, 2 ba 5 fan ci diwaan yi.',
+    '💬 Am na ay nit ñu lay tontu ci WhatsApp, balaa ak ginnaaw commande bi.',
+  ],
+};
+const INTROS = {
+  fr: ['Voici ce que je vous ai choisi ✨', 'J\'ai sélectionné ces pièces pour vous ✨', 'Regardez ce que j\'ai trouvé pour vous ✨'],
+  wo: ['Xoolal li ma la tànnal ✨', 'Tànnal naa la yii ✨', 'Xoolal yii, dinañu la neex ✨'],
+};
+const CLOSES = {
+  fr: ['Laquelle vous plaît ? Touchez-la pour la voir de près.', 'Un coup de cœur ? Touchez la photo, puis « Ajouter au panier ».', 'Dites-moi celle qui vous fait envie, je vous guide jusqu\'à la commande.'],
+  wo: ['Ban moo la neex ? Bësal ci ngir xool ko bu baax.', 'Bu la neexee, bësal nataal bi, bësal « Ajouter au panier ».', 'Wax ma ban nga bëgg, ma won la naka ngay jënde.'],
+};
+
+/** Pour compléter le look : une pièce de l'autre univers, dans une couleur qui va avec. */
+function crossSell(items: Product[], products: Product[], state: BrainState): string {
+  if (!items.length || items.some(p => p.category !== items[0].category)) return '';
+  const other = items[0].category === 'chaussures' ? 'sacs' : 'chaussures';
+  const fam = colorFamilies(items[0]);
+  const shown = new Set(state.shown);
+  const match = products.find(p => p.category === other && canBuy(p) && !shown.has(p.id) && colorFamilies(p).some(f => fam.includes(f))
+    && (!state.wishes.size || !p.sizes.length || p.sizes.includes(state.wishes.size)));
+  if (!match) return '';
+  return L(state.lang,
+    `👗 Pour compléter le look : [${match.name}](/produit/${match.slug}) (${formatPrice(match.price)}) va très bien avec.`,
+    `👗 Ngir mu dëppoo : [${match.name}](/produit/${match.slug}) (${formatPrice(match.price)}) dafa dëppoo ak moom.`);
+}
+
+/** Fête proche (vraies dates) : commander à temps. */
+function feteNudge(state: BrainState): string {
+  const occ = state.wishes.occasion;
+  if (occ && !['ceremonie', 'mariage', 'tout'].includes(occ)) return '';
+  const f = upcomingFetes().find(x => { const n = daysUntil(x.date); return n > 3 && n <= 30; });
+  if (!f) return '';
+  const n = daysUntil(f.date);
+  return L(state.lang,
+    `🌙 ${f.name} dans ${n} jours : commandez avant le **${formatDay(orderBy(f.date))}** pour être livrée à temps à Dakar.`,
+    `🌙 ${f.name} ci ${n} fan : jëndal balaa **${formatDay(orderBy(f.date))}** ngir mu agsi ci jamono ci Dakar.`);
+}
+
+/** Livraison offerte : ce qu'il manque dans le panier. */
+function shippingNudge(state: BrainState, cartTotal = 0): string {
+  const gap = SITE_CONFIG.freeShippingThreshold - cartTotal;
+  if (cartTotal <= 0 || gap <= 0 || gap > 30000) return '';
+  return L(state.lang,
+    `🚚 Avec votre panier, il ne manque que **${formatPrice(gap)}** pour la livraison offerte.`,
+    `🚚 Ci sa panier, **${formatPrice(gap)}** rekk moo des ngir yónnee bi bañ a fey.`);
+}
+
 /* ---------- Réponses boutique ---------- */
 
 function productsFor(products: Product[], state: BrainState, exclude: string[] = []) {
@@ -102,7 +186,7 @@ function productsFor(products: Product[], state: BrainState, exclude: string[] =
   return recommend(pool, { kind: w.kind ?? 'tout', occasion: w.occasion ?? 'tout', color: w.color ?? 'tout', budget: w.budget ?? 0, size: w.size || undefined });
 }
 
-function showProducts(products: Product[], state: BrainState, lead: { fr: string; wo: string }, exclude: string[] = []): Pick<BrainReply, 'text' | 'chips'> {
+function showProducts(products: Product[], state: BrainState, lead: { fr: string; wo: string } | null, exclude: string[] = [], cartTotal = 0): Pick<BrainReply, 'text' | 'chips'> {
   const lang = state.lang;
   const { items, exact } = productsFor(products, state, exclude);
   state.pending = undefined;
@@ -115,13 +199,14 @@ function showProducts(products: Product[], state: BrainState, lead: { fr: string
     return { text: `${why} ${L(lang, 'Voulez-vous voir autre chose ?', 'Ndax nga bëgg xool leneen ?')}`, chips: L(lang, '✨ Montrez-moi tout|💬 Parler à Maefa', '✨ Wone ma lépp|💬 Wax ak Maefa').split('|') };
   }
   state.shown.push(...items.map(p => p.id));
-  const intro = exact ? L(lang, lead.fr, lead.wo) : L(lang, 'Je n\'ai pas exactement ça, mais regardez ces pièces qui s\'en approchent :', 'Amul lu dëppoo bu wér, waaye xoolal yii :');
+  const intro = exact ? (lead ? L(lang, lead.fr, lead.wo) : pick(state, INTROS[lang])) : L(lang, 'Je n\'ai pas exactement ça, mais regardez ces pièces qui s\'en approchent :', 'Amul lu dëppoo bu wér, waaye xoolal yii :');
   const lines = items.map(p => present(p, state.wishes, products, lang)).join('\n');
-  const close = L(lang, 'Laquelle vous plaît ? Touchez-la pour la voir de près.', 'Ban moo la neex ? Bësal ci ngir xool ko bu baax.');
-  return { text: `${intro}\n${lines}\n\n${close}`, chips: L(lang, '💸 Moins cher|🔄 Autres modèles|🛒 Comment commander ?', '💸 Lu gën a yomb|🔄 Yeneen|🛒 Naka laay jënde ?').split('|') };
+  const extras = [crossSell(items, products, state), feteNudge(state), shippingNudge(state, cartTotal), pick(state, BENEFITS[lang])].filter(Boolean).slice(0, 3).join('\n');
+  const close = pick(state, CLOSES[lang]);
+  return { text: `${intro}\n${lines}\n\n${extras}\n\n${close}`, chips: L(lang, '💸 Moins cher|🔄 Autres modèles|🛒 Comment commander ?', '💸 Lu gën a yomb|🔄 Yeneen|🛒 Naka laay jënde ?').split('|') };
 }
 
-function cherche(slots: Slots, products: Product[], state: BrainState): Pick<BrainReply, 'text' | 'chips'> {
+function cherche(slots: Slots, products: Product[], state: BrainState, cartTotal = 0): Pick<BrainReply, 'text' | 'chips'> {
   const w = state.wishes;
   if (slots.kind && slots.kind !== w.kind) { delete w.model; delete w.sub; }
   if (slots.kind) w.kind = slots.kind;
@@ -144,12 +229,15 @@ function cherche(slots: Slots, products: Product[], state: BrainState): Pick<Bra
   }
   const known = [w.occasion, w.color, w.budget].filter(x => x !== undefined).length;
   if (!known && !state.asked.includes('occasion')) return ask('occasion', state);
-  return showProducts(products, state, { fr: 'Voici ce que je vous ai choisi ✨', wo: 'Xoolal li ma la tànnal ✨' });
+  return showProducts(products, state, null, [], cartTotal);
 }
 
 function livraison(slots: Slots, lang: Lang) {
   const free = formatPrice(SITE_CONFIG.freeShippingThreshold);
   const zone = slots.zone && slots.zone !== 'Dakar' ? DELIVERY_ZONES.find(z => z.name === slots.zone) : null;
+  if (zone && zone.name === 'Autres régions') return L(lang,
+    `Oui, nous livrons chez vous 🌸 Pour votre ville, la livraison coûte **${formatPrice(zone.fee)}** et prend **${zone.delay}**. Offerte dès ${free} d'achat 🛵`,
+    `Waaw, dinañu la yónnee 🌸 Ci sa dëkk, yónnee bi **${formatPrice(zone.fee)}** la, te day am ci **${zone.delay}** 🛵`);
   if (zone) return L(lang,
     `Pour **${zone.name}**, la livraison coûte **${formatPrice(zone.fee)}** et prend **${zone.delay}**. Elle est offerte dès ${free} d'achat 🛵`,
     `Ci **${zone.name}**, yónnee bi **${formatPrice(zone.fee)}** la, te day am ci **${zone.delay}**. Bu sa commande tollee ${free}, yónnee bi amul fey 🛵`);
@@ -175,8 +263,10 @@ function faqAnswer(text: string): string | null {
 /** Articles pas encore en vente (mots passés par la même normalisation que la phrase). */
 const NOT_SOLD = new RegExp(`\\b(${['bijou', 'bijoux', 'collier', 'colliers', 'bague', 'bagues', 'bracelet', 'bracelets', 'boucle', 'boucles', 'parure', 'robe', 'robes', 'kaftan', 'boubou', 'tailleur', 'vetement', 'vetements', 'habit', 'habits', 'yére', 'lunette', 'lunettes', 'montre', 'montres', 'foulard', 'ceinture', 'chapeau', 'perruque', 'meche', 'meches'].map(normalize).join('|')})\\b`);
 
-export function reply(text: string, prev: BrainState, ctx: { products: Product[]; orders?: Order[]; lang?: Lang }): BrainReply {
+export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply {
   const state: BrainState = JSON.parse(JSON.stringify(prev));
+  state.turn = (state.turn ?? 0) + 1;
+  const cartTotal = ctx.cartTotal ?? 0;
   const products = ctx.products;
   state.lang = detectLang(text) ?? ctx.lang ?? state.lang;
   const lang = state.lang;
@@ -190,6 +280,8 @@ export function reply(text: string, prev: BrainState, ctx: { products: Product[]
     intent = 'cherche';
   }
   if (slots.orderId) intent = 'suivi';
+  // « taille du sac » : ce sont les dimensions, pas la pointure
+  if (intent === 'pointure' && slots.kind === 'sacs') intent = 'dimensions';
   // Des détails d'article sans intention claire : c'est une recherche
   if ((intent === 'inconnu' || intent === 'oui' || intent === 'salut') && (slots.kind || slots.color || slots.occasion || slots.size || slots.model)) intent = 'cherche';
   if (intent === 'prix' && !slots.model && !state.shown.length && (slots.kind || slots.budget)) intent = 'cherche';
@@ -216,9 +308,9 @@ export function reply(text: string, prev: BrainState, ctx: { products: Product[]
     case 'qui': return out(L(lang,
       'Je suis **Maé**, la conseillère virtuelle de Maefa : un petit programme (pas une personne) qui connaît toutes nos pièces. Pour parler à l\'équipe, touchez « Parler à Maefa » 🌸',
       'Maa ngi tudd **Maé** : programme bu Maefa (du nit), xam naa sac yi ak dàll yi yépp. Ngir wax ak nit, bësal « Wax ak Maefa » 🌸'), [L(lang, '💬 Parler à Maefa', '💬 Wax ak Maefa')]);
-    case 'cherche': { const r = cherche(slots, products, state); return out(r.text, r.chips); }
+    case 'cherche': { const r = cherche(slots, products, state, cartTotal); return out(r.text, r.chips); }
     case 'autres': {
-      if (!state.wishes.kind && !state.shown.length) { const r = cherche(slots, products, state); return out(r.text, r.chips); }
+      if (!state.wishes.kind && !state.shown.length) { const r = cherche(slots, products, state, cartTotal); return out(r.text, r.chips); }
       delete state.wishes.model;
       // D'autres modèles (pas seulement d'autres couleurs des mêmes)
       const seenModels = new Set(state.shown.map(id => products.find(x => x.id === id)).filter((x): x is Product => !!x).map(modelOf));
@@ -325,6 +417,63 @@ export function reply(text: string, prev: BrainState, ctx: { products: Product[]
       return out(L(lang, 'Avec plaisir ! Vous cherchez un sac ou des chaussures ?', 'Waaw ! Sac walla dàll nga bëgg ?'), KIND_CHIPS);
     }
     case 'non': state.pending = undefined; return out(L(lang, 'D\'accord 🌸 Je reste là si vous avez besoin.', 'Waaw 🌸 Maa ngi fi bu la soxlaa.'));
+    case 'hesite': return out(L(lang,
+      'Prenez votre temps 🌸 Pour ne pas perdre la pièce de vue, touchez le **♡** sur sa fiche : elle reste dans vos favoris. Et rappelez-vous : vous pouvez **payer à la livraison**, après l\'avoir vue et vérifiée.',
+      'Xaaral sa bopp 🌸 Bësal **♡** ci pièce bi ngir mu des ci sa favoris. Te mën nga **fey bu la ko indilee**, ginnaaw bi nga ko seet.'),
+      L(lang, '🔄 Autres modèles|💬 Parler à Maefa', '🔄 Yeneen|💬 Wax ak Maefa').split('|'));
+    case 'confiance': return out(L(lang,
+      `C'est une vraie question, et je vous comprends 🌸 Voici ce qui vous protège :\n- 💚 Vous pouvez **payer en espèces à la livraison** : vous ne payez qu'en ayant la pièce en main.\n- ✅ Vous **vérifiez la commande devant le livreur** avant de l'accepter.\n- 📍 Vous **suivez le livreur sur la carte**.\n- 💬 Une vraie équipe répond au **${SITE_CONFIG.phone}** (appel ou WhatsApp).`,
+      `Dégg naa la 🌸 Lii moo lay aar :\n- 💚 Mën nga **fey bu la ko indilee** : doo fey te gisoo ko.\n- ✅ Dinga **seet sa commande ci kanam livreur bi**.\n- 📍 Dinga **gis livreur bi ci kart bi**.\n- 💬 Ay nit ñu dëgg ñoo lay tontu ci **${SITE_CONFIG.phone}**.`),
+      L(lang, '👜 Voir les sacs|👡 Voir les chaussures', '👜 Sac|👡 Dàll').split('|'));
+    case 'qualite': {
+      const p = (slots.model ? products.find(x => modelOf(x) === slots.model) : null) ?? (state.shown.length ? products.find(x => x.id === state.shown[state.shown.length - 1]) : null);
+      if (p) return out(L(lang,
+        `**${modelOf(p)}** : ${p.material}. ${p.care ? `Entretien : ${p.care}` : ''} Chaque pièce est contrôlée par l'équipe avant l'envoi, et vous la vérifiez devant le livreur 🌸`,
+        `**${modelOf(p)}** : ${p.material}. Nu ngi koy seet balaa ñuy yónnee, te yow itam dinga ko seet ci kanam livreur bi 🌸`));
+      return out(L(lang,
+        'Chaque pièce est **choisie et contrôlée** par notre équipe avant l\'envoi ; la matière exacte est indiquée sur chaque fiche. Et vous vérifiez tout **devant le livreur** avant d\'accepter 🌸 Quelle pièce vous intéresse ?',
+        'Nu ngi seet pièce yépp **balaa ñuy yónnee** ; lu ñu ko def mu ngi ci fiche bi. Te dinga ko seet **ci kanam livreur bi** 🌸 Ban pièce nga bëgg ?'), KIND_CHIPS);
+    }
+    case 'dimensions': return out(L(lang,
+      `Je n'ai pas les mesures exactes ici, et je préfère ne pas vous dire n'importe quoi 🌸 Demandez-les sur [WhatsApp](${wa('Bonjour Maefa 🌸 Pouvez-vous m\'envoyer les dimensions et une vidéo de cette pièce ?')}) : l'équipe vous envoie les dimensions et une vidéo de la pièce.`,
+      `Amuma fii mesure yu wér yi 🌸 Laajal leen ci [WhatsApp](${wa('Salaam aleekum Maefa 🌸 Yónnee leen ma mesure bi ak video bi.')}) : dinañu la yónnee mesure yi ak video.`));
+    case 'photos': return out(L(lang,
+      `Chaque fiche a plusieurs photos et souvent une **vidéo** : touchez « Vidéo » sur la photo 🎬 Nos photos viennent des vraies pièces. Pour d'autres angles, demandez sur [WhatsApp](${wa('Bonjour Maefa 🌸 Pouvez-vous m\'envoyer plus de photos ?')}).`,
+      `Fiche bu nekk am na ay nataal ak **video** : bësal « Vidéo » ci nataal bi 🎬 Ngir yeneen nataal, laaj ci [WhatsApp](${wa('Salaam aleekum Maefa 🌸 Yónnee leen ma yeneen nataal.')}).`));
+    case 'compliment': {
+      const last = state.shown.length ? products.find(x => x.id === state.shown[state.shown.length - 1]) : null;
+      if (last) return out(L(lang,
+        `N'est-ce pas ? 😍 Vous avez l'œil ! Touchez la pièce qui vous plaît puis **« Ajouter au panier »** : vous pouvez payer à la livraison, après l'avoir vue.`,
+        `Dafa rafet, dëgg la 😍 Bësal pièce bi la neex, bësal **« Ajouter au panier »** : mën nga fey bu la ko indilee.`),
+        L(lang, '🛒 Comment commander ?|🔄 Autres modèles', '🛒 Naka laay jënde ?|🔄 Yeneen').split('|'));
+      return out(L(lang, 'Merci 🌸 Voulez-vous que je vous montre nos dernières arrivées ?', 'Jërëjëf 🌸 Ndax ma wone la yu bees yi ?'), L(lang, '✨ Les nouveautés|👜 Un sac|👡 Des chaussures', '✨ Yu bees yi|👜 Sac|👡 Dàll').split('|'));
+    }
+    case 'nouveautes': {
+      const w = state.wishes;
+      state.wishes = { kind: w.kind ?? 'tout', size: w.size };
+      const r = showProducts(products, state, { fr: 'Nos dernières arrivées, choisies avec soin ✨', wo: 'Yu bees yi ñu indi ✨' }, [], cartTotal);
+      return out(r.text, r.chips);
+    }
+    case 'gros': return out(L(lang,
+      `Avec plaisir 🌸 Pour plusieurs pièces ou pour la revente, écrivez à l'équipe sur [WhatsApp](${wa('Bonjour Maefa 🌸 Je souhaite commander plusieurs pièces (revente). Voici les modèles et quantités :')}) avec les modèles et les quantités : elle vous répond avec les conditions.`,
+      `Waaw 🌸 Ngir jënd bu bare walla jaay, bindal nu ci [WhatsApp](${wa('Salaam aleekum Maefa 🌸 Dama bëgg jënd bu bare. Modèle yi ak ñaata :')}) : dinañu la tontu.`));
+    case 'modifier': return out(L(lang,
+      `Pas de souci 🌸 Écrivez vite à l'équipe sur [WhatsApp](${wa('Bonjour Maefa 🌸 Je voudrais modifier / annuler ma commande n° ')}) avec votre numéro de commande : **avant l'expédition**, elle peut modifier ou annuler.`,
+      `Amul solo 🌸 Bindal nu léegi ci [WhatsApp](${wa('Salaam aleekum Maefa 🌸 Dama bëgg soppi walla dindi sama commande n° ')}) ak sa nimero commande : **balaa ñu koy yónnee**, mën nañu ko soppi.`));
+    case 'langue': {
+      const t = normalize(text);
+      if (/english|anglais/.test(t)) return out('Sorry, I speak French and Wolof 🌸 Je parle français et wolof : écrivez-moi dans l\'une de ces langues !', KIND_CHIPS);
+      state.lang = /wolof/.test(t) && !/francais/.test(t) ? 'wo' : /francais/.test(t) ? 'fr' : state.lang;
+      return out(L(state.lang, 'Bien sûr, je vous parle en français 🌸 Que puis-je faire pour vous : un sac, des chaussures ?', 'Waaw, dégg naa wolof 🌸 Lan nga bëgg : sac walla dàll ?'), QUESTIONS.kind.options.map(o => optionLabel(o, state.lang)));
+    }
+    case 'bof': {
+      if (state.shown.length) return out(L(lang,
+        'Je suis là 🌸 Touchez la pièce qui vous plaît pour la voir de près, ou dites-moi ce que vous aimeriez changer (couleur, prix, modèle).',
+        'Maa ngi fi 🌸 Bësal pièce bi la neex ngir xool ko, walla wax ma lu nga bëgg soppi (melo, njëg, modèle).'),
+        L(lang, '💸 Moins cher|🔄 Autres modèles|🛒 Comment commander ?', '💸 Lu gën a yomb|🔄 Yeneen|🛒 Naka laay jënde ?').split('|'));
+      return out(L(lang, 'Je suis là pour vous 🌸 Un sac, des chaussures, ou juste envie de voir les nouveautés ?', 'Maa ngi fi 🌸 Sac, dàll, walla nga bëgg xool yu bees yi ?'),
+        L(lang, '👜 Un sac|👡 Des chaussures|✨ Les nouveautés', '👜 Sac|👡 Dàll|✨ Yu bees yi').split('|'));
+    }
     default: break;
   }
 

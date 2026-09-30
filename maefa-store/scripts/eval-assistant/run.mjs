@@ -82,13 +82,14 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; lines.push(`${c
   const WOLOF = /\b(nga|ngi|dafa|am na|ak|ci|la|yi|bi|dinañu|mën|xoolal|tànnal|ban|bësal|lañu)\b/gi;
   for (const conv of CONVERSATIONS) {
     let state = M.newBrainState(conv.lang);
-    let prevPrices = [], prevIds = [];
+    let prevPrices = [], prevIds = [], prevText = '';
     conv.turns.forEach(([said, e], i) => {
-      const r = M.reply(said, state, { products, orders: [], lang: conv.lang });
+      const r = M.reply(said, state, { products, orders: [], lang: conv.lang, cartTotal: conv.cartTotal ?? 0 });
       state = r.state;
       const name = `conversation ${conv.id} · ${i + 1} « ${said} »`;
       const slugs = [...r.text.matchAll(/\(\/produit\/([a-z0-9-]+)\)/g)].map(m => m[1]);
-      const items = slugs.map(sl => bySlug.get(sl)).filter(Boolean);
+      // Pièces présentées (lignes « - [..] ») ; la suggestion « pour compléter le look » est à part
+      const items = [...r.text.matchAll(/^- \[[^\]]+\]\(\/produit\/([a-z0-9-]+)\)/gm)].map(m => bySlug.get(m[1])).filter(Boolean);
       const bad = [];
       if (e.intent && r.intent !== e.intent) bad.push(`intention ${r.intent}`);
       if (e.chips && !r.chips.length) bad.push('pas de boutons');
@@ -102,10 +103,16 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; lines.push(`${c
       if (e.fresh && items.some(p => prevIds.includes(p.id))) bad.push('mêmes pièces');
       if (e.mentions && !e.mentions.test(r.text)) bad.push(`ne dit pas ${e.mentions}`);
       if (e.wolof && (r.text.match(WOLOF) || []).length < 3) bad.push('pas en wolof');
+      if (e.mentions2 && !e.mentions2.test(r.text)) bad.push(`ne dit pas ${e.mentions2}`);
+      if (e.benefit && !/payer en espèces à la livraison|vérifiez la pièce|24 h à Dakar|vraie équipe|fey bu la ko indilee|seet ci kanam|24 waxtu|nit ñu lay tontu/i.test(r.text)) bad.push('aucun argument de vente');
+      if (e.crossSell && !/compléter le look|Ngir mu dëppoo/.test(r.text)) bad.push('pas de pièce pour compléter le look');
+      if (e.varied && prevText && r.text.split('\n')[0] === prevText.split('\n')[0]) bad.push('même phrase d\'intro que la réponse d\'avant');
+      // Marketing honnête : jamais de fausse rareté, de fausse promo ou de faux avis
+      if (/derni[eè]res? pi[eè]ces?|plus que \d|stock limité|il n'en reste|-\s?\d+\s?%|\d+ (clientes|avis)|best-seller n°/i.test(r.text.replace(/BIENVENUE \(-10 %[^)]*\)/, ''))) bad.push('argument trompeur');
       if (slugs.some(sl => !bySlug.has(sl))) bad.push('lien vers une pièce inexistante');
       ok(name, !bad.length, bad.join(', '));
       report.push(`**Cliente :** ${said}\n\n**Maé :** ${r.text}${r.chips.length ? `\n\n_Boutons : ${r.chips.join(' · ')}_` : ''}\n`);
-      if (items.length) { prevPrices = items.map(p => p.price); prevIds = items.map(p => p.id); }
+      if (items.length) { prevPrices = items.map(p => p.price); prevIds = items.map(p => p.id); prevText = r.text; }
     });
   }
 }

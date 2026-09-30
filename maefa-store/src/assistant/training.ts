@@ -7,7 +7,8 @@
 export type Intent =
   | 'salut' | 'merci' | 'aurevoir' | 'qui' | 'cherche' | 'prix' | 'livraison' | 'paiement' | 'suivi'
   | 'retour' | 'pointure' | 'boutique' | 'marque' | 'promo' | 'cadeau' | 'commander' | 'humain'
-  | 'fete' | 'moins_cher' | 'autres' | 'oui' | 'non' | 'plainte';
+  | 'fete' | 'moins_cher' | 'autres' | 'oui' | 'non' | 'plainte'
+  | 'hesite' | 'confiance' | 'qualite' | 'dimensions' | 'photos' | 'compliment' | 'nouveautes' | 'gros' | 'modifier' | 'langue' | 'bof';
 
 export const TRAINING: Record<Intent, string[]> = {
   salut: [
@@ -42,18 +43,21 @@ export const TRAINING: Record<Intent, string[]> = {
     'ñaata la', 'naata la', 'ñaata lay jar', 'naata lay jar', 'sac awa ñaata la', 'njëgam ñaata la', 'njeg bi', 'dàll yi ñaata lañu',
   ],
   livraison: [
+    "vous livrez à ziguinchor", "livraison keur massar", "vous livrez le week-end", "vous livrez le dimanche", "livraison en casamance", "vous livrez à kolda",
     'vous livrez', 'combien coûte la livraison', 'la livraison c\'est combien', 'vous livrez à thiès', 'livraison à touba', 'les frais de livraison',
     'en combien de temps je suis livrée', 'délai de livraison', 'vous livrez en région', 'livraison gratuite', 'quand est-ce que je reçois ma commande',
     'vous livrez à mbour', 'livraison à pikine', 'je suis à kaolack vous livrez', 'livraison dakar', 'combien de jours pour la livraison',
     'ndax dingeen yónnee', 'dingeen ma ko indil', 'yónnee bi ñaata la', 'ñaata fan', 'ci thiès dingeen yónnee', 'ci touba dingeen indi', 'kañ lay agsi', 'livraison bi ñaata la',
   ],
   paiement: [
+    "on paie à la livraison", "paiement à la réception", "om", "orange money", "je paye par om", "free money",
     'je paye quand je reçois', 'règlement à la réception', 'on règle comment', 'je paie en cash au livreur', 'je vous règle par orange money', 'paiement quand le livreur vient',
     'comment payer', 'je peux payer comment', 'vous acceptez wave', 'paiement orange money', 'je paie à la livraison', 'on paie comment',
     'quels moyens de paiement', 'je peux payer en espèces', 'paiement par carte', 'je dois payer avant', 'le numéro wave', 'payer par wave',
     'naka laay fey', 'naka lañuy fey', 'wave mën naa fey', 'mën naa fey bu ñu ma indilee', 'fey ak orange money', 'nimero wave bi', 'ndax dama wara fey bala',
   ],
   suivi: [
+    "le livreur est en retard", "toujours rien reçu", "ça fait 3 jours j'attends",
     'où est ma commande', 'suivi de commande', 'ma commande n\'est pas arrivée', 'je veux suivre ma commande', 'où en est ma commande', 'mon colis',
     'le livreur est où', 'quand arrive ma commande', 'j\'ai commandé hier', 'statut de ma commande', 'ma commande MAE-12345',
     'fan la sama commande nekk', 'sama commande agsiwul', 'livreur bi fan la nekk', 'kañ la sama commande di agsi', 'dama commande demb',
@@ -77,7 +81,7 @@ export const TRAINING: Record<Intent, string[]> = {
   marque: [
     'c\'est du vrai hermès', 'c\'est original', 'c\'est de la marque', 'c\'est authentique', 'c\'est une copie', 'c\'est du chanel',
     'c\'est du gucci', 'c\'est une contrefaçon', 'vous vendez des vraies marques', 'c\'est du vrai zara', 'c\'est tods', 'c\'est de la qualité',
-    'dëgg la', 'original la', 'marque dëgg la', 'copie la', 'hermès dëgg la', 'baax na',
+    'dëgg la', 'original la', 'marque dëgg la', 'copie la', 'hermès dëgg la',
   ],
   promo: [
     'vous avez une promo', 'code promo', 'réduction', 'remise', 'il y a des soldes', 'vous faites des prix', 'un bon de réduction', 'une offre',
@@ -125,5 +129,59 @@ export const TRAINING: Record<Intent, string[]> = {
     'j\'ai un problème', 'ma commande est abîmée', 'ce n\'est pas ce que j\'ai commandé', 'je ne suis pas contente', 'le livreur ne répond pas', 'j\'ai payé mais rien',
     'erreur dans ma commande', 'il manque un article', 'je veux faire une réclamation',
     'am naa jafe jafe', 'sama commande dafa yàqu', 'neexu ma', 'fey naa waaye dara agsiwul', 'livreur bi tontuwul',
+  ],
+  hesite: [
+    'je vais réfléchir', 'je réfléchis', 'laissez-moi réfléchir', 'je repasserai', 'je reviendrai', 'pas tout de suite', 'je vais voir',
+    'je ne suis pas sûre', 'j\'hésite', 'j\'hésite entre les deux', 'je vais en parler à mon mari', 'je vais attendre la fin du mois', 'quand j\'aurai l\'argent',
+    'dinaa xalaat', 'dinaa ci xalaat', 'dinaa délsi', 'bu ma amee xaalis', 'xaaral ma tuuti', 'dama xalaat', 'bu weer wi jeexee',
+  ],
+  confiance: [
+    'c\'est fiable', 'votre site est fiable', 'vous êtes sérieux', 'c\'est une arnaque', 'je peux vous faire confiance', 'j\'ai peur de payer avant',
+    'et si je paie et je ne reçois rien', 'vous existez vraiment', 'on m\'a déjà arnaquée', 'c\'est sécurisé', 'comment être sûre',
+    'dëgg ngeen', 'mën naa leen woolu', 'dama ragal fey', 'bu ma feyee te dara agsiwul', 'nit ñu dëgg ngeen',
+  ],
+  qualite: [
+    'la qualité est bonne', 'c\'est de bonne qualité', 'c\'est solide', 'c\'est du cuir', 'c\'est en quelle matière', 'ça dure longtemps',
+    'c\'est du simili', 'ça s\'abîme vite', 'les finitions sont bien', 'la matière est comment', 'ça tient bien', 'confortable',
+    'dafa dëgër', 'dafa yàqu gaaw', 'lan lañu ko def', 'deru la', 'dafa neex ci tànk',
+  ],
+  dimensions: [
+    'quelle est la taille du sac', 'les dimensions', 'il est grand', 'il est petit', 'ça rentre un ipad', 'on peut mettre un téléphone',
+    'combien de centimètres', 'il est spacieux', 'contenance du sac', 'ça rentre des documents a4', 'c\'est lourd', 'la hauteur du talon',
+    'dafa mag', 'dafa tuuti', 'telefon mën na ci dugg', 'naka la réye', 'talon bi ñaata centimètre',
+  ],
+  photos: [
+    'vous avez des photos portées', 'je peux voir en vidéo', 'envoyez-moi plus de photos', 'c\'est la même couleur que sur la photo', 'photo réelle',
+    'je veux voir de plus près', 'une vidéo du sac', 'c\'est comme sur l\'image', 'autre photo',
+    'yónnee ma nataal', 'dama bëgg gis video', 'nataal bi dëgg la', 'melo bi ni mu mel ci nataal bi',
+  ],
+  compliment: [
+    'jaime', 'jaime bien', 'jaime beaucoup', 'ça me plaît', 'elle me plaît', 'il me plaît bien', 'je kiffe',
+    'magnifique', 'trop beau', 'trop belle', 'j\'aime bien', 'j\'adore', 'waouh', 'wow', 'c\'est joli', 'superbe', 'il est beau ce sac', 'elles sont belles',
+    'très chic', 'coup de cœur', 'c\'est top',
+    'dafa rafet', 'rafet na', 'rafet na lool', 'neex na', 'dafa neex', 'bëgg naa ko', 'dafa sell',
+  ],
+  nouveautes: [
+    'quoi de neuf', 'les nouveautés', 'quels sont les nouveautés', 'nouveaux arrivages', 'ce qui vient d\'arriver', 'votre meilleure vente',
+    'ce qui marche le plus', 'les plus demandés', 'vos best-sellers', 'qu\'est-ce que vous me conseillez', 'votre coup de cœur', 'nouvelle collection',
+    'lu bees', 'yu bees yi', 'lan mooy bees', 'lan la nit ñi gën a jënd', 'lan nga ma digal',
+  ],
+  gros: [
+    'je suis revendeuse', 'prix de gros', 'je veux acheter en gros', 'vous faites des prix pour plusieurs', 'je veux 10 sacs', 'prix pour une grande quantité',
+    'je veux revendre', 'tarif revendeur', 'commande en quantité',
+    'dama bëgg jënd bu bare', 'dama jaaykat', 'njëgu jaaykat', 'fukk sac laa bëgg',
+  ],
+  modifier: [
+    'annuler ma commande', 'je veux annuler', 'changer mon adresse', 'modifier ma commande', 'changer la couleur de ma commande', 'je me suis trompée de pointure',
+    'changer le numéro', 'ajouter un article à ma commande', 'je veux changer de modèle avant la livraison',
+    'dama bëgg dindi sama commande', 'soppi sama adresse', 'soppi sama commande', 'dama juum ci pointure bi',
+  ],
+  langue: [
+    'tu parles wolof', 'vous parlez wolof', 'parle français', 'en français svp', 'english please', 'do you speak english', 'parlez en wolof',
+    'wax ma ci wolof', 'wolof rekk', 'dégg nga wolof', 'wax ci français', 'dégguma français',
+  ],
+  bof: [
+    'cc', 'yo', 'hmm', 'mmm', 'lol', 'mdr', 'haha', '?', '??', 'euh', 'bon', 'ah bon', 'd\'acc', 'ah', 'oh', 'hein', 'rien', 'rien merci', 'je sais pas', 'je ne sais pas', 'pas d\'idée',
+    'xamuma', 'dara', 'dara la', 'ahh', 'waaw rekk',
   ],
 };

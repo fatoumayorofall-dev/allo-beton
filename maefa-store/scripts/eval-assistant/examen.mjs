@@ -19,6 +19,16 @@ export const INTENT_EXAM = [
   ['xamuma ban pointure laay jël', 'pointure'], ['fan la sëriñ boutique bi nekk', 'boutique'], ['hermès dëgg la sac bi', 'marque'], ['wàññi ma tuuti', 'promo'],
   ['dama bëgg may sama yaay', 'cadeau'], ['kii laa bëgg jënd', 'commander'], ['dama bëgg wax ak nit ku dëgg', 'humain'], ['dafa jafe lool', 'moins_cher'],
   ['wone ma yeneen melo', 'autres'], ['jërëjëf lool', 'merci'], ['ba beneen yoon inshallah', 'aurevoir'], ['waaw kay', 'oui'], ['déedéet jërëjëf', 'non'],
+  // nouvelles situations (examen 2)
+  ['bon je vais y penser', 'hesite'], ['je dois d\'abord demander à mon époux', 'hesite'], ['dinaa ko xalaat ba ëllëg', 'hesite'],
+  ['comment je sais que vous n\'êtes pas des escrocs', 'confiance'], ['est-ce que je peux vous faire confiance pour de vrai', 'confiance'], ['dama ragal ñu nax ma', 'confiance'],
+  ['la matière est de bonne qualité ?', 'qualite'], ['est-ce que ça tient dans le temps', 'qualite'], ['dafa dëgër bu baax ?', 'qualite'],
+  ['il fait combien de centimètres ce sac', 'dimensions'], ['mon téléphone rentre dedans ?', 'dimensions'],
+  ['vous pouvez m\'envoyer une vidéo de la pochette', 'photos'], ['les couleurs sont fidèles aux photos ?', 'photos'],
+  ['oh il est trop joli', 'compliment'], ['vraiment superbe cette paire', 'compliment'], ['rafet na torop', 'compliment'],
+  ['qu\'est-ce qui vient d\'arriver chez vous', 'nouveautes'], ['c\'est quoi votre article le plus vendu', 'nouveautes'],
+  ['je tiens une boutique je veux acheter plusieurs', 'gros'], ['je voudrais annuler la commande que j\'ai passée', 'modifier'],
+  ['je me suis trompée d\'adresse de livraison', 'modifier'], ['vous comprenez le wolof ?', 'langue'], ['pouvez-vous parler en français', 'langue'],
 ];
 
 export const SLOT_EXAM = [
@@ -65,6 +75,27 @@ export const CONVERSATIONS = [
   ] },
   { id: 'pas-en-vente', lang: 'fr', turns: [
     ['Vous vendez des robes et des bijoux ?', { mentions: /uniquement des sacs et des chaussures/i, noProducts: true }],
+  ] },
+  { id: 'vendeuse-marketeuse', lang: 'fr', turns: [
+    ['Je cherche des chaussures pour un mariage, je fais du 39', { products: true, size: '39', benefit: true, crossSell: true }],
+    ['🔄 Autres modèles', { products: true, fresh: true, benefit: true, varied: true }],
+    ['Magnifique !', { intent: 'compliment', mentions: /Ajouter au panier/ }],
+    ['Je vais réfléchir', { intent: 'hesite', mentions: /♡|favoris/, mentions2: /livraison/ }],
+  ] },
+  { id: 'rassurer', lang: 'fr', turns: [
+    ['C\'est pas une arnaque votre site ?', { intent: 'confiance', mentions: /payer en espèces à la livraison/i }],
+  ] },
+  { id: 'rassurer-wo', lang: 'wo', turns: [
+    ['Dama ragal fey te dara du agsi', { intent: 'confiance', wolof: true, mentions: /fey bu la ko indilee/ }],
+  ] },
+  { id: 'panier-livraison-offerte', lang: 'fr', cartTotal: 30000, turns: [
+    ['Un sac noir pour le bureau', { products: true, mentions: /il ne manque que/ }],
+  ] },
+  { id: 'honnete-mesures', lang: 'fr', turns: [
+    ['Le sac Awa il est grand ? ça rentre un ordinateur ?', { intent: 'dimensions', mentions: /WhatsApp/ }],
+  ] },
+  { id: 'ville-hors-liste', lang: 'fr', turns: [
+    ['Vous livrez à Ziguinchor ?', { intent: 'livraison', mentions: /5\s?000/ }],
   ] },
   { id: 'marque-honnete', lang: 'fr', turns: [
     ['C\'est du vrai Hermès vos tongs ?', { intent: 'marque', mentions: /ne sont pas|pas des articles de grandes marques/i }],

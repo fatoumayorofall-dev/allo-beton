@@ -154,7 +154,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
     const status = await getServerStatus();
     const answerLocally = () => {
       setMode('local');
-      const r = brainReply(q, brain.current, { products, orders, lang });
+      const r = brainReply(q, brain.current, { products, orders, lang, cartTotal: cart.reduce((n, i) => n + i.price * i.quantity, 0) });
       brain.current = r.state;
       try {
         sessionStorage.setItem('maefa_brain', JSON.stringify(r.state));

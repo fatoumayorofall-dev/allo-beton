@@ -73,7 +73,7 @@ function size(t: string, kindShoes: boolean): string | undefined {
 
 /** Index des modèles du catalogue : mots distinctifs → nom du modèle. */
 export function modelIndex(products: Product[]) {
-  const generic = new Set(['sac', 'sacs', 'a', 'de', 'en', 'et', 'la', 'le', 'dore', 'tongs', 'mules', 'zara', 'pochette', 'fermoir', 'breloque', 'coeur', 'anneau', 'talon', 'croisees', 'strass', 'papillon', 'orteil', 'anse']);
+  const generic = new Set<string>(['sac', 'sacs', 'a', 'de', 'en', 'et', 'la', 'le', 'dore', 'tongs', 'mules', 'zara', 'pochette', 'fermoir', 'breloque', 'coeur', 'anneau', 'talon', 'croisees', 'strass', 'papillon', 'orteil', 'anse'].map(normalize));
   const idx = new Map<string, string>();
   for (const p of products) {
     const model = modelOf(p);
@@ -109,9 +109,12 @@ export function extractSlots(raw: string, products: Product[] = []): Slots {
   const id = raw.toUpperCase().match(/\b(?:MAE|EFA|FB)-[A-Z0-9]{4,12}\b/);
   if (id) s.orderId = id[0];
   for (const z of DELIVERY_ZONES) {
-    const first = normalize(z.name).split(/[ /]/)[0];
-    if (first.length > 3 && new RegExp(`\\b${first}`).test(t)) { s.zone = z.name; break; }
+    const full = normalize(z.name).replace(/ \/ .*/, '');
+    const first = full.split(' ')[0];
+    if (new RegExp(`\\b${full}\\b`).test(t) || (first.length > 3 && new RegExp(`\\b${first}`).test(t))) { s.zone = z.name; break; }
   }
+  // Villes hors des zones listées : tarif « Autres régions »
+  if (!s.zone && /\b(ziguinchor|kolda|tambacunda|tamba|matam|luga|louga|fatick|kedugu|kedougou|sedhiu|sedhiou|kafrine|kaffrine|diurbel|diourbel|podor|richard tol|dagana|casamance|bignona|velingara|linguere|mbacke|tivaoune|tivauane|joal|nioro)\b/.test(t)) s.zone = 'Autres régions';
   if (!s.zone && /\bties\b|\bthies\b|\bcees\b/.test(t)) s.zone = 'Thiès';
   if (!s.zone && /\bdakar\b|\bndakaaru\b|\bndakaru\b/.test(t)) s.zone = 'Dakar';
   if (products.length) {
