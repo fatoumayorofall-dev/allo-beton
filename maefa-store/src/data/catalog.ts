@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 13;
+export const CATALOG_VERSION = 14;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -93,6 +93,30 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   isNew: true,
   isBestseller: true,
   createdAt: '2026-09-29T10:00:00Z',
+});
+
+/** Mules Zara à talon : large bride croisée bout ouvert, semelle vernie, talon fin. */
+const mulesTalon = (color: ColorOption, key: string) => p({
+  slug: `mules-talon-${key}`,
+  name: `Mules Zara à talon — ${color.name}`,
+  category: 'chaussures',
+  subcategory: 'Mules à talon',
+  occasions: ['soiree', 'ceremonie', 'mariage', 'bureau'],
+  material: 'Dessus aspect satin mat, semelle intérieure vernie, talon fin',
+  care: 'Brosser délicatement, éviter l\'eau et les taches, ranger dans leur pochette pour protéger le talon.',
+  styleTip: 'Avec un grand boubou, une robe fourreau ou un tailleur : une couleur profonde qui habille toute la tenue.',
+  price: 15000,
+  images: media(`mules-talon-${key}`, 2),
+  video: `/videos/mules-talon-${key}.mp4`,
+  colors: [color],
+  sizes: SHOE_SIZES,
+  stock: STOCK,
+  description: `Des mules Zara à talon en ${color.name.toLowerCase()} : une large bride croisée au bout ouvert, une semelle vernie assortie et un talon fin. Élégantes pour les cérémonies, les soirées et le bureau.`,
+  details: ['Marque : Zara', 'Mules à talon, bout ouvert', `Couleur : ${color.name}`, 'Large bride croisée', 'Semelle intérieure vernie assortie', 'Pointures du 36 au 41'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-30T10:00:00Z',
 });
 
 /** Mules Zara croisées : brides croisées effet surpiqué et brides à strass, semelle plate. */
@@ -212,6 +236,10 @@ export const ALL_PRODUCTS: Product[] = [
   soxna(COLORS.blanc, 'blanc'),
   soxna({ name: 'Fuchsia', hex: '#d2268a' }, 'fuchsia'),
   soxna({ name: 'Orange', hex: '#e8641c' }, 'orange'),
+  mulesTalon({ name: 'Bordeaux', hex: '#6e1330' }, 'bordeaux'),
+  mulesTalon({ name: 'Vert sapin', hex: '#1f3d33' }, 'vert-sapin'),
+  mulesTalon({ name: 'Violet', hex: '#4a2166' }, 'violet'),
+  mulesTalon({ name: 'Camel', hex: '#9a5f2e' }, 'camel'),
   mules({ name: 'Noir et doré', hex: 'linear-gradient(135deg,#1c1418 50%,#c9a24d 50%)' }, 'noir-dore'),
   mules(COLORS.noir, 'noir', 2, true),
   mules({ name: 'Bronze', hex: '#8a5a3c' }, 'bronze'),
