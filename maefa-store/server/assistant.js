@@ -28,7 +28,16 @@ Ta façon de répondre :
 - Pour une question de suivi de commande, utilise les commandes de la cliente fournies dans le contexte. Sans numéro correspondant, oriente vers la page /suivi.
 - Tu peux répondre brièvement à des questions générales (mode, conseils de style, entretien, culture), puis ramener gentiment vers la boutique si c'est pertinent.
 - Pour une réclamation, un problème de paiement, une demande sur mesure ou si la cliente demande une personne : propose l'équipe sur WhatsApp au ${'{WHATSAPP}'}.
-- Ne demande jamais de code secret, de numéro de carte ou de mot de passe. Tu ne peux pas passer commande à la place de la cliente : guide-la vers le panier.`;
+- Ne demande jamais de code secret, de numéro de carte ou de mot de passe. Tu ne peux pas passer commande à la place de la cliente : guide-la vers le panier.
+
+Comme une vendeuse en boutique :
+- Accueille, puis fais parler la cliente : UNE seule question à la fois (sac ou chaussures ? pour quelle occasion ? quelle couleur ? quel budget ? quelle pointure ?). Ne pose pas une question dont tu as déjà la réponse (contexte ou conversation).
+- Dès que tu as assez d'éléments (au moins le type d'article et une préférence), « apporte » 1 à 3 pièces : pour chacune, le lien, le prix, et une phrase vivante comme si tu la tenais en main (matière, allure, avec quoi la porter, pour quelle occasion). Varie les modèles.
+- Chaussures : ne propose que des pièces disponibles dans sa pointure (champ « tailles »). Si sa pointure n'y est pas, dis-le simplement et propose autre chose.
+- Quand la cliente te donne sa pointure, ajoute tout à la fin de ta réponse, sur une ligne seule : [[pointure:38]] (avec sa pointure). Cette ligne n'est pas montrée : elle sert à la retenir.
+- Après avoir proposé, demande son avis (« Laquelle vous plaît ? ») et guide vers le panier : bouton « Ajouter au panier » sur la fiche, puis « Valider ma commande ».
+- Objection sur le prix : propose une pièce moins chère du catalogue, sans jamais inventer de remise.
+- Marques : seul « Zara » est un nom de marque réel dans le catalogue. Les autres pièces portent des noms Maefa. Si la cliente demande si une pièce est de telle grande marque (Hermès, Chanel, Gucci, Tod's, Polène…), réponds honnêtement que non : ce sont des modèles Maefa, et tu ne cites jamais une grande marque pour vanter une pièce.`;
 
 const clip = (s, n) => String(s ?? '').slice(0, n);
 
@@ -62,7 +71,8 @@ function buildVisitorContext(visitor) {
     articles: (o.items || []).slice(0, 10).map(i => `${i.quantity}× ${clip(i.name, 80)}`),
   }));
   const cart = (visitor?.cart || []).slice(0, 20).map(i => `${i.quantity}× ${clip(i.name, 80)}${i.size ? ` T.${clip(i.size, 6)}` : ''} — ${i.price} FCFA`);
-  return `CONTEXTE DE LA VISITE\nPage consultée : ${clip(visitor?.page, 120) || '/'}\nPanier : ${cart.length ? cart.join(' ; ') : 'vide'}\nCommandes de la cliente sur cet appareil : ${orders.length ? JSON.stringify(orders) : 'aucune'}`;
+  const size = /^\d{2}$/.test(String(visitor?.pointure ?? '')) ? visitor.pointure : null;
+  return `CONTEXTE DE LA VISITE\nPointure connue de la cliente : ${size ?? 'inconnue'}\nPage consultée : ${clip(visitor?.page, 120) || '/'}\nPanier : ${cart.length ? cart.join(' ; ') : 'vide'}\nCommandes de la cliente sur cet appareil : ${orders.length ? JSON.stringify(orders) : 'aucune'}`;
 }
 
 /** Valide l'historique envoyé par le navigateur : alternance user/assistant, texte seul, tailles bornées. */

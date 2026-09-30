@@ -10,6 +10,8 @@ import type { Product } from '../data/types';
 import { getServerStatus, listVoices, streamChat, voiceUrl, type ChatTurn } from '../services/api';
 import { WOLOF_GUIDE, guideVoiceSlug, wolofLocalAnswer, type GuideTopic } from '../data/wolofGuide';
 import { VoiceToWhatsApp } from './VoiceToWhatsApp';
+import { ShopAdvisor } from './ShopAdvisor';
+import { ADVISOR_TEXT } from '../utils/shopAdvisor';
 import { localAnswer } from '../utils/localAssistant';
 import { formatPrice } from '../utils/format';
 import { useEscape } from '../utils/hooks';
@@ -94,6 +96,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
   const [voices, setVoices] = useState<string[]>([]);
   const player = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
+  const [advisor, setAdvisor] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -157,13 +160,19 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
         messages: history,
         shop,
         products,
-        visitor: { page: location.pathname + location.search, cart, orders: orders.slice(0, 10) },
+        visitor: { page: location.pathname + location.search, cart, orders: orders.slice(0, 10), pointure: (() => { try { return localStorage.getItem('maefa_pointure') ?? undefined; } catch { return undefined; } })() },
         lang,
       }, chunk => {
         received += chunk;
         setMessages([...history, { role: 'assistant', content: received }]);
       }, ctrl.signal);
       if (!received.trim()) answerLocally();
+      else {
+        // Pointure retenue par l'assistante : gardée sur ce téléphone, ligne technique retirée
+        const m = received.match(/\[\[pointure:(\d{2})\]\]/);
+        if (m) { try { localStorage.setItem('maefa_pointure', m[1]); } catch { /* ignore */ } }
+        setMessages([...history, { role: 'assistant', content: received.replace(/\s*\[\[pointure:\d{2}\]\]\s*/g, '').trim() }]);
+      }
     } catch (err) {
       if ((err as Error).name === 'AbortError') {
         setMessages([...history, { role: 'assistant', content: received || '…' }]);
@@ -230,8 +239,8 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
             </button>
           ))}
         </div>
-        {messages.length > 0 && (
-          <button onClick={() => { abortRef.current?.abort(); setMessages([]); }} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="w-9 h-9 grid place-items-center rounded-full hover:bg-ivory/10"><RotateCcw className="w-4 h-4" /></button>
+        {(messages.length > 0 || advisor) && (
+          <button onClick={() => { abortRef.current?.abort(); setMessages([]); setAdvisor(false); }} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="w-9 h-9 grid place-items-center rounded-full hover:bg-ivory/10"><RotateCcw className="w-4 h-4" /></button>
         )}
         <button onClick={close} aria-label="Fermer l'assistante" className="w-9 h-9 grid place-items-center rounded-full hover:bg-ivory/10"><X className="w-5 h-5" /></button>
       </header>
@@ -239,7 +248,15 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
       {/* Conversation */}
       <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-petal" aria-live="polite">
         <Bubble role="assistant"><RichText text={lang === 'wo' ? WELCOME_WO : WELCOME} onNavigate={close} /></Bubble>
-        {lang === 'wo' && messages.length === 0 && (
+        {messages.length === 0 && !advisor && (
+          <button onClick={() => setAdvisor(true)} data-testid="advisor-start"
+            className="w-full p-4 rounded-3xl bg-ink text-ivory text-left flex items-center gap-3.5 hover:bg-gold-dark transition-colors shadow-soft">
+            <span className="text-4xl leading-none">🛍️</span>
+            <span><span className="block font-semibold">{ADVISOR_TEXT.start[lang].replace('🛍️ ', '')}</span><span className="block text-xs text-ivory/70 mt-0.5">{ADVISOR_TEXT.startHint[lang]}</span></span>
+          </button>
+        )}
+        {advisor && messages.length === 0 && <ShopAdvisor key={lang} lang={lang} onNavigate={close} />}
+        {lang === 'wo' && messages.length === 0 && !advisor && (
           <div className="grid grid-cols-2 gap-2.5" data-testid="wolof-guide">
             {WOLOF_GUIDE.map(g => {
               const hasVoice = voices.includes(guideVoiceSlug(g.id));
@@ -254,7 +271,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
             })}
           </div>
         )}
-        {lang === 'fr' && messages.length === 0 && (
+        {lang === 'fr' && messages.length === 0 && !advisor && (
           <div className="flex flex-wrap gap-2 pl-1">
             {SUGGESTIONS.map(s => (
               <button key={s} onClick={() => ask(s)} className="px-3.5 py-2 rounded-full bg-white border border-ink/10 text-xs hover:border-gold hover:text-gold-dark transition-colors">{s}</button>
@@ -266,7 +283,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
             <Bubble role={m.role}>
               {m.role === 'assistant' && !m.content
                 ? <span className="inline-flex gap-1 py-1" role="status" aria-label="Maé écrit"><Dot /><Dot d={150} /><Dot d={300} /></span>
-                : m.role === 'assistant' ? <RichText text={m.content} onNavigate={close} /> : m.content}
+                : m.role === 'assistant' ? <RichText text={m.content.replace(/\[\[pointure:\d*\]?\]?/g, '')} onNavigate={close} /> : m.content}
             </Bubble>
             {m.role === 'assistant' && m.content && <div className="pl-1"><CitedProducts text={m.content} getProduct={getProduct} onNavigate={close} /></div>}
           </div>
