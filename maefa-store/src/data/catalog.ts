@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 17;
+export const CATALOG_VERSION = 18;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -337,6 +337,9 @@ export const ALL_PRODUCTS: Product[] = [
   diarra(COLORS.noir, 'noir'),
   diarra({ name: 'Crème', hex: '#ece3d3' }, 'creme'),
   diarra({ name: 'Gris perle', hex: '#b8bec6' }, 'gris'),
+  diarra({ name: 'Chocolat', hex: '#4f2a22' }, 'chocolat'),
+  diarra({ name: 'Camel', hex: '#b0876c' }, 'camel'),
+  diarra({ name: 'Taupe rosé', hex: '#9e857f' }, 'taupe'),
 ];
 
 export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category));
