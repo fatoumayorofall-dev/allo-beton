@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 16;
+export const CATALOG_VERSION = 17;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -93,6 +93,29 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   isNew: true,
   isBestseller: true,
   createdAt: '2026-09-29T10:00:00Z',
+});
+
+/** Sac Diarra : sac à main structuré, fermoir tournant doré, breloque cœur et clés. */
+const diarra = (color: ColorOption, key: string) => p({
+  slug: `sac-diarra-${key}`,
+  name: `Sac Diarra à breloque cœur — ${color.name}`,
+  category: 'sacs',
+  subcategory: 'Sacs à main',
+  occasions: ['bureau', 'quotidien', 'ceremonie'],
+  material: 'Aspect daim marbré, anses et bandes aspect cuir lisse, fermoir tournant et clous dorés',
+  care: 'Brosser à sec avec une brosse douce, éviter l\'eau et les taches grasses, ranger rembourré pour garder sa forme.',
+  styleTip: 'À la main ou en bandoulière, avec une robe simple : la breloque cœur et ses clés dorées font le bijou.',
+  price: 15000,
+  images: media(`sac-diarra-${key}`, 1),
+  colors: [color],
+  sizes: [],
+  stock: STOCK,
+  description: `Le sac Diarra en ${color.name.toLowerCase()} : une forme structurée à l'aspect daim marbré, un fermoir tournant doré, une jolie breloque cœur avec ses clés dorées, deux anses et une bandoulière réglable.`,
+  details: ['Sac à main structuré', `Couleur : ${color.name}`, 'Fermoir tournant et clous dorés', 'Breloque cœur et clés dorées', 'Deux anses et bandoulière amovible réglable', 'Livré dans un emballage Maefa'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-30T14:00:00Z',
 });
 
 /** Tongs Adja : bride fine entre les doigts, fermoir en métal argenté, semelle plate carrée. */
@@ -263,6 +286,10 @@ const soxna = (color: ColorOption, key: string, price = 22000) => p({
 });
 
 /** Catalogue complet, y compris les pièces des catégories pas encore en vente. */
+/**
+ * Ordre = numéro de chaque pièce (MAE-101, 102…) utilisé par les liens courts /p/… partagés
+ * sur les statuts WhatsApp : toujours AJOUTER les nouvelles pièces à la fin, ne jamais insérer au milieu.
+ */
 export const ALL_PRODUCTS: Product[] = [
   ndella({ name: 'Camel', hex: '#a8683a' }, 'camel', 2),
   ndella({ name: 'Bordeaux', hex: '#6e1f34' }, 'bordeaux', 1, false),
@@ -284,6 +311,18 @@ export const ALL_PRODUCTS: Product[] = [
   soxna(COLORS.blanc, 'blanc'),
   soxna({ name: 'Fuchsia', hex: '#d2268a' }, 'fuchsia'),
   soxna({ name: 'Orange', hex: '#e8641c' }, 'orange'),
+  tongs(COLORS.or, 'dore'),
+  tongs(COLORS.noir, 'noir'),
+  tongs(COLORS.blanc, 'blanc'),
+  tongs({ name: 'Bordeaux', hex: '#5b2430' }, 'bordeaux'),
+  mules({ name: 'Noir et doré', hex: 'linear-gradient(135deg,#1c1418 50%,#c9a24d 50%)' }, 'noir-dore'),
+  mules(COLORS.noir, 'noir'),
+  mules({ name: 'Bronze', hex: '#8a5a3c' }, 'bronze'),
+  mules(COLORS.or, 'dore'),
+  mulesTalon({ name: 'Bordeaux', hex: '#6e1330' }, 'bordeaux'),
+  mulesTalon({ name: 'Vert sapin', hex: '#1f3d33' }, 'vert-sapin'),
+  mulesTalon({ name: 'Violet', hex: '#4a2166' }, 'violet'),
+  mulesTalon({ name: 'Camel', hex: '#9a5f2e' }, 'camel'),
   orteil({ name: 'Cognac', hex: '#a8582a' }, 'cognac'),
   orteil(COLORS.noir, 'noir'),
   orteil(COLORS.blanc, 'blanc'),
@@ -293,18 +332,11 @@ export const ALL_PRODUCTS: Product[] = [
   adja(COLORS.noir, 'noir'),
   adja({ name: 'Chocolat', hex: '#5a4038' }, 'chocolat'),
   adja({ name: 'Framboise', hex: '#b0283f' }, 'framboise'),
-  mulesTalon({ name: 'Bordeaux', hex: '#6e1330' }, 'bordeaux'),
-  mulesTalon({ name: 'Vert sapin', hex: '#1f3d33' }, 'vert-sapin'),
-  mulesTalon({ name: 'Violet', hex: '#4a2166' }, 'violet'),
-  mulesTalon({ name: 'Camel', hex: '#9a5f2e' }, 'camel'),
-  mules({ name: 'Noir et doré', hex: 'linear-gradient(135deg,#1c1418 50%,#c9a24d 50%)' }, 'noir-dore'),
-  mules(COLORS.noir, 'noir'),
-  mules({ name: 'Bronze', hex: '#8a5a3c' }, 'bronze'),
-  mules(COLORS.or, 'dore'),
-  tongs(COLORS.or, 'dore'),
-  tongs(COLORS.noir, 'noir'),
-  tongs(COLORS.blanc, 'blanc'),
-  tongs({ name: 'Bordeaux', hex: '#5b2430' }, 'bordeaux'),
+  diarra({ name: 'Bordeaux', hex: '#6b1e2e' }, 'bordeaux'),
+  diarra({ name: 'Rose poudré', hex: '#d99a9e' }, 'rose'),
+  diarra(COLORS.noir, 'noir'),
+  diarra({ name: 'Crème', hex: '#ece3d3' }, 'creme'),
+  diarra({ name: 'Gris perle', hex: '#b8bec6' }, 'gris'),
 ];
 
 export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category));
