@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "node scripts/check-miniatures.mjs && tsc -b && vite build",
     "typecheck": "tsc -b",
     "preview": "vite preview",
     "server": "node server/index.js",
@@ -16,6 +16,7 @@
     "@anthropic-ai/sdk": "^0.128.0",
     "@types/leaflet": "^1.9.22",
     "@types/qrcode": "^1.5.6",
+    "compression": "^1.8.2",
     "express": "^5.2.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.344.0",

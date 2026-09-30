@@ -92,7 +92,7 @@ export const ShopAdvisor: React.FC<{ lang: Lang; onNavigate: () => void; playVoi
           {result.items.map(p => (
             <div key={p.id} className="flex gap-3 p-2.5 rounded-3xl bg-white border border-ink/[0.07] shadow-sm" data-testid="advisor-item">
               <Link to={`/produit/${p.slug}`} onClick={onNavigate} className="shrink-0">
-                <ProductImage src={p.images[0]} alt={p.name} label="" className="w-24 h-[7.5rem] rounded-2xl" />
+                <ProductImage src={p.images[0]} alt={p.name} label="" className="w-24 h-[7.5rem] rounded-2xl" sizes="96px" />
               </Link>
               <div className="min-w-0 flex-1 flex flex-col">
                 <p className="text-[13px] leading-snug text-ink/85">{bold(pitch(p, wishes, lang))}</p>

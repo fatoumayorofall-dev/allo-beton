@@ -75,7 +75,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
                   {list.map(p => (
                     <li key={p.id}>
                       <Link to={`/produit/${p.slug}`} onClick={onClose} className="group block">
-                        <div className="aspect-[3/4] overflow-hidden rounded-3xl"><ProductImage src={p.images[0]} alt={p.name} className="w-full h-full group-hover:scale-105 transition-transform duration-700" /></div>
+                        <div className="aspect-[3/4] overflow-hidden rounded-3xl"><ProductImage src={p.images[0]} alt={p.name} className="w-full h-full group-hover:scale-105 transition-transform duration-700" sizes="200px" /></div>
                         <p className="font-display text-lg mt-2 leading-tight line-clamp-1">{p.name}</p>
                         <p className="text-xs text-ink/70">{formatPrice(p.price)}</p>
                       </Link>

@@ -193,7 +193,7 @@ export const Checkout: React.FC = () => {
         </ol>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-start">
         <div className="min-w-0">
           {step === 1 ? (
             <form onSubmit={goToPayment} className="space-y-10 animate-fade-in" noValidate>

@@ -38,7 +38,7 @@ export const Authenticity: React.FC = () => {
 
   return (
     <div className="max-w-[1200px] mx-auto px-5 sm:px-8 pt-10 sm:pt-16">
-      <div className="grid lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-16 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.9fr] gap-10 lg:gap-16 items-start">
         <div>
           <p className="eyebrow inline-flex items-center gap-2"><ShieldCheck className="w-4 h-4" /> Anti-contrefaçon</p>
           <h1 className="font-display text-5xl sm:text-6xl leading-[1] mt-4">Vérifier <em className="text-gold-dark text-magic">l'authenticité</em></h1>

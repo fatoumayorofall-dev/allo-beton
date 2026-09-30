@@ -56,7 +56,7 @@ export const ProductGallery: React.FC<{ images: string[]; video?: string; name: 
             {media.map((m, i) => (
               <button key={m.src} onClick={() => setIdx(i)} aria-label={m.video ? 'Vidéo' : `Image ${i + 1 - (video ? 1 : 0)}`} aria-current={i === idx}
                 className={`relative aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-300 ${i === idx ? 'ring-1 ring-ink ring-offset-2 ring-offset-ivory' : 'opacity-50 hover:opacity-100'}`}>
-                <ProductImage src={m.video ? poster : m.src} alt="" className="w-full h-full" />
+                <ProductImage src={m.video ? poster : m.src} alt="" className="w-full h-full" sizes="200px" />
                 {m.video && <span className="absolute inset-0 grid place-items-center bg-ink/20"><span className="w-8 h-8 rounded-full bg-ivory/90 grid place-items-center"><Play className="w-3.5 h-3.5 fill-ink ml-0.5" /></span></span>}
               </button>
             ))}

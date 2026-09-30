@@ -51,7 +51,7 @@ export const StyleStories: React.FC = () => {
               <span className="relative">
                 <span className="story-ring relative grid place-items-center w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] rounded-full p-[3px]">
                   <span className="block w-full h-full rounded-full overflow-hidden border-[3px] border-ivory bg-ivory-deep">
-                    <ProductImage src={s.image} alt="" label="" className="w-full h-full transition-transform duration-700 ease-luxe group-hover:scale-110" />
+                    <ProductImage src={s.image} alt="" label="" className="w-full h-full transition-transform duration-700 ease-luxe group-hover:scale-110" sizes="200px" />
                   </span>
                 </span>
                 {s.isNew && <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-ink text-ivory text-[8px] font-semibold tracking-[0.2em] uppercase">Nouveau</span>}

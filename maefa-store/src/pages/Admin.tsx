@@ -192,7 +192,7 @@ const Dashboard: React.FC<{ onGoto: (t: Tab) => void }> = ({ onGoto }) => {
       </div>
 
       {/* À faire aujourd'hui + raccourcis */}
-      <div className="grid lg:grid-cols-[1.4fr_1fr] gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
         <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <h3 className="text-[11px] uppercase tracking-[0.2em] font-semibold text-ink/70">À faire</h3>
           {todo.length === 0 ? <p className="mt-3 text-sm text-emerald-800 flex items-center gap-2"><Check className="w-4 h-4" /> Tout est à jour. Belle journée !</p> : (
@@ -229,7 +229,7 @@ const Dashboard: React.FC<{ onGoto: (t: Tab) => void }> = ({ onGoto }) => {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-[1.6fr_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-6">
         <SalesChart orders={valid} days={days} />
         <div className="bg-white border border-ink/[0.06] rounded-[2rem] p-6">
           <h2 className="font-display text-xl">Meilleures ventes</h2>

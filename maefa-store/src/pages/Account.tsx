@@ -161,7 +161,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
             {busy ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Continuer <ArrowRight className="w-4 h-4" /></>}
           </button>
         </form>
-        <p className="mt-6 flex items-center justify-center gap-2 text-xs text-ink/60"><Lock className="w-3.5 h-3.5" /> Vos informations restent privées et ne sont jamais revendues.</p>
+        <p className="mt-6 flex items-center justify-center gap-2 text-xs text-ink/70"><Lock className="w-3.5 h-3.5" /> Vos informations restent privées et ne sont jamais revendues.</p>
       </div>
     );
   }
@@ -513,7 +513,7 @@ const Dashboard: React.FC = () => {
         </section>
       )}
 
-      <div className="grid lg:grid-cols-[1.25fr_1fr] gap-5 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-5 items-start">
         {/* Dernière commande */}
         <Panel title="Ma dernière commande" action={allOrders.length > 1 && <Link to="/mes-commandes" className="text-xs font-semibold underline underline-offset-4">Toutes</Link>}>
           {!last ? (
@@ -669,7 +669,7 @@ export const Account: React.FC = () => {
           </Card>
         )}
         {(status === 'guest' || naming) && (
-          <div className="grid lg:grid-cols-[0.95fr_1.05fr] gap-5 items-stretch">
+          <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-5 items-stretch">
             <Welcome />
             <div className="bg-white rounded-[2rem] shadow-soft border border-ink/[0.05] p-6 sm:p-10 flex flex-col justify-center">
               {naming ? <NameStep onDone={done} /> : <Login onDone={isNew => (isNew ? setAskName(true) : done())} />}

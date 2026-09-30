@@ -63,7 +63,7 @@ export const AuthenticityTab: React.FC<{ pin: string }> = ({ pin }) => {
 
   return (
     <div className="space-y-8">
-      <div className="grid lg:grid-cols-[1fr_0.8fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_0.8fr] gap-6">
         <form onSubmit={generate} className="bg-white rounded-[2rem] border border-ink/[0.06] p-6 sm:p-8">
           <h2 className="font-display text-3xl flex items-center gap-3"><ShieldCheck className="w-7 h-7 text-wine" strokeWidth={1.5} /> Étiquettes d'authenticité</h2>
           <p className="text-sm text-ink/70 mt-2">Une étiquette par pièce vendue : glissez-la dans le sac ou collez-la sur la boîte. La cliente la scanne pour vérifier que sa pièce vient bien de chez vous.</p>

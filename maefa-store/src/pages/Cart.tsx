@@ -77,7 +77,7 @@ export const Cart: React.FC = () => {
         <div><p className="eyebrow">{t.itemCount} pièce{t.itemCount > 1 ? 's' : ''}</p><h1 className="font-display text-5xl sm:text-6xl mt-2">Votre panier</h1></div>
         <button onClick={clearCart} className="tap text-[11px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Tout retirer</button>
       </div>
-      <div className="grid lg:grid-cols-[1fr_420px] gap-12 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-start">
         <div className="min-w-0">
         {/* Livraison offerte : ce qu'il reste à ajouter */}
         <div className={`mb-8 p-5 rounded-[1.5rem] border ${remaining ? 'bg-white border-ink/[0.06]' : 'bg-emerald-50 border-emerald-100'}`} data-testid="free-shipping">

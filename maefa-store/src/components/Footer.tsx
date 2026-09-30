@@ -114,8 +114,8 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="border-t border-ivory/10">
-        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-6 pb-24 md:pb-6 md:pr-28 flex flex-col md:flex-row gap-4 items-center justify-between text-[11px] text-ivory/40">
-          <p>© {new Date().getFullYear()} {SITE_CONFIG.name} — Tous droits réservés · <Link to="/admin" className="tap hover:text-ivory/70">Espace gérant</Link></p>
+        <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-6 pb-24 md:pb-6 md:pr-28 flex flex-col md:flex-row gap-4 items-center justify-between text-[11px] text-ivory/65">
+          <p>© {new Date().getFullYear()} {SITE_CONFIG.name} — Tous droits réservés · <Link to="/admin" className="tap hover:text-ivory">Espace gérant</Link></p>
           <div aria-label="Moyens de paiement" role="group"><PaymentLogos className="justify-center" /></div>
         </div>
       </div>

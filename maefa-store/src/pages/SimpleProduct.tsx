@@ -33,7 +33,7 @@ export const SimpleHeader: React.FC<{ back?: string }> = ({ back }) => (
 export const SimpleCard: React.FC<{ product: Product; source?: VisitSource }> = ({ product, source }) => (
   <Link to={`/p/${productCode(product)}${source ? `?s=${source}` : ''}`} className="block rounded-[1.75rem] bg-white overflow-hidden shadow-sm active:scale-[.98] transition-transform">
     <div className="relative">
-      <ProductImage src={product.images[0]} alt={product.name} className="w-full aspect-[4/5]" />
+      <ProductImage src={product.images[0]} alt={product.name} className="w-full aspect-[4/5]" sizes="(min-width: 640px) 300px, calc(50vw - 24px)" />
       {product.video && <ProductVideo src={product.video} className="absolute inset-0 w-full h-full" />}
       {!canBuy(product) && <span className="absolute inset-x-0 bottom-0 py-1.5 bg-ink/80 text-ivory text-center text-xs font-bold">ÉPUISÉ</span>}
     </div>

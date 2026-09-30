@@ -30,7 +30,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
     <article className="group relative flex flex-col">
       <div className="relative aspect-[3/4] overflow-hidden bg-ivory-deep rounded-[2rem] transition-[box-shadow,transform] duration-700 ease-luxe group-hover:shadow-luxe group-hover:-translate-y-1">
         <Link to={`/produit/${product.slug}`} aria-label={product.name} className="block w-full h-full">
-          <ProductImage src={product.images[0]} alt={product.name} sizes="(min-width: 1024px) 25vw, 50vw"
+          <ProductImage src={product.images[0]} alt={product.name} sizes="(min-width: 1024px) 25vw, calc(50vw - 24px)"
             className="w-full h-full transition-transform duration-[1.4s] ease-luxe group-hover:scale-[1.06]" />
           {/* Vidéo : elle prend la place de la photo ; sinon, la 2e photo apparaît au survol */}
           {product.video ? (
@@ -38,12 +38,12 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
               <ProductVideo src={product.video} className="w-full h-full" />
             </span>
           ) : product.images[1] && (
-            <ProductImage src={product.images[1]} alt="" sizes="(min-width: 1024px) 25vw, 50vw"
+            <ProductImage src={product.images[1]} alt="" sizes="(min-width: 1024px) 25vw, calc(50vw - 24px)"
               className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
           )}
         </Link>
         {product.video && (
-          <span className="absolute left-3 bottom-3 inline-flex items-center gap-1.5 pl-2 pr-2.5 h-7 rounded-full bg-ink/45 backdrop-blur text-ivory text-[9px] uppercase tracking-[0.2em] font-semibold pointer-events-none transition-opacity duration-500 lg:group-hover:opacity-0" data-testid="video-badge">
+          <span className="absolute left-3 bottom-3 inline-flex items-center gap-1.5 pl-2 pr-2.5 h-7 rounded-full bg-ink/75 backdrop-blur text-ivory text-[9px] uppercase tracking-[0.2em] font-semibold pointer-events-none transition-opacity duration-500 lg:group-hover:opacity-0" data-testid="video-badge">
             <Play className="w-3 h-3 fill-current" /> Vidéo
           </span>
         )}

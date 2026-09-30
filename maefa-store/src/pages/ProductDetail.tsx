@@ -203,7 +203,7 @@ export const ProductDetail: React.FC = () => {
           <span className="text-ink line-clamp-1">{product.name}</span>
         </nav>
 
-        <div className="grid lg:grid-cols-[1.25fr_1fr] gap-10 lg:gap-20 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-10 lg:gap-20 items-start">
           {/* Galerie */}
           <ProductGallery images={product.images} video={product.video} name={product.name} badges={<>
             {off > 0 && <span className="px-2.5 py-1 border border-wine/40 text-wine text-[9px] uppercase tracking-[0.24em] font-semibold">-{off}%</span>}

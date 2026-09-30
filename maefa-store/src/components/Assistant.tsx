@@ -77,7 +77,7 @@ const CitedProducts: React.FC<{ text: string; getProduct: (s: string) => Product
     <div className="mt-2 flex gap-2 overflow-x-auto no-scrollbar">
       {items.map(p => (
         <Link key={p.id} to={`/produit/${p.slug}`} onClick={onNavigate} className="shrink-0 w-32 rounded-2xl bg-white border border-ink/[0.06] overflow-hidden hover:shadow-soft transition-shadow">
-          <ProductImage src={p.images[0]} alt={p.name} label="" className="w-full h-28" />
+          <ProductImage src={p.images[0]} alt={p.name} label="" className="w-full h-28" sizes="200px" />
           <div className="p-2">
             <p className="text-[11px] leading-tight line-clamp-2">{p.name}</p>
             <p className="text-[11px] font-semibold mt-1">{formatPrice(p.price)}</p>

@@ -216,7 +216,7 @@ export const Catalog: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[240px_1fr] gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-12">
           <aside className="hidden lg:block" aria-labelledby="filtres-titre"><h2 id="filtres-titre" className="sr-only">Filtres</h2><div className="sticky top-[210px] max-h-[calc(100vh-230px)] overflow-y-auto no-scrollbar pb-6">{filters}</div></aside>
 
           <div>

@@ -81,7 +81,7 @@ export const Home: React.FC = () => {
       {/* ───────────── HÉROS : texte à gauche, photo en arche à droite ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-4 sm:pt-8 lg:pt-10" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
         aria-roledescription="carrousel" aria-label="À la une">
-        <div className="grid lg:grid-cols-[1.05fr_1fr] gap-8 lg:gap-14 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-8 lg:gap-14 items-center">
           <div key={slide} className="order-2 lg:order-1">
             <p className="eyebrow animate-fade-up">{current.kicker}</p>
             <h1 className="font-display font-medium text-[3.6rem] sm:text-7xl xl:text-[7.4rem] leading-[0.9] mt-4 sm:mt-6">
@@ -145,7 +145,7 @@ export const Home: React.FC = () => {
                 className="absolute left-3 bottom-3 sm:left-0 sm:bottom-10 flex items-center gap-3 sm:gap-4 p-2.5 pr-4 sm:p-3 sm:pr-5 rounded-[1.5rem] bg-white/95 backdrop-blur shadow-luxe animate-fade-up group max-w-[calc(100%-1.5rem)] sm:max-w-[320px]"
                 style={{ animationDelay: '500ms' }}>
                 <span className="block w-14 h-16 sm:w-20 sm:h-24 rounded-2xl overflow-hidden shrink-0">
-                  <ProductImage src={featured.images[0]} alt="" label="" className="w-full h-full" />
+                  <ProductImage src={featured.images[0]} alt="" label="" className="w-full h-full" sizes="80px" />
                 </span>
                 <span className="min-w-0">
                   <span className="eyebrow block">Pièce du moment</span>
@@ -219,7 +219,7 @@ export const Home: React.FC = () => {
 
       {/* ───────────── AUTHENTICITÉ GARANTIE ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28" aria-labelledby="authentique-titre" data-testid="home-authentic">
-        <div className="grid lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
           <Reveal className="relative mx-auto w-full max-w-[420px]">
             <img src="/brand/maefa-securite.png" alt="L'écrin sécurisé Maefa : guilloché, micro-texte et clé de voûte" width={322} height={436}
               loading="lazy" className="w-full h-auto drop-shadow-[0_30px_40px_rgba(58,31,45,.35)]" />
@@ -299,7 +299,7 @@ const SectionHead: React.FC<{ eyebrow: string; title: string; accent: string; li
 
 const CategoryTile: React.FC<{ id: string; name: string; description: string; image: string; tall?: boolean }> = ({ id, name, description, image, tall }) => (
   <Link to={`/boutique/${id}`} className={`group relative block overflow-hidden ${tall ? 'rounded-[2rem] sm:rounded-[2.5rem] aspect-[3/4] lg:aspect-auto lg:h-full lg:min-h-[560px]' : 'arch aspect-[3/4]'}`}>
-    <ProductImage src={image} alt="" label="" sizes={tall ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, 50vw'} className="absolute inset-0 w-full h-full transition-transform duration-[1.6s] ease-luxe group-hover:scale-[1.07]" />
+    <ProductImage src={image} alt="" label="" sizes={tall ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, calc(50vw - 24px)'} className="absolute inset-0 w-full h-full transition-transform duration-[1.6s] ease-luxe group-hover:scale-[1.07]" />
     <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-wine/5 to-transparent" />
     <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 text-ivory flex items-end justify-between gap-4">
       <div>

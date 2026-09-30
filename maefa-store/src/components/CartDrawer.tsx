@@ -91,7 +91,7 @@ export const CartDrawer: React.FC = () => {
                   return (
                     <li key={item.key} className="flex gap-4 py-5">
                       <Link to={product ? `/produit/${product.slug}` : '#'} onClick={close} className="shrink-0">
-                        <ProductImage src={item.image} alt={item.name} label="" className="w-[84px] h-[112px] rounded-2xl" />
+                        <ProductImage src={item.image} alt={item.name} label="" className="w-[84px] h-[112px] rounded-2xl" sizes="84px" />
                       </Link>
                       <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex justify-between gap-3">
@@ -122,7 +122,7 @@ export const CartDrawer: React.FC = () => {
                     {suggestions.map(p => (
                       <li key={p.id} className="group flex gap-3 items-center p-2 rounded-2xl bg-white border border-ink/[0.05]">
                         <Link to={`/produit/${p.slug}`} onClick={close} className="w-14 h-[72px] shrink-0 overflow-hidden rounded-xl">
-                          <ProductImage src={p.images[0]} alt="" label="" className="w-full h-full group-hover:scale-105 transition-transform duration-700" />
+                          <ProductImage src={p.images[0]} alt="" label="" className="w-full h-full group-hover:scale-105 transition-transform duration-700" sizes="200px" />
                         </Link>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs leading-tight line-clamp-2">{p.name}</p>

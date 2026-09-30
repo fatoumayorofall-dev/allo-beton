@@ -7,6 +7,7 @@
 //  - sert aussi le site compilé (dist/) en production, avec robots.txt, sitemap.xml et aperçus de liens
 // ============================================================
 import express from 'express';
+import compression from 'compression';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,6 +31,8 @@ const { registerMediaRoutes } = await import('./media.js');
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
+// Pages, code et données compressés (≈ 3 fois moins de données mobiles) ; jamais la réponse en direct de l'assistante
+app.use(compression({ filter: (req, res) => req.path !== '/api/chat' && compression.filter(req, res) }));
 app.use(express.json({ limit: '300kb' }));
 
 /* ---------- En-têtes de sécurité (clickjacking, injection de scripts, fuite d'adresses) ---------- */
@@ -82,7 +85,26 @@ registerAdminLogin(app);
 function validOrder(o) {
   return o && typeof o.id === 'string' && /^(MAE|EFA|FB)-[A-Z0-9]{4,12}$/.test(o.id)
     && o.customer && typeof o.customer.firstName === 'string' && wa.toE164(o.customer.phone)
-    && Array.isArray(o.items) && o.items.length > 0 && o.items.length <= 50 && Number.isFinite(o.total);
+    && Array.isArray(o.items) && o.items.length > 0 && o.items.length <= 50 && Number.isFinite(o.total)
+    && coherentTotals(o);
+}
+
+/**
+ * Les montants envoyés par le navigateur doivent se tenir : sous-total = somme des articles,
+ * total = sous-total − réduction + livraison + emballage, et chaque montant dans les limites de la boutique
+ * (réduction au plus 10 % ou 5 000 F, livraison au plus 5 000 F, emballage 0 ou 2 000 F).
+ * Sans ce contrôle, une commande trafiquée pourrait afficher un faux total à la gérante.
+ */
+function coherentTotals(o) {
+  const n = v => (v === undefined || v === null ? 0 : Number(v));
+  const sub = o.items.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0);
+  const [subtotal, discount, deliveryFee, giftFee] = [n(o.subtotal ?? sub), n(o.discount), n(o.deliveryFee), n(o.giftFee)];
+  if (![sub, subtotal, discount, deliveryFee, giftFee].every(Number.isFinite)) return false;
+  if (o.items.some(i => !(Number(i.quantity) >= 1 && Number(i.quantity) <= 100 && Number(i.price) >= 0))) return false;
+  const maxDiscount = Math.max(Math.round(sub * 0.1), sub >= 40000 ? 5000 : 0);
+  return Math.abs(subtotal - sub) < 1 && discount >= 0 && discount <= maxDiscount
+    && deliveryFee >= 0 && deliveryFee <= 5000 && (giftFee === 0 || giftFee === 2000)
+    && Math.abs(o.total - Math.max(0, subtotal - discount + deliveryFee + giftFee)) < 1;
 }
 
 /* ---------- État des services ---------- */

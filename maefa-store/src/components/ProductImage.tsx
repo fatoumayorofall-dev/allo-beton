@@ -18,6 +18,9 @@ const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >
 /** Tailles proposées au navigateur pour les photos Pexels : il choisit la plus légère adaptée à l'écran. */
 const WIDTHS = [480, 720, 1080, 1440, 2000];
 export function srcSetFor(src?: string): string | undefined {
+  // Photos de la boutique : version légère de 540 px (outils/photo/miniatures.py) pour les vignettes sur téléphone
+  const local = src && /^\/produits\/([\w.-]+\.jpg)$/.exec(src);
+  if (local) return `${mediaUrl(`/produits/540/${local[1]}`)} 540w, ${mediaUrl(src!)} 1080w`;
   if (!src || !src.includes('images.pexels.com')) return undefined;
   const m = /[?&]w=(\d+)/.exec(src);
   if (!m) return undefined;

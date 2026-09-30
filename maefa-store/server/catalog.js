@@ -75,7 +75,8 @@ export function checkStock(order, store) {
     const p = catalog.find(x => x.id === id);
     if (n <= p.stock) continue;
     if (p.preorderDays) { preorder.set(id, p.preorderDays); continue; }
-    return { error: p.stock > 0 ? `Il ne reste que ${p.stock} « ${p.name} » en stock` : `« ${p.name} » vient d'être épuisé` };
+    // Le stock n'est jamais montré aux clientes : on demande seulement de réduire la quantité
+    return { error: p.stock > 0 ? `Quantité indisponible pour « ${p.name} » : réduisez la quantité ou écrivez-nous sur WhatsApp` : `« ${p.name} » vient d'être épuisé` };
   }
   if (preorder.size && order.paymentMethod === 'cash') return { error: 'Les pièces sur commande se règlent à la commande (Wave, Orange Money ou carte)' };
   return { preorder };
