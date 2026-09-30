@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 14;
+export const CATALOG_VERSION = 15;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -120,7 +120,7 @@ const mulesTalon = (color: ColorOption, key: string) => p({
 });
 
 /** Mules Zara croisées : brides croisées effet surpiqué et brides à strass, semelle plate. */
-const mules = (color: ColorOption, key: string, photos = 1, video = false) => p({
+const mules = (color: ColorOption, key: string) => p({
   slug: `mules-croisees-strass-${key}`,
   name: `Mules Zara croisées à strass — ${color.name}`,
   category: 'chaussures',
@@ -130,8 +130,8 @@ const mules = (color: ColorOption, key: string, photos = 1, video = false) => p(
   care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau sur les strass, ranger à plat dans leur pochette.',
   styleTip: 'Avec un boubou léger ou une robe longue : les strass font briller la tenue sans talons.',
   price: 15000,
-  images: media(`mules-croisees-strass-${key}`, photos),
-  video: video ? `/videos/mules-croisees-strass-${key}.mp4` : undefined,
+  images: media(`mules-croisees-strass-${key}`, 2),
+  video: `/videos/mules-croisees-strass-${key}.mp4`,
   colors: [color],
   sizes: SHOE_SIZES,
   stock: STOCK,
@@ -241,7 +241,7 @@ export const ALL_PRODUCTS: Product[] = [
   mulesTalon({ name: 'Violet', hex: '#4a2166' }, 'violet'),
   mulesTalon({ name: 'Camel', hex: '#9a5f2e' }, 'camel'),
   mules({ name: 'Noir et doré', hex: 'linear-gradient(135deg,#1c1418 50%,#c9a24d 50%)' }, 'noir-dore'),
-  mules(COLORS.noir, 'noir', 2, true),
+  mules(COLORS.noir, 'noir'),
   mules({ name: 'Bronze', hex: '#8a5a3c' }, 'bronze'),
   mules(COLORS.or, 'dore'),
   tongs(COLORS.or, 'dore'),
