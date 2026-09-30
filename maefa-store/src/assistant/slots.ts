@@ -6,7 +6,7 @@ import type { OccasionId, Product } from '../data/types';
 import { DELIVERY_ZONES } from '../config/site';
 import type { ColorFamily, Kind } from '../utils/shopAdvisor';
 import { modelOf } from '../utils/shopAdvisor';
-import { normalize } from './nlu';
+import { normalize, nre } from './nlu';
 
 export interface Slots {
   kind?: Exclude<Kind, 'tout'>;
@@ -54,20 +54,55 @@ const COLOR: [Exclude<ColorFamily, 'tout'>, RegExp][] = [
   ['vif', words('vert', 'verte', 'wert', 'bleu', 'bleue', 'bulo', 'violet', 'violette', 'orange', 'jaune', 'mbulu', 'olive', 'emeraude')],
 ];
 
+/* ---------- Nombres et argent en wolof ---------- */
+
+const W_UNITS: Record<string, number> = {};
+[['benn', 1], ['ñaar', 2], ['ñaari', 2], ['ñett', 3], ['ñetti', 3], ['ñeent', 4], ['ñeenti', 4], ['juróom', 5], ['juróomi', 5]]
+  .forEach(([w, n]) => { W_UNITS[normalize(w as string)] = n as number; });
+const W_TEN = new Set(['fukk', 'fukki'].map(normalize));
+const W_HUNDRED = new Set(['téeméer', 'téeméeri', 'teemeer'].map(normalize));
+/** Unités de monnaie : junni = 1 000 dërëm = 5 000 F ; dërëm = 5 F ; mille = 1 000 F. */
+const W_MONEY: Record<string, number> = { [normalize('junni')]: 5000, [normalize('dërëm')]: 5, [normalize('mille')]: 1000, mil: 1000 };
+
+/** « ñetti junni » → 15 000 ; « fukk ak juróom mille » → 15 000 ; « ñaar fukk mille » → 20 000. */
+export function wolofAmount(t: string): number | undefined {
+  const words = t.split(' ');
+  const i = words.findIndex(w => W_MONEY[w] !== undefined);
+  if (i < 1) return undefined;
+  let j = i - 1;
+  while (j >= 0 && (W_UNITS[words[j]] !== undefined || W_TEN.has(words[j]) || W_HUNDRED.has(words[j]) || words[j] === 'ak')) j--;
+  const nums = words.slice(j + 1, i);
+  if (!nums.length) return undefined;
+  let total = 0, cur = 0;
+  for (const w of nums) {
+    if (w === 'ak') { total += cur; cur = 0; }
+    else if (W_TEN.has(w)) cur = (cur || 1) * 10; // ñaar fukk = 20
+    else if (W_HUNDRED.has(w)) cur = (cur || 1) * 100;
+    else cur += W_UNITS[w]; // juróom ñaar = 7
+  }
+  const n = total + cur;
+  return n ? n * W_MONEY[words[i]] : undefined;
+}
+
 /** Montant : « 16 000 », « 16000f », « 16k », « 16 mille », « ba 16 000 ». */
 function budget(t: string, raw: string): number | undefined {
-  const m = raw.replace(/ | /g, ' ').match(/(\d{1,3}(?:[ .]\d{3})+|\d{4,6}|\d{1,3})\s*(k|mille|000|f\b|fcfa|francs?)?/i);
+  const wo = wolofAmount(t);
+  if (wo && wo >= 1000) return wo;
+  const m = raw.replace(/ | /g, ' ').match(/(\d{1,3}(?:[ .]\d{3})+|\d{4,6}|\d{1,3})\s*(k|mille|mil|000|f\b|fcfa|francs?)?/i);
   if (!m) return undefined;
   let n = Number(m[1].replace(/[ .]/g, ''));
   const unit = (m[2] || '').toLowerCase();
-  if (unit === 'k' || unit === 'mille') n *= 1000;
+  if (unit === 'k' || unit === 'mille' || unit === 'mil') n *= 1000;
   if (n < 1000) return undefined; // « 38 » est une pointure, pas un prix
-  if (!/moins|max|budget|jusq|pas plus|ba |a peu pres|environ|autur|njeg|prix|cute|cut|fcfa|\bf\b|francs|mille|yomb/.test(t) && !unit) return undefined;
+  if (!BUDGET_WORDS.test(t) && !unit) return undefined;
   return n;
 }
 
+const BUDGET_WORDS = nre(['moins', 'moins de', 'max', 'maximum', 'budget', 'jusqu', 'jusque', 'pas plus', 'à peu près', 'environ', 'autour', 'njëg', 'njëgam', 'prix', 'coûte', 'coût', 'fcfa', 'f', 'francs', 'mille', 'yomb', 'ba', 'dërëm', 'junni']);
+const SIZE_BEFORE = nre(['pointure', 'taille', 'je fais du', 'je chausse du', 'chausse', 'fais du', 'sama pointure', 'du', 'en'], { suffix: '\\s*(3[5-9]|4[0-4])\\b' });
+
 function size(t: string, kindShoes: boolean): string | undefined {
-  const m = t.match(/\b(?:pointure|taille|je fais du|je chause du|chause|fais du|pointur|sama pointure|du)\s*(3[5-9]|4[0-4])\b/) || (kindShoes ? t.match(/\b(3[5-9]|4[0-4])\b/) : null);
+  const m = t.match(SIZE_BEFORE) || (kindShoes ? t.match(/\b(3[5-9]|4[0-4])\b/) : null);
   return m?.[1];
 }
 
@@ -94,6 +129,8 @@ export function modelIndex(products: Product[]) {
   return idx;
 }
 
+const OTHER_TOWNS = nre(['ziguinchor', 'kolda', 'tambacounda', 'tamba', 'matam', 'louga', 'fatick', 'kédougou', 'sédhiou', 'kaffrine', 'diourbel', 'podor', 'richard toll', 'dagana', 'casamance', 'bignona', 'vélingara', 'linguère', 'mbacké', 'tivaouane', 'joal', 'nioro']);
+
 export function extractSlots(raw: string, products: Product[] = []): Slots {
   const t = normalize(raw);
   const s: Slots = {};
@@ -114,9 +151,9 @@ export function extractSlots(raw: string, products: Product[] = []): Slots {
     if (new RegExp(`\\b${full}\\b`).test(t) || (first.length > 3 && new RegExp(`\\b${first}`).test(t))) { s.zone = z.name; break; }
   }
   // Villes hors des zones listées : tarif « Autres régions »
-  if (!s.zone && /\b(ziguinchor|kolda|tambacunda|tamba|matam|luga|louga|fatick|kedugu|kedougou|sedhiu|sedhiou|kafrine|kaffrine|diurbel|diourbel|podor|richard tol|dagana|casamance|bignona|velingara|linguere|mbacke|tivaoune|tivauane|joal|nioro)\b/.test(t)) s.zone = 'Autres régions';
-  if (!s.zone && /\bties\b|\bthies\b|\bcees\b/.test(t)) s.zone = 'Thiès';
-  if (!s.zone && /\bdakar\b|\bndakaaru\b|\bndakaru\b/.test(t)) s.zone = 'Dakar';
+  if (!s.zone && OTHER_TOWNS.test(t)) s.zone = 'Autres régions';
+  if (!s.zone && nre(['thiès', 'tiès', 'cees']).test(t)) s.zone = 'Thiès';
+  if (!s.zone && nre(['dakar', 'ndakaaru']).test(t)) s.zone = 'Dakar';
   if (products.length) {
     const idx = modelIndex(products);
     for (const w of t.split(' ')) if (idx.has(w)) { s.model = idx.get(w); break; }

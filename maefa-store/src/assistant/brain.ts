@@ -10,9 +10,9 @@ import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from '../utils/f
 import { canBuy } from '../utils/stock';
 import { FAQ_ITEMS } from '../data/faq';
 import { QUESTIONS, colorFamilies, modelOf, recommend, type Wishes } from '../utils/shopAdvisor';
-import { NaiveBayes, detectLang, features, normalize } from './nlu';
+import { NaiveBayes, detectLang, features, normalize, nre } from './nlu';
 import { extractSlots, type Slots } from './slots';
-import { TRAINING, type Intent } from './training';
+import { CUES, TRAINING, type Intent } from './training';
 
 export type Lang = 'fr' | 'wo';
 
@@ -33,10 +33,38 @@ export interface BrainReply { text: string; chips: string[]; state: BrainState; 
 
 export const newBrainState = (lang: Lang = 'fr', size?: string): BrainState => ({ wishes: size ? { size } : {}, asked: [], shown: [], lang, turn: 0 });
 
-export interface BrainCtx { products: Product[]; orders?: Order[]; lang?: Lang; /** Total du panier en cours (FCFA) */ cartTotal?: number }
+export interface BrainCtx {
+  products: Product[]; orders?: Order[]; lang?: Lang;
+  /** Total du panier en cours (FCFA) */ cartTotal?: number;
+  /** Prénom de la cliente connectée */ firstName?: string;
+  /** Heure locale (0-23), pour bonjour / bonsoir */ hour?: number;
+}
 
-let model: NaiveBayes<Intent> | null = null;
-export const classifier = () => (model ??= new NaiveBayes<Intent>().train(TRAINING));
+/** Poids des mots-indices face à l'apprentissage statistique (réglé par validation croisée). */
+export const CUE_WEIGHT = 4;
+const CUE_RE = Object.fromEntries(Object.entries(CUES).map(([k, words]) => [k, nre(words!)])) as Partial<Record<Intent, RegExp>>;
+
+/**
+ * Modèle hybride : bayésien naïf (appris sur les phrases) + mots-indices (expertise).
+ * Renvoie les intentions classées avec une probabilité.
+ */
+export function makeClassifier(train: Record<string, string[]>, weight = CUE_WEIGHT) {
+  const nb = new NaiveBayes<Intent>().train(train as Record<Intent, string[]>);
+  return (text: string) => {
+    const t = normalize(text);
+    const ranked = nb.rank(text).map(r => {
+      const re = CUE_RE[r.label];
+      const hits = re ? (t.match(new RegExp(re.source, 'g')) ?? []).length : 0;
+      return { label: r.label, s: Math.log(r.p + 1e-12) + weight * hits };
+    });
+    const max = Math.max(...ranked.map(r => r.s));
+    const sum = ranked.reduce((a, r) => a + Math.exp(r.s - max), 0);
+    return ranked.map(r => ({ label: r.label, p: Math.exp(r.s - max) / sum })).sort((a, b) => b.p - a.p);
+  };
+}
+
+let model: ReturnType<typeof makeClassifier> | null = null;
+export const classifier = () => (model ??= makeClassifier(TRAINING));
 
 /** Intention reconnue (avec sa probabilité), utile aussi pour les tests. */
 let exact: Map<string, Intent> | null = null;
@@ -56,7 +84,7 @@ export function understand(text: string) {
   if (!key) return { intent: 'bof' as Intent, p: 1, second: undefined };
   const known = exactMemory().get(key);
   if (known) return { intent: known, p: 1, second: undefined };
-  const r = classifier().rank(text);
+  const r = classifier()(text);
   return { intent: r[0].label, p: r[0].p, second: r[1] };
 }
 
@@ -287,7 +315,7 @@ export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply
   if (intent === 'prix' && !slots.model && !state.shown.length && (slots.kind || slots.budget)) intent = 'cherche';
 
   // « Montrez-moi tout » : on oublie les filtres (sauf la pointure)
-  if (/\b(montrez moi tout|wone ma lepp|tout voir)\b/.test(normalize(text))) { state.wishes = { kind: 'tout', size: state.wishes.size }; state.pending = undefined; intent = 'cherche'; }
+  if (nre(['montrez-moi tout', 'montrez tout', 'tout voir', 'wone ma lépp']).test(normalize(text))) { state.wishes = { kind: 'tout', size: state.wishes.size }; state.pending = undefined; intent = 'cherche'; }
   const KIND_CHIPS = QUESTIONS.kind.options.map(o => optionLabel(o, lang));
   const out = (t: string, chips: string[] = []): BrainReply => ({ text: t, chips, state, intent });
   // Articles pas encore vendus (bijoux, vêtements, accessoires) : on le dit simplement
@@ -301,10 +329,19 @@ export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply
   switch (intent) {
     case 'salut': {
       state.pending = 'kind';
-      return out(L(lang, 'Bonjour et bienvenue chez Maefa 🌸 Je suis Maé. Qu\'est-ce qui vous ferait plaisir aujourd\'hui : un sac, des chaussures ?', 'Salaam aleekum, dalal ak jàmm ci Maefa 🌸 Maa ngi tudd Maé. Lan nga bëgg tey : sac walla dàll ?'), KIND_CHIPS);
+      const t = normalize(text);
+      const name = ctx.firstName ? ` ${ctx.firstName}` : '';
+      // On rend le salut comme il a été donné
+      const salam = nre(['salaam aleekum', 'salam', 'aleekum', 'asalamu']).test(t);
+      const nangadef = nre(['na nga def', 'nanga def', 'naka nga def', 'jàmm nga am', 'naka suba si', 'naka ngoon si']).test(t);
+      const fete = upcomingFetes().find(f => ['tabaski', 'korite'].some(k => normalize(f.name).includes(k)) && daysUntil(f.date) <= 2);
+      const hello = (ctx.hour ?? 12) >= 18 ? 'Bonsoir' : 'Bonjour';
+      const wo = `${salam ? 'Maalekum salaam' : 'Salaam aleekum'}${name || ' soxna si'} 🌸${nangadef ? ' Maa ngi fi rekk, alxamdulilaa. Yow nag ?' : ''}${fete ? ` Dewenati, ${fete.name} bu baax !` : ''} Dalal ak jàmm ci Maefa, maa ngi tudd Maé. Lan nga bëgg tey : sac walla dàll ?`;
+      const fr = `${salam ? 'Maalekum salaam' : hello}${name} 🌸${nangadef ? ' Je vais très bien, merci ! Et vous ?' : ''}${fete ? ` Bonne fête de ${fete.name} !` : ''} Bienvenue chez Maefa, je suis Maé. Qu'est-ce qui vous ferait plaisir aujourd'hui : un sac, des chaussures ?`;
+      return out(L(lang, fr, wo), KIND_CHIPS);
     }
     case 'merci': return out(L(lang, 'Avec plaisir 🌸 Je reste là si vous avez une autre question.', 'Ñoo ko bokk 🌸 Maa ngi fi bu am leneen.'));
-    case 'aurevoir': return out(L(lang, 'Au revoir et à très bientôt chez Maefa 🌸', 'Ba beneen yoon, jërëjëf ci Maefa 🌸'));
+    case 'aurevoir': return out(L(lang, `Au revoir${ctx.firstName ? ` ${ctx.firstName}` : ''} et à très bientôt chez Maefa 🌸`, `Ba beneen yoon${ctx.firstName ? ` ${ctx.firstName}` : ''}, jàmm ak salaam 🌸 Jërëjëf ci Maefa.`));
     case 'qui': return out(L(lang,
       'Je suis **Maé**, la conseillère virtuelle de Maefa : un petit programme (pas une personne) qui connaît toutes nos pièces. Pour parler à l\'équipe, touchez « Parler à Maefa » 🌸',
       'Maa ngi tudd **Maé** : programme bu Maefa (du nit), xam naa sac yi ak dàll yi yépp. Ngir wax ak nit, bësal « Wax ak Maefa » 🌸'), [L(lang, '💬 Parler à Maefa', '💬 Wax ak Maefa')]);
@@ -462,8 +499,9 @@ export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply
       `Amul solo 🌸 Bindal nu léegi ci [WhatsApp](${wa('Salaam aleekum Maefa 🌸 Dama bëgg soppi walla dindi sama commande n° ')}) ak sa nimero commande : **balaa ñu koy yónnee**, mën nañu ko soppi.`));
     case 'langue': {
       const t = normalize(text);
-      if (/english|anglais/.test(t)) return out('Sorry, I speak French and Wolof 🌸 Je parle français et wolof : écrivez-moi dans l\'une de ces langues !', KIND_CHIPS);
-      state.lang = /wolof/.test(t) && !/francais/.test(t) ? 'wo' : /francais/.test(t) ? 'fr' : state.lang;
+      if (nre(['english', 'anglais']).test(t)) return out('Sorry, I speak French and Wolof 🌸 Je parle français et wolof : écrivez-moi dans l\'une de ces langues !', KIND_CHIPS);
+      const fr = nre(['français', 'francais']).test(t);
+      state.lang = nre(['wolof']).test(t) && !fr ? 'wo' : fr ? 'fr' : state.lang;
       return out(L(state.lang, 'Bien sûr, je vous parle en français 🌸 Que puis-je faire pour vous : un sac, des chaussures ?', 'Waaw, dégg naa wolof 🌸 Lan nga bëgg : sac walla dàll ?'), QUESTIONS.kind.options.map(o => optionLabel(o, state.lang)));
     }
     case 'bof': {

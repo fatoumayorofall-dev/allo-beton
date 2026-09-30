@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ArrowUp, MessageCircle, RotateCcw, Volume2, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
+import { useAccount } from '../context/AccountContext';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { OCCASIONS, CATEGORIES } from '../data/catalog';
 import { formatDay, upcomingFetes } from '../utils/fetes';
@@ -17,6 +18,10 @@ import { formatPrice } from '../utils/format';
 import { useEscape } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
 import { OPEN_ASSISTANT_EVENT } from './assistantBus';
+import { speak } from '../utils/speak';
+
+/** Texte à lire à voix haute : sans liens, sans gras, sans émojis. */
+const spoken = (md: string) => md.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*_#>]/g, '').replace(/\p{Extended_Pictographic}/gu, '').replace(/\s+/g, ' ').trim();
 
 
 const STORAGE_KEY = 'maefa_assistant';
@@ -85,6 +90,7 @@ const CitedProducts: React.FC<{ text: string; getProduct: (s: string) => Product
 /** Panneau de l'assistante. Chargé à la première ouverture : `initial` porte cette première demande. */
 export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initial }) => {
   const { products, cart, orders, getProduct } = useStore();
+  const account = useAccount();
   const location = useLocation();
   const [open, setOpen] = useState(!!initial);
   const [mode, setMode] = useState<'ia' | 'local' | 'unknown'>('unknown');
@@ -154,7 +160,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
     const status = await getServerStatus();
     const answerLocally = () => {
       setMode('local');
-      const r = brainReply(q, brain.current, { products, orders, lang, cartTotal: cart.reduce((n, i) => n + i.price * i.quantity, 0) });
+      const r = brainReply(q, brain.current, { products, orders, lang, cartTotal: cart.reduce((n, i) => n + i.price * i.quantity, 0), firstName: account.user?.firstName || undefined, hour: new Date().getHours() });
       brain.current = r.state;
       try {
         sessionStorage.setItem('maefa_brain', JSON.stringify(r.state));
@@ -297,6 +303,11 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
                 ? <span className="inline-flex gap-1 py-1" role="status" aria-label="Maé écrit"><Dot /><Dot d={150} /><Dot d={300} /></span>
                 : m.role === 'assistant' ? <RichText text={m.content.replace(/\[\[pointure:\d*\]?\]?/g, '')} onNavigate={close} /> : m.content}
             </Bubble>
+            {m.role === 'assistant' && m.content && lang === 'fr' && !(busy && i === messages.length - 1) && (
+              <button onClick={() => speak(spoken(m.content))} className="ml-2 mt-1 inline-flex items-center gap-1 text-[11px] text-ink/60 hover:text-gold-dark" aria-label="Écouter la réponse" data-testid="listen">
+                <Volume2 className="w-3.5 h-3.5" /> Écouter
+              </button>
+            )}
             {m.role === 'assistant' && m.content && <div className="pl-1"><CitedProducts text={m.content} getProduct={getProduct} onNavigate={close} /></div>}
             {m.role === 'assistant' && i === messages.length - 1 && !busy && !!m.chips?.length && (
               <div className="flex flex-wrap gap-2 pl-1 mt-2.5" data-testid="chips">

@@ -185,3 +185,42 @@ export const TRAINING: Record<Intent, string[]> = {
     'xamuma', 'dara', 'dara la', 'ahh', 'waaw rekk',
   ],
 };
+
+/**
+ * Mots-indices par intention (expertise linguistique, français + wolof) : ils complètent l'apprentissage
+ * statistique quand les exemples sont peu nombreux. Écrits en clair, normalisés automatiquement.
+ */
+export const CUES: Partial<Record<Intent, string[]>> = {
+  dimensions: ['dimension', 'dimensions', 'centimètre', 'centimètres', 'cm', 'lourd', 'spacieux', 'contenance', 'mesure', 'mesures', 'hauteur', 'rentre', 'rentrer', 'ipad', 'ordinateur', 'a4', 'taille du sac', 'grand ce sac', 'réy', 'dugg'],
+  plainte: ['cassé', 'cassée', 'abîmé', 'abîmée', 'déchiré', 'déchirée', 'défaut', 'réclamation', 'problème', 'erreur', 'manque', 'pas contente', 'mécontente', 'mauvais état', 'yàqu', 'jafe jafe', 'neexu ma', 'tontuwul'],
+  qualite: ['qualité', 'solide', 'cuir', 'matière', 'simili', 'dure', 'durer', 'finitions', 'confortable', 'dëgër', 'deru', 'tient'],
+  confiance: ['fiable', 'sérieux', 'sérieuse', 'arnaque', 'arnaquée', 'escroc', 'escrocs', 'confiance', 'peur', 'sécurisé', 'sûre', 'existez', 'ragal', 'woolu', 'nax'],
+  nouveautes: ['nouveauté', 'nouveautés', 'neuf', 'arrivage', 'arrivages', 'arriver', 'meilleure vente', 'plus vendu', 'best', 'collection', 'bees', 'plus demandés'],
+  moins_cher: ['moins cher', 'trop cher', 'cher', 'abordable', 'budget est petit', 'seer', 'rëy', 'gën a yomb'],
+  photos: ['photo', 'photos', 'vidéo', 'video', 'image', 'nataal', 'portées'],
+  modifier: ['annuler', 'annulation', 'modifier', 'changer mon adresse', 'changer la commande', 'trompée', 'dindi', 'juum', 'soppi sama commande'],
+  compliment: ['magnifique', 'trop beau', 'trop belle', 'joli', 'jolie', 'superbe', 'adore', 'kiffe', 'top', 'sublime', 'rafet na', 'dafa rafet', 'neex na'],
+  gros: ['gros', 'revendeuse', 'revendre', 'revendeur', 'quantité', 'plusieurs', 'jaaykat', 'bu bare'],
+  promo: ['promo', 'promotion', 'code', 'réduction', 'remise', 'soldes', 'offre', 'wàññi'],
+  retour: ['échanger', 'échange', 'retour', 'retourner', 'rembourser', 'remboursement', 'reprenez', 'rendre', 'delloo'],
+  hesite: ['réfléchir', 'réfléchis', 'hésite', 'repasserai', 'reviendrai', 'mon mari', 'mon époux', 'xalaat', 'délsi', 'xaaral', 'penser'],
+  boutique: ['boutique', 'magasin', 'adresse', 'horaires', 'ouvert', 'ouverts', 'situés', 'venir voir', 'ñëw', 'ubbi'],
+  commander: ['commander', 'acheter', 'je prends', 'je le prends', 'je la prends', 'jënd', 'jël', 'passer commande', 'kii laa bëgg'],
+  humain: ['parler', 'numéro', 'appeler', 'whatsapp', 'contact', 'conseiller', 'conseillère', 'gérante', 'woo', 'wax ak nit', 'wax ak yeen'],
+  aurevoir: ['au revoir', 'bye', 'à bientôt', 'à demain', 'à plus', 'bonne journée', 'bonne soirée', 'bonne nuit', 'ba beneen', 'ba suba', 'mangi dem'],
+  qui: ['robot', 'ia', 'machine', 'vraie personne', 'qui êtes', 'es qui', 'kan nga', 'kan mooy'],
+  paiement: ['payer', 'paie', 'paye', 'paiement', 'wave', 'orange money', 'om', 'espèces', 'cash', 'carte', 'règle', 'régler', 'fey'],
+  salut: ['bonjour', 'bonsoir', 'salut', 'coucou', 'hello', 'bjr', 'slt', 'salam', 'salaam', 'aleekum', 'na nga def', 'nanga def'],
+  suivi: ['ma commande', 'colis', 'suivi', 'suivre', 'livreur', 'pas arrivée', 'toujours rien', 'sama commande', 'agsiwul'],
+  pointure: ['pointure', 'pointures', 'taille grand', 'taille petit', 'guide des tailles'],
+  marque: ['marque', 'original', 'authentique', 'copie', 'contrefaçon', 'vrai hermès', 'hermès', 'chanel', 'gucci', 'tods', 'dëgg la'],
+  autres: ['autre', 'autres', 'encore', 'yeneen', 'leneen'],
+  cadeau: ['cadeau', 'offrir', 'may', 'anniversaire', 'surprise'],
+  merci: ['merci', 'mci', 'thanks', 'jërëjëf', 'jarajëf'],
+  livraison: ['livrer', 'livraison', 'livrez', 'délai', 'yónnee', 'indil'],
+  prix: ['prix', 'combien', 'coûte', 'ñaata', 'njëg', 'njëgam'],
+  fete: ['tabaski', 'korité', 'magal', 'gamou', 'kori'],
+  non: ['non', 'déedéet', 'pas maintenant', 'pas besoin', 'du léegi'],
+  oui: ['oui', 'ouais', 'volontiers', 'bien sûr', 'd accord', 'waaw'],
+  cherche: ['cherche', 'montrez', 'wut', 'wone ma'],
+};

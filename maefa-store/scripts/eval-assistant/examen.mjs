@@ -97,7 +97,45 @@ export const CONVERSATIONS = [
   { id: 'ville-hors-liste', lang: 'fr', turns: [
     ['Vous livrez à Ziguinchor ?', { intent: 'livraison', mentions: /5\s?000/ }],
   ] },
+  { id: 'politesse-wo', lang: 'wo', turns: [
+    ['Salaam aleekum, na nga def ?', { intent: 'salut', mentions: /Maalekum salaam/, mentions2: /alxamdulilaa/, wolof: true }],
+  ] },
+  { id: 'argent-wolof', lang: 'wo', turns: [
+    ['Dama bëgg sac ba ñetti junni', { products: true, category: 'sacs', maxPrice: 15000, wolof: true }],
+  ] },
+  { id: 'orthographe-sms', lang: 'wo', turns: [
+    ['dama beug dall bou gnoul, sama pointure 38', { products: true, category: 'chaussures', size: '38', wolof: true }],
+  ] },
   { id: 'marque-honnete', lang: 'fr', turns: [
     ['C\'est du vrai Hermès vos tongs ?', { intent: 'marque', mentions: /ne sont pas|pas des articles de grandes marques/i }],
   ] },
+];
+
+/** Même phrase, deux orthographes (wolof officiel / « à la française » ou SMS) : même compréhension. */
+export const ORTHO_PAIRS = [
+  ['dama bëgg dàll bu weex', 'dama beug dall bou wékh'],
+  ['ndax am ngeen sac bu rafet', 'ndakh am nguéne sac bou rafette'],
+  ['jërëjëf', 'dieuredieuf'],
+  ['sac awa ñaata la', 'sac awa gnata la'],
+  ['dama bëgg sac bu xonq', 'dama beugue sac bou khonk'],
+  ['dafa jafe', 'daffa diafé'],
+  ['ci Thiès dingeen yónnee', 'ci Tiès dingueen yonné'],
+  ['naka laay fey', 'naka lay faye'],
+  ['xamuma sama pointure', 'khamouma souma pointure'],
+  ['déedéet jërëjëf', 'dédét dieuredieuf'],
+  ['dama bëgg sac bu ñuul', 'dama beug sac bou gnoul'],
+];
+
+/** Langue attendue de phrases variées. */
+export const LANG_EXAM = [
+  ['Bonjour je cherche un sac pour le bureau', 'fr'], ['Combien coûte la livraison à Thiès ?', 'fr'], ['Vous avez des mules en 38 ?', 'fr'],
+  ['Je voudrais payer à la livraison', 'fr'], ['C\'est fiable votre site ?', 'fr'], ['Merci beaucoup, bonne journée', 'fr'],
+  ['Dama bëgg sac bu rafet', 'wo'], ['Naka laay fey ?', 'wo'], ['Ñaata la sac bi ?', 'wo'], ['Sama commande fan la nekk ?', 'wo'],
+  ['Dama beug dall bou gnoul', 'wo'], ['Am ngeen pochette ngir céet ?', 'wo'], ['Jërëjëf lool, ba beneen yoon', 'wo'], ['Mën naa ko delloo ?', 'wo'],
+];
+
+/** Argent en wolof (compte traditionnel : junni = 5 000 F, dërëm = 5 F). */
+export const AMOUNTS = [
+  ['ñetti junni', 15000], ['ñeenti junni', 20000], ['juróomi junni', 25000], ['benn junni', 5000],
+  ['fukk ak juróom mille', 15000], ['ñaar fukk mille', 20000], ['fukk ak juróom ñaar mille', 17000], ['ñetti junni dërëm', 15000],
 ];

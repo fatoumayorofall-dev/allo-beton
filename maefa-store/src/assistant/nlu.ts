@@ -5,18 +5,51 @@
  * - détection de la langue (wolof ou français)
  */
 
-/** Minuscules, sans accents, orthographes wolof « à la française » rapprochées. */
+/**
+ * Lexique wolof : graphies courantes (« à la française », SMS) → forme de référence.
+ * Les clés et valeurs sont déjà passées par les règles d'écriture de `normalize`.
+ */
+const LEXICON: Record<string, string> = {
+  begue: 'beg', bege: 'beg', bog: 'beg', // bëgg (vouloir)
+  xonk: 'xonq', xonx: 'xonq', // xonq (rouge)
+  feye: 'fey', fay: 'fey', faye: 'fey', // fey (payer)
+  yonne: 'yone', yonnee: 'yone', yonee: 'yone', // yónnee (envoyer / livrer)
+  rafete: 'rafet', rafett: 'rafet', // rafet (joli)
+  nguir: 'ngir', ngiir: 'ngir', // ngir (pour)
+  ngene: 'ngen', nguen: 'ngen', ngeen: 'ngen', // ngeen (vous)
+  nyata: 'nata', nyaata: 'nata', naata: 'nata', // ñaata (combien)
+  yombe: 'yomb', // yomb (pas cher)
+  jefe: 'jafe', jafee: 'jafe', // jafe (cher / difficile)
+  sedet: 'dedet', deydet: 'dedet', dedeet: 'dedet', // déedéet (non)
+  wao: 'waw', waaw: 'waw', // waaw (oui)
+  xamuma: 'xamuma', xamouma: 'xamuma',
+  jerejeuf: 'jerejef', jerejefe: 'jerejef', jerejf: 'jerejef', // jërëjëf (merci)
+  salamalekum: 'salam alekum', salamaleykum: 'salam alekum', salamalikum: 'salam alekum', aleykum: 'alekum', alaykum: 'alekum',
+};
+
+/** Minuscules, sans accents, graphies wolof rapprochées (jërëjëf / jerejef / dieuredieuf…). */
 export function normalize(s: string): string {
-  return s.toLowerCase()
+  const base = s.toLowerCase()
     .replace(/ñ/g, 'n').replace(/ŋ/g, 'ng')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/['’`]/g, ' ')
     .replace(/[^a-z0-9\s]/g, ' ')
-    // Graphies « à la française » du wolof : dieu → je, diar → jar, ou → u, eu → e
-    .replace(/\bdieu/g, 'je').replace(/\bdia/g, 'ja').replace(/\bdio/g, 'jo')
+    // Graphies « à la française » du wolof : kh → x, gn/ny → ñ, dieu → jë, dia → ja, ou → u, eu → e
+    .replace(/kh/g, 'x').replace(/gn/g, 'n').replace(/\bny/g, 'n')
+    .replace(/dieu/g, 'je').replace(/\bdia/g, 'ja').replace(/\bdio/g, 'jo')
     .replace(/ou/g, 'u').replace(/eu/g, 'e')
     .replace(/(.)\1+/g, '$1') // lettres doublées : jërr → jer, dafa ↔ daffa
     .replace(/\s+/g, ' ').trim();
+  return base.split(' ').map(w => LEXICON[w] ?? w).join(' ');
+}
+
+/**
+ * Expression « un de ces mots/expressions », écrite en clair et normalisée comme les phrases :
+ * une nouvelle règle d'écriture ne peut plus casser une détection.
+ */
+export function nre(words: string[], { prefix = false, suffix = '' } = {}): RegExp {
+  const alts = [...new Set(words.map(w => normalize(w)).filter(Boolean))].map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+  return new RegExp(`\\b(?:${alts.join('|')})${prefix ? '' : '\\b'}${suffix}`);
 }
 
 const STOP = new Set(['le', 'la', 'les', 'un', 'une', 'des', 'de', 'du', 'et', 'a', 'au', 'aux', 'en', 'pour', 'je', 'j', 'l', 'd', 'est', 'c', 'ce', 'mon', 'ma', 'mes', 'vous', 'vos', 'votre', 'il', 'elle', 'on', 's', 'qu', 'que', 'y']);

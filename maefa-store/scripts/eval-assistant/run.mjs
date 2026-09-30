@@ -12,7 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SCENARIOS } from './scenarios.mjs';
-import { INTENT_EXAM, SLOT_EXAM, CONVERSATIONS } from './examen.mjs';
+import { INTENT_EXAM, SLOT_EXAM, CONVERSATIONS, ORTHO_PAIRS, LANG_EXAM, AMOUNTS } from './examen.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(here, '.bundle.mjs');
@@ -115,6 +115,56 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; lines.push(`${c
       if (items.length) { prevPrices = items.map(p => p.price); prevIds = items.map(p => p.id); prevText = r.text; }
     });
   }
+}
+
+/* ================================================================== */
+/*  1 ter. Évaluation approfondie (fiche d'évaluation)                  */
+/* ================================================================== */
+{
+  const sheet = ['\n## Fiche d\'évaluation\n'];
+  // Validation croisée à 5 plis sur les phrases d'entraînement
+  const all = Object.entries(M.TRAINING).flatMap(([intent, list]) => list.map((t, i) => ({ t, intent, fold: i % 5 })));
+  const perIntent = {};
+  let good = 0;
+  for (let f = 0; f < 5; f++) {
+    const train = {};
+    for (const x of all) if (x.fold !== f) (train[x.intent] ??= []).push(x.t);
+    const clf = M.makeClassifier(train);
+    for (const x of all.filter(y => y.fold === f)) {
+      const got = clf(x.t)[0].label;
+      perIntent[x.intent] ??= { n: 0, ok: 0 };
+      perIntent[x.intent].n++;
+      if (got === x.intent) { perIntent[x.intent].ok++; good++; }
+    }
+  }
+  const cv = Math.round((good / all.length) * 1000) / 10;
+  ok(`validation croisée (5 plis, ${all.length} phrases) : ${cv} %`, cv >= 70);
+  const weakest = Object.entries(perIntent).map(([k, v]) => [k, Math.round((v.ok / v.n) * 100)]).sort((a, b) => a[1] - b[1]);
+  sheet.push(`| Mesure | Résultat |\n|---|---|\n| Phrases d'entraînement | ${all.length} (${Object.keys(M.TRAINING).length} intentions) |\n| Validation croisée (5 plis, modèle hybride) | **${cv} %** |`);
+  // Orthographes
+  let same = 0; const diff = [];
+  for (const [a, b] of ORTHO_PAIRS) {
+    const ia = M.understand(a).intent, ib = M.understand(b).intent;
+    const sa = JSON.stringify(M.extractSlots(a, products)), sb = JSON.stringify(M.extractSlots(b, products));
+    if (ia === ib && sa === sb) same++; else diff.push(`« ${b} » (${ib} ${sb}) ≠ « ${a} » (${ia} ${sa})`);
+  }
+  ok(`orthographes wolof : ${same}/${ORTHO_PAIRS.length} paires comprises pareil`, same === ORTHO_PAIRS.length, diff.join(' ; '));
+  // Langue
+  const langOk = LANG_EXAM.filter(([t, l]) => M.detectLang(t) === l).length;
+  ok(`détection de la langue : ${langOk}/${LANG_EXAM.length}`, langOk >= LANG_EXAM.length - 1, LANG_EXAM.filter(([t, l]) => M.detectLang(t) !== l).map(([t]) => t).join(' ; '));
+  // Argent en wolof
+  const amtOk = AMOUNTS.filter(([t, v]) => M.wolofAmount(M.normalize(t)) === v).length;
+  ok(`argent en wolof : ${amtOk}/${AMOUNTS.length}`, amtOk === AMOUNTS.length, AMOUNTS.filter(([t, v]) => M.wolofAmount(M.normalize(t)) !== v).map(([t, v]) => `${t} → ${M.wolofAmount(M.normalize(t))} au lieu de ${v}`).join(' ; '));
+  // Vitesse
+  const t0 = performance.now();
+  let st = M.newBrainState('fr');
+  const texts = [...INTENT_EXAM.map(x => x[0]), ...LANG_EXAM.map(x => x[0])];
+  for (let k = 0; k < 400; k++) st = M.reply(texts[k % texts.length], k % 20 ? st : M.newBrainState('fr'), { products, orders: [] }).state;
+  const ms = (performance.now() - t0) / 400;
+  ok(`vitesse : ${ms.toFixed(2)} ms par réponse`, ms < 30);
+  sheet.push(`| Examen (phrases jamais apprises) | voir ci-dessous |\n| Orthographes wolof (paires) | ${same}/${ORTHO_PAIRS.length} |\n| Détection de la langue | ${langOk}/${LANG_EXAM.length} |\n| Argent en wolof | ${amtOk}/${AMOUNTS.length} |\n| Temps de réponse moyen | ${ms.toFixed(2)} ms (dans le téléphone, sans internet) |`);
+  sheet.push(`\n**Intentions les moins sûres (validation croisée)** : ${weakest.slice(0, 6).map(([k, v]) => `${k} ${v} %`).join(' · ')}\n`);
+  report.splice(1, 0, sheet.join('\n'));
 }
 
 /* ================================================================== */
