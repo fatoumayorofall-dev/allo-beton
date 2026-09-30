@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 19;
+export const CATALOG_VERSION = 20;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -93,6 +93,30 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   isNew: true,
   isBestseller: true,
   createdAt: '2026-09-29T10:00:00Z',
+});
+
+/** Pochette Coumba : pochette de soirée à rabat, strass sur le contour, fermoir papillon en pierres. */
+const coumba = (color: ColorOption, key: string) => p({
+  slug: `pochette-papillon-${key}`,
+  name: `Pochette Coumba à papillon — ${color.name}`,
+  category: 'sacs',
+  subcategory: 'Pochettes de soirée',
+  occasions: ['soiree', 'mariage', 'ceremonie'],
+  material: 'Aspect satin, strass sur le rabat et le contour, fermoir papillon en pierres',
+  care: 'Ranger dans sa pochette à l\'abri de la poussière, éviter l\'eau et les frottements sur les strass.',
+  styleTip: 'Pour un mariage ou un baptême, avec un grand boubou ou un ensemble en bazin : elle donne l\'éclat final.',
+  price: 15000,
+  images: media(`pochette-papillon-${key}`, 2),
+  video: `/videos/pochette-papillon-${key}.mp4`,
+  colors: [color],
+  sizes: [],
+  stock: STOCK,
+  description: `La pochette Coumba en ${color.name.toLowerCase()} : un rabat semé de strass, un contour brillant et un fermoir papillon en pierres. La touche qui fait briller les tenues de fête.`,
+  details: ['Pochette de soirée à rabat', `Couleur : ${color.name}`, 'Strass sur le rabat et le contour', 'Fermoir papillon en pierres', 'Livrée dans un emballage Maefa'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-30T16:00:00Z',
 });
 
 /** Sac Aminata : cabas souple aspect cuir grainé, double zip, breloque dorée, bandoulière amovible. */
@@ -368,6 +392,11 @@ export const ALL_PRODUCTS: Product[] = [
   aminata(COLORS.noir, 'noir'),
   aminata({ name: 'Vert olive', hex: '#5a6b2c' }, 'vert-olive'),
   aminata({ name: 'Prune', hex: '#6e2440' }, 'prune'),
+  coumba({ name: 'Orange', hex: '#f08a1c' }, 'orange'),
+  coumba({ name: 'Fuchsia', hex: '#a3163f' }, 'fuchsia'),
+  coumba(COLORS.or, 'dore'),
+  coumba(COLORS.noir, 'noir'),
+  coumba({ name: 'Chocolat', hex: '#5a2f24' }, 'chocolat'),
 ];
 
 export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category));
