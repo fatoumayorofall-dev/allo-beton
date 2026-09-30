@@ -85,12 +85,19 @@ export function sanitizeMessages(raw) {
  * Diffuse la réponse de l'assistant. `send(event)` reçoit { type: 'text', text } au fil de l'eau,
  * puis { type: 'done' } ou { type: 'error', message }.
  */
-export async function streamAssistant({ messages, shop, products, visitor }, send) {
+const WOLOF = `LANGUE CHOISIE : WOLOF. La cliente a choisi le wolof ; elle lit peut-être difficilement.
+- Réponds en wolof simple (orthographe courante), phrases très courtes, 1 à 3 phrases.
+- Garde les mots français que tout le monde utilise à Dakar : commande, livraison, panier, pointure, Wave, Orange Money.
+- Donne les prix en chiffres (15 000 FCFA) et les liens des pièces comme d'habitude.
+- Si la cliente a du mal ou pour toute chose compliquée, propose-lui d'envoyer un vocal à Maefa sur WhatsApp avec le bouton micro.`;
+
+export async function streamAssistant({ messages, shop, products, visitor, lang }, send) {
   const system = [
     { type: 'text', text: INSTRUCTIONS.replace('{WHATSAPP}', clip(shop?.phone, 40) || 'numéro de la boutique') },
     // Point de cache : consignes + boutique + catalogue restent identiques d'une question à l'autre.
     { type: 'text', text: buildShopContext(shop, products), cache_control: { type: 'ephemeral' } },
     { type: 'text', text: buildVisitorContext(visitor) },
+    ...(lang === 'wo' ? [{ type: 'text', text: WOLOF }] : []),
   ];
 
   const stream = getClient().beta.messages.stream({

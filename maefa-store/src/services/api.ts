@@ -44,6 +44,8 @@ export interface ChatPayload {
   shop: unknown;
   products: Product[];
   visitor: unknown;
+  /** Langue choisie dans l'assistante : 'wo' = réponses en wolof */
+  lang?: 'fr' | 'wo';
 }
 
 /**

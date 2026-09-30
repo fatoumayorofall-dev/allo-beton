@@ -37,6 +37,7 @@ export const AssistantLauncher: React.FC = () => {
           <button onClick={dismiss} aria-label="Masquer" className="absolute top-1.5 right-1.5 p-1 text-ink/70"><X className="w-3 h-3" /></button>
           <p className="font-script text-xl text-gold-dark leading-none">Maé</p>
           <p className="mt-1 text-ink/75 text-[11px] sm:text-xs">Une question ? Je vous réponds tout de suite<span className="hidden sm:inline"> : pièces, livraison, commande</span>.</p>
+          <p className="mt-1 text-[11px] font-semibold text-ink/80">🇸🇳 Wolof itam · 🎙 vocal</p>
         </div>
       )}
       <button onClick={() => { dismiss(); openAssistant(); }} onPointerEnter={() => { loadAssistant(); }} aria-label="Poser une question à l'assistante"

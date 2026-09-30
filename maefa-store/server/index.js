@@ -100,7 +100,7 @@ app.post('/api/chat', async (req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   const send = ev => res.write(`data: ${JSON.stringify(ev)}\n\n`);
   try {
-    await streamAssistant({ messages, shop: req.body.shop, products: req.body.products, visitor: req.body.visitor }, send);
+    await streamAssistant({ messages, shop: req.body.shop, products: req.body.products, visitor: req.body.visitor, lang: req.body.lang === 'wo' ? 'wo' : 'fr' }, send);
   } catch (err) {
     let message = 'L\'assistante est momentanément indisponible.';
     if (err instanceof Anthropic.RateLimitError) message = 'Beaucoup de demandes en ce moment, réessayez dans un instant.';

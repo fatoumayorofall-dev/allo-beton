@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { ArrowUp, MessageCircle, RotateCcw, X } from 'lucide-react';
+import { ArrowUp, MessageCircle, RotateCcw, Volume2, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import { OCCASIONS, CATEGORIES } from '../data/catalog';
 import { formatDay, upcomingFetes } from '../utils/fetes';
 import { FAQ_ITEMS } from '../data/faq';
 import type { Product } from '../data/types';
-import { getServerStatus, streamChat, type ChatTurn } from '../services/api';
+import { getServerStatus, listVoices, streamChat, voiceUrl, type ChatTurn } from '../services/api';
+import { WOLOF_GUIDE, guideVoiceSlug, wolofLocalAnswer, type GuideTopic } from '../data/wolofGuide';
+import { VoiceToWhatsApp } from './VoiceToWhatsApp';
 import { localAnswer } from '../utils/localAssistant';
 import { formatPrice } from '../utils/format';
 import { useEscape } from '../utils/hooks';
@@ -17,6 +19,8 @@ import { OPEN_ASSISTANT_EVENT } from './assistantBus';
 
 const STORAGE_KEY = 'maefa_assistant';
 const SUGGESTIONS = ['Une tenue pour un mariage', 'Délais et frais de livraison', 'Où en est ma commande ?', 'Une idée cadeau à moins de 20 000'];
+const LANG_KEY = 'maefa_lang';
+const WELCOME_WO = 'Salaam aleekum ! Maa ngi tudd **Maé**, ci Maefa 🌸 Bësal ci nataal yi ngir déglu, walla bësal **micro** bi te wax ak nun ci wolof.';
 const WELCOME = 'Bonjour, je suis **Maé**, votre conseillère Maefa 🌸 Je peux vous proposer une tenue, répondre sur la livraison, le paiement ou suivre votre commande. Comment puis-je vous aider ?';
 
 /* ---------- Rendu Markdown minimal : gras, liens internes/externes, listes ---------- */
@@ -85,6 +89,11 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
   const [messages, setMessages] = useState<ChatTurn[]>(() => {
     try { return JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
   });
+  const [lang, setLangState] = useState<'fr' | 'wo'>(() => { try { return localStorage.getItem(LANG_KEY) === 'wo' ? 'wo' : 'fr'; } catch { return 'fr'; } });
+  const setLang = (l: 'fr' | 'wo') => { setLangState(l); try { localStorage.setItem(LANG_KEY, l); } catch { /* ignore */ } };
+  const [voices, setVoices] = useState<string[]>([]);
+  const player = useRef<HTMLAudioElement | null>(null);
+  const [playing, setPlaying] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -112,6 +121,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
   useEffect(() => {
     if (!open) return;
     getServerStatus().then(s => setMode(s.assistant ? 'ia' : 'local'));
+    listVoices().then(v => setVoices(v ?? [])).catch(() => {});
     setTimeout(() => inputRef.current?.focus(), 80);
   }, [open]);
 
@@ -135,7 +145,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
     const status = await getServerStatus();
     const answerLocally = () => {
       setMode('local');
-      setMessages([...history, { role: 'assistant', content: localAnswer(q, { products, orders }) }]);
+      setMessages([...history, { role: 'assistant', content: lang === 'wo' ? wolofLocalAnswer(q) : localAnswer(q, { products, orders }) }]);
     };
     if (!status.assistant) { answerLocally(); setBusy(false); return; }
 
@@ -148,6 +158,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
         shop,
         products,
         visitor: { page: location.pathname + location.search, cart, orders: orders.slice(0, 10) },
+        lang,
       }, chunk => {
         received += chunk;
         setMessages([...history, { role: 'assistant', content: received }]);
@@ -175,8 +186,25 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
     }
   }); // exécute la question demandée à l'ouverture
 
+  /** Sujet du guide wolof : la note vocale de la gérante (si enregistrée) et le texte dans la conversation. */
+  const playTopic = (g: GuideTopic) => {
+    const slug = guideVoiceSlug(g.id);
+    player.current?.pause();
+    if (voices.includes(slug)) {
+      const a = new Audio(voiceUrl(slug));
+      player.current = a;
+      setPlaying(g.id);
+      a.onended = () => setPlaying(p => (p === g.id ? null : p));
+      a.play().catch(() => setPlaying(null));
+    }
+    setMessages(m => [...m, { role: 'user', content: `${g.emoji} ${g.wo}` }, { role: 'assistant', content: `${g.textWo}${g.link ? `\n\n[${g.link.wo}](${g.link.to})` : ''}` }]);
+  };
+  useEffect(() => () => player.current?.pause(), []);
+
   const lastQuestion = [...messages].reverse().find(m => m.role === 'user')?.content;
-  const handoff = buildWhatsAppLink(`Bonjour Maefa Store 🌸 ${lastQuestion ? `J'ai une question : ${lastQuestion}` : 'J\'ai besoin d\'un conseil.'}`);
+  const handoff = buildWhatsAppLink(lang === 'wo'
+    ? `Salaam aleekum Maefa 🌸 ${lastQuestion ? `Sama laaj : ${lastQuestion}` : 'Dama bëgg wax ak yeen.'}`
+    : `Bonjour Maefa Store 🌸 ${lastQuestion ? `J'ai une question : ${lastQuestion}` : 'J\'ai besoin d\'un conseil.'}`);
   const close = () => setOpen(false);
 
   if (!open) return null;
@@ -186,13 +214,21 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
       role="dialog" aria-label="Assistante Maefa">
       {/* En-tête */}
       <header className="flex items-center gap-3 px-5 py-4 bg-ink text-ivory">
-        <span className="w-11 h-11 rounded-full bg-gradient-to-br from-blush to-gold grid place-items-center font-script text-2xl text-ink shrink-0">F</span>
+        <span className="w-11 h-11 rounded-full bg-gradient-to-br from-blush to-gold grid place-items-center font-script text-2xl text-ink shrink-0">M</span>
         <div className="flex-1 min-w-0">
           <p className="font-display text-xl leading-none">Maé</p>
           <p className="text-[11px] text-ivory/60 mt-1 flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${mode === 'ia' ? 'bg-emerald-400' : 'bg-gold-light'}`} />
-            {mode === 'ia' ? 'Conseillère IA · répond en direct' : mode === 'local' ? 'Réponses rapides' : 'Conseillère Maefa'}
+            {lang === 'wo' ? (mode === 'ia' ? 'IA · mu ngi tontu léegi' : 'Tontu yu gaaw') : mode === 'ia' ? 'Conseillère IA · répond en direct' : mode === 'local' ? 'Réponses rapides' : 'Conseillère Maefa'}
           </p>
+        </div>
+        <div className="flex rounded-full bg-ivory/10 p-0.5 text-[11px] font-semibold" role="group" aria-label="Langue / Làkk">
+          {(['fr', 'wo'] as const).map(l => (
+            <button key={l} onClick={() => setLang(l)} aria-pressed={lang === l} data-testid={`lang-${l}`}
+              className={`px-2.5 h-8 rounded-full transition-colors ${lang === l ? 'bg-gold-light text-ink' : 'text-ivory/75 hover:text-ivory'}`}>
+              {l === 'fr' ? 'FR' : '🇸🇳 Wolof'}
+            </button>
+          ))}
         </div>
         {messages.length > 0 && (
           <button onClick={() => { abortRef.current?.abort(); setMessages([]); }} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="w-9 h-9 grid place-items-center rounded-full hover:bg-ivory/10"><RotateCcw className="w-4 h-4" /></button>
@@ -202,8 +238,23 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
 
       {/* Conversation */}
       <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4 bg-petal" aria-live="polite">
-        <Bubble role="assistant"><RichText text={WELCOME} onNavigate={close} /></Bubble>
-        {messages.length === 0 && (
+        <Bubble role="assistant"><RichText text={lang === 'wo' ? WELCOME_WO : WELCOME} onNavigate={close} /></Bubble>
+        {lang === 'wo' && messages.length === 0 && (
+          <div className="grid grid-cols-2 gap-2.5" data-testid="wolof-guide">
+            {WOLOF_GUIDE.map(g => {
+              const hasVoice = voices.includes(guideVoiceSlug(g.id));
+              return (
+                <button key={g.id} onClick={() => playTopic(g)} data-testid={`guide-${g.id}`}
+                  className={`relative p-3.5 rounded-3xl bg-white border text-left transition-all hover:shadow-soft ${playing === g.id ? 'border-gold ring-4 ring-gold/20' : 'border-ink/[0.07]'}`}>
+                  <span className="text-4xl leading-none block">{g.emoji}</span>
+                  <span className="block mt-2 text-[13px] font-semibold leading-tight">{g.wo}</span>
+                  {hasVoice && <span className={`absolute top-3 right-3 w-8 h-8 rounded-full grid place-items-center ${playing === g.id ? 'bg-gold text-white animate-pulse' : 'bg-ivory text-gold-dark'}`} aria-hidden><Volume2 className="w-4 h-4" /></span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {lang === 'fr' && messages.length === 0 && (
           <div className="flex flex-wrap gap-2 pl-1">
             {SUGGESTIONS.map(s => (
               <button key={s} onClick={() => ask(s)} className="px-3.5 py-2 rounded-full bg-white border border-ink/10 text-xs hover:border-gold hover:text-gold-dark transition-colors">{s}</button>
@@ -224,10 +275,11 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
 
       {/* Saisie */}
       <div className="border-t border-ink/10 bg-white px-3 pt-3 pb-2">
+        {lang === 'wo' && <div className="mb-2.5"><VoiceToWhatsApp lang="wo" /></div>}
         <form onSubmit={e => { e.preventDefault(); ask(input); }} className="flex items-end gap-2">
           <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)} rows={1} maxLength={1000}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input); } }}
-            placeholder="Posez votre question…" aria-label="Votre question"
+            placeholder={lang === 'wo' ? 'Walla bindal sa laaj…' : 'Posez votre question…'} aria-label={lang === 'wo' ? 'Sa laaj' : 'Votre question'}
             className="flex-1 resize-none max-h-28 px-4 py-3 rounded-2xl bg-ivory border border-ink/10 outline-none focus:border-gold text-sm" />
           <button type="submit" disabled={busy || !input.trim()} aria-label="Envoyer"
             className="w-11 h-11 rounded-full bg-ink text-ivory grid place-items-center disabled:opacity-30 hover:bg-gold-dark transition-colors shrink-0">
@@ -236,7 +288,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
         </form>
         <div className="flex items-center justify-between mt-2 px-1">
           <a href={handoff} target="_blank" rel="noopener noreferrer" className="text-[11px] text-ink/75 hover:text-[#177a41] inline-flex items-center gap-1.5">
-            <MessageCircle className="w-3.5 h-3.5" /> Parler à une conseillère
+            <MessageCircle className="w-3.5 h-3.5" /> {lang === 'wo' ? 'Wax ak nit ci WhatsApp' : 'Parler à une conseillère'}
           </a>
           <span className="text-[10px] text-ink/70">{mode === 'ia' ? 'IA · peut se tromper' : ''}</span>
         </div>
