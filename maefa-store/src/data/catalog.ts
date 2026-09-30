@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 18;
+export const CATALOG_VERSION = 19;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -93,6 +93,29 @@ const ndella = (color: ColorOption, key: string, photos: number, video = true) =
   isNew: true,
   isBestseller: true,
   createdAt: '2026-09-29T10:00:00Z',
+});
+
+/** Sac Aminata : cabas souple aspect cuir grainé, double zip, breloque dorée, bandoulière amovible. */
+const aminata = (color: ColorOption, key: string) => p({
+  slug: `sac-aminata-${key}`,
+  name: `Sac Aminata — ${color.name}`,
+  category: 'sacs',
+  subcategory: 'Sacs cabas',
+  occasions: ['bureau', 'quotidien', 'ceremonie'],
+  material: 'Aspect cuir grainé, intérieur contrasté, fermeture à double zip, breloque en métal doré',
+  care: 'Essuyer avec un chiffon doux et sec, éviter l\'eau et la chaleur, ranger rembourré pour garder sa forme.',
+  styleTip: 'Au creux du bras pour le bureau, en bandoulière le week-end : un sac qui va avec tout.',
+  price: 17000,
+  images: media(`sac-aminata-${key}`, 1),
+  colors: [color],
+  sizes: [],
+  stock: STOCK,
+  description: `Le sac Aminata en ${color.name.toLowerCase()} : un cabas souple et spacieux à l'aspect cuir grainé, fermé par un double zip, avec une breloque dorée, deux anses et une bandoulière amovible.`,
+  details: ['Sac cabas souple', `Couleur : ${color.name}`, 'Aspect cuir grainé', 'Fermeture à double zip', 'Deux anses et bandoulière amovible', 'Livré dans un emballage Maefa'],
+  rating: 0,
+  reviewCount: 0,
+  isNew: true,
+  createdAt: '2026-09-30T15:00:00Z',
 });
 
 /** Sac Diarra : sac à main structuré, fermoir tournant doré, breloque cœur et clés. */
@@ -340,6 +363,11 @@ export const ALL_PRODUCTS: Product[] = [
   diarra({ name: 'Chocolat', hex: '#4f2a22' }, 'chocolat'),
   diarra({ name: 'Camel', hex: '#b0876c' }, 'camel'),
   diarra({ name: 'Taupe rosé', hex: '#9e857f' }, 'taupe'),
+  aminata({ name: 'Taupe', hex: '#8c7a62' }, 'taupe'),
+  aminata({ name: 'Cognac', hex: '#7a4a2c' }, 'cognac'),
+  aminata(COLORS.noir, 'noir'),
+  aminata({ name: 'Vert olive', hex: '#5a6b2c' }, 'vert-olive'),
+  aminata({ name: 'Prune', hex: '#6e2440' }, 'prune'),
 ];
 
 export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category));
