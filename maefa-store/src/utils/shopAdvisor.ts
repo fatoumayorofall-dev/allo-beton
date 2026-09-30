@@ -9,7 +9,7 @@ import { canBuy } from './stock';
 export type Lang = 'fr' | 'wo';
 export type Kind = 'sacs' | 'chaussures' | 'tout';
 export type ColorFamily = 'noir' | 'marron' | 'clair' | 'rouge' | 'dore' | 'vif' | 'tout';
-export type Budget = 16000 | 20000 | 0;
+export type Budget = number;
 
 export interface Wishes {
   kind?: Kind;

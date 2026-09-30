@@ -8,11 +8,11 @@ import { formatDay, upcomingFetes } from '../utils/fetes';
 import { FAQ_ITEMS } from '../data/faq';
 import type { Product } from '../data/types';
 import { getServerStatus, listVoices, streamChat, voiceUrl, type ChatTurn } from '../services/api';
-import { WOLOF_GUIDE, guideVoiceSlug, wolofLocalAnswer, type GuideTopic } from '../data/wolofGuide';
+import { WOLOF_GUIDE, guideVoiceSlug, type GuideTopic } from '../data/wolofGuide';
 import { VoiceToWhatsApp } from './VoiceToWhatsApp';
 import { ShopAdvisor } from './ShopAdvisor';
 import { ADVISOR_TEXT } from '../utils/shopAdvisor';
-import { localAnswer } from '../utils/localAssistant';
+import { newBrainState, reply as brainReply, type BrainState } from '../assistant/brain';
 import { formatPrice } from '../utils/format';
 import { useEscape } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
@@ -97,6 +97,12 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
   const player = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState<string | null>(null);
   const [advisor, setAdvisor] = useState(false);
+  // Mémoire de la conversation de Maé (sans IA payante) : souhaits, pointure, pièces montrées
+  const brain = useRef<BrainState>((() => {
+    try { const b = JSON.parse(sessionStorage.getItem('maefa_brain') || 'null'); if (b?.wishes) return b; } catch { /* ignore */ }
+    let size: string | undefined; try { size = localStorage.getItem('maefa_pointure') ?? undefined; } catch { /* ignore */ }
+    return newBrainState(lang, size);
+  })());
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
@@ -148,7 +154,13 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
     const status = await getServerStatus();
     const answerLocally = () => {
       setMode('local');
-      setMessages([...history, { role: 'assistant', content: lang === 'wo' ? wolofLocalAnswer(q) : localAnswer(q, { products, orders }) }]);
+      const r = brainReply(q, brain.current, { products, orders, lang });
+      brain.current = r.state;
+      try {
+        sessionStorage.setItem('maefa_brain', JSON.stringify(r.state));
+        if (r.state.wishes.size) localStorage.setItem('maefa_pointure', r.state.wishes.size);
+      } catch { /* ignore */ }
+      setMessages([...history, { role: 'assistant', content: r.text, chips: r.chips }]);
     };
     if (!status.assistant) { answerLocally(); setBusy(false); return; }
 
@@ -228,7 +240,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
           <p className="font-display text-xl leading-none">Maé</p>
           <p className="text-[11px] text-ivory/60 mt-1 flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${mode === 'ia' ? 'bg-emerald-400' : 'bg-gold-light'}`} />
-            {lang === 'wo' ? (mode === 'ia' ? 'IA · mu ngi tontu léegi' : 'Tontu yu gaaw') : mode === 'ia' ? 'Conseillère IA · répond en direct' : mode === 'local' ? 'Réponses rapides' : 'Conseillère Maefa'}
+            {lang === 'wo' ? (mode === 'ia' ? 'IA · mu ngi tontu léegi' : 'Tontu yu gaaw') : mode === 'ia' ? 'Conseillère IA · répond en direct' : mode === 'local' ? 'Répond tout de suite' : 'Conseillère Maefa'}
           </p>
         </div>
         <div className="flex rounded-full bg-ivory/10 p-0.5 text-[11px] font-semibold" role="group" aria-label="Langue / Làkk">
@@ -240,7 +252,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
           ))}
         </div>
         {(messages.length > 0 || advisor) && (
-          <button onClick={() => { abortRef.current?.abort(); setMessages([]); setAdvisor(false); }} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="w-9 h-9 grid place-items-center rounded-full hover:bg-ivory/10"><RotateCcw className="w-4 h-4" /></button>
+          <button onClick={() => { abortRef.current?.abort(); setMessages([]); setAdvisor(false); brain.current = newBrainState(lang, brain.current.wishes.size); try { sessionStorage.removeItem('maefa_brain'); } catch { /* ignore */ } }} aria-label="Nouvelle conversation" title="Nouvelle conversation" className="w-9 h-9 grid place-items-center rounded-full hover:bg-ivory/10"><RotateCcw className="w-4 h-4" /></button>
         )}
         <button onClick={close} aria-label="Fermer l'assistante" className="w-9 h-9 grid place-items-center rounded-full hover:bg-ivory/10"><X className="w-5 h-5" /></button>
       </header>
@@ -286,6 +298,13 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
                 : m.role === 'assistant' ? <RichText text={m.content.replace(/\[\[pointure:\d*\]?\]?/g, '')} onNavigate={close} /> : m.content}
             </Bubble>
             {m.role === 'assistant' && m.content && <div className="pl-1"><CitedProducts text={m.content} getProduct={getProduct} onNavigate={close} /></div>}
+            {m.role === 'assistant' && i === messages.length - 1 && !busy && !!m.chips?.length && (
+              <div className="flex flex-wrap gap-2 pl-1 mt-2.5" data-testid="chips">
+                {m.chips.map(c => (
+                  <button key={c} onClick={() => ask(c)} className="px-3.5 min-h-10 rounded-full bg-white border border-ink/15 text-[13px] font-medium hover:border-gold hover:bg-blush/30 transition-colors">{c}</button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>

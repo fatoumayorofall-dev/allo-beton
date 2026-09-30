@@ -37,7 +37,12 @@ export function getServerStatus(): Promise<ServerStatus> {
   return statusPromise;
 }
 
-export interface ChatTurn { role: 'user' | 'assistant'; content: string }
+export interface ChatTurn {
+  role: 'user' | 'assistant';
+  content: string;
+  /** Réponses toutes prêtes proposées en boutons (Maé sans IA payante) */
+  chips?: string[];
+}
 
 export interface ChatPayload {
   messages: ChatTurn[];

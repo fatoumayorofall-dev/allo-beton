@@ -12,6 +12,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SCENARIOS } from './scenarios.mjs';
+import { INTENT_EXAM, SLOT_EXAM, CONVERSATIONS } from './examen.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(here, '.bundle.mjs');
@@ -21,6 +22,7 @@ const products = M.products;
 const bySlug = new Map(products.map(p => [p.slug, p]));
 
 let pass = 0, fail = 0;
+const report = [`# Rapport des tests de Maé\n\n_${new Date().toLocaleString('fr-FR')}_\n\n## Conversations de Maé (gratuite, sans IA payante)\n`];
 const lines = [];
 const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; lines.push(`${cond ? 'OK  ' : 'FAIL'} ${name}${extra ? ` — ${extra}` : ''}`); };
 
@@ -56,9 +58,61 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; lines.push(`${c
 }
 
 /* ================================================================== */
+/*  1 bis. Maé gratuite : examen de compréhension et conversations      */
+/* ================================================================== */
+{
+  // Intentions sur des phrases jamais apprises
+  let good = 0; const missed = [];
+  for (const [text, want] of INTENT_EXAM) {
+    const got = M.understand(text).intent;
+    if (got === want) good++; else missed.push(`« ${text} » → ${got} (attendu ${want})`);
+  }
+  const score = Math.round((good / INTENT_EXAM.length) * 100);
+  ok(`examen : ${good}/${INTENT_EXAM.length} phrases comprises (${score} %)`, score >= 90, missed.slice(0, 8).join(' ; '));
+  // Détails repérés
+  for (const [text, want] of SLOT_EXAM) {
+    const got = M.extractSlots(text, products);
+    const bad = Object.entries(want).filter(([k, v]) => got[k] !== v);
+    ok(`détails : « ${text} »`, !bad.length, bad.map(([k, v]) => `${k}=${got[k]} au lieu de ${v}`).join(', '));
+  }
+  // Langue
+  ok('langue : wolof reconnu', M.detectLang('dama bëgg sac bu rafet') === 'wo' && M.detectLang('naka laay fey') === 'wo');
+  ok('langue : français reconnu', M.detectLang('je cherche un sac pour le bureau') === 'fr');
+  // Conversations complètes
+  const WOLOF = /\b(nga|ngi|dafa|am na|ak|ci|la|yi|bi|dinañu|mën|xoolal|tànnal|ban|bësal|lañu)\b/gi;
+  for (const conv of CONVERSATIONS) {
+    let state = M.newBrainState(conv.lang);
+    let prevPrices = [], prevIds = [];
+    conv.turns.forEach(([said, e], i) => {
+      const r = M.reply(said, state, { products, orders: [], lang: conv.lang });
+      state = r.state;
+      const name = `conversation ${conv.id} · ${i + 1} « ${said} »`;
+      const slugs = [...r.text.matchAll(/\(\/produit\/([a-z0-9-]+)\)/g)].map(m => m[1]);
+      const items = slugs.map(sl => bySlug.get(sl)).filter(Boolean);
+      const bad = [];
+      if (e.intent && r.intent !== e.intent) bad.push(`intention ${r.intent}`);
+      if (e.chips && !r.chips.length) bad.push('pas de boutons');
+      if (e.ask && state.pending !== e.ask) bad.push(`question ${state.pending ?? 'aucune'} au lieu de ${e.ask}`);
+      if (e.products && !items.length) bad.push('aucune pièce');
+      if (e.noProducts && items.length) bad.push('pièces proposées à tort');
+      if (e.category && items.some(p => p.category !== e.category)) bad.push('mauvaise catégorie');
+      if (e.size && items.some(p => !p.sizes.includes(e.size))) bad.push(`pas en ${e.size}`);
+      if (e.maxPrice && items.some(p => p.price > e.maxPrice)) bad.push('budget dépassé');
+      if (e.cheaper && !(items.length ? Math.max(...items.map(p => p.price)) < Math.min(...prevPrices) : /plus doux|gën a yomb/.test(r.text))) bad.push('pas moins cher');
+      if (e.fresh && items.some(p => prevIds.includes(p.id))) bad.push('mêmes pièces');
+      if (e.mentions && !e.mentions.test(r.text)) bad.push(`ne dit pas ${e.mentions}`);
+      if (e.wolof && (r.text.match(WOLOF) || []).length < 3) bad.push('pas en wolof');
+      if (slugs.some(sl => !bySlug.has(sl))) bad.push('lien vers une pièce inexistante');
+      ok(name, !bad.length, bad.join(', '));
+      report.push(`**Cliente :** ${said}\n\n**Maé :** ${r.text}${r.chips.length ? `\n\n_Boutons : ${r.chips.join(' · ')}_` : ''}\n`);
+      if (items.length) { prevPrices = items.map(p => p.price); prevIds = items.map(p => p.id); }
+    });
+  }
+}
+
+/* ================================================================== */
 /*  2. Conversations avec l'IA                                         */
 /* ================================================================== */
-const report = [`# Rapport des tests de Maé\n\n_${new Date().toLocaleString('fr-FR')}_\n`];
 const offline = process.argv.includes('--offline');
 const hasKey = !!(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN);
 
