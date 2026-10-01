@@ -69,11 +69,13 @@ export function locatePrecisely({ target = 12, maxMs = 25000, onProgress }: Loca
     const id = navigator.geolocation.watchPosition(
       pos => {
         if (done) return;
-        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+        const { latitude: lat, longitude: lng } = pos.coords;
+        // Précision absente ou nulle (rare) : on suppose 30 m plutôt que d'ignorer la position
+        const accuracy = pos.coords.accuracy > 0 ? pos.coords.accuracy : 30;
         // maximumAge: 0 demande déjà une mesure fraîche ; l'heure donnée par certains GPS est décalée,
         // donc on n'écarte que les mesures vraiment anciennes (plus de 2 minutes)
         if (pos.timestamp && pos.timestamp < start - 120000) return;
-        if (!Number.isFinite(lat) || !Number.isFinite(lng) || !(accuracy > 0)) return;
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
         fixes.push({ lat, lng, accuracy, at: Date.now() });
         const r = combine(fixes)!;
         onProgress?.(r, Date.now() - start);
@@ -114,7 +116,7 @@ export function makeTrackFilter({ maxSpeed = 40, maxAccuracy = 80 } = {}) {
   let rejected = 0;
   const reject = () => { rejected += 1; return null; };
   return (f: Fix): Fix | null => {
-    if (!(f.accuracy > 0)) return null;
+    if (!(f.accuracy > 0)) f = { ...f, accuracy: 30 };
     if (!last || (rejected >= 2 && f.accuracy <= maxAccuracy)) {
       if (!last && f.accuracy > maxAccuracy * 3) return null;
       last = f; rejected = 0; return f;

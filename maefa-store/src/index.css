@@ -184,6 +184,23 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
   display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: #fff; border: 2px solid #b03a64;
   font-size: 18px; box-shadow: 0 4px 12px rgba(58,31,45,.25);
 }
+/* Épingle centrale du choix d'adresse (façon Yango) : la pointe est exactement au centre de la carte */
+.maefa-cpin { position: absolute; left: 50%; top: 50%; z-index: 500; pointer-events: none; width: 0; height: 0; }
+.maefa-cpin-head {
+  position: absolute; left: -19px; top: -66px; width: 38px; height: 38px; border-radius: 9999px; display: grid; place-items: center;
+  background: linear-gradient(180deg, #c2477a, #8e2a54); box-shadow: 0 8px 18px -6px rgba(58,31,45,.6), inset 0 1px 0 rgba(255,255,255,.35);
+  transition: transform .28s cubic-bezier(.22,1,.36,1);
+}
+.maefa-cpin-eye { width: 12px; height: 12px; border-radius: 9999px; background: #fff; }
+.maefa-cpin-stick { position: absolute; left: -1.5px; top: -30px; width: 3px; height: 28px; border-radius: 2px; background: #3a1f2d; transition: transform .28s cubic-bezier(.22,1,.36,1); }
+.maefa-cpin-shadow { position: absolute; left: -7px; top: -3px; width: 14px; height: 6px; border-radius: 50%; background: rgba(43,18,32,.45); filter: blur(1px); transition: transform .28s, opacity .28s; }
+.maefa-cpin.is-lifted .maefa-cpin-head, .maefa-cpin.is-lifted .maefa-cpin-stick { transform: translateY(-16px); }
+.maefa-cpin.is-lifted .maefa-cpin-shadow { transform: scale(.6); opacity: .5; }
+.maefa-cpin.is-down .maefa-cpin-head, .maefa-cpin.is-down .maefa-cpin-stick { animation: cpin-drop .42s cubic-bezier(.3,1.6,.5,1); }
+@keyframes cpin-drop { 0% { transform: translateY(-16px); } 60% { transform: translateY(2px); } 100% { transform: none; } }
+.maefa-me { position: relative; display: grid; place-items: center; width: 28px; height: 28px; }
+.maefa-me-dot { position: relative; width: 16px; height: 16px; border-radius: 9999px; background: #2f7bff; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,40,120,.45); }
+.maefa-me-pulse { position: absolute; inset: 0; border-radius: 9999px; background: rgba(47,123,255,.3); animation: pin-pulse 2s ease-out infinite; }
 .leaflet-container { font-family: inherit; }
 .leaflet-control-attribution { font-size: 9px; }
 

@@ -20,13 +20,15 @@ const SAT_ATTRIBUTION = 'Imagerie © <a href="https://www.esri.com">Esri</a>, Ma
 export interface LatLng { lat: number; lng: number }
 export interface MapMarker extends LatLng {
   id: string;
-  kind: 'home' | 'driver' | 'shop' | 'relay';
+  kind: 'home' | 'driver' | 'shop' | 'relay' | 'me';
   label?: string;
   /** Emoji du véhicule du livreur (🛵 par défaut) */
   icon?: string;
 }
 
 const ICONS: Record<MapMarker['kind'], (m: MapMarker) => L.DivIcon> = {
+  // « Vous êtes ici » : point bleu qui pulse (comme dans les applis de VTC)
+  me: () => L.divIcon({ className: 'maefa-pin', iconSize: [28, 28], iconAnchor: [14, 14], html: '<span class="maefa-me"><span class="maefa-me-pulse"></span><span class="maefa-me-dot"></span></span>' }),
   home: () => L.divIcon({
     className: 'maefa-pin', iconSize: [44, 52], iconAnchor: [22, 50],
     html: '<span class="maefa-pin-home"><span>🏠</span></span>',
@@ -56,6 +58,12 @@ interface Props {
   onCenterChange?: (c: LatLng, byUser: boolean) => void;
   /** Chemin par les rues ([lat, lng]…) dessiné entre le livreur et l'arrivée */
   path?: [number, number][] | null;
+  /** Boutons + / − (par défaut si la carte est interactive) */
+  zoomButtons?: boolean;
+  /** Épingle centrale soulevée (pendant que la carte bouge) */
+  pinLifted?: boolean;
+  /** La cliente commence à faire glisser la carte */
+  onMoveStart?: () => void;
   /** Vue satellite au lieu du plan */
   satellite?: boolean;
   /** Recadrer automatiquement sur tous les marqueurs */
@@ -79,7 +87,7 @@ function glide(marker: L.Marker, to: L.LatLng) {
   requestAnimationFrame(step);
 }
 
-export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, satellite = false, interactive = true, className = '', children }) => {
+export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, satellite = false, pinLifted = false, onMoveStart, zoomButtons, interactive = true, className = '', children }) => {
   const base = useRef<{ plan: L.TileLayer; sat: L.LayerGroup } | null>(null);
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -88,6 +96,8 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
   const pathRef = useRef<L.Polyline[]>([]);
   const onChange = useRef(onCenterChange);
   onChange.current = onCenterChange;
+  const onStart = useRef(onMoveStart);
+  onStart.current = onMoveStart;
   // vrai seulement quand la cliente fait glisser la carte (les déplacements faits par le code ne comptent pas)
   const dragging = useRef(false);
   const fitted = useRef(false);
@@ -95,7 +105,7 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
   useEffect(() => {
     if (!el.current) return;
     const m = L.map(el.current, {
-      center: [center.lat, center.lng], zoom, zoomControl: interactive, attributionControl: true,
+      center: [center.lat, center.lng], zoom, zoomControl: zoomButtons ?? interactive, attributionControl: true,
       // avec l'épingle au centre, le zoom garde le même point sous l'épingle
       dragging: interactive, touchZoom: interactive ? (pinCenter ? 'center' : true) : false, scrollWheelZoom: interactive ? (pinCenter ? 'center' : true) : false, doubleClickZoom: interactive, boxZoom: false, keyboard: interactive,
     });
@@ -107,7 +117,8 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     (satellite ? sat : plan).addTo(m);
     base.current = { plan, sat };
     m.attributionControl.setPrefix(false);
-    m.on('dragstart', () => { dragging.current = true; });
+    m.on('dragstart', () => { dragging.current = true; onStart.current?.(); });
+    m.on('zoomstart', () => { if (pinCenter) onStart.current?.(); });
     m.on('moveend', () => {
       const c = m.getCenter();
       onChange.current?.({ lat: c.lat, lng: c.lng }, dragging.current);
@@ -195,9 +206,11 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     <div className={`relative isolate overflow-hidden ${className}`}>
       <div ref={el} className="absolute inset-0 bg-[#efe9e3]" role="application" aria-label="Carte" />
       {pinCenter && (
-        <div className="pointer-events-none absolute left-1/2 top-1/2 z-[500] -translate-x-1/2 -translate-y-full" aria-hidden>
-          <span className="maefa-pin-home maefa-pin-lift"><span>🏠</span></span>
-          <span className="block mx-auto w-2 h-2 rounded-full bg-ink/40 blur-[1px] -mt-0.5" />
+        // Épingle « sucette » : se soulève pendant le déplacement, retombe avec un petit rebond à l'arrêt
+        <div className={`maefa-cpin ${pinLifted ? 'is-lifted' : 'is-down'}`} aria-hidden data-testid="center-pin">
+          <span className="maefa-cpin-head"><span className="maefa-cpin-eye" /></span>
+          <span className="maefa-cpin-stick" />
+          <span className="maefa-cpin-shadow" />
         </div>
       )}
       {children}
