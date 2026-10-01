@@ -3,6 +3,7 @@ import { Crosshair, Loader2, MapPin, Search, Volume2, X } from 'lucide-react';
 import type { DeliveryLocation } from '../data/types';
 import { reverseGeocode, searchPlaces, type PlaceResult } from '../services/api';
 import { speak } from '../utils/speak';
+import { locatePrecisely, type LocateHandle, type PreciseResult } from '../utils/preciseGps';
 import type { LatLng } from './MapView';
 
 const MapView = lazy(() => import('./MapView'));
@@ -33,6 +34,10 @@ const HELP = 'Pour la livraison, touchez le gros bouton « Je suis ici » : nous
 export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter, error }) => {
   const [center, setCenter] = useState<LatLng>(value ?? initialCenter);
   const [gps, setGps] = useState<'idle' | 'locating' | 'denied' | 'error'>('idle');
+  // Mesure en cours : précision atteinte et temps écoulé (le GPS s'affine en quelques secondes)
+  const [progress, setProgress] = useState<{ accuracy: number; ms: number } | null>(null);
+  const locating = useRef<LocateHandle | null>(null);
+  const [satellite, setSatellite] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PlaceResult[] | null>(null);
@@ -59,18 +64,37 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
 
   const locate = () => {
     if (!('geolocation' in navigator)) { setGps('error'); return; }
+    locating.current?.cancel();
     setGps('locating');
-    navigator.geolocation.getCurrentPosition(
-      pos => {
-        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setGps('idle');
-        setCenter(p);
-        commit(p, 'gps', { accuracy: Math.round(pos.coords.accuracy) });
+    setProgress(null);
+    let shown = false;
+    const show = (r: PreciseResult) => {
+      const p = { lat: r.lat, lng: r.lng };
+      setCenter(p);
+      commit(p, 'gps', { accuracy: r.accuracy });
+    };
+    const h = locatePrecisely({
+      target: 12,
+      maxMs: 25000,
+      onProgress: (r, ms) => {
+        setProgress({ accuracy: r.accuracy, ms });
+        // On montre tout de suite un premier point sur la carte, puis on l'affine
+        if (!shown || r.accuracy <= 60) { shown = true; show(r); }
       },
-      err => setGps(err.code === err.PERMISSION_DENIED ? 'denied' : 'error'),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
+    });
+    locating.current = h;
+    h.promise.then(
+      r => { if (locating.current !== h) return; locating.current = null; setGps('idle'); setProgress(null); show(r); },
+      err => {
+        if (locating.current !== h) return;
+        locating.current = null;
+        setProgress(null);
+        if (err?.code === 0) { setGps('idle'); return; }
+        setGps(err?.code === 1 ? 'denied' : 'error');
+      },
     );
   };
+  useEffect(() => () => locating.current?.cancel(), []);
 
   // Recherche au fil de la frappe
   useEffect(() => {
@@ -98,6 +122,7 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
 
   const onMapMove = (c: LatLng, byUser: boolean) => {
     if (!byUser) return;
+    if (locating.current) { locating.current.cancel(); locating.current = null; setGps('idle'); setProgress(null); }
     commit(c, 'carte');
   };
 
@@ -120,10 +145,22 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
           {gps === 'locating' ? <Loader2 className="w-6 h-6 animate-spin" /> : <Crosshair className="w-6 h-6" strokeWidth={1.3} />}
         </span>
         <span>
-          <strong className="block font-display font-normal text-xl leading-tight">{gps === 'locating' ? 'Recherche de votre position…' : 'Je suis ici, livrez-moi ici'}</strong>
-          <span className="text-[13px] text-ivory/70">Le GPS de votre téléphone trouve votre maison</span>
+          <strong className="block font-display font-normal text-xl leading-tight">{gps === 'locating' ? (progress ? 'Le GPS s\'affine…' : 'Recherche de votre position…') : 'Je suis ici, livrez-moi ici'}</strong>
+          <span className="text-[13px] text-ivory/70">{gps === 'locating' && progress ? `Précision : ± ${progress.accuracy} m` : 'Le GPS de votre téléphone trouve votre maison'}</span>
         </span>
       </button>
+      {gps === 'locating' && (
+        <div className="p-3 rounded-2xl bg-white border border-ink/10 space-y-2" data-testid="gps-progress" aria-live="polite">
+          <div className="h-1.5 rounded-full bg-ink/10 overflow-hidden">
+            <div className="h-full rounded-full bg-gradient-to-r from-gold to-emerald-600 transition-all duration-700"
+              style={{ width: `${progress ? Math.min(100, Math.max(8, 100 * (1 - Math.log(Math.max(progress.accuracy, 12) / 12) / Math.log(200 / 12)))) : 5}%` }} />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-xs text-ink/75">
+            <span>Restez dehors ou près d'une fenêtre quelques secondes : la position devient plus précise.</span>
+            {progress && <button type="button" onClick={() => locating.current?.finish()} className="shrink-0 px-3 h-8 rounded-full bg-ink text-ivory text-[11px] font-semibold">C'est bon</button>}
+          </div>
+        </div>
+      )}
       {gps === 'denied' && (
         <p className="text-sm p-3 rounded-2xl bg-amber-50 text-amber-900">
           La localisation est bloquée. Autorisez-la dans votre navigateur (icône 🔒 à côté de l'adresse du site), ou cherchez votre quartier ci-dessous.
@@ -160,8 +197,12 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
       </div>
 
       <Suspense fallback={<div className="h-72 rounded-[1.5rem] bg-ivory-deep animate-pulse" />}>
-        <MapView center={center} zoom={value ? 17 : 13} pinCenter onCenterChange={onMapMove} circle={circle}
+        <MapView center={center} zoom={value ? 18 : 13} pinCenter onCenterChange={onMapMove} circle={circle} satellite={satellite}
           className={`h-72 sm:h-80 rounded-[1.5rem] border ${error ? 'border-wine' : 'border-ink/10'}`}>
+          <div className="absolute bottom-3 left-3 z-[500] inline-flex p-1 rounded-full bg-white/95 shadow-md text-[11px] font-semibold" role="group" aria-label="Fond de carte">
+            <button type="button" onClick={() => setSatellite(false)} aria-pressed={!satellite} className={`px-3 h-8 rounded-full ${!satellite ? 'bg-ink text-ivory' : 'text-ink/75'}`}>Plan</button>
+            <button type="button" onClick={() => setSatellite(true)} aria-pressed={satellite} data-testid="map-satellite" className={`px-3 h-8 rounded-full ${satellite ? 'bg-ink text-ivory' : 'text-ink/75'}`}>Satellite</button>
+          </div>
           {!value && (
             <p className="absolute top-3 left-3 right-3 z-[500] text-center text-xs px-3 py-2 rounded-full bg-white/95 shadow-sm pointer-events-none">
               Faites glisser la carte pour placer la maison sur votre porte
@@ -178,10 +219,10 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
               <p className="font-semibold">{value.label || (resolving ? 'Recherche de l\'adresse…' : 'Point choisi sur la carte')}</p>
               <p className="text-xs text-ink/70 mt-0.5">
                 {value.source === 'gps' ? `Position GPS${value.accuracy ? ` (précision ± ${value.accuracy} m)` : ''}` : value.source === 'recherche' ? 'Lieu trouvé' : 'Point placé à la main'}
-                {' · '}Faites glisser la carte pour corriger.
+                {' · '}Pour être exacte : touchez « Satellite » et mettez l'épingle sur votre toit.
               </p>
-              {value.source === 'gps' && (value.accuracy ?? 0) > 150 && (
-                <p className="text-xs text-amber-800 mt-1">Le GPS n'est pas très précis ici : vérifiez que la maison est bien sur votre porte.</p>
+              {value.source === 'gps' && (value.accuracy ?? 0) > 50 && gps !== 'locating' && (
+                <p className="text-xs text-amber-800 mt-1">Le GPS n'est pas très précis ici : touchez « Satellite » et faites glisser la carte pour mettre l'épingle sur votre maison.</p>
               )}
             </>
           ) : (

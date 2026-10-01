@@ -8,6 +8,7 @@ import { usePageTitle } from '../utils/usePageTitle';
 import { waNumber } from '../utils/whatsappMessages';
 import type { MapMarker } from '../components/MapView';
 import { BrandMark, Wordmark } from '../components/Logo';
+import { makeTrackFilter } from '../utils/preciseGps';
 
 const MapView = lazy(() => import('../components/MapView'));
 
@@ -83,15 +84,19 @@ export const Driver: React.FC = () => {
 
   useEffect(() => {
     if (!driving || !('geolocation' in navigator)) return;
+    // Positions trop imprécises ou sauts impossibles écartés, tracé légèrement lissé
+    const filter = makeTrackFilter();
     const id = navigator.geolocation.watchPosition(
       pos => {
-        const fix = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, heading: pos.coords.heading, speed: pos.coords.speed };
+        const f = filter({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, at: Date.now() });
+        if (!f) return;
+        const fix = { lat: +f.lat.toFixed(6), lng: +f.lng.toFixed(6), accuracy: Math.round(f.accuracy), heading: pos.coords.heading, speed: pos.coords.speed };
         setMe(fix);
         setGpsError('');
         send(fix);
       },
       err => setGpsError(err.code === err.PERMISSION_DENIED ? 'Autorisez la localisation pour que la cliente vous voie sur la carte.' : 'Signal GPS faible…'),
-      { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
     );
     const t = setInterval(() => tick(n => n + 1), 5000);
     return () => { navigator.geolocation.clearWatch(id); clearInterval(t); };
@@ -108,7 +113,7 @@ export const Driver: React.FC = () => {
     navigator.geolocation.getCurrentPosition(
       pos => go({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy, heading: pos.coords.heading, speed: pos.coords.speed }),
       () => go(),
-      { enableHighAccuracy: true, timeout: 10000 },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 },
     );
   };
 

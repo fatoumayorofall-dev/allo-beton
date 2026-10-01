@@ -8,6 +8,14 @@ import 'leaflet/dist/leaflet.css';
  */
 const TILES = (import.meta.env.VITE_MAP_TILES as string | undefined) || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = (import.meta.env.VITE_MAP_ATTRIBUTION as string | undefined) || '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+/**
+ * Vue satellite (Esri World Imagery) + noms des rues et des lieux par-dessus : la cliente voit les toits
+ * et pose l'épingle exactement sur sa maison. Remplaçable par VITE_MAP_SATELLITE (ex. MapTiler avec clé).
+ */
+const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services';
+const SAT_TILES = (import.meta.env.VITE_MAP_SATELLITE as string | undefined) || `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`;
+const SAT_LABELS = [`${ESRI}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`, `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`];
+const SAT_ATTRIBUTION = 'Imagerie © <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics';
 
 export interface LatLng { lat: number; lng: number }
 export interface MapMarker extends LatLng {
@@ -48,6 +56,8 @@ interface Props {
   onCenterChange?: (c: LatLng, byUser: boolean) => void;
   /** Chemin par les rues ([lat, lng]…) dessiné entre le livreur et l'arrivée */
   path?: [number, number][] | null;
+  /** Vue satellite au lieu du plan */
+  satellite?: boolean;
   /** Recadrer automatiquement sur tous les marqueurs */
   fitMarkers?: boolean;
   interactive?: boolean;
@@ -69,7 +79,8 @@ function glide(marker: L.Marker, to: L.LatLng) {
   requestAnimationFrame(step);
 }
 
-export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, interactive = true, className = '', children }) => {
+export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, satellite = false, interactive = true, className = '', children }) => {
+  const base = useRef<{ plan: L.TileLayer; sat: L.LayerGroup } | null>(null);
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layers = useRef(new Map<string, L.Marker>());
@@ -88,7 +99,13 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
       // avec l'épingle au centre, le zoom garde le même point sous l'épingle
       dragging: interactive, touchZoom: interactive ? (pinCenter ? 'center' : true) : false, scrollWheelZoom: interactive ? (pinCenter ? 'center' : true) : false, doubleClickZoom: interactive, boxZoom: false, keyboard: interactive,
     });
-    L.tileLayer(TILES, { maxZoom: 19, attribution: ATTRIBUTION, crossOrigin: true }).addTo(m);
+    const plan = L.tileLayer(TILES, { maxZoom: 20, maxNativeZoom: 19, attribution: ATTRIBUTION, crossOrigin: true });
+    const sat = L.layerGroup([
+      L.tileLayer(SAT_TILES, { maxZoom: 20, maxNativeZoom: 19, attribution: SAT_ATTRIBUTION, crossOrigin: true }),
+      ...(import.meta.env.VITE_MAP_SATELLITE ? [] : SAT_LABELS.map(u => L.tileLayer(u, { maxZoom: 20, maxNativeZoom: 19, crossOrigin: true }))),
+    ]);
+    (satellite ? sat : plan).addTo(m);
+    base.current = { plan, sat };
     m.attributionControl.setPrefix(false);
     m.on('dragstart', () => { dragging.current = true; });
     m.on('moveend', () => {
@@ -100,8 +117,17 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     // La carte peut apparaître dans un bloc qui change de taille (formulaire, fenêtre)
     const ro = new ResizeObserver(() => m.invalidateSize());
     ro.observe(el.current);
-    return () => { ro.disconnect(); m.remove(); map.current = null; layers.current.clear(); circleRef.current = null; pathRef.current = []; fitted.current = false; };
+    return () => { ro.disconnect(); m.remove(); map.current = null; base.current = null; layers.current.clear(); circleRef.current = null; pathRef.current = []; fitted.current = false; };
   }, []); // la carte est créée une seule fois
+
+  // Plan ↔ satellite
+  useEffect(() => {
+    const m = map.current, b = base.current;
+    if (!m || !b) return;
+    const [on, off] = satellite ? [b.sat, b.plan] : [b.plan, b.sat];
+    if (m.hasLayer(off)) m.removeLayer(off);
+    if (!m.hasLayer(on)) on.addTo(m);
+  }, [satellite]);
 
   // Recentrer quand le centre change depuis le code
   useEffect(() => {
