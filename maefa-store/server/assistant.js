@@ -45,7 +45,7 @@ const clip = (s, n) => String(s ?? '').slice(0, n);
 function buildShopContext(shop, products) {
   const safeShop = {
     telephone: clip(shop?.phone, 40), whatsapp: clip(shop?.whatsapp, 40), adresse: clip(shop?.address, 120), horaires: shop?.hours,
-    livraison_offerte_des: shop?.freeShippingThreshold, emballage_cadeau: shop?.giftWrapFee,
+    emballage_cadeau: shop?.giftWrapFee,
     zones_livraison: (shop?.zones || []).slice(0, 20).map(z => ({ zone: clip(z.name, 60), frais: z.fee, delai: clip(z.delay, 20) })),
     codes_promo: Object.fromEntries(Object.entries(shop?.promos || {}).slice(0, 10).map(([k, v]) => [clip(k, 20), clip(v?.label, 80)])),
     politiques: (shop?.faq || []).slice(0, 15).map(f => ({ q: clip(f.q, 160), r: clip(f.a, 500) })),

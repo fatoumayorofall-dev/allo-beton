@@ -9,8 +9,6 @@ import type { CategoryId, Product } from '../data/types';
 import { ProductCard } from '../components/ProductCard';
 import { ColorSwatch } from '../components/ColorSwatch';
 import { usePageTitle } from '../utils/usePageTitle';
-import { formatPrice } from '../utils/format';
-import { SITE_CONFIG } from '../config/site';
 import { ProductImage } from '../components/ProductImage';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { GoldDust } from '../components/Magic';
@@ -252,7 +250,7 @@ export const Catalog: React.FC = () => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-10">{marketMore.slice(0, 4).map(p => <MarketCard key={p.id} product={p} />)}</div>
               </section>
             )}
-            <p className="text-[11px] text-ink/70 mt-12 text-center">Prix en FCFA, TTC · Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</p>
+            <p className="text-[11px] text-ink/70 mt-12 text-center">Prix en FCFA, TTC · Livraison selon votre quartier</p>
           </div>
         </div>
       </div>

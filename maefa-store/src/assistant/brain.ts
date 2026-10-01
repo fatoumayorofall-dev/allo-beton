@@ -191,15 +191,6 @@ function feteNudge(state: BrainState): string {
     `🌙 ${f.name} ci ${n} fan : jëndal balaa **${formatDay(orderBy(f.date))}** ngir mu agsi ci jamono ci Dakar.`);
 }
 
-/** Livraison offerte : ce qu'il manque dans le panier. */
-function shippingNudge(state: BrainState, cartTotal = 0): string {
-  const gap = SITE_CONFIG.freeShippingThreshold - cartTotal;
-  if (cartTotal <= 0 || gap <= 0 || gap > 30000) return '';
-  return L(state.lang,
-    `🚚 Avec votre panier, il ne manque que **${formatPrice(gap)}** pour la livraison offerte.`,
-    `🚚 Ci sa panier, **${formatPrice(gap)}** rekk moo des ngir yónnee bi bañ a fey.`);
-}
-
 /* ---------- Réponses boutique ---------- */
 
 function productsFor(products: Product[], state: BrainState, exclude: string[] = []) {
@@ -214,7 +205,7 @@ function productsFor(products: Product[], state: BrainState, exclude: string[] =
   return recommend(pool, { kind: w.kind ?? 'tout', occasion: w.occasion ?? 'tout', color: w.color ?? 'tout', budget: w.budget ?? 0, size: w.size || undefined });
 }
 
-function showProducts(products: Product[], state: BrainState, lead: { fr: string; wo: string } | null, exclude: string[] = [], cartTotal = 0): Pick<BrainReply, 'text' | 'chips'> {
+function showProducts(products: Product[], state: BrainState, lead: { fr: string; wo: string } | null, exclude: string[] = []): Pick<BrainReply, 'text' | 'chips'> {
   const lang = state.lang;
   const { items, exact } = productsFor(products, state, exclude);
   state.pending = undefined;
@@ -229,12 +220,12 @@ function showProducts(products: Product[], state: BrainState, lead: { fr: string
   state.shown.push(...items.map(p => p.id));
   const intro = exact ? (lead ? L(lang, lead.fr, lead.wo) : pick(state, INTROS[lang])) : L(lang, 'Je n\'ai pas exactement ça, mais regardez ces pièces qui s\'en approchent :', 'Amul lu dëppoo bu wér, waaye xoolal yii :');
   const lines = items.map(p => present(p, state.wishes, products, lang)).join('\n');
-  const extras = [crossSell(items, products, state), feteNudge(state), shippingNudge(state, cartTotal), pick(state, BENEFITS[lang])].filter(Boolean).slice(0, 3).join('\n');
+  const extras = [crossSell(items, products, state), feteNudge(state), pick(state, BENEFITS[lang])].filter(Boolean).slice(0, 3).join('\n');
   const close = pick(state, CLOSES[lang]);
   return { text: `${intro}\n${lines}\n\n${extras}\n\n${close}`, chips: L(lang, '💸 Moins cher|🔄 Autres modèles|🛒 Comment commander ?', '💸 Lu gën a yomb|🔄 Yeneen|🛒 Naka laay jënde ?').split('|') };
 }
 
-function cherche(slots: Slots, products: Product[], state: BrainState, cartTotal = 0): Pick<BrainReply, 'text' | 'chips'> {
+function cherche(slots: Slots, products: Product[], state: BrainState): Pick<BrainReply, 'text' | 'chips'> {
   const w = state.wishes;
   if (slots.kind && slots.kind !== w.kind) { delete w.model; delete w.sub; }
   if (slots.kind) w.kind = slots.kind;
@@ -257,20 +248,19 @@ function cherche(slots: Slots, products: Product[], state: BrainState, cartTotal
   }
   const known = [w.occasion, w.color, w.budget].filter(x => x !== undefined).length;
   if (!known && !state.asked.includes('occasion')) return ask('occasion', state);
-  return showProducts(products, state, null, [], cartTotal);
+  return showProducts(products, state, null, []);
 }
 
 function livraison(slots: Slots, lang: Lang) {
-  const free = formatPrice(SITE_CONFIG.freeShippingThreshold);
   const zone = slots.zone && slots.zone !== 'Dakar' ? DELIVERY_ZONES.find(z => z.name === slots.zone) : null;
   if (zone && zone.name === 'Autres régions') return L(lang,
-    `Oui, nous livrons chez vous 🌸 Pour votre ville, la livraison coûte **${formatPrice(zone.fee)}** et prend **${zone.delay}**. Offerte dès ${free} d'achat 🛵`,
+    `Oui, nous livrons chez vous 🌸 Pour votre ville, la livraison coûte **${formatPrice(zone.fee)}** et prend **${zone.delay}**. 🛵`,
     `Waaw, dinañu la yónnee 🌸 Ci sa dëkk, yónnee bi **${formatPrice(zone.fee)}** la, te day am ci **${zone.delay}** 🛵`);
   if (zone) return L(lang,
-    `Pour **${zone.name}**, la livraison coûte **${formatPrice(zone.fee)}** et prend **${zone.delay}**. Elle est offerte dès ${free} d'achat 🛵`,
-    `Ci **${zone.name}**, yónnee bi **${formatPrice(zone.fee)}** la, te day am ci **${zone.delay}**. Bu sa commande tollee ${free}, yónnee bi amul fey 🛵`);
+    `Pour **${zone.name}**, la livraison coûte **${formatPrice(zone.fee)}** et prend **${zone.delay}**. 🛵`,
+    `Ci **${zone.name}**, yónnee bi **${formatPrice(zone.fee)}** la, te day am ci **${zone.delay}** 🛵`);
   return L(lang,
-    `Nous livrons partout au Sénégal : **24 h à Dakar** (1 500 à 2 000 FCFA selon le quartier), **48 h à 5 jours en régions**. Livraison offerte dès ${free}. Dites-moi votre ville, je vous donne le prix exact.`,
+    `Nous livrons partout au Sénégal : **24 h à Dakar** (1 500 à 2 000 FCFA selon le quartier), **48 h à 5 jours en régions**. Les frais s'ajoutent au prix des articles. Dites-moi votre ville, je vous donne le prix exact.`,
     `Dinañu yónnee fépp ci Senegaal : **24 waxtu ci Dakar** (1 500 ba 2 000 FCFA), **2 ba 5 fan ci diwaan yi**. Wax ma sa dëkk, ma wax la njëg bi.`);
 }
 
@@ -294,7 +284,6 @@ const NOT_SOLD = new RegExp(`\\b(${['bijou', 'bijoux', 'collier', 'colliers', 'b
 export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply {
   const state: BrainState = JSON.parse(JSON.stringify(prev));
   state.turn = (state.turn ?? 0) + 1;
-  const cartTotal = ctx.cartTotal ?? 0;
   const products = ctx.products;
   state.lang = detectLang(text) ?? ctx.lang ?? state.lang;
   const lang = state.lang;
@@ -345,9 +334,9 @@ export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply
     case 'qui': return out(L(lang,
       'Je suis **Maé**, la conseillère virtuelle de Maefa : un petit programme (pas une personne) qui connaît toutes nos pièces. Pour parler à l\'équipe, touchez « Parler à Maefa » 🌸',
       'Maa ngi tudd **Maé** : programme bu Maefa (du nit), xam naa sac yi ak dàll yi yépp. Ngir wax ak nit, bësal « Wax ak Maefa » 🌸'), [L(lang, '💬 Parler à Maefa', '💬 Wax ak Maefa')]);
-    case 'cherche': { const r = cherche(slots, products, state, cartTotal); return out(r.text, r.chips); }
+    case 'cherche': { const r = cherche(slots, products, state); return out(r.text, r.chips); }
     case 'autres': {
-      if (!state.wishes.kind && !state.shown.length) { const r = cherche(slots, products, state, cartTotal); return out(r.text, r.chips); }
+      if (!state.wishes.kind && !state.shown.length) { const r = cherche(slots, products, state); return out(r.text, r.chips); }
       delete state.wishes.model;
       // D'autres modèles (pas seulement d'autres couleurs des mêmes)
       const seenModels = new Set(state.shown.map(id => products.find(x => x.id === id)).filter((x): x is Product => !!x).map(modelOf));
@@ -488,7 +477,7 @@ export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply
     case 'nouveautes': {
       const w = state.wishes;
       state.wishes = { kind: w.kind ?? 'tout', size: w.size };
-      const r = showProducts(products, state, { fr: 'Nos dernières arrivées, choisies avec soin ✨', wo: 'Yu bees yi ñu indi ✨' }, [], cartTotal);
+      const r = showProducts(products, state, { fr: 'Nos dernières arrivées, choisies avec soin ✨', wo: 'Yu bees yi ñu indi ✨' }, []);
       return out(r.text, r.chips);
     }
     case 'gros': return out(L(lang,

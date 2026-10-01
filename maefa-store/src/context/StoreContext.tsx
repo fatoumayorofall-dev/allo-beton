@@ -325,8 +325,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     let discount = 0;
     if (promoActive && promo.percent) discount = Math.round((subtotal * promo.percent) / 100);
     if (promoActive && promo.amount) discount = Math.min(promo.amount, subtotal);
-    const freeShipping = (promoActive && promo.freeShipping) || subtotal - discount >= SITE_CONFIG.freeShippingThreshold;
-    const fee = freeShipping ? 0 : deliveryFee;
+    const fee = promoActive && promo.freeShipping ? 0 : deliveryFee;
     const giftFee = giftWrap.enabled && cart.length > 0 ? SITE_CONFIG.giftWrapFee : 0;
     return { subtotal, discount, deliveryFee: fee, giftFee, total: Math.max(0, subtotal - discount + fee + giftFee), itemCount, promoShortfall };
   }, [cart, promoCode, giftWrap.enabled]);

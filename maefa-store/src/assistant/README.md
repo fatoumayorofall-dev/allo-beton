@@ -55,8 +55,7 @@ phrase de la cliente
 ## Vente : règles d'honnêteté (testées automatiquement)
 
 Arguments autorisés, parce qu'ils sont vrais : paiement en espèces à la livraison, vérification devant le livreur,
-24 h à Dakar, vraie équipe sur WhatsApp, pièce assortie pour compléter le look, vraies dates des fêtes, montant
-manquant pour la livraison offerte.
+24 h à Dakar, vraie équipe sur WhatsApp, pièce assortie pour compléter le look, vraies dates des fêtes.
 
 Interdits : fausse rareté (« dernières pièces », « plus que 2 »), fausses promotions, faux avis, grandes marques
 pour vanter une copie. Si elle ne connaît pas une information (par exemple les dimensions), elle le dit et

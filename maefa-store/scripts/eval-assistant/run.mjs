@@ -177,7 +177,7 @@ if (!offline && hasKey) {
   const { streamAssistant } = await import('../../server/assistant.js');
   const shop = {
     phone: M.SITE_CONFIG.phone, whatsapp: M.SITE_CONFIG.whatsappRaw, address: M.SITE_CONFIG.address, hours: M.SITE_CONFIG.hours,
-    freeShippingThreshold: M.SITE_CONFIG.freeShippingThreshold, giftWrapFee: M.SITE_CONFIG.giftWrapFee,
+    giftWrapFee: M.SITE_CONFIG.giftWrapFee,
     zones: M.DELIVERY_ZONES, promos: M.PROMO_CODES, faq: M.FAQ_ITEMS, occasions: M.OCCASIONS.map(o => `${o.id} = ${o.name}`),
     categories: M.CATEGORIES.map(c => c.name),
     fetes: M.upcomingFetes().slice(0, 6).map(f => `${f.name} : ${f.lunar ? 'vers le ' : ''}${M.formatDay(f.date)} ${f.date.getFullYear()}`),

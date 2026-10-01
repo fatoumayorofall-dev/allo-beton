@@ -88,8 +88,8 @@ export const CONVERSATIONS = [
   { id: 'rassurer-wo', lang: 'wo', turns: [
     ['Dama ragal fey te dara du agsi', { intent: 'confiance', wolof: true, mentions: /fey bu la ko indilee/ }],
   ] },
-  { id: 'panier-livraison-offerte', lang: 'fr', cartTotal: 30000, turns: [
-    ['Un sac noir pour le bureau', { products: true, mentions: /il ne manque que/ }],
+  { id: 'panier-sans-livraison-offerte', lang: 'fr', cartTotal: 30000, turns: [
+    ['Un sac noir pour le bureau', { products: true, mentions: /^(?![\s\S]*(offerte|il ne manque que))/ }],
   ] },
   { id: 'honnete-mesures', lang: 'fr', turns: [
     ['Le sac Awa il est grand ? ça rentre un ordinateur ?', { intent: 'dimensions', mentions: /WhatsApp/ }],

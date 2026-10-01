@@ -144,7 +144,7 @@ export const Assistant: React.FC<{ initial?: { question?: string } }> = ({ initi
   // Contexte boutique transmis à l'IA : stable d'une question à l'autre (mise en cache côté API).
   const shop = useMemo(() => ({
     phone: SITE_CONFIG.phone, whatsapp: SITE_CONFIG.whatsappRaw, address: SITE_CONFIG.address, hours: SITE_CONFIG.hours,
-    freeShippingThreshold: SITE_CONFIG.freeShippingThreshold, giftWrapFee: SITE_CONFIG.giftWrapFee,
+    giftWrapFee: SITE_CONFIG.giftWrapFee,
     zones: DELIVERY_ZONES, promos: PROMO_CODES, faq: FAQ_ITEMS, occasions: OCCASIONS.map(o => `${o.id} = ${o.name}`),
     categories: CATEGORIES.map(c => c.name),
     fetes: upcomingFetes().slice(0, 6).map(f => `${f.name} : ${f.lunar ? 'vers le ' : ''}${formatDay(f.date)} ${f.date.getFullYear()}`),

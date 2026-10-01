@@ -2,9 +2,9 @@ import { delayLabel } from '../utils/market';
 import { PREORDER_MAX } from '../utils/stock';
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Minus, Plus, ShieldCheck, Tag, Truck, X, PackageCheck } from 'lucide-react';
+import { Minus, Plus, ShieldCheck, Tag, Truck, X, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { PROMO_CODES, SITE_CONFIG } from '../config/site';
+import { PROMO_CODES } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
@@ -48,9 +48,6 @@ export const Cart: React.FC = () => {
   usePageTitle('Mon panier');
   const { cart, updateQuantity, removeFromCart, computeTotals, getProduct, clearCart, products, savedCustomer } = useStore();
   const t = computeTotals(0);
-  const net = t.subtotal - t.discount;
-  const remaining = Math.max(0, SITE_CONFIG.freeShippingThreshold - net);
-  const progress = Math.min(100, (net / SITE_CONFIG.freeShippingThreshold) * 100);
   // « Complétez votre look » : d'abord l'autre univers (un sac pour des souliers…), puis les coups de cœur
   const suggestions = useMemo(() => {
     const inCart = new Set(cart.map(i => i.productId));
@@ -80,18 +77,6 @@ export const Cart: React.FC = () => {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-start">
         <div className="min-w-0">
-        {/* Livraison offerte : ce qu'il reste à ajouter */}
-        <div className={`mb-8 p-5 rounded-[1.5rem] border ${remaining ? 'bg-white border-ink/[0.06]' : 'bg-emerald-50 border-emerald-100'}`} data-testid="free-shipping">
-          <p className="flex items-center gap-3 text-sm">
-            <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 ${remaining ? 'border border-gold/50 text-gold-dark' : 'bg-emerald-100 text-emerald-800'}`}>{remaining ? <Truck className="w-4 h-4" strokeWidth={1.3} /> : <Check className="w-4 h-4" />}</span>
-            {remaining
-              ? <span>Plus que <strong>{formatPrice(remaining)}</strong> pour profiter de la <strong>livraison offerte</strong> à Dakar</span>
-              : <span className="text-emerald-900"><strong>Livraison offerte</strong> à Dakar : c'est cadeau !</span>}
-          </p>
-          <div className="mt-4 h-1.5 rounded-full bg-ink/[0.07] overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} aria-label="Progression vers la livraison offerte">
-            <div className={`h-full rounded-full transition-[width] duration-700 ease-luxe ${remaining ? 'bg-gradient-to-r from-gold-light to-gold' : 'bg-emerald-600'}`} style={{ width: `${progress}%` }} />
-          </div>
-        </div>
         <ul className="divide-y divide-ink/10">
           {cart.map(item => {
             const product = getProduct(item.productId);
@@ -133,7 +118,7 @@ export const Cart: React.FC = () => {
             <div className="flex justify-between"><dt className="text-ink/75">Sous-total</dt><dd>{formatPrice(t.subtotal)}</dd></div>
             {t.discount > 0 && <div className="flex justify-between text-emerald-800"><dt>Réduction</dt><dd>-{formatPrice(t.discount)}</dd></div>}
             {t.giftFee > 0 && <div className="flex justify-between"><dt className="text-ink/75">Emballage cadeau</dt><dd>{formatPrice(t.giftFee)}</dd></div>}
-            <div className="flex justify-between"><dt className="text-ink/75">Livraison</dt><dd className="text-ink/75">{t.subtotal - t.discount >= SITE_CONFIG.freeShippingThreshold ? 'Offerte' : 'Selon votre zone'}</dd></div>
+            <div className="flex justify-between"><dt className="text-ink/75">Livraison</dt><dd className="text-ink/75">Selon votre zone</dd></div>
           </dl>
           <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="text-right"><span className="block font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span></div>
           <button onClick={() => startWhatsAppOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, image: i.image, size: i.size, color: i.color, quantity: i.quantity })), savedCustomer)} data-testid="cart-whatsapp" className="w-full h-[56px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Commander sur WhatsApp</button>

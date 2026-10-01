@@ -22,7 +22,7 @@ const ANNOUNCEMENTS = [
     ? `${NEXT_FETE.name} ${inDays(daysUntil(NEXT_FETE.date))} · commandez avant le ${formatDay(orderBy(NEXT_FETE.date))}`
     : `${NEXT_FETE.name} ${inDays(daysUntil(NEXT_FETE.date))} · livraison express à Dakar`] : []),
   'Dalal ak jàmm · bienvenue chez Maefa',
-  `Livraison offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}`,
+  'Livraison 24 h à Dakar · suivi en direct',
   'Nouvelle collection · Automne 2026',
   'Paiement Wave, Orange Money ou à la livraison',
   'Code BIENVENUE : -10 % sur votre première commande',

@@ -92,7 +92,7 @@ function validOrder(o) {
 /**
  * Les montants envoyés par le navigateur doivent se tenir : sous-total = somme des articles,
  * total = sous-total − réduction + livraison + emballage, et chaque montant dans les limites de la boutique
- * (réduction au plus 10 % ou 5 000 F, livraison au plus 5 000 F, emballage 0 ou 2 000 F).
+ * (réduction au plus 10 % ou 5 000 F, livraison toujours payante : 1 500 à 5 000 F, emballage 0 ou 2 000 F).
  * Sans ce contrôle, une commande trafiquée pourrait afficher un faux total à la gérante.
  */
 function coherentTotals(o) {
@@ -103,7 +103,7 @@ function coherentTotals(o) {
   if (o.items.some(i => !(Number(i.quantity) >= 1 && Number(i.quantity) <= 100 && Number(i.price) >= 0))) return false;
   const maxDiscount = Math.max(Math.round(sub * 0.1), sub >= 40000 ? 5000 : 0);
   return Math.abs(subtotal - sub) < 1 && discount >= 0 && discount <= maxDiscount
-    && deliveryFee >= 0 && deliveryFee <= 5000 && (giftFee === 0 || giftFee === 2000)
+    && deliveryFee >= 1500 && deliveryFee <= 5000 && (giftFee === 0 || giftFee === 2000)
     && Math.abs(o.total - Math.max(0, subtotal - discount + deliveryFee + giftFee)) < 1;
 }
 

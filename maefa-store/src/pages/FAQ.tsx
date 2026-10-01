@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MessageCircle, Plus, Sparkles } from 'lucide-react';
 import { openAssistant } from '../components/assistantBus';
-import { DELIVERY_ZONES, SITE_CONFIG, buildWhatsAppLink, isOnSale } from '../config/site';
+import { DELIVERY_ZONES, buildWhatsAppLink, isOnSale } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { FAQ_ITEMS as QUESTIONS } from '../data/faq';
@@ -44,7 +44,7 @@ export const FAQ: React.FC = () => {
           {DELIVERY_ZONES.map(z => <tr key={z.name} className="border-b border-ink/10"><td className="py-3.5">{z.name}</td><td className="py-3.5 text-ink/75">{z.delay}</td><td className="py-3.5 text-right">{formatPrice(z.fee)}</td></tr>)}
         </tbody>
       </table>
-      <p className="text-sm text-ink/75 mt-4">Livraison offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)} d'achat.</p>
+      <p className="text-sm text-ink/75 mt-4">Les frais de livraison s'ajoutent au prix des articles.</p>
 
       <h2 id="tailles" className="font-display text-4xl mt-20 mb-6 scroll-mt-32">Guide des tailles</h2>
       <div className="grid sm:grid-cols-2 gap-10">

@@ -85,8 +85,8 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
 
   if (has(q, 'livraison', 'livrer', 'yobbu', 'delai', 'frais de port', 'combien de temps', 'expedi')) {
     const zone = DELIVERY_ZONES.find(z => q.includes(norm(z.name).split(/[\s/]/)[0]));
-    if (zone) return `Pour **${zone.name}**, la livraison coûte ${formatPrice(zone.fee)} et prend ${zone.delay}. Elle est offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)} d'achat 🛵`;
-    return `Nous livrons en 24h à Dakar (1 500 à 2 000 FCFA selon le quartier) et en 48h à 5 jours en régions. La livraison est **offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}**. Tous les tarifs sont sur [la page d'aide](/faq).`;
+    if (zone) return `Pour **${zone.name}**, la livraison coûte ${formatPrice(zone.fee)} et prend ${zone.delay}. 🛵`;
+    return `Nous livrons en 24h à Dakar (1 500 à 2 000 FCFA selon le quartier) et en 48h à 5 jours en régions. Tous les tarifs sont sur [la page d'aide](/faq).`;
   }
   if (has(q, 'paiement', 'payer', 'wave', 'orange money', 'free money', 'carte', 'espece')) {
     return 'Vous pouvez payer par **Wave** ou **Orange Money** en envoyant le montant au **77 309 38 19** (Maefa Store), ou **en espèces à la livraison**. Envoyez ensuite la capture du paiement sur notre WhatsApp, nous confirmons tout de suite ✨';

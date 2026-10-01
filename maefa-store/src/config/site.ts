@@ -53,7 +53,6 @@ export const SITE_CONFIG = {
   waveLink: '',
   /** Carte bancaire : à activer seulement une fois une passerelle (PayDunya…) branchée */
   cardPayments: false,
-  freeShippingThreshold: 50000,
   giftWrapFee: 2000,
 };
 
@@ -119,7 +118,6 @@ export interface PromoCode {
 export const PROMO_CODES: Record<string, PromoCode> = {
   BIENVENUE: { label: '-10 % sur votre 1re commande', percent: 10 },
   MAEFA5000: { label: '-5 000 FCFA dès 40 000 FCFA', amount: 5000, minSubtotal: 40000 },
-  LIVRAISON: { label: 'Livraison offerte', freeShipping: true },
 };
 
 /**

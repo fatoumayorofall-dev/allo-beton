@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Bell, ChevronDown, ChevronRight, Heart, Minus, Plus, Ruler, Share2, ShieldCheck, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
-import { SITE_CONFIG, buildProductWhatsAppMessage } from '../config/site';
+import { buildProductWhatsAppMessage } from '../config/site';
 import { WhatsAppWithPhoto } from '../components/WhatsAppWithPhoto';
 import { startWhatsAppOrder } from '../utils/whatsappOrder';
 import { discountPercent, formatPrice } from '../utils/format';
@@ -302,7 +302,7 @@ export const ProductDetail: React.FC = () => {
 
             <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/75">
               {[
-                { Icon: Truck, t: `Offerte dès ${(SITE_CONFIG.freeShippingThreshold / 1000).toFixed(0)} 000 F` },
+                { Icon: Truck, t: 'Livrée en 24 h à Dakar' },
                 { Icon: PackageCheck, t: 'Contrôlée avant envoi' },
                 { Icon: ShieldCheck, t: 'Paiement sécurisé' },
               ].map(({ Icon, t }) => (
@@ -325,7 +325,6 @@ export const ProductDetail: React.FC = () => {
               <Accordion title="Livraison & réception" open={openSection === 'livraison'} onToggle={() => toggle('livraison')}>
                 <p><strong className="text-ink">Dakar</strong> : livraison en 24h, de 1 500 à 2 000 FCFA selon le quartier.</p>
                 <p className="mt-2"><strong className="text-ink">Régions</strong> : de 48h à 5 jours selon la destination.</p>
-                <p className="mt-2">Livraison <strong className="text-ink">offerte dès {formatPrice(SITE_CONFIG.freeShippingThreshold)}</strong>.</p>
                 <p className="mt-2">Chaque pièce est contrôlée avant l'envoi. <strong className="text-ink">Vérifiez votre commande à la réception</strong>, en présence du livreur : aucun échange ni retour n'est possible après la livraison.</p>
               </Accordion>
               <Accordion id="avis" title={`Avis clientes (${product.reviewCount})`} open={openSection === 'avis'} onToggle={() => toggle('avis')}>

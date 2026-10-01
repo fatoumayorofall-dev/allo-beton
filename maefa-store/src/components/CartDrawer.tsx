@@ -43,8 +43,6 @@ export const CartDrawer: React.FC = () => {
   useEscape(cartOpen, close);
 
   const t = computeTotals(0);
-  const remaining = Math.max(0, SITE_CONFIG.freeShippingThreshold - (t.subtotal - t.discount));
-  const progress = Math.min(100, ((t.subtotal - t.discount) / SITE_CONFIG.freeShippingThreshold) * 100);
 
   // Suggestions « complétez votre look » : d'abord l'autre univers (un sac pour des souliers…), puis les coups de cœur
   const suggestions = useMemo(() => {
@@ -76,14 +74,6 @@ export const CartDrawer: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="px-6 sm:px-8 py-4 border-b border-ink/10 shrink-0">
-              <p className="text-xs mb-2.5 text-ink/70">
-                {remaining > 0
-                  ? <>Plus que <strong className="text-ink">{formatPrice(remaining)}</strong> pour profiter de la livraison offerte</>
-                  : <strong className="text-ink">La livraison vous est offerte</strong>}
-              </p>
-              <div className="h-1.5 rounded-full bg-ink/10 overflow-hidden"><div className="h-full rounded-full bg-gradient-to-r from-gold-light to-gold transition-all duration-700 ease-luxe" style={{ width: `${progress}%` }} /></div>
-            </div>
 
             <div className="flex-1 overflow-y-auto">
               <ul className="px-6 sm:px-8 divide-y divide-ink/10">

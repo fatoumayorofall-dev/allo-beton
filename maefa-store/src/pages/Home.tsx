@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, QrCode, ScanSearch, ShieldCheck, Smartphone, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
-import { FEATURES, SITE_CONFIG } from '../config/site';
+import { FEATURES } from '../config/site';
 import { formatPrice } from '../utils/format';
 import { usePrefersReducedMotion } from '../utils/hooks';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -162,7 +162,7 @@ export const Home: React.FC = () => {
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-10 sm:pt-14" aria-label="Nos engagements">
         <ul className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-0 lg:divide-x divide-ink/[0.07] rounded-[1.75rem] lg:bg-white lg:border border-ink/[0.06] lg:py-5">
           {[
-            { Icon: Truck, t: 'Livraison 24 h', d: `Dakar · offerte dès ${formatPrice(SITE_CONFIG.freeShippingThreshold)}` },
+            { Icon: Truck, t: 'Livraison 24 h', d: 'À Dakar, de 1 500 à 2 000 F' },
             { Icon: MapPin, t: 'Suivi en direct', d: 'Votre livreur sur la carte' },
             { Icon: Smartphone, t: 'Wave · Orange Money', d: 'ou espèces à la livraison' },
             { Icon: PackageCheck, t: 'Contrôlée avant envoi', d: 'À vérifier à la réception' },
