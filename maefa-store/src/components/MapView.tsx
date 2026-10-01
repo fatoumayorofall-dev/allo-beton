@@ -20,7 +20,11 @@ const SAT_ATTRIBUTION = 'Imagerie © <a href="https://www.esri.com">Esri</a>, Ma
 export interface LatLng { lat: number; lng: number }
 export interface MapMarker extends LatLng {
   id: string;
-  kind: 'home' | 'driver' | 'shop' | 'relay' | 'me';
+  kind: 'home' | 'driver' | 'shop' | 'relay' | 'me' | 'stop';
+  /** Bulle au toucher (sinon `label`) */
+  title?: string;
+  /** Arrêt de tournée : livré (vert) ou en cours (framboise) */
+  tone?: 'done' | 'current' | 'next' | 'skipped';
   label?: string;
   /** Emoji du véhicule du livreur (🛵 par défaut) */
   icon?: string;
@@ -28,6 +32,8 @@ export interface MapMarker extends LatLng {
 
 const ICONS: Record<MapMarker['kind'], (m: MapMarker) => L.DivIcon> = {
   // « Vous êtes ici » : point bleu qui pulse (comme dans les applis de VTC)
+  // Arrêt numéroté d'une tournée de livraison
+  stop: m => L.divIcon({ className: 'maefa-pin', iconSize: [34, 34], iconAnchor: [17, 17], html: `<span class="maefa-stop maefa-stop-${m.tone ?? 'next'}">${m.tone === 'done' ? '✓' : String(m.label ?? '').slice(0, 3)}</span>` }),
   me: () => L.divIcon({ className: 'maefa-pin', iconSize: [28, 28], iconAnchor: [14, 14], html: '<span class="maefa-me"><span class="maefa-me-pulse"></span><span class="maefa-me-dot"></span></span>' }),
   home: () => L.divIcon({
     className: 'maefa-pin', iconSize: [44, 52], iconAnchor: [22, 50],
@@ -161,8 +167,9 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
         existing.setIcon(ICONS[mk.kind](mk));
         glide(existing, L.latLng(mk.lat, mk.lng));
       } else {
-        const marker = L.marker([mk.lat, mk.lng], { icon: ICONS[mk.kind](mk), keyboard: false, title: mk.label });
-        if (mk.label) marker.bindTooltip(mk.label, { direction: 'top', offset: [0, -40] });
+        const tip = mk.title ?? mk.label;
+        const marker = L.marker([mk.lat, mk.lng], { icon: ICONS[mk.kind](mk), keyboard: false, title: tip });
+        if (tip) marker.bindTooltip(tip, { direction: 'top', offset: [0, mk.kind === 'stop' ? -18 : -40] });
         marker.addTo(m);
         layers.current.set(mk.id, marker);
       }

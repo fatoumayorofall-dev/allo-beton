@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { DeliveryInfo, DeliveryLeg, DeliveryLocation, DeliveryRating, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
+import type { AdminTour, DriverTour, TourPlan, DeliveryInfo, DeliveryLeg, DeliveryLocation, DeliveryRating, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -361,3 +361,13 @@ export const fetchAuthCodes = (pin: string) => getJson<{ codes: AuthCode[] }>('/
 export const verifyAuthCode = (code: string) => call<AuthCheck>(`/api/authentique/${encodeURIComponent(code)}`);
 /** Écrin sécurisé avec les marques secrètes de la boutique (espace gérant seulement). */
 export const fetchSecureMark = (pin: string) => getJson<{ svg: string; marks: string[] }>('/api/admin/marque-securisee', pin);
+
+/* ---------- Tournées de livraison ---------- */
+export const planTour = (pin: string, orderIds: string[], vehicle: Vehicle) =>
+  call<TourPlan>('/api/admin/tours/plan', { method: 'POST', body: JSON.stringify({ orderIds, vehicle }), headers: { 'x-admin-pin': pin } });
+export const createTour = (pin: string, orderIds: string[], driver: { name: string; phone: string; vehicle: Vehicle }, send = true) =>
+  call<{ tour: AdminTour; message: { driverPhone: string; text: string }; sent: SendResult | null }>('/api/admin/tours', { method: 'POST', body: JSON.stringify({ orderIds, driver, send }), headers: { 'x-admin-pin': pin } });
+export const fetchTours = (pin: string) => getJson<{ tours: AdminTour[] }>('/api/admin/tours', pin).then(r => r?.tours ?? null);
+export const cancelTour = (pin: string, id: string) => call<{ tour: AdminTour }>(`/api/admin/tours/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
+export const fetchDriverTour = (token: string) => call<DriverTour>(`/api/tour/${encodeURIComponent(token)}`);
+export const skipTourStop = (token: string, orderId: string) => call<DriverTour>(`/api/tour/${encodeURIComponent(token)}/skip`, { method: 'POST', body: JSON.stringify({ orderId }) });

@@ -141,3 +141,31 @@ export function routeEtaMinutes(route, vehicle = 'moto', date = new Date()) {
   const s = Math.max(route.durationS, floor) * trafficFactor(vehicle, date);
   return Math.max(1, Math.round(s / 60));
 }
+
+/**
+ * Distances par la route entre tous les points (service « table » d'OSRM, une seule requête) :
+ * { distanceM: number[][], durationS: number[][], routed: true }. Sans réponse du service :
+ * vol d'oiseau × détour moyen de Dakar (1,35), routed: false. Jamais d'erreur.
+ */
+export async function roadTable(points) {
+  const fallback = () => {
+    const d = points.map(a => points.map(b => Math.round(distanceM(a, b) * 1.35)));
+    return { distanceM: d, durationS: d.map(r => r.map(m => Math.round(m / (22 / 3.6)))), routed: false };
+  };
+  if (!ROUTING || points.length < 2 || points.length > 60) return fallback();
+  const coords = points.map(p => `${round(p.lng, 5)},${round(p.lat, 5)}`).join(';');
+  try {
+    return await cached(`tb:${coords}`, 10 * 60e3, async () => {
+      const res = await fetch(`${OSRM_URL}/table/v1/driving/${coords}?annotations=distance,duration`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) });
+      if (!res.ok) throw new Error(`osrm table ${res.status}`);
+      const j = await res.json();
+      if (!Array.isArray(j.distances) || j.distances.length !== points.length) throw new Error('osrm table vide');
+      // Case manquante (point hors des routes connues) : vol d'oiseau × détour
+      const distanceM2 = j.distances.map((r, i) => r.map((m, k) => (Number.isFinite(m) ? Math.round(m) : Math.round(distanceM(points[i], points[k]) * 1.35))));
+      const durationS2 = (j.durations ?? j.distances).map((r, i) => r.map((s, k) => (Number.isFinite(s) ? Math.round(s) : Math.round(distanceM2[i][k] / (22 / 3.6)))));
+      return { distanceM: distanceM2, durationS: durationS2, routed: true };
+    });
+  } catch {
+    return fallback();
+  }
+}

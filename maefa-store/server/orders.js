@@ -12,7 +12,8 @@
 //    déclaré livré que si la cliente donne son code), note du livreur
 // ============================================================
 import crypto from 'node:crypto';
-import { distanceM, etaMinutes, reverseGeocode, roadRoute, routeEtaMinutes, searchPlaces, validPoint } from './geo.js';
+import { distanceM, etaMinutes, reverseGeocode, roadRoute, roadTable, routeEtaMinutes, searchPlaces, trafficFactor, validPoint } from './geo.js';
+import { bestOrder, pathLength } from './tourPlanner.js';
 import { checkMarketItems } from './market.js';
 import { applyStock, checkStock } from './catalog.js';
 
@@ -237,6 +238,13 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     const delivery = publicDelivery(d, order);
     // Le code de remise n'est montré qu'à la cliente (numéro de commande + son téléphone)
     if (delivery && d.code && delivery.state !== 'livree') delivery.code = d.code;
+    // Commande dans une tournée, pas encore partie : combien de livraisons avant elle
+    const tour = d?.tourId && store.getTour(d.tourId);
+    if (delivery && tour && !d.legs[0]?.startedAt) {
+      const k = tour.stops.findIndex(st => st.orderId === order.id);
+      const ahead = tour.stops.slice(0, k).filter(st => !st.skipped && store.getShopOrder(st.orderId)?.status !== 'livree' && store.getShopOrder(st.orderId)?.status !== 'annulee').length;
+      delivery.tour = { position: k + 1, total: tour.stops.length, ahead, started: !!tour.startedAt, driverName: tour.driverName };
+    }
     res.json({ order: rest, delivery });
   });
 
@@ -431,6 +439,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     leg.startedAt ??= new Date().toISOString();
     const pos = cleanPosition(req.body);
     if (pos) { leg.position = pos; await refreshRoute(leg, legTarget(leg, order)); }
+    if (d.tourId) { const t = store.getTour(d.tourId); if (t && !t.startedAt) { t.startedAt = leg.startedAt; store.saveTour(t); } }
     store.saveDelivery(order.id, d);
     setStatus(order, 'expediee');
     if (i === 0 && !leg.customerNotified) await notifyCustomer(order, 'expediee');
@@ -507,8 +516,223 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
       }
       store.saveDelivery(order.id, d);
       store.saveShopOrder(order);
+      if (d.tourId && !leg.to) await startNextTourStop(store.getTour(d.tourId), leg.position);
     }
     res.json(driverView(ctx));
+  });
+
+
+  /* ==========================================================
+   *  TOURNÉES : un livreur, toutes les commandes du jour,
+   *  dans l'ordre le plus court (départ boutique, sans allers-retours)
+   * ========================================================== */
+  const SHOP = { lat: Number(process.env.SHOP_LAT) || 14.7195, lng: Number(process.env.SHOP_LNG) || -17.4655 };
+  const MAX_STOPS = 30;
+  const tourLink = t => `${SITE_URL}/livreur/tournee/${t.token}`;
+  const stopState = (order, d, st) => {
+    if (order?.status === 'livree') return 'livree';
+    if (order?.status === 'annulee') return 'annulee';
+    if (st.skipped) return 'reportee';
+    const leg = d?.legs?.[0];
+    return leg?.startedAt ? 'en_route' : 'attente';
+  };
+
+  /** Commandes qu'on peut mettre dans une tournée : point sur la carte, ni livrées ni annulées, pas déjà parties. */
+  function tourable(ids) {
+    const list = [];
+    for (const id of [...new Set((Array.isArray(ids) ? ids : []).map(x => clip(x, 20).toUpperCase()))]) {
+      const o = store.getShopOrder(id);
+      if (!o) return { error: `Commande ${id} introuvable` };
+      if (o.status === 'livree' || o.status === 'annulee') return { error: `${id} est déjà ${o.status === 'livree' ? 'livrée' : 'annulée'}` };
+      if (!o.customer.location) return { error: `${id} n'a pas de point sur la carte` };
+      const d = store.getDelivery(id);
+      if (d?.legs?.some(l => l.startedAt)) return { error: `${id} est déjà en route` };
+      list.push(o);
+    }
+    if (!list.length) return { error: 'Choisissez au moins une commande' };
+    if (list.length > MAX_STOPS) return { error: `Au plus ${MAX_STOPS} livraisons par tournée` };
+    return { list };
+  }
+
+  /** Ordre le plus court + distances et heures d'arrivée estimées. */
+  async function planTour(orders, vehicle = 'moto') {
+    const points = [SHOP, ...orders.map(o => o.customer.location)];
+    const table = await roadTable(points);
+    const m = table.distanceM;
+    const order = bestOrder(m);
+    const factor = trafficFactor(vehicle);
+    let cumM = 0, cumS = 0, prev = 0;
+    const stops = order.map(k => {
+      const o = orders[k - 1];
+      const legM = m[prev][k];
+      cumM += legM;
+      // Durée par la route (embouteillages compris) + 5 min sur place pour remettre le colis
+      cumS += Math.max(table.durationS[prev][k], (m[prev][k] / 1000 / 22) * 3600) * factor + (prev ? 300 : 0);
+      prev = k;
+      return { orderId: o.id, firstName: o.customer.firstName, label: o.customer.location.label || '', zone: o.customer.zone, lat: o.customer.location.lat, lng: o.customer.location.lng, legM: Math.round(legM), cumM: Math.round(cumM), etaMin: Math.round(cumS / 60) };
+    });
+    const arrival = Array.from({ length: orders.length }, (_, k) => k + 1);
+    return {
+      stops,
+      totalM: Math.round(pathLength(m, order)),
+      arrivalOrderM: Math.round(pathLength(m, arrival)),
+      // Une course par commande : boutique → cliente → boutique
+      roundTripsM: Math.round(arrival.reduce((sum, k) => sum + m[0][k] + m[k][0], 0)),
+      routed: table.routed,
+      shop: SHOP,
+    };
+  }
+
+  function adminTour(t) {
+    return {
+      ...t,
+      link: tourLink(t),
+      stops: t.stops.map(st => {
+        const o = store.getShopOrder(st.orderId);
+        const d = store.getDelivery(st.orderId);
+        return { ...st, state: stopState(o, d, st), firstName: o?.customer.firstName, label: o?.customer.location?.label || o?.customer.zone, total: o?.total };
+      }),
+    };
+  }
+
+  /** La livraison suivante de la tournée démarre : sa cliente reçoit « en route » + le lien de suivi. */
+  async function startNextTourStop(tour, pos) {
+    if (!tour) return null;
+    for (const st of tour.stops) {
+      const o = store.getShopOrder(st.orderId);
+      const d = store.getDelivery(st.orderId);
+      if (!o || !d?.legs?.length || st.skipped || o.status === 'livree' || o.status === 'annulee') continue;
+      const leg = d.legs[0];
+      if (leg.doneAt) continue;
+      if (!leg.startedAt) {
+        leg.startedAt = new Date().toISOString();
+        if (pos) { leg.position = { ...pos, at: new Date().toISOString() }; await refreshRoute(leg, legTarget(leg, o)); }
+        store.saveDelivery(o.id, d);
+        setStatus(o, 'expediee');
+        await notifyCustomer(o, 'expediee');
+        store.saveShopOrder(o);
+      }
+      return st.orderId;
+    }
+    tour.doneAt ??= new Date().toISOString();
+    store.saveTour(tour);
+    return null;
+  }
+
+  app.post('/api/admin/tours/plan', async (req, res) => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+    const t = tourable(req.body?.orderIds);
+    if (t.error) return res.status(400).json({ error: t.error });
+    res.json(await planTour(t.list, VEHICLES.has(req.body?.vehicle) ? req.body.vehicle : 'moto'));
+  });
+
+  app.post('/api/admin/tours', async (req, res) => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+    const t = tourable(req.body?.orderIds);
+    if (t.error) return res.status(400).json({ error: t.error });
+    const name = clip(req.body?.driver?.name, 40);
+    const phone = wa.toE164(req.body?.driver?.phone);
+    if (!name || !phone) return res.status(400).json({ error: 'Nom et téléphone du livreur requis' });
+    const vehicle = VEHICLES.has(req.body?.driver?.vehicle) ? req.body.driver.vehicle : 'moto';
+    // L'ordre est recalculé côté serveur (jamais celui d'un navigateur), sauf si la gérante l'a fixé à la main
+    const plan = await planTour(t.list, vehicle);
+    const ordered = req.body?.keepOrder ? t.list.map(o => o.id) : plan.stops.map(st => st.orderId);
+    const now = new Date().toISOString();
+    const tour = {
+      id: `T${now.slice(2, 10).replace(/-/g, '')}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+      token: crypto.randomBytes(18).toString('base64url'),
+      driverName: name, driverPhone: phone, vehicle, createdAt: now, startedAt: null, doneAt: null,
+      totalM: plan.totalM, roundTripsM: plan.roundTripsM,
+      stops: ordered.map(orderId => ({ orderId, skipped: false })),
+    };
+    // Chaque commande reçoit sa livraison (même livreur) : la cliente garde son suivi et son code
+    for (const id of ordered) {
+      const old = store.getDelivery(id);
+      store.saveDelivery(id, {
+        ...(old ?? {}), tourId: tour.id, code: old?.code ?? newCode(),
+        legs: [{ driverName: name, driverPhone: phone, vehicle, to: null, driverToken: crypto.randomBytes(18).toString('base64url'),
+          assignedAt: now, startedAt: null, doneAt: null, position: null, nearNotified: false, customerNotified: false }],
+      });
+      const o = store.getShopOrder(id);
+      if (o && (o.status === 'en_attente' || o.status === 'confirmee')) { setStatus(o, 'en_preparation'); store.saveShopOrder(o); }
+    }
+    store.saveTour(tour);
+    const stops = ordered.map(id => { const o = store.getShopOrder(id); return { firstName: o.customer.firstName, label: o.customer.location?.label, zone: o.customer.zone }; });
+    const text = wa.buildTourDriverMessage(tour, tourLink(tour), stops);
+    const sent = req.body?.send === false ? null : await wa.sendWhatsApp(phone, text);
+    res.status(201).json({ tour: adminTour(tour), message: { driverPhone: phone, text }, sent });
+  });
+
+  app.get('/api/admin/tours', (req, res) => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+    res.json({ tours: store.listTours().slice(0, 30).map(adminTour) });
+  });
+
+  /** Annuler une tournée : les livraisons pas encore parties redeviennent libres. */
+  app.delete('/api/admin/tours/:id', (req, res) => {
+    if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
+    const tour = store.getTour(req.params.id);
+    if (!tour) return res.status(404).json({ error: 'Tournée introuvable' });
+    for (const st of tour.stops) {
+      const d = store.getDelivery(st.orderId);
+      if (d?.tourId === tour.id && !d.legs?.[0]?.startedAt) store.saveDelivery(st.orderId, { ...d, tourId: undefined, legs: [] });
+    }
+    tour.cancelledAt = new Date().toISOString();
+    tour.doneAt ??= tour.cancelledAt;
+    store.saveTour(tour);
+    res.json({ tour: adminTour(tour) });
+  });
+
+  /* ---------- Livreur : sa tournée (lien secret) ---------- */
+  function tourView(tour) {
+    let current = -1;
+    const stops = tour.stops.map((st, k) => {
+      const o = store.getShopOrder(st.orderId);
+      const d = store.getDelivery(st.orderId);
+      const state = stopState(o, d, st);
+      if (current < 0 && (state === 'en_route' || state === 'attente') && !tour.cancelledAt) current = k;
+      const c = o?.customer ?? {};
+      const leg = d?.legs?.[0];
+      return {
+        index: k, orderId: st.orderId, state,
+        // Le lien de l'étape : le téléphone du livreur envoie sa position et le code par lui
+        legToken: d?.tourId === tour.id ? leg?.driverToken ?? null : null,
+        customer: { firstName: c.firstName, lastName: c.lastName, phone: c.phone, zone: c.zone, address: c.address, notes: c.notes, location: c.location ?? null },
+        total: o?.total, paymentStatus: o?.paymentStatus, items: o?.items?.reduce((sum, it) => sum + it.quantity, 0) ?? 0,
+        needsCode: !!d?.code,
+      };
+    });
+    return { id: tour.id, driverName: tour.driverName, vehicle: tour.vehicle, startedAt: tour.startedAt, doneAt: tour.doneAt, cancelled: !!tour.cancelledAt, totalM: tour.totalM, roundTripsM: tour.roundTripsM, shop: SHOP, current, stops };
+  }
+
+  app.get('/api/tour/:token', (req, res) => {
+    const tour = store.findTourByToken(String(req.params.token || ''));
+    if (!tour) return res.status(404).json({ error: 'Lien de tournée invalide' });
+    res.json(tourView(tour));
+  });
+
+  /** Cliente absente ou injoignable : la livraison est reportée, on passe à la suivante. */
+  app.post('/api/tour/:token/skip', async (req, res) => {
+    const tour = store.findTourByToken(String(req.params.token || ''));
+    if (!tour) return res.status(404).json({ error: 'Lien de tournée invalide' });
+    const st = tour.stops.find(x => x.orderId === clip(req.body?.orderId, 20).toUpperCase());
+    if (!st) return res.status(404).json({ error: 'Commande hors de la tournée' });
+    const o = store.getShopOrder(st.orderId);
+    const d = store.getDelivery(st.orderId);
+    const leg = d?.legs?.[0];
+    if (o?.status === 'livree') return res.status(409).json({ error: 'Déjà livrée' });
+    st.skipped = true;
+    st.skippedAt = new Date().toISOString();
+    const pos = leg?.position ?? null;
+    if (leg) { leg.startedAt = null; leg.position = null; leg.route = null; leg.nearNotified = false; store.saveDelivery(st.orderId, d); }
+    if (o) {
+      setStatus(o, 'en_preparation');
+      logSend(o, 'reportee', 'cliente', await wa.sendWhatsApp(o.customer.phone, wa.buildTourPostponedMessage(o)));
+      store.saveShopOrder(o);
+    }
+    store.saveTour(tour);
+    await startNextTourStop(tour, pos);
+    res.json(tourView(tour));
   });
 
   /* ---------- Carte : recherche d'adresse et adresse d'un point ---------- */

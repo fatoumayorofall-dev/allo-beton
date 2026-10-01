@@ -47,6 +47,7 @@ const Market = page(() => import('./pages/Market'), 'default');
 const MarketProduct = page(() => import('./pages/MarketProduct'), 'default');
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
 const Driver = lazy(() => import('./pages/Driver'));
+const DriverTour = lazy(() => import('./pages/DriverTour'));
 
 /** Aperçu en ligne sans serveur (VITE_ROUTER=hash) : les adresses passent après le # pour fonctionner depuis n'importe quel dossier. */
 const Router = import.meta.env.VITE_ROUTER === 'hash' ? HashRouter : BrowserRouter;
@@ -136,6 +137,7 @@ export default function App() {
                 <Route path="/authentique" element={<Authenticity />} />
                 <Route path="/authentique/:code" element={<Authenticity />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/livreur/tournee/:token" element={<DriverTour />} />
                 <Route path="/livreur/:token" element={<Driver />} />
                 <Route path="/marche" element={FEATURES.marche ? <Market /> : <Navigate to="/boutique" replace />} />
                 <Route path="/marche/:slug" element={FEATURES.marche ? <MarketProduct /> : <Navigate to="/boutique" replace />} />

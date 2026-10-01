@@ -77,7 +77,20 @@ export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delive
                   {delivery.routed && <p className="text-xs text-ink/65 mt-0.5" data-testid="eta-routed">Calculé par les rues, embouteillages compris</p>}
                 </>
               )}
-              {delivery.state === 'assignee' && <><p className="font-display text-2xl leading-tight">{delivery.relay ? 'Livraison en relais prévue' : `Livreur choisi : ${delivery.driverName}`}</p><p className="text-sm text-ink/75">Vous pourrez suivre votre colis ici dès son départ.</p></>}
+              {delivery.state === 'assignee' && delivery.tour && (
+                <div data-testid="tour-queue">
+                  <p className="font-display text-2xl leading-tight">
+                    {delivery.tour.started
+                      ? (delivery.tour.ahead === 0 ? 'Vous êtes la prochaine livraison !' : `${delivery.tour.ahead} livraison${delivery.tour.ahead > 1 ? 's' : ''} avant la vôtre`)
+                      : `Votre colis part aujourd'hui avec ${delivery.tour.driverName}`}
+                  </p>
+                  <p className="text-sm text-ink/75">{delivery.tour.started ? `${delivery.tour.driverName} fait sa tournée` : `Vous êtes la livraison n° ${delivery.tour.position} sur ${delivery.tour.total}`}. Vous recevrez un WhatsApp dès qu'il partira chez vous, et vous le suivrez ici sur la carte.</p>
+                  <div className="mt-2 flex gap-1" aria-hidden>
+                    {Array.from({ length: delivery.tour.total }, (_, k) => <span key={k} className={`h-1.5 flex-1 rounded-full ${k + 1 === delivery.tour!.position ? 'bg-wine' : k + 1 < delivery.tour!.position ? 'bg-ink/30' : 'bg-ink/10'}`} />)}
+                  </div>
+                </div>
+              )}
+              {delivery.state === 'assignee' && !delivery.tour && <><p className="font-display text-2xl leading-tight">{delivery.relay ? 'Livraison en relais prévue' : `Livreur choisi : ${delivery.driverName}`}</p><p className="text-sm text-ink/75">Vous pourrez suivre votre colis ici dès son départ.</p></>}
               {delivery.state === 'livree' && <p className="font-display text-2xl leading-tight">Colis remis 🌸</p>}
             </div>
             {delivery.state !== 'livree' && (

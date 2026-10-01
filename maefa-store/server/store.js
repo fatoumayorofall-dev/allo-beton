@@ -16,7 +16,7 @@ fs.mkdirSync(VOICE_DIR, { recursive: true });
 const SLUG_RE = /^[a-z0-9-]{2,80}$/;
 export const validSlug = s => typeof s === 'string' && SLUG_RE.test(s);
 
-let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, market: { products: {}, settings: null }, catalog: null, catalogUpdatedAt: null, stockAlerts: [], authCodes: {} };
+let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, tours: {}, market: { products: {}, settings: null }, catalog: null, catalogUpdatedAt: null, stockAlerts: [], authCodes: {} };
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
 const renameRefs = raw => raw.replace(/"(?:FAB|EFA)-([A-Z0-9]+)/g, '"MAE-$1');
@@ -168,6 +168,16 @@ export function saveDelivery(orderId, delivery) {
   state.deliveries[orderId] = { ...delivery, orderId };
   persist();
   return state.deliveries[orderId];
+}
+
+/* ---------- Tournées de livraison (un livreur, plusieurs commandes dans l'ordre le plus court) ---------- */
+export const getTour = id => (state.tours ??= {})[id] ?? null;
+export const listTours = () => Object.values(state.tours ?? {}).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+export const findTourByToken = token => (token ? Object.values(state.tours ?? {}).find(t => t.token === token) ?? null : null);
+export function saveTour(tour) {
+  (state.tours ??= {})[tour.id] = tour;
+  persist();
+  return tour;
 }
 
 /* ---------- Le Marché (dropshipping) : produits des fournisseurs + réglages ---------- */

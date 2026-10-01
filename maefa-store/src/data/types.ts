@@ -152,6 +152,8 @@ export interface DeliveryInfo {
   code?: string;
   /** Preuve de remise (vue gérante) */
   proof?: { by: 'code'; at: string; position: { lat: number; lng: number } | null };
+  /** Commande dans une tournée, pas encore partie : sa place dans la file */
+  tour?: { position: number; total: number; ahead: number; started: boolean; driverName: string };
 }
 
 export interface DeliveryRating {
@@ -254,4 +256,25 @@ export interface OrderNotification {
   to: 'gerante' | 'cliente';
   /** auto = envoyé par le serveur ; manuel = ouvert dans WhatsApp par la gérante ; echec = envoi automatique raté */
   channel: 'auto' | 'manuel' | 'echec';
+}
+
+/* ---------- Tournées de livraison ---------- */
+
+export type TourStopState = 'attente' | 'en_route' | 'livree' | 'reportee' | 'annulee';
+export interface TourPlanStop { orderId: string; firstName: string; label: string; zone: string; lat: number; lng: number; legM: number; cumM: number; etaMin: number }
+export interface TourPlan { stops: TourPlanStop[]; totalM: number; arrivalOrderM: number; roundTripsM: number; routed: boolean; shop: { lat: number; lng: number } }
+export interface AdminTour {
+  id: string; link: string; driverName: string; driverPhone: string; vehicle: Vehicle;
+  createdAt: string; startedAt: string | null; doneAt: string | null; cancelledAt?: string;
+  totalM: number; roundTripsM: number;
+  stops: { orderId: string; state: TourStopState; firstName?: string; label?: string; total?: number; skipped?: boolean }[];
+}
+export interface DriverTourStop {
+  index: number; orderId: string; state: TourStopState; legToken: string | null;
+  customer: { firstName: string; lastName: string; phone: string; zone: string; address?: string; notes?: string; location: DeliveryLocation | null };
+  total: number; paymentStatus: 'en_attente' | 'paye'; items: number; needsCode: boolean;
+}
+export interface DriverTour {
+  id: string; driverName: string; vehicle: Vehicle; startedAt: string | null; doneAt: string | null; cancelled: boolean;
+  totalM: number; roundTripsM: number; shop: { lat: number; lng: number }; current: number; stops: DriverTourStop[];
 }

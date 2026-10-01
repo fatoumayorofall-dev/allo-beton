@@ -215,3 +215,29 @@ export function buildSupplierMessage(order, status) {
   lines.push(``, `Suivi : ${trackingUrl(order)}`);
   return lines.join('\n');
 }
+
+/* ---------- Tournée : un livreur, plusieurs commandes dans l'ordre le plus court ---------- */
+export function buildTourDriverMessage(tour, link, stops) {
+  const km = tour.totalM ? ` · ${(tour.totalM / 1000).toFixed(1).replace('.', ',')} km` : '';
+  return [
+    `🛵 *Tournée Maefa du jour* — ${stops.length} livraison${stops.length > 1 ? 's' : ''}${km}`,
+    ``,
+    `L'ordre est déjà organisé pour le trajet le plus court :`,
+    ...stops.map((s, k) => `${k + 1}. ${s.firstName} — ${s.label || s.zone}`),
+    ``,
+    `1. Prenez tous les colis à la boutique.`,
+    `2. Ouvrez ce lien et touchez « Démarrer la tournée » :`,
+    link,
+    `3. À chaque adresse, demandez le code de la cliente : la livraison suivante démarre toute seule et sa cliente est prévenue.`,
+  ].join('\n');
+}
+
+/** La cliente n'a pas pu être livrée pendant la tournée (absente, injoignable). */
+export function buildTourPostponedMessage(order) {
+  return [
+    `Bonjour ${order.customer.firstName} 🌸`,
+    ``,
+    `Notre livreur n'a pas pu vous remettre votre commande *${order.id}* aujourd'hui.`,
+    `Pas d'inquiétude : nous vous écrivons très vite pour convenir d'un nouveau passage. 🙏`,
+  ].join('\n');
+}

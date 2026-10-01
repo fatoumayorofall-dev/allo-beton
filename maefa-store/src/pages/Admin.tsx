@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowRight, BarChart3, Check, Film, Globe2, Download, Loader2, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, BarChart3, Check, Film, Globe2, Download, Loader2, LogOut, Send, ShieldCheck, Users, MessageCircle, Package, Pencil, Plus, RotateCcw, Route, Search, ShoppingCart, Trash2, Wallet, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId, OccasionId, Order, OrderStatus, Product } from '../data/types';
@@ -16,6 +16,7 @@ import type { StockAlert } from '../data/types';
 import { DeliveryPanel } from './AdminDelivery';
 import { MarketTab, SupplierPanel } from './AdminMarket';
 import { AuthenticityTab } from './AdminAuthenticity';
+import { ToursTab } from './AdminTours';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 import { mediaUrl, normalizeVideoInput, staticMode } from '../utils/media';
 
@@ -35,7 +36,7 @@ function useServerStatus() {
 const EVENT_LABELS: Record<string, string> = { nouvelle: 'Nouvelle commande', ...STATUS_LABELS };
 
 const SESSION_KEY = 'maefa_admin';
-type Tab = 'dashboard' | 'orders' | 'products' | 'market' | 'customers' | 'status' | 'authenticity';
+type Tab = 'dashboard' | 'orders' | 'tours' | 'products' | 'market' | 'customers' | 'status' | 'authenticity';
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   en_attente: 'bg-amber-100 text-amber-800',
@@ -93,7 +94,7 @@ export const Admin: React.FC = () => {
           className="inline-flex items-center gap-2 text-sm text-ink/75 hover:text-ink"><LogOut className="w-4 h-4" /> Déconnexion</button>
       </div>
       <div className="sticky top-14 z-30 -mx-4 px-4 sm:mx-0 sm:px-0 py-3 mb-6 bg-ivory/95 backdrop-blur flex gap-2 overflow-x-auto no-scrollbar border-b border-ink/[0.06]" role="navigation" aria-label="Rubriques">
-        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['products', 'Produits', Package], ...(FEATURES.marche ? [['market', 'Le Marché', Globe2]] as const : []), ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send], ['authenticity', 'Authenticité', ShieldCheck]] as const).map(([id, label, Icon]) => (
+        {([['dashboard', 'Tableau de bord', BarChart3], ['orders', 'Commandes', ShoppingCart], ['tours', 'Tournées', Route], ['products', 'Produits', Package], ...(FEATURES.marche ? [['market', 'Le Marché', Globe2]] as const : []), ['customers', 'Clientes', Users], ['status', 'Statut WhatsApp', Send], ['authenticity', 'Authenticité', ShieldCheck]] as const).map(([id, label, Icon]) => (
           <button key={id} onClick={() => { setTab(id); window.scrollTo({ top: 0 }); }} aria-current={tab === id ? 'page' : undefined}
             className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap border transition-colors ${tab === id ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/[0.07] hover:border-ink/25'}`}>
             <Icon className="w-4 h-4" /> {label}
@@ -102,6 +103,7 @@ export const Admin: React.FC = () => {
       </div>
       {tab === 'dashboard' && <Dashboard onGoto={setTab} />}
       {tab === 'orders' && <Orders />}
+      {tab === 'tours' && <ToursTab pin={adminPin()} />}
       {tab === 'products' && <Products />}
       {tab === 'market' && <MarketTab pin={adminPin()} />}
       {tab === 'customers' && <CustomersTab />}

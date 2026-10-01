@@ -16,7 +16,7 @@ const MapView = lazy(() => import('../components/MapView'));
 const SEND_EVERY_MS = { moto: 4000, voiture: 15000, car: 15000 } as const;
 
 /** Garde l'écran allumé pendant la course (sinon le téléphone se met en veille et le GPS s'arrête). */
-function useWakeLock(active: boolean) {
+export function useWakeLock(active: boolean) {
   useEffect(() => {
     if (!active || !('wakeLock' in navigator)) return;
     let lock: WakeLockSentinel | null = null;
