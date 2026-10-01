@@ -115,7 +115,7 @@ app.get('/api/health', (_req, res) => {
 /* ---------- Assistant IA ---------- */
 app.post('/api/chat', async (req, res) => {
   if (!assistantEnabled()) return res.status(503).json({ error: 'assistant_disabled' });
-  if (!limit(`chat:${req.ip}`, 40, 10 * 60e3)) return res.status(429).json({ error: 'Trop de messages, réessayez dans quelques minutes.' });
+  if (!limit(`chat:${req.ip}`, 120, 10 * 60e3)) return res.status(429).json({ error: 'Trop de messages, réessayez dans quelques minutes.' });
   const messages = sanitizeMessages(req.body?.messages);
   if (!messages) return res.status(400).json({ error: 'Conversation invalide' });
 
@@ -139,7 +139,7 @@ app.post('/api/notify/order', async (req, res) => {
   const order = req.body?.order;
   if (!validOrder(order)) return res.status(400).json({ error: 'Commande invalide' });
   const phone = wa.toE164(order.customer.phone);
-  if (!limit(`order-ip:${req.ip}`, 6, 3600e3) || !limit(`order-phone:${phone}`, 4, 3600e3) || !limit(`order-id:${order.id}`, 1, 24 * 3600e3)) {
+  if (!limit(`order-ip:${req.ip}`, 40, 3600e3) || !limit(`order-phone:${phone}`, 4, 3600e3) || !limit(`order-id:${order.id}`, 1, 24 * 3600e3)) {
     return res.status(429).json({ error: 'Trop de notifications' });
   }
   res.json(await wa.notifyNewOrder(order));
@@ -239,3 +239,6 @@ app.listen(PORT, () => {
   console.log(`  Assistant IA : ${assistantEnabled() ? 'activé' : 'désactivé (ANTHROPIC_API_KEY manquante → mode hors ligne côté site)'}`);
   console.log(`  WhatsApp     : ${wa.whatsappEnabled() ? 'activé' : 'simulé (identifiants Twilio manquants)'}`);
 });
+
+// Arrêt demandé (mise à jour ou redémarrage sur Render) : dernières données écrites avant de quitter
+for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => { store.flushSync(); process.exit(0); });

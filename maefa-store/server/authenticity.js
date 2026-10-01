@@ -55,7 +55,7 @@ export function registerAuthenticityRoutes(app, { limit, isAdmin, store }) {
   /* Cliente : vérifier une étiquette */
   app.get('/api/authentique/:code', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    if (!limit(`auth:${req.ip}`, 30, 3600e3)) return res.status(429).json({ error: 'Trop de vérifications, réessayez dans une heure' });
+    if (!limit(`auth:${req.ip}`, 60, 3600e3)) return res.status(429).json({ error: 'Trop de vérifications, réessayez dans une heure' });
     const code = normalizeCode(req.params.code);
     if (!code) return res.json({ status: 'invalide' });
     const c = store.recordAuthScan(code);

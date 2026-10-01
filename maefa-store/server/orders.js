@@ -191,7 +191,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     if (JSON.stringify(o).length > 60_000) return res.status(413).json({ error: 'Commande trop volumineuse' });
     if (store.getShopOrder(o.id)) return res.status(409).json({ error: 'Commande déjà enregistrée' });
     const phone = wa.toE164(o.customer.phone);
-    if (!limit(`order-ip:${req.ip}`, 6, 3600e3) || !limit(`order-phone:${phone}`, 4, 3600e3)) {
+    if (!limit(`order-ip:${req.ip}`, 40, 3600e3) || !limit(`order-phone:${phone}`, 4, 3600e3)) {
       return res.status(429).json({ error: 'Trop de commandes, réessayez plus tard.' });
     }
     // Articles du Marché (dropshipping) : prix vérifiés et suivi fournisseur préparé

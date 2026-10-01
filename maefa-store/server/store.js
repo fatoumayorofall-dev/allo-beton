@@ -22,10 +22,33 @@ let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, sho
 const renameRefs = raw => raw.replace(/"(?:FAB|EFA)-([A-Z0-9]+)/g, '"MAE-$1');
 try { state = { ...state, ...JSON.parse(renameRefs(fs.readFileSync(FILE, 'utf8'))) }; } catch { /* premier démarrage */ }
 
+/*
+ * Sauvegarde sur disque : au plus une écriture toutes les 300 ms, même quand les visites s'enchaînent
+ * (un report sans fin ne sauvegarderait jamais pendant un pic). Écriture dans un fichier temporaire
+ * puis renommage : un arrêt brutal ne laisse jamais un fichier à moitié écrit.
+ */
 let timer = null;
+let writing = false;
+let again = false;
+function writeNow() {
+  timer = null;
+  if (writing) { again = true; return; }
+  writing = true;
+  const tmp = `${FILE}.tmp`;
+  fs.writeFile(tmp, JSON.stringify(state), err => {
+    const done = () => { writing = false; if (again) { again = false; persist(); } };
+    if (err) { console.error('Sauvegarde :', err.message); return done(); }
+    fs.rename(tmp, FILE, e => { if (e) console.error('Sauvegarde :', e.message); done(); });
+  });
+}
 function persist() {
+  if (!timer) timer = setTimeout(writeNow, 300);
+}
+/** Écriture immédiate (arrêt du serveur, par exemple lors d'une mise à jour sur Render). */
+export function flushSync() {
   clearTimeout(timer);
-  timer = setTimeout(() => fs.writeFile(FILE, JSON.stringify(state), () => {}), 300);
+  timer = null;
+  try { fs.writeFileSync(`${FILE}.tmp`, JSON.stringify(state)); fs.renameSync(`${FILE}.tmp`, FILE); } catch (e) { console.error('Sauvegarde :', e.message); }
 }
 
 /* ---------- Vitrine du statut ---------- */

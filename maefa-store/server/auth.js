@@ -44,7 +44,7 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
   app.post('/api/auth/start', async (req, res) => {
     const phone = wa.toE164(req.body?.phone);
     if (!phone || !/^\+221(7[05678])\d{7}$/.test(phone)) return res.status(400).json({ error: 'Numéro sénégalais invalide' });
-    if (!limit(`otp-ip:${req.ip}`, 20, 3600e3) || !limit(`otp-phone:${phone}`, 6, 10 * 60e3)) {
+    if (!limit(`otp-ip:${req.ip}`, 60, 3600e3) || !limit(`otp-phone:${phone}`, 6, 10 * 60e3)) {
       return res.status(429).json({ error: 'Trop de demandes. Réessayez dans quelques minutes.' });
     }
     const existing = store.getUser(phone);
@@ -88,7 +88,7 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     const pin = String(req.body?.pin ?? '');
     if (!phone || !/^\+221(7[05678])\d{7}$/.test(phone)) return res.status(400).json({ error: 'Numéro sénégalais invalide' });
     if (!/^\d{4}$/.test(pin)) return res.status(400).json({ error: 'Le code secret fait 4 chiffres' });
-    if (!limit(`pin-ip:${req.ip}`, 30, 3600e3) || !limit(`pin-phone:${phone}`, 8, 15 * 60e3)) {
+    if (!limit(`pin-ip:${req.ip}`, 60, 3600e3) || !limit(`pin-phone:${phone}`, 8, 15 * 60e3)) {
       return res.status(429).json({ error: 'Trop d\'essais. Réessayez dans 15 minutes.' });
     }
     const user = store.getUser(phone);
