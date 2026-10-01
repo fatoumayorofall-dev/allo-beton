@@ -23,22 +23,27 @@ export const TabBar: React.FC = () => {
   }, [hidden]);
   if (hidden) return null;
 
-  const item = 'relative flex-1 flex flex-col items-center justify-center gap-1 h-full text-[10px] font-semibold tracking-wide transition-colors';
-  const tone = ({ isActive }: { isActive: boolean }) => `${item} ${isActive ? 'text-wine' : 'text-ink/70 hover:text-ink'}`;
-  const dot = (on: boolean) => on && <span className="absolute top-1.5 w-1 h-1 rounded-full bg-wine" aria-hidden />;
-  const badge = 'absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold grid place-items-center';
+  // Capsule flottante prune : l'onglet ouvert est posé sur une pastille or rosé
+  const item = 'group relative flex-1 flex flex-col items-center justify-center gap-0.5 h-full text-[10px] font-semibold tracking-wide transition-colors duration-300';
+  const tone = ({ isActive }: { isActive: boolean }) => `${item} ${isActive ? 'text-ink' : 'text-ivory/70 hover:text-ivory'}`;
+  const pill = (on: boolean) => (
+    <span aria-hidden className={`absolute inset-x-1 inset-y-1.5 rounded-[1.15rem] bg-gradient-to-b from-[#f6e3dc] to-[#e7c3b8] shadow-[inset_0_1px_0_rgba(255,255,255,.7),0_6px_14px_-6px_rgba(0,0,0,.45)] transition-all duration-500 ease-luxe ${on ? 'opacity-100 scale-100' : 'opacity-0 scale-75'}`} />
+  );
+  const icon = (on: boolean) => ({ className: 'relative w-[21px] h-[21px]', strokeWidth: on ? 2 : 1.6 });
+  const label = 'relative leading-none';
+  const badge = 'absolute -top-1.5 -right-2.5 min-w-[17px] h-[17px] px-1 rounded-full text-[9px] font-bold grid place-items-center ring-2 ring-ink';
 
   return (
     <nav aria-label="Navigation rapide" data-testid="tabbar"
-      className="lg:hidden fixed bottom-0 inset-x-0 z-50 bg-ivory/95 backdrop-blur-xl border-t border-ink/[0.07] shadow-[0_-10px_30px_-20px_rgba(58,31,45,.35)] pb-[env(safe-area-inset-bottom,0px)] print:hidden">
-      <div className="flex h-16 max-w-md mx-auto px-2">
-        <NavLink to="/" end className={tone}>{({ isActive }) => <>{dot(isActive)}<Home className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />Accueil</>}</NavLink>
-        <NavLink to="/boutique" className={tone}>{({ isActive }) => <>{dot(isActive)}<LayoutGrid className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />Boutique</>}</NavLink>
-        <NavLink to="/favoris" className={tone}>{({ isActive }) => <>{dot(isActive)}<span className="relative"><Heart className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />{wishlist.length > 0 && <span className={`${badge} bg-gold text-white`}>{wishlist.length}</span>}</span>Favoris</>}</NavLink>
-        <NavLink to="/compte" className={tone}>{({ isActive }) => <>{dot(isActive)}<span className="relative"><User className="w-5 h-5" strokeWidth={isActive ? 2 : 1.5} />{user && <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-ivory" />}</span>{user?.firstName ? user.firstName.slice(0, 10) : 'Compte'}</>}</NavLink>
-        <button onClick={() => setCartOpen(true)} className={`${item} text-ink/70 hover:text-ink`} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`}>
-          <span className="relative"><ShoppingBag className="w-5 h-5" strokeWidth={1.5} />{count > 0 && <span key={count} className={`${badge} bg-ink text-ivory animate-heart-pop`}>{count}</span>}</span>
-          Panier
+      className="lg:hidden fixed inset-x-3 z-50 bottom-[calc(0.6rem+env(safe-area-inset-bottom,0px))] print:hidden">
+      <div className="relative flex h-[62px] max-w-md mx-auto px-1.5 rounded-[1.6rem] bg-ink/95 backdrop-blur-xl shadow-[0_18px_40px_-14px_rgba(43,18,32,.75),inset_0_1px_0_rgba(255,255,255,.08)] ring-1 ring-white/[0.06]">
+        <NavLink to="/" end className={tone}>{({ isActive }) => <>{pill(isActive)}<Home {...icon(isActive)} /><span className={label}>Accueil</span></>}</NavLink>
+        <NavLink to="/boutique" className={tone}>{({ isActive }) => <>{pill(isActive)}<LayoutGrid {...icon(isActive)} /><span className={label}>Boutique</span></>}</NavLink>
+        <NavLink to="/favoris" className={tone}>{({ isActive }) => <>{pill(isActive)}<span className="relative"><Heart {...icon(isActive)} />{wishlist.length > 0 && <span className={`${badge} bg-gold-light text-ink`}>{wishlist.length}</span>}</span><span className={label}>Favoris</span></>}</NavLink>
+        <NavLink to="/compte" className={tone}>{({ isActive }) => <>{pill(isActive)}<span className="relative"><User {...icon(isActive)} />{user && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-ink" />}</span><span className={label}>{user?.firstName ? user.firstName.slice(0, 10) : 'Compte'}</span></>}</NavLink>
+        <button onClick={() => setCartOpen(true)} className={`${item} text-ivory/70 hover:text-ivory`} aria-label={`Ouvrir le panier (${count} article${count > 1 ? 's' : ''})`}>
+          <span className="relative"><ShoppingBag {...icon(false)} />{count > 0 && <span key={count} className={`${badge} bg-gold-light text-ink animate-heart-pop`}>{count}</span>}</span>
+          <span className={label}>Panier</span>
         </button>
       </div>
     </nav>

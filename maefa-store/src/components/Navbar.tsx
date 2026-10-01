@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
-import { ArrowRight, Heart, Menu, Package, Search, ShoppingBag, User, X } from 'lucide-react';
+import { ArrowRight, Heart, Menu, Package, Search, ShoppingBag, Truck, User, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { useAccount } from '../context/AccountContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
@@ -32,6 +32,8 @@ const ANNOUNCEMENTS = [
 
 export const Navbar: React.FC = () => {
   const { cart, wishlist, setCartOpen, products } = useStore();
+  const newest = useMemo(() => { const n = products.filter(p => p.isNew); return n[n.length - 1] ?? products[products.length - 1]; }, [products]);
+  const countBy = useMemo(() => products.reduce<Record<string, number>>((m, p) => ((m[p.category] = (m[p.category] ?? 0) + 1), m), {}), [products]);
   const account = useAccount();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
@@ -192,38 +194,59 @@ export const Navbar: React.FC = () => {
       {mobileOpen && (
         <div className="fixed inset-0 z-[75] lg:hidden">
           <div className="absolute inset-0 bg-ink/50 animate-fade-in" onClick={() => setMobileOpen(false)} />
-          <nav className="absolute left-0 top-0 h-full w-[88%] max-w-sm bg-ivory flex flex-col rounded-r-[2rem] overflow-hidden animate-slide-in-left" aria-label="Menu mobile">
-            <div className="flex items-center justify-between px-6 h-[72px] border-b border-ink/10">
+          <nav className="absolute left-0 top-0 h-full w-[90%] max-w-sm bg-ivory flex flex-col rounded-r-[2rem] overflow-hidden animate-slide-in-left shadow-[30px_0_60px_-30px_rgba(43,18,32,.6)]" aria-label="Menu mobile">
+            <div className="flex items-center justify-between px-6 h-[76px] bg-gradient-to-b from-ivory-deep/70 to-ivory">
               <Logo />
-              <button onClick={() => setMobileOpen(false)} aria-label="Fermer le menu" className="w-10 h-10 grid place-items-center"><X className="w-5 h-5" strokeWidth={1.5} /></button>
+              <button onClick={() => setMobileOpen(false)} aria-label="Fermer le menu" className="w-10 h-10 rounded-full bg-white border border-ink/10 shadow-sm grid place-items-center"><X className="w-[18px] h-[18px]" strokeWidth={1.6} /></button>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              <Link to="/boutique?tri=nouveautes" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">Nouveautés <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
-              {CATEGORIES.map(c => (
-                <Link key={c.id} to={`/boutique/${c.id}`} className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">{c.name} <ArrowRight className="w-4 h-4 text-ink/30" /></Link>
-              ))}
-              {FEATURES.offres && <Link to="/boutique?promo=1" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl text-ink">Offres <ArrowRight className="w-4 h-4" /></Link>}
-              {FEATURES.marche && (
-                <Link to="/marche" className="flex items-center justify-between py-4 border-b border-ink/10 font-display text-2xl">
-                  <span>Le Marché <sup className="font-sans text-[9px] ml-1 text-gold-dark tracking-[0.18em]">MONDE</sup></span> <ArrowRight className="w-4 h-4 text-ink/30" />
-                </Link>
-              )}
-              <p className="eyebrow mt-8 mb-3">Par occasion</p>
+            <div className="flex-1 overflow-y-auto px-5 pt-3 pb-6">
+              {/* Rubriques : une vraie pièce en vignette, comme une vitrine */}
+              <div className="space-y-2.5" data-testid="menu-rubriques">
+                {[
+                  { to: '/boutique?tri=nouveautes', name: 'Nouveautés', note: 'Les dernières arrivées', img: newest?.images[0] },
+                  ...CATEGORIES.map(c => ({ to: `/boutique/${c.id}`, name: c.name, note: `${countBy[c.id] ?? 0} modèles`, img: products.find(p => p.category === c.id)?.images[0] })),
+                  ...(FEATURES.offres ? [{ to: '/boutique?promo=1', name: 'Offres', note: 'Les bonnes affaires', img: undefined }] : []),
+                  ...(FEATURES.marche ? [{ to: '/marche', name: 'Le Marché', note: 'Le monde à Dakar', img: undefined }] : []),
+                ].map(r => (
+                  <Link key={r.to} to={r.to} className="group flex items-center gap-4 p-2.5 pr-4 rounded-[1.4rem] bg-white border border-ink/[0.06] shadow-[0_10px_24px_-18px_rgba(58,31,45,.45)] active:scale-[.99] transition-transform">
+                    <span className="w-14 h-14 rounded-[1.05rem] overflow-hidden shrink-0 bg-blush/40 ring-1 ring-ink/[0.05]">
+                      {r.img && <ProductImage src={r.img} alt="" label="" className="w-full h-full" sizes="56px" />}
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block font-display text-[1.45rem] leading-none">{r.name}</span>
+                      <span className="block mt-1.5 text-[11px] text-ink/60 tracking-wide">{r.note}</span>
+                    </span>
+                    <span className="w-8 h-8 rounded-full bg-ivory-deep grid place-items-center text-ink/70 group-hover:translate-x-0.5 transition-transform"><ArrowRight className="w-3.5 h-3.5" /></span>
+                  </Link>
+                ))}
+              </div>
+
+              <p className="eyebrow mt-7 mb-3">Par occasion</p>
               <div className="flex flex-wrap gap-2">
-                {OCCASIONS.map(o => <Link key={o.id} to={`/boutique?occasion=${o.id}`} className="px-3.5 h-9 inline-flex items-center rounded-full border border-ink/15 text-xs">{o.name}</Link>)}
+                {OCCASIONS.map(o => <Link key={o.id} to={`/boutique?occasion=${o.id}`} className="px-3.5 h-9 inline-flex items-center rounded-full bg-white border border-ink/10 text-xs shadow-[0_4px_10px_-8px_rgba(58,31,45,.5)]">{o.name}</Link>)}
               </div>
               {FEATURES.journal && <Link to="/journal" className="flex items-center justify-between py-4 mt-6 border-y border-ink/10 font-display text-2xl">Le journal <ArrowRight className="w-4 h-4 text-ink/30" /></Link>}
-              <div className="mt-8 space-y-4 text-sm">
-                <Link to="/compte" className="flex items-center gap-3"><User className="w-4 h-4" strokeWidth={1.5} /> {account.user ? `Mon compte · ${account.user.firstName || 'connectée'}` : 'Mon compte (avec mon numéro)'}</Link>
-                <Link to="/mes-commandes" className="flex items-center gap-3"><Package className="w-4 h-4" strokeWidth={1.5} /> Mes commandes</Link>
-                <Link to="/suivi" className="flex items-center gap-3"><Package className="w-4 h-4" strokeWidth={1.5} /> Suivre une commande</Link>
-                <Link to="/favoris" className="flex items-center gap-3"><Heart className="w-4 h-4" strokeWidth={1.5} /> Mes favoris ({wishlist.length})</Link>
+
+              <p className="eyebrow mt-7 mb-3">Mon espace</p>
+              <div className="grid grid-cols-2 gap-2.5" data-testid="menu-espace">
+                {[
+                  { to: '/compte', Icon: User, label: account.user ? (account.user.firstName || 'Mon compte') : 'Mon compte', note: account.user ? 'Connectée' : 'Avec mon numéro' },
+                  { to: '/mes-commandes', Icon: Package, label: 'Commandes', note: 'Historique' },
+                  { to: '/suivi', Icon: Truck, label: 'Suivre', note: 'Ma livraison' },
+                  { to: '/favoris', Icon: Heart, label: 'Favoris', note: `${wishlist.length} pièce${wishlist.length > 1 ? 's' : ''}` },
+                ].map(({ to, Icon, label, note }) => (
+                  <Link key={to} to={to} className="flex items-center gap-2.5 p-3 rounded-2xl bg-white border border-ink/[0.06]">
+                    <span className="w-9 h-9 rounded-full bg-gradient-to-b from-[#f6e3dc] to-[#e7c3b8] grid place-items-center text-ink shrink-0"><Icon className="w-4 h-4" strokeWidth={1.7} /></span>
+                    <span className="min-w-0"><span className="block text-[13px] font-semibold leading-tight truncate">{label}</span><span className="block text-[10.5px] text-ink/60 truncate">{note}</span></span>
+                  </Link>
+                ))}
               </div>
-            </div>
-            <div className="px-6 py-3 border-t border-ink/[0.07] flex items-center justify-between text-xs text-ink/75"><span>Afficher les prix en</span><CurrencySwitch up /></div>
-            <div className="px-6 py-4 border-t border-ink/[0.07]" data-testid="menu-socials">
-              <p className="text-xs text-ink/75 mb-3">Suivez-nous</p>
-              <SocialLinks size="w-10 h-10" />
+
+              <div className="mt-7 rounded-[1.4rem] bg-white border border-ink/[0.06] p-4" data-testid="menu-socials">
+                <p className="eyebrow mb-3.5">Suivez-nous</p>
+                <SocialLinks size="w-10 h-10" labels />
+              </div>
+              <div className="mt-3 px-1 flex items-center justify-between text-xs text-ink/75"><span>Afficher les prix en</span><CurrencySwitch up /></div>
             </div>
             <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/75 flex justify-between">
               <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={buildWhatsAppLink('Bonjour Maefa Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer" className="text-[#177a41] font-semibold">WhatsApp</a><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>

@@ -60,13 +60,21 @@ export const PaymentLogos: React.FC<{ className?: string; cash?: boolean }> = ({
  * Tracés : Simple Icons (CC0). Les identifiants de dégradé sont uniques (React.useId), car
  * le même logo peut apparaître deux fois sur la page (menu et bas de page).
  */
-const Tile: React.FC<P & { children: React.ReactNode; defs?: React.ReactNode }> = ({ className = 'w-11 h-11', title, children, defs }) => (
-  <svg viewBox="0 0 48 48" className={className} role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true}>
-    {defs && <defs>{defs}</defs>}
-    {children}
-    <rect x="0.5" y="0.5" width="47" height="47" rx="13.5" fill="none" stroke="#fff" strokeOpacity="0.14" />
-  </svg>
-);
+const Tile: React.FC<P & { children: React.ReactNode; defs?: React.ReactNode }> = ({ className = 'w-11 h-11', title, children, defs }) => {
+  const sheen = `soc-sheen-${React.useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  return (
+    <svg viewBox="0 0 48 48" className={className} role={title ? 'img' : undefined} aria-label={title} aria-hidden={title ? undefined : true}>
+      <defs>
+        {defs}
+        {/* Reflet doux en haut de l'icône, comme un émail */}
+        <linearGradient id={sheen} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff" stopOpacity="0.32" /><stop offset="0.5" stopColor="#fff" stopOpacity="0" /><stop offset="1" stopColor="#000" stopOpacity="0.1" /></linearGradient>
+      </defs>
+      {children}
+      <rect width="48" height="48" rx="14" fill={`url(#${sheen})`} />
+      <rect x="0.5" y="0.5" width="47" height="47" rx="13.5" fill="none" stroke="#fff" strokeOpacity="0.2" />
+    </svg>
+  );
+};
 const gid = (id: string, k: string) => `soc-${k}-${id.replace(/[^a-zA-Z0-9]/g, '')}`;
 
 export const WhatsAppLogo = (p: P) => {
@@ -123,24 +131,28 @@ export const XLogo = (p: P) => (
   </Tile>
 );
 
-/** Les comptes de la boutique, dans l'ordre où les clientes les utilisent le plus. */
+/** Les comptes de la boutique, dans l'ordre où les clientes les utilisent le plus. `glow` : lueur à la couleur de la marque. */
 export const SOCIAL_LINKS = [
-  { Logo: WhatsAppLogo, href: buildWhatsAppLink('Bonjour Maefa Store !'), label: 'WhatsApp' },
-  { Logo: InstagramLogo, href: SITE_CONFIG.social.instagram, label: 'Instagram' },
-  { Logo: TikTokLogo, href: SITE_CONFIG.social.tiktok, label: 'TikTok' },
-  { Logo: SnapchatLogo, href: SITE_CONFIG.social.snapchat, label: 'Snapchat' },
-  { Logo: FacebookLogo, href: SITE_CONFIG.social.facebook, label: 'Facebook' },
-  { Logo: XLogo, href: SITE_CONFIG.social.x, label: 'X (Twitter)' },
+  { Logo: WhatsAppLogo, href: buildWhatsAppLink('Bonjour Maefa Store !'), label: 'WhatsApp', short: 'WhatsApp', glow: 'rgba(37,184,63,.55)' },
+  { Logo: InstagramLogo, href: SITE_CONFIG.social.instagram, label: 'Instagram', short: 'Instagram', glow: 'rgba(225,48,108,.5)' },
+  { Logo: TikTokLogo, href: SITE_CONFIG.social.tiktok, label: 'TikTok', short: 'TikTok', glow: 'rgba(0,0,0,.55)' },
+  { Logo: SnapchatLogo, href: SITE_CONFIG.social.snapchat, label: 'Snapchat', short: 'Snap', glow: 'rgba(214,190,0,.55)' },
+  { Logo: FacebookLogo, href: SITE_CONFIG.social.facebook, label: 'Facebook', short: 'Facebook', glow: 'rgba(8,102,255,.5)' },
+  { Logo: XLogo, href: SITE_CONFIG.social.x, label: 'X (Twitter)', short: 'X', glow: 'rgba(0,0,0,.55)' },
 ];
 
-/** Rangée d'icônes cliquables (bas de page, menu du téléphone). */
-export const SocialLinks: React.FC<{ size?: string; className?: string }> = ({ size = 'w-11 h-11', className = '' }) => (
-  <div className={`flex flex-wrap gap-2.5 ${className}`}>
-    {SOCIAL_LINKS.map(({ Logo, href, label }) => (
+/** Rangée d'icônes cliquables (bas de page, menu du téléphone) ; `labels` : le nom sous chaque icône. */
+export const SocialLinks: React.FC<{ size?: string; className?: string; labels?: boolean; labelClass?: string }> = ({ size = 'w-11 h-11', className = '', labels, labelClass = 'text-ink/65' }) => (
+  <div className={`${labels ? 'grid grid-cols-6 gap-1 justify-items-center' : 'flex flex-wrap gap-3'} ${className}`}>
+    {SOCIAL_LINKS.map(({ Logo, href, label, short, glow }) => (
       <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
         data-testid={`social-${label.split(' ')[0].toLowerCase()}`}
-        className="rounded-[30%] shadow-[0_8px_18px_-10px_rgba(0,0,0,.55)] hover:-translate-y-0.5 hover:shadow-[0_12px_22px_-10px_rgba(0,0,0,.6)] transition-[transform,box-shadow] duration-500 ease-luxe focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
-        <Logo className={`${size} block`} />
+        className="group flex flex-col items-center gap-1.5 rounded-[30%] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold">
+        <span className="block rounded-[29%] transition-transform duration-500 ease-luxe group-hover:-translate-y-1 group-hover:scale-[1.06] group-active:scale-95"
+          style={{ boxShadow: `0 10px 22px -12px ${glow}, 0 2px 4px -2px rgba(0,0,0,.25)` }}>
+          <Logo className={`${size} block`} />
+        </span>
+        {labels && <span className={`text-[9px] font-medium leading-none whitespace-nowrap ${labelClass}`} aria-hidden>{short}</span>}
       </a>
     ))}
   </div>
