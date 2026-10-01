@@ -5,6 +5,8 @@
 @tailwind utilities;
 
 @layer base {
+  /* « only light » : les navigateurs qui assombrissent les sites d'office laissent Maefa dans ses couleurs */
+  :root { color-scheme: only light; }
   html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
   body {
     @apply bg-ivory text-ink font-sans antialiased;

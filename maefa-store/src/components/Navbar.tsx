@@ -192,14 +192,16 @@ export const Navbar: React.FC = () => {
 
       {/* Menu mobile */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-[75] lg:hidden">
-          <div className="absolute inset-0 bg-ink/50 animate-fade-in touch-none" onClick={() => setMobileOpen(false)} />
-          <nav className="absolute left-0 top-0 h-full h-[100dvh] w-[90%] max-w-sm bg-ivory flex flex-col rounded-r-[2rem] overflow-hidden animate-slide-in-left shadow-[30px_0_60px_-30px_rgba(43,18,32,.6)]" aria-label="Menu mobile">
-            <div className="flex items-center justify-between px-6 h-[76px] bg-gradient-to-b from-ivory-deep/70 to-ivory">
+        // Un seul bloc qui défile (le calque entier), sans zone de défilement imbriquée :
+        // c'est ce qui marche partout, y compris dans les navigateurs intégrés des iPhone.
+        <div className="fixed inset-0 z-[75] lg:hidden overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]" data-testid="menu-scroll">
+          <div className="fixed inset-0 bg-ink/50 animate-fade-in" onClick={() => setMobileOpen(false)} aria-hidden />
+          <nav className="relative min-h-full w-[90%] max-w-sm bg-ivory flex flex-col rounded-r-[2rem] animate-slide-in-left shadow-[30px_0_60px_-30px_rgba(43,18,32,.6)]" aria-label="Menu mobile">
+            <div className="sticky top-0 z-10 flex items-center justify-between px-6 h-[76px] bg-ivory/95 backdrop-blur rounded-tr-[2rem] border-b border-ink/[0.05]">
               <Logo />
               <button onClick={() => setMobileOpen(false)} aria-label="Fermer le menu" className="w-10 h-10 rounded-full bg-white border border-ink/10 shadow-sm grid place-items-center"><X className="w-[18px] h-[18px]" strokeWidth={1.6} /></button>
             </div>
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch] px-5 pt-3 pb-6" data-testid="menu-scroll">
+            <div className="flex-1 px-5 pt-4 pb-6">
               {/* Rubriques : une vraie pièce en vignette, comme une vitrine */}
               <div className="space-y-2.5" data-testid="menu-rubriques">
                 {[
@@ -248,7 +250,7 @@ export const Navbar: React.FC = () => {
               </div>
               <div className="mt-3 px-1 flex items-center justify-between text-xs text-ink/75"><span>Afficher les prix en</span><CurrencySwitch up /></div>
             </div>
-            <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/75 flex justify-between">
+            <div className="px-6 py-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] bg-ivory-deep text-xs text-ink/75 flex justify-between rounded-br-[2rem]">
               <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={buildWhatsAppLink('Bonjour Maefa Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer" className="text-[#177a41] font-semibold">WhatsApp</a><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>
             </div>
           </nav>
