@@ -4,9 +4,24 @@ import { useEffect, useRef, useState } from 'react';
 export function useLockBody(locked: boolean) {
   useEffect(() => {
     if (!locked) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
+    // Sur iPhone, « overflow: hidden » ne suffit pas : la page derrière continue de bouger et
+    // vole le geste du doigt au menu. On fige donc la page à sa place, puis on la rend telle quelle.
+    const { body, documentElement: html } = document;
+    const y = window.scrollY;
+    const prev = { bo: body.style.overflow, ho: html.style.overflow, pos: body.style.position, top: body.style.top, w: body.style.width };
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+    body.style.position = 'fixed';
+    body.style.top = `-${y}px`;
+    body.style.width = '100%';
+    return () => {
+      html.style.overflow = prev.ho;
+      body.style.overflow = prev.bo;
+      body.style.position = prev.pos;
+      body.style.top = prev.top;
+      body.style.width = prev.w;
+      window.scrollTo({ top: y, behavior: 'instant' as ScrollBehavior });
+    };
   }, [locked]);
 }
 
