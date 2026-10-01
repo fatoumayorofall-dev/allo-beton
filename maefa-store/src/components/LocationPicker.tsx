@@ -1,8 +1,9 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, Crosshair, Layers, Loader2, LocateFixed, MapPin, PencilLine, Search, Volume2, X } from 'lucide-react';
-import type { DeliveryLocation } from '../data/types';
-import { reverseGeocode, searchPlaces, type PlaceResult } from '../services/api';
+import type { DeliveryLocation, NearbyPlace, SavedAddress } from '../data/types';
+import { ADDRESS_NAMES, useSavedAddresses } from '../utils/savedAddresses';
+import { fetchNearby, reverseGeocode, searchPlaces, type PlaceResult } from '../services/api';
 import { speak } from '../utils/speak';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { locatePrecisely, type LocateHandle, type PreciseResult } from '../utils/preciseGps';
@@ -38,6 +39,12 @@ const sourceText = (v: DeliveryLocation) =>
  */
 export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter, error }) => {
   const [open, setOpen] = useState<null | { locate: boolean }>(null);
+  const { addresses, save } = useSavedAddresses();
+  const same = (a: { lat: number; lng: number }) => !!value && Math.abs(a.lat - value.lat) < 1e-5 && Math.abs(a.lng - value.lng) < 1e-5;
+  const choose = (a: SavedAddress) => {
+    const { id: _id, name: _n, icon: _i, ...loc } = a;
+    onChange(loc);
+  };
 
   return (
     <div className="space-y-3" data-testid="location-picker">
@@ -47,6 +54,22 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
           <Volume2 className="w-3.5 h-3.5 text-gold-dark" strokeWidth={1.5} /> Écouter
         </button>
       </div>
+
+      {/* Adresses enregistrées : un seul geste, même sans connaître le nom du quartier */}
+      {addresses.length > 0 && (
+        <div data-testid="saved-addresses">
+          <p className="text-xs text-ink/70 mb-2">Mes adresses</p>
+          <div className="grid grid-cols-2 gap-2">
+            {addresses.map(a => (
+              <button key={a.id} type="button" onClick={() => choose(a)} aria-pressed={same(a)}
+                className={`min-w-0 text-left px-3.5 py-2.5 rounded-2xl border transition-colors ${same(a) ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/10'}`}>
+                <span className="block text-sm font-semibold">{a.icon} {a.name}</span>
+                <span className={`block text-[11px] truncate ${same(a) ? 'text-ivory/70' : 'text-ink/60'}`}>{a.landmark || a.label || 'Point sur la carte'}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {value ? (
         <div className={`rounded-[1.5rem] bg-white border overflow-hidden ${error ? 'border-wine' : 'border-ink/10'}`} data-testid="location-summary">
@@ -86,7 +109,8 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
       {/* Rendue directement dans la page : jamais rétrécie par un bloc parent (fiche, formulaire animé) */}
       {open && createPortal(
         <MapSheet initial={value} initialCenter={value ?? initialCenter} autoLocate={open.locate}
-          onClose={() => setOpen(null)} onConfirm={loc => { onChange(loc); setOpen(null); }} />,
+          onClose={() => setOpen(null)}
+          onConfirm={(loc, keep) => { if (keep) save(loc, keep.name, keep.icon); onChange(loc); setOpen(null); }} />,
         document.body,
       )}
     </div>
@@ -102,7 +126,8 @@ const MapSheet: React.FC<{
   initialCenter: LatLng;
   autoLocate: boolean;
   onClose: () => void;
-  onConfirm: (loc: DeliveryLocation) => void;
+  /** `keep` : nom donné à l'adresse pour la retrouver la prochaine fois */
+  onConfirm: (loc: DeliveryLocation, keep?: { name: string; icon: string }) => void;
 }> = ({ initial, initialCenter, autoLocate, onClose, onConfirm }) => {
   useLockBody(true);
   useEscape(true, onClose);
@@ -118,6 +143,9 @@ const MapSheet: React.FC<{
   const [results, setResults] = useState<PlaceResult[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchDown, setSearchDown] = useState(false);
+  const [places, setPlaces] = useState<NearbyPlace[]>([]);
+  const [keep, setKeep] = useState<{ name: string; icon: string } | null>(null);
+  const [otherName, setOtherName] = useState('');
   const locating = useRef<LocateHandle | null>(null);
   const latest = useRef(draft);
   latest.current = draft;
@@ -125,7 +153,11 @@ const MapSheet: React.FC<{
 
   /** Nouveau point sous l'épingle : on garde le repère, puis on cherche l'adresse lisible. */
   const commit = (p: LatLng, source: DeliveryLocation['source'], extra: Partial<DeliveryLocation> = {}) => {
-    const next: DeliveryLocation = { lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), landmark: latest.current?.landmark, source, ...extra };
+    // Le repère suit l'épingle ; celui choisi parmi les lieux connus est oublié si on s'éloigne (plus de ~80 m)
+    const prev = latest.current;
+    const far = prev && (Math.abs(prev.lat - p.lat) > 0.0007 || Math.abs(prev.lng - p.lng) > 0.0007);
+    const keepLandmark = prev?.landmark && !(far && prev.landmark.startsWith('À côté de ')) ? prev.landmark : undefined;
+    const next: DeliveryLocation = { lat: +p.lat.toFixed(6), lng: +p.lng.toFixed(6), landmark: keepLandmark, source, ...extra };
     // Même point qu'affiché (le GPS confirme) : on garde l'adresse déjà trouvée, sans clignotement
     const cur = latest.current;
     if (cur && cur.lat === next.lat && cur.lng === next.lng && cur.label && !extra.label) { setDraft({ ...next, label: cur.label }); return; }
@@ -192,6 +224,21 @@ const MapSheet: React.FC<{
     return () => { clearTimeout(t); ctrl.abort(); };
   }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Lieux connus autour de l'épingle (mosquée, pharmacie, école…), quand elle ne bouge plus
+  useEffect(() => {
+    if (!draft || moving) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(async () => {
+      const list = await fetchNearby(draft, ctrl.signal);
+      if (!ctrl.signal.aborted) setPlaces(list.slice(0, 12));
+    }, 500);
+    return () => { clearTimeout(t); ctrl.abort(); };
+  }, [draft?.lat, draft?.lng, moving]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Le lieu touché devient le repère du livreur (« À côté de la Mosquée X, 60 m »). */
+  const landmarkOf = (pl: NearbyPlace) => `À côté de ${pl.name}${pl.distanceM < 15 ? '' : `, à ${pl.distanceM} m`}`;
+  const pickPlace = (pl: NearbyPlace) => { if (draft) setDraft({ ...draft, landmark: landmarkOf(pl) }); };
+
   const pick = (r: PlaceResult) => {
     stopLocating();
     setQuery('');
@@ -217,7 +264,12 @@ const MapSheet: React.FC<{
         <div className="absolute inset-0">
           <Suspense fallback={<div className="h-full bg-ivory-deep animate-pulse" />}>
             <MapView center={center} zoom={draft ? 18 : 15} zoomButtons={false} pinCenter pinLifted={moving} onMoveStart={onMoveStart} onCenterChange={onMapMove}
-              circle={circle} satellite={satellite} markers={me ? [{ id: 'me', kind: 'me', lat: me.lat, lng: me.lng }] : []} className="h-full w-full" />
+              circle={circle} satellite={satellite} className="h-full w-full"
+              markers={[
+                ...places.map(pl => ({ id: `poi:${pl.name}`, kind: 'poi' as const, lat: pl.lat, lng: pl.lng, icon: pl.icon, title: `${pl.name} · ${pl.kind}`, tone: draft?.landmark === landmarkOf(pl) ? 'current' as const : undefined })),
+                ...(me ? [{ id: 'me', kind: 'me' as const, lat: me.lat, lng: me.lng }] : []),
+              ]}
+              onMarkerClick={id => { const pl = places.find(x => `poi:${x.name}` === id); if (pl) pickPlace(pl); }} />
           </Suspense>
         </div>
 
@@ -292,14 +344,50 @@ const MapSheet: React.FC<{
         {draft?.source === 'gps' && (draft.accuracy ?? 0) > 50 && !busy && (
           <p className="mt-2 text-xs text-amber-800">Le GPS est peu précis ici : touchez « Satellite » et placez l'épingle sur votre toit.</p>
         )}
+        {draft && !moving && places.length > 0 && (
+          <div className="mt-3" data-testid="nearby-places">
+            <p className="text-xs text-ink/70 mb-1.5">Quel lieu connu est à côté de chez vous ? Touchez-le :</p>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
+              {places.map(pl => {
+                const on = draft.landmark === landmarkOf(pl);
+                return (
+                  <button key={pl.name} type="button" onClick={() => pickPlace(pl)} aria-pressed={on}
+                    className={`shrink-0 max-w-[13rem] text-left pl-2.5 pr-3 py-2 rounded-2xl border flex items-center gap-2 ${on ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/10'}`}>
+                    <span className="text-xl leading-none">{pl.icon}</span>
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-semibold truncate">{pl.name}</span>
+                      <span className={`block text-[11px] ${on ? 'text-ivory/70' : 'text-ink/60'}`}>{pl.kind} · {pl.distanceM < 15 ? 'juste là' : `${pl.distanceM} m`}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
         {draft && (
           <input value={draft.landmark ?? ''} onChange={e => setDraft({ ...draft, landmark: e.target.value.slice(0, 160) })}
-            placeholder="Repère (facultatif) : portail vert, en face de la boutique Wave…" aria-label="Un repère pour le livreur"
+            placeholder="Repère : portail vert, en face de la boutique Wave…" aria-label="Un repère pour le livreur"
             className="field mt-3 !h-12 !text-sm" />
         )}
-        <button type="button" disabled={!draft || moving} onClick={() => draft && onConfirm(draft)}
+        {draft && !moving && (
+          <div className="mt-3" data-testid="save-address">
+            <p className="text-xs text-ink/70 mb-1.5">Enregistrer cette adresse pour la prochaine fois ? (facultatif)</p>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 pb-1">
+              {ADDRESS_NAMES.map(n => {
+                const on = keep?.name === n.name;
+                return (
+                  <button key={n.name} type="button" onClick={() => setKeep(on ? null : n)} aria-pressed={on}
+                    className={`shrink-0 px-3.5 h-10 rounded-full border text-sm ${on ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/10'}`}>{n.icon} {n.name}</button>
+                );
+              })}
+              <input value={otherName} onChange={e => { setOtherName(e.target.value.slice(0, 30)); setKeep(e.target.value.trim() ? { name: e.target.value.trim().slice(0, 30), icon: '📍' } : null); }}
+                placeholder="✏️ Autre nom" aria-label="Autre nom pour cette adresse" className="shrink-0 w-32 h-10 rounded-full border border-ink/10 bg-white px-3.5 text-sm outline-none focus:border-ink" />
+            </div>
+          </div>
+        )}
+        <button type="button" disabled={!draft || moving} onClick={() => draft && onConfirm(draft, keep ?? undefined)}
           className="btn-dark w-full mt-3 !h-14 !text-[13px] disabled:opacity-50" data-testid="confirm-location">
-          Confirmer ce point
+          {keep ? `Confirmer · ${keep.icon} ${keep.name}` : 'Confirmer ce point'}
         </button>
       </div>
     </div>

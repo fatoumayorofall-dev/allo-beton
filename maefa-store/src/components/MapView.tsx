@@ -20,7 +20,7 @@ const SAT_ATTRIBUTION = 'Imagerie © <a href="https://www.esri.com">Esri</a>, Ma
 export interface LatLng { lat: number; lng: number }
 export interface MapMarker extends LatLng {
   id: string;
-  kind: 'home' | 'driver' | 'shop' | 'relay' | 'me' | 'stop';
+  kind: 'home' | 'driver' | 'shop' | 'relay' | 'me' | 'stop' | 'poi';
   /** Bulle au toucher (sinon `label`) */
   title?: string;
   /** Arrêt de tournée : livré (vert) ou en cours (framboise) */
@@ -32,6 +32,8 @@ export interface MapMarker extends LatLng {
 
 const ICONS: Record<MapMarker['kind'], (m: MapMarker) => L.DivIcon> = {
   // « Vous êtes ici » : point bleu qui pulse (comme dans les applis de VTC)
+  // Lieu connu (mosquée, pharmacie…) : petite pastille avec son icône
+  poi: m => L.divIcon({ className: 'maefa-pin', iconSize: [30, 30], iconAnchor: [15, 15], html: `<span class="maefa-poi${m.tone === 'current' ? ' is-on' : ''}">${m.icon ?? '📍'}</span>` }),
   // Arrêt numéroté d'une tournée de livraison
   stop: m => L.divIcon({ className: 'maefa-pin', iconSize: [34, 34], iconAnchor: [17, 17], html: `<span class="maefa-stop maefa-stop-${m.tone ?? 'next'}">${m.tone === 'done' ? '✓' : String(m.label ?? '').slice(0, 3)}</span>` }),
   me: () => L.divIcon({ className: 'maefa-pin', iconSize: [28, 28], iconAnchor: [14, 14], html: '<span class="maefa-me"><span class="maefa-me-pulse"></span><span class="maefa-me-dot"></span></span>' }),
@@ -66,6 +68,8 @@ interface Props {
   path?: [number, number][] | null;
   /** Boutons + / − (par défaut si la carte est interactive) */
   zoomButtons?: boolean;
+  /** Toucher un marqueur (ex. choisir un lieu connu comme repère) */
+  onMarkerClick?: (id: string) => void;
   /** Épingle centrale soulevée (pendant que la carte bouge) */
   pinLifted?: boolean;
   /** La cliente commence à faire glisser la carte */
@@ -93,7 +97,7 @@ function glide(marker: L.Marker, to: L.LatLng) {
   requestAnimationFrame(step);
 }
 
-export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, satellite = false, pinLifted = false, onMoveStart, zoomButtons, interactive = true, className = '', children }) => {
+export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, satellite = false, pinLifted = false, onMoveStart, onMarkerClick, zoomButtons, interactive = true, className = '', children }) => {
   const base = useRef<{ plan: L.TileLayer; sat: L.LayerGroup } | null>(null);
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -102,6 +106,8 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
   const pathRef = useRef<L.Polyline[]>([]);
   const onChange = useRef(onCenterChange);
   onChange.current = onCenterChange;
+  const onMarker = useRef(onMarkerClick);
+  onMarker.current = onMarkerClick;
   const onStart = useRef(onMoveStart);
   onStart.current = onMoveStart;
   // vrai seulement quand la cliente fait glisser la carte (les déplacements faits par le code ne comptent pas)
@@ -126,6 +132,9 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     m.on('dragstart', () => { dragging.current = true; onStart.current?.(); });
     m.on('zoomstart', () => { if (pinCenter) onStart.current?.(); });
     m.on('moveend', () => {
+      // Un « moveend » peut arriver pendant que le doigt glisse encore (marqueurs mis à jour…) :
+      // on attend la vraie fin du glissement pour ne pas reposer l'épingle trop tôt
+      if ((m.dragging as unknown as { moving?: () => boolean })?.moving?.()) return;
       const c = m.getCenter();
       onChange.current?.({ lat: c.lat, lng: c.lng }, dragging.current);
       dragging.current = false;
@@ -169,7 +178,8 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
       } else {
         const tip = mk.title ?? mk.label;
         const marker = L.marker([mk.lat, mk.lng], { icon: ICONS[mk.kind](mk), keyboard: false, title: tip });
-        if (tip) marker.bindTooltip(tip, { direction: 'top', offset: [0, mk.kind === 'stop' ? -18 : -40] });
+        if (tip) marker.bindTooltip(tip, { direction: 'top', offset: [0, mk.kind === 'stop' || mk.kind === 'poi' ? -16 : -40] });
+        marker.on('click', () => onMarker.current?.(mk.id));
         marker.addTo(m);
         layers.current.set(mk.id, marker);
       }

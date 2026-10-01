@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowRight, Check, ChevronLeft, Heart, KeyRound, Loader2, Lock, LogOut, MapPin, MessageCircle, Package, Pencil, RotateCcw, Ruler, ShieldCheck, ShoppingBag, Smartphone, Sparkles, UserRound, Volume2, Zap } from 'lucide-react';
+import { ArrowRight, Check, Trash2, ChevronLeft, Heart, KeyRound, Loader2, Lock, LogOut, MapPin, MessageCircle, Package, Pencil, RotateCcw, Ruler, ShieldCheck, ShoppingBag, Smartphone, Sparkles, UserRound, Volume2, Zap } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, SHOP_LOCATION, buildWhatsAppLink, zoneForPoint } from '../config/site';
 import { LocationPicker } from '../components/LocationPicker';
+import { useSavedAddresses } from '../utils/savedAddresses';
 import { usePageTitle } from '../utils/usePageTitle';
 import { speak } from '../utils/speak';
 import { InstallButton } from '../components/InstallApp';
@@ -395,6 +396,33 @@ const STEPS: { status: OrderStatus[]; label: string }[] = [
   { status: ['livree'], label: 'Livrée' },
 ];
 
+/** Mes adresses : Maison, Bureau, Chez maman… choisies en un geste à la commande. */
+const SavedAddressesPanel: React.FC = () => {
+  const { addresses, remove } = useSavedAddresses();
+  return (
+    <Panel id="mes-adresses" title="Mes adresses de livraison">
+      {addresses.length === 0 ? (
+        <p className="mt-3 text-sm text-ink/70">Aucune pour l'instant. À la commande, sur la carte, touchez « Maison », « Bureau »… pour enregistrer l'adresse : la prochaine fois, un seul geste suffira.</p>
+      ) : (
+        <ul className="mt-4 grid sm:grid-cols-2 gap-3" data-testid="account-addresses">
+          {addresses.map(a => (
+            <li key={a.id} className="flex items-start gap-3 p-4 rounded-2xl bg-ivory">
+              <span className="text-2xl leading-none">{a.icon}</span>
+              <span className="flex-1 min-w-0 text-sm">
+                <span className="block font-semibold">{a.name}</span>
+                <span className="block text-ink/70 truncate">{a.label || 'Point sur la carte'}</span>
+                {a.landmark && <span className="block text-xs text-ink/60 truncate">{a.landmark}</span>}
+              </span>
+              <button type="button" onClick={() => { if (window.confirm(`Supprimer l'adresse « ${a.name} » ?`)) remove(a.id); }} aria-label={`Supprimer ${a.name}`}
+                className="w-9 h-9 rounded-full border border-ink/10 grid place-items-center text-ink/60 hover:text-wine hover:border-wine/40"><Trash2 className="w-4 h-4" /></button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
+  );
+};
+
 const Panel: React.FC<{ title: string; action?: React.ReactNode; children: React.ReactNode; id?: string; className?: string }> = ({ title, action, children, id, className = '' }) => (
   <section id={id} className={`scroll-mt-28 bg-white rounded-[2rem] border border-ink/[0.06] shadow-[0_1px_2px_rgba(36,20,30,.04),0_12px_40px_-18px_rgba(36,20,30,.18)] p-6 sm:p-7 ${className}`}>
     <div className="flex items-center justify-between gap-3">
@@ -611,6 +639,8 @@ const Dashboard: React.FC = () => {
         )}
         {editing === 'pin' && <PinChanger onClose={() => setEditing(null)} />}
       </Panel>
+
+      <SavedAddressesPanel />
 
       {/* Raccourcis */}
       <nav aria-label="Mon compte" className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -289,3 +289,8 @@ export interface PurchaseRequest {
   customer?: { firstName?: string; phone?: string; zone?: string };
   history?: { status: RequestStatus; date: string }[];
 }
+
+/* ---------- Adresses enregistrées par la cliente (Maison, Bureau, Chez maman…) ---------- */
+export interface SavedAddress extends DeliveryLocation { id: string; name: string; icon: string }
+/** Lieu connu près d'un point : repère pour la cliente et le livreur */
+export interface NearbyPlace { name: string; kind: string; icon: string; lat: number; lng: number; distanceM: number }

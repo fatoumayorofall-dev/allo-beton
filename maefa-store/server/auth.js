@@ -24,7 +24,7 @@ const WEAK_PINS = new Set(['0000', '1111', '2222', '3333', '4444', '5555', '6666
 
 function publicUser(u) {
   if (!u) return null;
-  return { phone: u.phone, firstName: u.firstName ?? '', lastName: u.lastName ?? '', zone: u.zone ?? '', address: u.address ?? '', location: u.location ?? null, hasPin: !!u.pinHash, wishlist: u.wishlist ?? [], createdAt: u.createdAt };
+  return { phone: u.phone, firstName: u.firstName ?? '', lastName: u.lastName ?? '', zone: u.zone ?? '', address: u.address ?? '', location: u.location ?? null, addresses: u.addresses ?? [], hasPin: !!u.pinHash, wishlist: u.wishlist ?? [], createdAt: u.createdAt };
 }
 
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : undefined);
@@ -139,6 +139,18 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     if (b.location === null) patch.location = null;
     else if (b.location && Number.isFinite(b.location.lat) && Number.isFinite(b.location.lng) && Math.abs(b.location.lat) <= 90 && Math.abs(b.location.lng) <= 180) {
       patch.location = { lat: b.location.lat, lng: b.location.lng, label: clip(b.location.label, 200) ?? '', landmark: clip(b.location.landmark, 160) ?? '' };
+    }
+    // Adresses enregistrées : Maison, Bureau, Chez maman… (10 au plus)
+    if (Array.isArray(b.addresses)) {
+      patch.addresses = b.addresses.slice(0, 10).map(a => {
+        const lat = Number(a?.lat), lng = Number(a?.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+        return {
+          id: clip(a.id, 20) || Math.random().toString(36).slice(2, 10), name: clip(a.name, 30) || 'Adresse', icon: clip(a.icon, 4) || '📍',
+          lat: Math.round(lat * 1e6) / 1e6, lng: Math.round(lng * 1e6) / 1e6, label: clip(a.label, 200) ?? '', landmark: clip(a.landmark, 160) ?? '',
+          accuracy: Number.isFinite(Number(a.accuracy)) ? Math.round(Number(a.accuracy)) : undefined, source: ['gps', 'recherche', 'carte'].includes(a.source) ? a.source : undefined,
+        };
+      }).filter(Boolean);
     }
     if (Array.isArray(b.wishlist)) patch.wishlist = b.wishlist.filter(x => typeof x === 'string' && x.length <= 40).slice(0, 200);
     res.json({ user: publicUser(store.saveUser(user.phone, patch)) });

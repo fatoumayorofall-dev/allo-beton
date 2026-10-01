@@ -169,3 +169,62 @@ export async function roadTable(points) {
     return fallback();
   }
 }
+
+/* ---------- Lieux connus autour d'un point (Overpass / OpenStreetMap, gratuit, sans clé) ----------
+ * Pour les clientes qui ne lisent pas une carte : « à côté de la mosquée X, en face de la pharmacie Y ».
+ * OVERPASS_URL pour un serveur auto-hébergé ; NEARBY=off pour s'en passer.
+ */
+const OVERPASS_URL = process.env.OVERPASS_URL || 'https://overpass-api.de/api/interpreter';
+const NEARBY = process.env.NEARBY !== 'off';
+
+/** Genre de lieu → libellé et icône compréhensibles par tout le monde. */
+const KINDS = {
+  'amenity=place_of_worship': ['Mosquée / église', '🕌'], 'amenity=pharmacy': ['Pharmacie', '💊'], 'amenity=school': ['École', '🏫'],
+  'amenity=kindergarten': ['Jardin d\'enfants', '🧸'], 'amenity=college': ['Lycée', '🏫'], 'amenity=university': ['Université', '🎓'],
+  'amenity=hospital': ['Hôpital', '🏥'], 'amenity=clinic': ['Clinique', '🏥'], 'amenity=doctors': ['Cabinet médical', '🩺'],
+  'amenity=marketplace': ['Marché', '🛒'], 'amenity=fuel': ['Station-service', '⛽'], 'amenity=bank': ['Banque', '🏦'],
+  'amenity=atm': ['Distributeur', '🏧'], 'amenity=restaurant': ['Restaurant', '🍽️'], 'amenity=fast_food': ['Fast-food', '🍔'],
+  'amenity=cafe': ['Café', '☕'], 'amenity=police': ['Police', '👮'], 'amenity=post_office': ['Poste', '📮'],
+  'amenity=bus_station': ['Gare routière', '🚌'], 'highway=bus_stop': ['Arrêt de bus', '🚏'], 'amenity=townhall': ['Mairie', '🏛️'],
+  'shop=supermarket': ['Supermarché', '🛒'], 'shop=convenience': ['Boutique', '🏪'], 'shop=bakery': ['Boulangerie', '🥖'],
+  'shop=mobile_phone': ['Boutique téléphones', '📱'], 'shop=hairdresser': ['Salon de coiffure', '💇'], 'shop=clothes': ['Boutique', '👗'],
+  'leisure=stadium': ['Stade', '🏟️'], 'leisure=park': ['Parc', '🌳'], 'tourism=hotel': ['Hôtel', '🏨'], 'amenity=community_centre': ['Centre', '🏢'],
+};
+const KIND_KEYS = Object.keys(KINDS);
+
+/**
+ * Lieux nommés dans un rayon (mètres) autour d'un point, du plus proche au plus loin :
+ * [{ name, kind, icon, lat, lng, distanceM }]. Jamais d'erreur (liste vide si le service ne répond pas).
+ */
+export async function nearbyPlaces(lat, lng, radius = 350) {
+  if (!NEARBY) return [];
+  const r = Math.max(80, Math.min(800, Math.round(radius)));
+  const filters = ['amenity', 'shop', 'leisure', 'tourism', 'highway']
+    .map(k => `nwr(around:${r},${lat},${lng})["name"]["${k}"];`).join('');
+  const query = `[out:json][timeout:8];(${filters});out center 80;`;
+  try {
+    return await cached(`nb:${round(lat, 3.4)},${round(lng, 3.4)}:${r}`, 6 * 3600e3, async () => {
+      const res = await fetch(OVERPASS_URL, { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, body: `data=${encodeURIComponent(query)}`, signal: AbortSignal.timeout(9000) });
+      if (!res.ok) throw new Error(`overpass ${res.status}`);
+      const data = await res.json();
+      const seen = new Set();
+      const out = [];
+      for (const el of data.elements || []) {
+        const t = el.tags || {};
+        const key = KIND_KEYS.find(k => { const [a, b] = k.split('='); return t[a] === b; });
+        if (!key || !t.name) continue;
+        const p = { lat: el.lat ?? el.center?.lat, lng: el.lon ?? el.center?.lon };
+        if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
+        const name = String(t['name:fr'] || t.name).slice(0, 80);
+        if (seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        let [kind, icon] = KINDS[key];
+        if (key === 'amenity=place_of_worship') [kind, icon] = t.religion === 'christian' ? ['Église', '⛪'] : t.religion === 'muslim' ? ['Mosquée', '🕌'] : ['Lieu de culte', '🕌'];
+        out.push({ name, kind, icon, lat: round(p.lat), lng: round(p.lng), distanceM: Math.round(distanceM({ lat, lng }, p)) });
+      }
+      return out.sort((a, b) => a.distanceM - b.distanceM).slice(0, 20);
+    });
+  } catch {
+    return [];
+  }
+}

@@ -201,6 +201,8 @@ body[data-install-banner] .floating-actions { bottom: 10.5rem; }
 .maefa-me { position: relative; display: grid; place-items: center; width: 28px; height: 28px; }
 .maefa-me-dot { position: relative; width: 16px; height: 16px; border-radius: 9999px; background: #2f7bff; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,40,120,.45); }
 .maefa-me-pulse { position: absolute; inset: 0; border-radius: 9999px; background: rgba(47,123,255,.3); animation: pin-pulse 2s ease-out infinite; }
+.maefa-poi { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9999px; background: #fff; font-size: 15px; line-height: 1; box-shadow: 0 3px 10px -2px rgba(58,31,45,.45); border: 2px solid #fff; }
+.maefa-poi.is-on { border-color: #b03a64; transform: scale(1.2); }
 .maefa-stop { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9999px; border: 3px solid #fff; font: 700 14px/1 Jost, sans-serif; color: #fff; box-shadow: 0 6px 14px -4px rgba(58,31,45,.55); }
 .maefa-stop-next { background: #3a1f2d; }
 .maefa-stop-current { background: #b03a64; transform: scale(1.18); }

@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { PurchaseRequest, RequestItem, RequestStatus, AdminTour, DriverTour, TourPlan, DeliveryInfo, DeliveryLeg, DeliveryLocation, DeliveryRating, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
+import type { NearbyPlace, SavedAddress, PurchaseRequest, RequestItem, RequestStatus, AdminTour, DriverTour, TourPlan, DeliveryInfo, DeliveryLeg, DeliveryLocation, DeliveryRating, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -211,6 +211,8 @@ export interface Account {
   address: string;
   /** Dernier point de livraison choisi sur la carte */
   location?: DeliveryLocation | null;
+  /** Adresses enregistrées (Maison, Bureau…) */
+  addresses?: SavedAddress[];
   /** Un code secret est enregistré (sinon connexion par WhatsApp seulement) */
   hasPin?: boolean;
   wishlist: string[];
@@ -383,3 +385,8 @@ export const fetchRequest = (id: string) => call<{ id: string; status: RequestSt
 export const fetchAdminRequests = (pin: string) => getJson<{ requests: PurchaseRequest[] }>('/api/admin/requests', pin).then(r => r?.requests ?? null);
 export const patchRequest = (pin: string, id: string, patch: { status?: RequestStatus; note?: string }) =>
   call<{ request: PurchaseRequest }>(`/api/admin/requests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
+
+/** Lieux connus autour d'un point (mosquée, pharmacie, école…), du plus proche au plus loin. */
+export const fetchNearby = (p: { lat: number; lng: number }, signal?: AbortSignal) =>
+  fetch(`${API}/api/geo/nearby?lat=${p.lat.toFixed(5)}&lng=${p.lng.toFixed(5)}`, { signal })
+    .then(r => (r.ok ? r.json() : { places: [] })).then((r: { places: NearbyPlace[] }) => r.places ?? []).catch(() => [] as NearbyPlace[]);

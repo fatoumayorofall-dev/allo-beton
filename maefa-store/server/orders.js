@@ -12,7 +12,7 @@
 //    déclaré livré que si la cliente donne son code), note du livreur
 // ============================================================
 import crypto from 'node:crypto';
-import { distanceM, etaMinutes, reverseGeocode, roadRoute, roadTable, routeEtaMinutes, searchPlaces, trafficFactor, validPoint } from './geo.js';
+import { distanceM, etaMinutes, nearbyPlaces, reverseGeocode, roadRoute, roadTable, routeEtaMinutes, searchPlaces, trafficFactor, validPoint } from './geo.js';
 import { bestOrder, pathLength } from './tourPlanner.js';
 import { linkRequestToOrder } from './requests.js';
 import { checkMarketItems } from './market.js';
@@ -738,6 +738,14 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
   });
 
   /* ---------- Carte : recherche d'adresse et adresse d'un point ---------- */
+  /** Lieux connus autour du point (mosquée, pharmacie, école…) : des repères pour la cliente et le livreur. */
+  app.get('/api/geo/nearby', async (req, res) => {
+    if (!limit(`geo:${req.ip}`, 90, 60e3)) return res.status(429).json({ error: 'Trop de recherches' });
+    const p = { lat: Number(req.query.lat), lng: Number(req.query.lng) };
+    if (!validPoint(p)) return res.status(400).json({ error: 'Point invalide' });
+    res.json({ places: await nearbyPlaces(p.lat, p.lng, Number(req.query.r) || 350) });
+  });
+
   app.get('/api/geo/search', async (req, res) => {
     if (!limit(`geo:${req.ip}`, 90, 60e3)) return res.status(429).json({ error: 'Trop de recherches' });
     const near = { lat: Number(req.query.lat), lng: Number(req.query.lng) };
