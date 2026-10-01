@@ -1,8 +1,8 @@
 import { delayLabel } from '../utils/market';
 import { PREORDER_MAX } from '../utils/stock';
 import React, { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ArrowRight, Check, Lock, Minus, Plus, ShieldCheck, Tag, Truck, X, PackageCheck } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, Minus, Plus, ShieldCheck, Tag, Truck, X, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
@@ -12,6 +12,8 @@ import { GiftWrapOption } from '../components/CartDrawer';
 import { BrandMark } from '../components/Logo';
 import { ProductCard } from '../components/ProductCard';
 import { ForeignPrice } from '../components/CurrencySwitch';
+import { startWhatsAppOrder } from '../utils/whatsappOrder';
+import { WhatsAppGlyph } from '../components/BrandLogos';
 
 export const PromoBox: React.FC = () => {
   const { promoCode, applyPromo, removePromo, notify, computeTotals } = useStore();
@@ -44,8 +46,7 @@ export const PromoBox: React.FC = () => {
 
 export const Cart: React.FC = () => {
   usePageTitle('Mon panier');
-  const { cart, updateQuantity, removeFromCart, computeTotals, getProduct, clearCart, products } = useStore();
-  const navigate = useNavigate();
+  const { cart, updateQuantity, removeFromCart, computeTotals, getProduct, clearCart, products, savedCustomer } = useStore();
   const t = computeTotals(0);
   const net = t.subtotal - t.discount;
   const remaining = Math.max(0, SITE_CONFIG.freeShippingThreshold - net);
@@ -135,8 +136,8 @@ export const Cart: React.FC = () => {
             <div className="flex justify-between"><dt className="text-ink/75">Livraison</dt><dd className="text-ink/75">{t.subtotal - t.discount >= SITE_CONFIG.freeShippingThreshold ? 'Offerte' : 'Selon votre zone'}</dd></div>
           </dl>
           <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="text-right"><span className="block font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span></div>
-          <button onClick={() => navigate('/commande')} className="btn-dark w-full">Passer commande <ArrowRight className="w-4 h-4" /></button>
-          <p className="text-[11px] text-ink/70 flex items-center justify-center gap-1.5"><Lock className="w-3 h-3" /> Wave · Orange Money · Carte · Espèces</p>
+          <button onClick={() => startWhatsAppOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, image: i.image, size: i.size, color: i.color, quantity: i.quantity })), savedCustomer)} data-testid="cart-whatsapp" className="w-full h-[56px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Commander sur WhatsApp</button>
+          <p className="text-[11px] text-ink/70 text-center leading-relaxed">Nous vérifions la disponibilité de chaque pièce, puis vous envoyons le lien pour finaliser (livraison, paiement).</p>
           <Link to="/boutique" className="block py-3 -my-3 text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>
           <ul className="border-t border-ink/10 pt-6 space-y-3 text-xs text-ink/75">
             {[

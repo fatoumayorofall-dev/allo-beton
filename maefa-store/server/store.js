@@ -16,7 +16,7 @@ fs.mkdirSync(VOICE_DIR, { recursive: true });
 const SLUG_RE = /^[a-z0-9-]{2,80}$/;
 export const validSlug = s => typeof s === 'string' && SLUG_RE.test(s);
 
-let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, tours: {}, market: { products: {}, settings: null }, catalog: null, catalogUpdatedAt: null, stockAlerts: [], authCodes: {} };
+let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, tours: {}, requests: {}, market: { products: {}, settings: null }, catalog: null, catalogUpdatedAt: null, stockAlerts: [], authCodes: {} };
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
 const renameRefs = raw => raw.replace(/"(?:FAB|EFA)-([A-Z0-9]+)/g, '"MAE-$1');
@@ -178,6 +178,18 @@ export function saveTour(tour) {
   (state.tours ??= {})[tour.id] = tour;
   persist();
   return tour;
+}
+
+/* ---------- Demandes WhatsApp (« Acheter » : la gérante vérifie chez le fournisseur avant de confirmer) ---------- */
+export const getRequest = id => (state.requests ??= {})[id] ?? null;
+export const listRequests = () => Object.values(state.requests ?? {}).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+export function saveRequest(r) {
+  (state.requests ??= {})[r.id] = r;
+  // On garde les 2 000 dernières demandes
+  const all = listRequests();
+  if (all.length > 2000) for (const old of all.slice(2000)) delete state.requests[old.id];
+  persist();
+  return r;
 }
 
 /* ---------- Le Marché (dropshipping) : produits des fournisseurs + réglages ---------- */

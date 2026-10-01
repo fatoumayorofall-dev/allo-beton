@@ -1,5 +1,5 @@
-import React, { Suspense, lazy, useState } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Banknote, Check, ChevronDown, ChevronLeft, Clock, Copy, CreditCard, Gift, Globe2, Loader2, Lock, MapPin, Smartphone } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, SHOP_LOCATION, SITE_CONFIG, zoneForPoint } from '../config/site';
@@ -8,7 +8,10 @@ import { formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { PromoBox } from './Cart';
-import { checkOrder, createOrder, getServerStatus } from '../services/api';
+import { checkOrder, createOrder, fetchRequest, getServerStatus } from '../services/api';
+import type { RequestStatus } from '../data/types';
+import { buildWhatsAppLink } from '../config/site';
+import { WhatsAppGlyph } from '../components/BrandLogos';
 import { delayLabel } from '../utils/market';
 import { useAccount } from '../context/AccountContext';
 import { CardLogos } from '../components/BrandLogos';
@@ -40,7 +43,7 @@ interface FormState {
 
 export const Checkout: React.FC = () => {
   usePageTitle('Commande');
-  const { cart, computeTotals, placeOrder, clearCart, promoCode, notify, savedCustomer, saveCustomer, giftWrap, logNotification, reloadCatalog } = useStore();
+  const { cart, computeTotals, placeOrder, clearCart, replaceCart, promoCode, notify, savedCustomer, saveCustomer, giftWrap, logNotification, reloadCatalog } = useStore();
   const navigate = useNavigate();
   const account = useAccount();
   const me = account.user;
@@ -61,6 +64,45 @@ export const Checkout: React.FC = () => {
   const [payPhone, setPayPhone] = useState('');
   const [card, setCard] = useState({ number: '', expiry: '', cvc: '' });
   const [processing, setProcessing] = useState(false);
+
+  // Lien « disponible » envoyé par la gérante sur WhatsApp : /commande?demande=DEM-XXXXX
+  const [params] = useSearchParams();
+  const requestId = (params.get('demande') || '').toUpperCase();
+  const [request, setRequest] = useState<{ status: RequestStatus; note: string; orderId: string | null } | 'loading' | 'missing' | null>(requestId ? 'loading' : null);
+  useEffect(() => {
+    if (!requestId) return;
+    fetchRequest(requestId).then(r => {
+      if (!r.ok) { setRequest('missing'); return; }
+      setRequest({ status: r.data.status, note: r.data.note, orderId: r.data.orderId });
+      // Pièces confirmées : le panier devient exactement la demande
+      if (r.data.status === 'disponible') {
+        replaceCart(r.data.items.map(i => ({ key: `${i.productId}|${i.size ?? ''}|${i.color ?? ''}`, productId: i.productId, name: i.name, image: i.image ?? '', price: i.price, size: i.size, color: i.color, quantity: i.quantity })));
+      }
+    });
+  }, [requestId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (request === 'loading') return <div className="py-32 grid place-items-center"><Loader2 className="w-7 h-7 animate-spin text-ink/40" /></div>;
+  if (request && (request === 'missing' || request.status !== 'disponible')) {
+    const r = request;
+    const wa = buildWhatsAppLink(`Bonjour Maefa Store 👋 Je reviens pour ma demande ${requestId}.`);
+    return (
+      <div className="max-w-xl mx-auto px-5 py-20 text-center" data-testid="request-status">
+        <p className="text-5xl">{r === 'missing' ? '🔎' : r.status === 'nouvelle' ? '⏳' : r.status === 'commandee' ? '✅' : '🙏'}</p>
+        <h1 className="font-display text-4xl mt-4">
+          {r === 'missing' ? 'Demande introuvable' : r.status === 'nouvelle' ? 'Nous vérifions la disponibilité' : r.status === 'commandee' ? 'Commande déjà passée' : 'Pièce indisponible pour le moment'}
+        </h1>
+        <p className="text-ink/75 mt-3 leading-relaxed">
+          {r === 'missing' ? 'Ce lien n\'est plus valable. Écrivez-nous sur WhatsApp.'
+            : r.status === 'nouvelle' ? 'Votre demande est bien arrivée. Nous vous envoyons le lien pour finaliser sur WhatsApp dès que tout est confirmé.'
+              : r.status === 'commandee' ? 'Merci ! Vous pouvez suivre votre commande à tout moment.'
+                : (r.note || 'Nous sommes désolés. Écrivez-nous sur WhatsApp : nous vous proposons une autre pièce.')}
+        </p>
+        {r !== 'missing' && r.status === 'commandee' && r.orderId
+          ? <Link to={`/suivi?commande=${r.orderId}`} className="btn-dark mt-8 inline-flex">Suivre ma commande</Link>
+          : <a href={wa} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex items-center gap-2 px-6 h-14 rounded-full bg-[#177a41] text-white font-semibold"><WhatsAppGlyph className="w-5 h-5" /> Écrire à Maefa</a>}
+      </div>
+    );
+  }
 
   if (cart.length === 0 && !processing) return <Navigate to="/panier" replace />;
 
@@ -150,6 +192,7 @@ export const Checkout: React.FC = () => {
       paymentMethod: method,
       paymentStatus: 'en_attente',
       payerPhone: isMobile ? payPhone.trim() : undefined,
+      requestId: requestId || undefined,
     });
     // Messages WhatsApp automatiques (gérante + cliente) si le serveur est configuré ; sinon la page
     // de confirmation propose l'envoi manuel du récapitulatif.
@@ -193,6 +236,11 @@ export const Checkout: React.FC = () => {
         </ol>
       </div>
 
+      {requestId && request && request.status === 'disponible' && (
+        <p className="-mt-6 mb-10 p-4 rounded-2xl bg-emerald-50 text-emerald-900 text-sm flex items-center gap-2" data-testid="request-confirmed">
+          <Check className="w-4 h-4 shrink-0" /> <span><strong>Disponibilité confirmée par Maefa</strong> · réf. {requestId}. Indiquez votre maison sur la carte et votre paiement.</span>
+        </p>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-12 items-start">
         <div className="min-w-0">
           {step === 1 ? (

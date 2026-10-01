@@ -23,8 +23,8 @@ export const WOLOF_GUIDE: GuideTopic[] = [
     emoji: '🛍️',
     wo: 'Naka laay jënde ?',
     fr: 'Comment commander',
-    textWo: '1. Tànnal sac walla dàll bi la neex.\n2. Bësal « Ajouter au panier ».\n3. Bësal panier bi, bindal sa tur, sa nimero ak fi ngay dëkk.\n4. Bësal « Valider ma commande ». Dinañu la woo walla bind ci WhatsApp.',
-    textFr: 'Choisissez la pièce, touchez « Ajouter au panier », ouvrez le panier, écrivez votre nom, votre numéro et votre adresse, puis « Valider ma commande ». Nous vous appelons ou vous écrivons sur WhatsApp.',
+    textWo: '1. Tànnal sac walla dàll bi la neex.\n2. Bësal « Acheter maintenant » : WhatsApp dina ubbiku ak sa commande.\n3. Dinañu seet ndax am na, te yónnee la ab lien ngir nga wone sa kër ci kart bi.',
+    textFr: 'Choisissez la pièce et touchez « Acheter maintenant » : WhatsApp s\'ouvre avec votre commande. Nous vérifions la disponibilité, puis vous envoyons un lien pour indiquer votre maison sur la carte et payer.',
     link: { to: '/boutique', wo: 'Seeti sac yi ak dàll yi', fr: 'Voir la boutique' },
   },
   {

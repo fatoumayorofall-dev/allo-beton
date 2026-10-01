@@ -96,6 +96,8 @@ interface StoreContextValue {
   updateQuantity: (key: string, quantity: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
+  /** Remplace tout le panier (lien « disponible » envoyé par la gérante) */
+  replaceCart: (items: CartItem[]) => void;
   cartOpen: boolean;
   setCartOpen: (open: boolean) => void;
 
@@ -293,6 +295,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [products]);
 
   const removeFromCart = useCallback((key: string) => setCart(items => items.filter(i => i.key !== key)), []);
+  const replaceCart = useCallback((items: CartItem[]) => setCart(items), []);
   const clearCart = useCallback(() => {
     setCart([]);
     setPromoCode(null);
@@ -406,7 +409,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const value = useMemo<StoreContextValue>(() => ({
     products, getProduct, saveProduct, deleteProduct, resetCatalog, catalogLive, reloadCatalog, addReview,
-    cart, addToCart, updateQuantity, removeFromCart, clearCart, cartOpen, setCartOpen,
+    cart, addToCart, updateQuantity, removeFromCart, clearCart, replaceCart, cartOpen, setCartOpen,
     promoCode, applyPromo, removePromo, giftWrap, setGiftWrap, computeTotals,
     wishlist, toggleWishlist, mergeWishlist, isInWishlist,
     recentlyViewed, markViewed,

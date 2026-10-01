@@ -3,7 +3,7 @@
  * Le site reste pleinement utilisable sans serveur : chaque fonction échoue proprement
  * et l'interface bascule sur le mode manuel ou hors ligne.
  */
-import type { AdminTour, DriverTour, TourPlan, DeliveryInfo, DeliveryLeg, DeliveryLocation, DeliveryRating, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
+import type { PurchaseRequest, RequestItem, RequestStatus, AdminTour, DriverTour, TourPlan, DeliveryInfo, DeliveryLeg, DeliveryLocation, DeliveryRating, MarketProduct, MarketSettings, Order, OrderStatus, Product, RelayPoint, StockAlert, SupplierStatus, Vehicle } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
@@ -371,3 +371,15 @@ export const fetchTours = (pin: string) => getJson<{ tours: AdminTour[] }>('/api
 export const cancelTour = (pin: string, id: string) => call<{ tour: AdminTour }>(`/api/admin/tours/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'x-admin-pin': pin } });
 export const fetchDriverTour = (token: string) => call<DriverTour>(`/api/tour/${encodeURIComponent(token)}`);
 export const skipTourStop = (token: string, orderId: string) => call<DriverTour>(`/api/tour/${encodeURIComponent(token)}/skip`, { method: 'POST', body: JSON.stringify({ orderId }) });
+
+/* ---------- Demandes WhatsApp ---------- */
+/** Envoyée pendant que WhatsApp s'ouvre : « keepalive » pour qu'elle parte même si la page est quittée. */
+export function createRequest(body: { id: string; items: RequestItem[]; customer?: { firstName?: string; phone?: string; zone?: string } }) {
+  try {
+    fetch(`${API}/api/requests`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), keepalive: true }).catch(() => {});
+  } catch { /* version sans serveur : WhatsApp suffit */ }
+}
+export const fetchRequest = (id: string) => call<{ id: string; status: RequestStatus; items: RequestItem[]; total: number; note: string; orderId: string | null }>(`/api/requests/${encodeURIComponent(id)}`);
+export const fetchAdminRequests = (pin: string) => getJson<{ requests: PurchaseRequest[] }>('/api/admin/requests', pin).then(r => r?.requests ?? null);
+export const patchRequest = (pin: string, id: string, patch: { status?: RequestStatus; note?: string }) =>
+  call<{ request: PurchaseRequest }>(`/api/admin/requests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });

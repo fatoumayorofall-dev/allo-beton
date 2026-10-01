@@ -220,6 +220,10 @@ registerAuthenticityRoutes(app, { limit, isAdmin, store });
 /* ---------- Vidéos des pièces (envoyées depuis l'espace gérant) ---------- */
 registerMediaRoutes(app, { limit, isAdmin, dataDir: store.DATA_DIR });
 
+/* ---------- Demandes WhatsApp (vérification chez le fournisseur avant confirmation) ---------- */
+const { registerRequestRoutes } = await import('./requests.js');
+registerRequestRoutes(app, { limit, isAdmin, store });
+
 /* ---------- Le Marché (dropshipping) ---------- */
 registerMarketRoutes(app, { limit, isAdmin, store, wa });
 

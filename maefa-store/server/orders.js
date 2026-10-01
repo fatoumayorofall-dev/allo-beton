@@ -14,6 +14,7 @@
 import crypto from 'node:crypto';
 import { distanceM, etaMinutes, reverseGeocode, roadRoute, roadTable, routeEtaMinutes, searchPlaces, trafficFactor, validPoint } from './geo.js';
 import { bestOrder, pathLength } from './tourPlanner.js';
+import { linkRequestToOrder } from './requests.js';
 import { checkMarketItems } from './market.js';
 import { applyStock, checkStock } from './catalog.js';
 
@@ -216,6 +217,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
       notifications: [],
     };
     applyStock(order, store, -1);
+    if (o.requestId) { order.requestId = clip(o.requestId, 12).toUpperCase(); linkRequestToOrder(store, order.requestId, order.id); }
     const sent = await wa.notifyNewOrder(order);
     logSend(order, 'nouvelle', 'gerante', sent.owner);
     logSend(order, 'nouvelle', 'cliente', sent.customer);

@@ -199,6 +199,8 @@ export interface Order {
   rating?: DeliveryRating;
   /** Articles du Marché : commande passée chez le fournisseur */
   supplier?: OrderSupplier;
+  /** Demande WhatsApp à l'origine de la commande (DEM-XXXX) */
+  requestId?: string;
 }
 
 /* ---------- Le Marché (dropshipping) ---------- */
@@ -277,4 +279,13 @@ export interface DriverTourStop {
 export interface DriverTour {
   id: string; driverName: string; vehicle: Vehicle; startedAt: string | null; doneAt: string | null; cancelled: boolean;
   totalM: number; roundTripsM: number; shop: { lat: number; lng: number }; current: number; stops: DriverTourStop[];
+}
+
+/* ---------- Demandes WhatsApp (« Acheter » → vérification chez le fournisseur) ---------- */
+export type RequestStatus = 'nouvelle' | 'disponible' | 'indisponible' | 'commandee';
+export interface RequestItem { productId: string; name: string; price: number; image?: string; size?: string; color?: string; quantity: number }
+export interface PurchaseRequest {
+  id: string; status: RequestStatus; createdAt: string; items: RequestItem[]; total: number; note?: string; orderId?: string;
+  customer?: { firstName?: string; phone?: string; zone?: string };
+  history?: { status: RequestStatus; date: string }[];
 }

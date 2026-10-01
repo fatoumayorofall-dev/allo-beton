@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Bell, ChevronDown, ChevronRight, Heart, Minus, Plus, Ruler, Share2, ShieldCheck, Truck, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
-import { SITE_CONFIG, buildProductWhatsAppMessage, buildWhatsAppLink } from '../config/site';
+import { SITE_CONFIG, buildProductWhatsAppMessage } from '../config/site';
 import { WhatsAppWithPhoto } from '../components/WhatsAppWithPhoto';
+import { startWhatsAppOrder } from '../utils/whatsappOrder';
 import { discountPercent, formatPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { useInView } from '../utils/hooks';
@@ -87,8 +88,7 @@ const StockAlertForm: React.FC<{ onSubmit: (contact: string) => void }> = ({ onS
 
 export const ProductDetail: React.FC = () => {
   const { slug = '' } = useParams();
-  const navigate = useNavigate();
-  const { getProduct, products, addToCart, toggleWishlist, isInWishlist, markViewed, setCartOpen, notify, addReview, addStockAlert } = useStore();
+  const { getProduct, products, addToCart, toggleWishlist, isInWishlist, markViewed, setCartOpen, notify, addReview, addStockAlert, savedCustomer } = useStore();
   const product = getProduct(slug);
 
   const [size, setSize] = useState('');
@@ -177,7 +177,11 @@ export const ProductDetail: React.FC = () => {
     sparkleBurst(e?.currentTarget, { count: 18 });
     setCartOpen(true);
   };
-  const handleBuyNow = () => { if (validate() && addToCart(product, { size, color, quantity: qty, silent: true })) navigate('/commande'); };
+  // « Acheter » : WhatsApp s'ouvre avec le détail ; la boutique vérifie chez son fournisseur avant de confirmer
+  const handleBuyNow = () => {
+    if (!validate()) return;
+    startWhatsAppOrder([{ productId: product.id, name: product.name, price: product.price, image: product.images[0], size: size || undefined, color: color || undefined, quantity: qty }], savedCustomer);
+  };
 
   const share = async () => {
     const url = shortLink(product, 'partage');
@@ -191,7 +195,6 @@ export const ProductDetail: React.FC = () => {
   const waMessage = buildProductWhatsAppMessage({
     name: product.name, price: product.price, size: size || undefined, color: color || undefined, url: window.location.href,
   });
-  const waLink = buildWhatsAppLink(waMessage);
   const toggle = (id: string) => setOpenSection(s => (s === id ? null : id));
 
   return (
@@ -292,11 +295,8 @@ export const ProductDetail: React.FC = () => {
             </div>
             {outOfStock
               ? <StockAlertForm onSubmit={c => { addStockAlert(product.id, c); notify('Alerte enregistrée'); }} />
-              : <button onClick={handleBuyNow} className="btn-gold w-full mt-2">Acheter maintenant</button>}
-            <a href={waLink} target="_blank" rel="noopener noreferrer"
-              className="mt-2 w-full h-[52px] rounded-full border border-ink/15 flex items-center justify-center gap-2.5 text-[11px] uppercase tracking-[0.22em] font-semibold hover:border-[#177a41] hover:text-[#177a41] transition-colors">
-              <WhatsAppGlyph className="w-4 h-4 text-[#177a41]" /> Commander sur WhatsApp
-            </a>
+              : <button onClick={handleBuyNow} data-testid="buy-whatsapp" className="mt-2 w-full h-[56px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Acheter maintenant</button>}
+            <p className="mt-2 text-[11px] text-ink/65 text-center leading-relaxed">Vous écrivez à Maefa sur WhatsApp : nous vérifions la disponibilité, puis vous envoyons le lien pour finaliser.</p>
             <WhatsAppWithPhoto message={waMessage} image={product.images[0]} video={product.video} name={product.name} className="mt-1" />
             {!outOfStock && !preorder && <DeliveryEstimate />}
 

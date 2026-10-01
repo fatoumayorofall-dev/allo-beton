@@ -11,6 +11,8 @@ import { ProductImage } from './ProductImage';
 import { BrandMark } from './Logo';
 import { ForeignPrice } from './CurrencySwitch';
 import { CardLogos } from './BrandLogos';
+import { startWhatsAppOrder } from '../utils/whatsappOrder';
+import { WhatsAppGlyph } from './BrandLogos';
 
 export const GiftWrapOption: React.FC = () => {
   const { giftWrap, setGiftWrap } = useStore();
@@ -34,7 +36,7 @@ export const GiftWrapOption: React.FC = () => {
 };
 
 export const CartDrawer: React.FC = () => {
-  const { cart, cartOpen, setCartOpen, updateQuantity, removeFromCart, computeTotals, products, addToCart } = useStore();
+  const { cart, cartOpen, setCartOpen, updateQuantity, removeFromCart, computeTotals, products, addToCart, savedCustomer } = useStore();
   const navigate = useNavigate();
   const close = () => setCartOpen(false);
   useLockBody(cartOpen);
@@ -144,7 +146,8 @@ export const CartDrawer: React.FC = () => {
                 <span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Sous-total</span>
                 <span className="text-right"><span className="block font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span>
               </div>
-              <button onClick={() => { close(); navigate('/commande'); }} className="btn-dark w-full">Commander</button>
+              <button onClick={() => { close(); startWhatsAppOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, image: i.image, size: i.size, color: i.color, quantity: i.quantity })), savedCustomer); }} data-testid="drawer-whatsapp" className="w-full h-[52px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Commander sur WhatsApp</button>
+              <p className="text-[11px] text-ink/70 text-center -mt-1">Disponibilité confirmée sur WhatsApp, puis lien pour finaliser.</p>
               <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70"><ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave · Orange Money · à la livraison</p>
               {SITE_CONFIG.cardPayments && <div className="flex justify-center -mt-1"><CardLogos /></div>}
               <Link to="/panier" onClick={close} className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Voir le panier détaillé</Link>
