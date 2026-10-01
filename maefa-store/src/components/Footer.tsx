@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
-import { FEATURES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
+import { FEATURES, SITE_CONFIG } from '../config/site';
 import { CATEGORIES } from '../data/catalog';
 import { useStore } from '../context/StoreContext';
 import { BrandMark, Wordmark } from './Logo';
 import { Twinkles, sparkleBurst } from './Magic';
-import { PaymentLogos, FacebookLogo, InstagramLogo, SnapchatLogo, TikTokLogo, WhatsAppLogo } from './BrandLogos';
+import { PaymentLogos, SocialLinks } from './BrandLogos';
 
 const NEWSLETTER_KEY = 'maefa_newsletter';
 
@@ -64,20 +64,7 @@ export const Footer: React.FC = () => {
             <Wordmark className="h-9 w-auto text-ivory" tagClassName="fill-gold-light stroke-gold-light" />
           </Link>
           <p className="text-sm text-ivory/55 leading-relaxed max-w-xs">Chaussures et sacs choisis avec amour pour sublimer chaque femme. Maison dakaroise, élégance sans frontières.</p>
-          <div className="flex gap-2">
-            {[
-              { Logo: WhatsAppLogo, href: buildWhatsAppLink('Bonjour Maefa Store !'), label: 'WhatsApp' },
-              { Logo: InstagramLogo, href: SITE_CONFIG.social.instagram, label: 'Instagram' },
-              { Logo: TikTokLogo, href: SITE_CONFIG.social.tiktok, label: 'TikTok' },
-              { Logo: SnapchatLogo, href: SITE_CONFIG.social.snapchat, label: 'Snapchat' },
-              { Logo: FacebookLogo, href: SITE_CONFIG.social.facebook, label: 'Facebook' },
-            ].map(({ Logo, href, label }) => (
-              <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} data-testid={`social-${label.toLowerCase()}`}
-                className="w-11 h-11 rounded-full bg-ivory grid place-items-center shadow-[0_6px_18px_-8px_rgba(0,0,0,.5)] hover:-translate-y-0.5 transition-transform duration-500 ease-luxe">
-                <Logo className="w-6 h-6" />
-              </a>
-            ))}
-          </div>
+          <SocialLinks />
         </div>
 
         <div>

@@ -13,7 +13,7 @@ import { Logo } from './Logo';
 import { CurrencySwitch } from './CurrencySwitch';
 import { SearchOverlay } from './SearchOverlay';
 import { ProductImage } from './ProductImage';
-import { FacebookLogo, InstagramLogo, SnapchatLogo, TikTokLogo, WhatsAppLogo } from './BrandLogos';
+import { SocialLinks } from './BrandLogos';
 
 // Fête proche (moins de 30 jours) : annoncée en premier, avec la date limite pour être livrée à temps
 const NEXT_FETE = upcomingFetes(new Date(), 30)[0];
@@ -221,13 +221,9 @@ export const Navbar: React.FC = () => {
               </div>
             </div>
             <div className="px-6 py-3 border-t border-ink/[0.07] flex items-center justify-between text-xs text-ink/75"><span>Afficher les prix en</span><CurrencySwitch up /></div>
-            <div className="px-6 py-3 border-t border-ink/[0.07] flex items-center justify-between" data-testid="menu-socials">
-              <span className="text-xs text-ink/75">Suivez-nous</span>
-              <span className="flex gap-2">
-                {([[WhatsAppLogo, buildWhatsAppLink('Bonjour Maefa Store !'), 'WhatsApp'], [InstagramLogo, SITE_CONFIG.social.instagram, 'Instagram'], [TikTokLogo, SITE_CONFIG.social.tiktok, 'TikTok'], [SnapchatLogo, SITE_CONFIG.social.snapchat, 'Snapchat'], [FacebookLogo, SITE_CONFIG.social.facebook, 'Facebook']] as const).map(([Logo, href, label]) => (
-                  <a key={label} href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className="w-10 h-10 rounded-full bg-white border border-ink/[0.07] grid place-items-center"><Logo className="w-5 h-5" /></a>
-                ))}
-              </span>
+            <div className="px-6 py-4 border-t border-ink/[0.07]" data-testid="menu-socials">
+              <p className="text-xs text-ink/75 mb-3">Suivez-nous</p>
+              <SocialLinks size="w-10 h-10" />
             </div>
             <div className="px-6 py-5 bg-ivory-deep text-xs text-ink/75 flex justify-between">
               <Link to="/a-propos">Notre maison</Link><Link to="/faq">Aide & FAQ</Link><a href={buildWhatsAppLink('Bonjour Maefa Store, j\'ai une question.')} target="_blank" rel="noopener noreferrer" className="text-[#177a41] font-semibold">WhatsApp</a><a href={`tel:${SITE_CONFIG.phoneRaw}`}>Appeler</a>

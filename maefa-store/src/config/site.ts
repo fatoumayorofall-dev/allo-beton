@@ -39,6 +39,7 @@ export const SITE_CONFIG = {
     facebook: 'https://facebook.com/maefastore',
     tiktok: 'https://tiktok.com/@maefastore',
     snapchat: 'https://www.snapchat.com/add/maefastore',
+    x: 'https://x.com/maefastore',
   },
   // Logos officiels des moyens de paiement : déposer le fichier dans public/brand/ puis indiquer son chemin
   // (ex. '/brand/wave.png'). Tant qu'un chemin est vide, le nom s'affiche en toutes lettres.
