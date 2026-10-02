@@ -9,7 +9,7 @@ export const px = (id: number, w = 800) =>
  * Version du catalogue initial. À incrémenter quand INITIAL_PRODUCTS change de structure :
  * les navigateurs qui gardaient une ancienne copie en mémoire repartent alors du nouveau catalogue.
  */
-export const CATALOG_VERSION = 20;
+export const CATALOG_VERSION = 21;
 
 /** Toutes les catégories prévues (y compris celles pas encore en vente). */
 export const ALL_CATEGORIES: Category[] = [
@@ -399,4 +399,12 @@ export const ALL_PRODUCTS: Product[] = [
   coumba({ name: 'Chocolat', hex: '#5a2f24' }, 'chocolat'),
 ];
 
-export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category));
+/**
+ * Pièces retirées de la vente à cause d'une marque visible (logo, boîte ou étiquette d'une grande maison) :
+ * Adja (boîte, étiquette et pochette Hermès sur les photos et vidéos) et Aminata (breloque « T » de Tod's).
+ * Elles reviendront avec des photos et des pièces sans marque. Le serveur garde la même liste (server/catalog.js).
+ */
+export const PAUSED_SLUG_PREFIXES = ['tongs-adja-', 'sac-aminata-'];
+export const isPaused = (p: { slug: string }) => PAUSED_SLUG_PREFIXES.some(pre => p.slug.startsWith(pre));
+
+export const INITIAL_PRODUCTS: Product[] = ALL_PRODUCTS.filter(p => isOnSale(p.category) && !isPaused(p));

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { CATALOG_VERSION, INITIAL_PRODUCTS } from '../data/catalog';
+import { CATALOG_VERSION, INITIAL_PRODUCTS, isPaused } from '../data/catalog';
 import { isOnSale } from '../config/site';
 import { fetchCatalog, postReview, postStockAlert } from '../services/api';
 import { PREORDER_MAX, isPreorder } from '../utils/stock';
@@ -31,7 +31,7 @@ function loadProducts(): Product[] {
     return INITIAL_PRODUCTS;
   }
   // Pièces des catégories qui ne sont plus en vente : masquées (les pièces ajoutées par la gérante sont gardées)
-  const stored = load<Product[]>(KEYS.products, INITIAL_PRODUCTS).filter(p => isOnSale(p.category));
+  const stored = load<Product[]>(KEYS.products, INITIAL_PRODUCTS).filter(p => isOnSale(p.category) && !isPaused(p));
   return stored.length ? stored : INITIAL_PRODUCTS;
 }
 
@@ -172,7 +172,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     lastCatalogFetch.current = Date.now();
     const r = await fetchCatalog();
     if (!r?.products) return; // serveur absent ou catalogue pas encore publié : on garde celui de l'appareil
-    setProducts(r.products.filter(p => isOnSale(p.category)));
+    setProducts(r.products.filter(p => isOnSale(p.category) && !isPaused(p)));
     setCatalogLive(true);
   }, []);
   useEffect(() => {

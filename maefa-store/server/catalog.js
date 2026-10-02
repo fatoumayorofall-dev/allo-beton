@@ -6,6 +6,9 @@
 //  - « sur commande » : une pièce épuisée reste commandable avec un délai
 //  - avis clientes et alertes de retour en stock gardés par le serveur
 // ============================================================
+/** Pièces retirées de la vente pour une marque visible : même liste que PAUSED_SLUG_PREFIXES (src/data/catalog.ts). */
+export const PAUSED_SLUG_PREFIXES = ['tongs-adja-', 'sac-aminata-'];
+export const isPaused = p => PAUSED_SLUG_PREFIXES.some(pre => String(p?.slug ?? '').startsWith(pre));
 const CATEGORY_IDS = new Set(['chaussures', 'sacs', 'accessoires', 'bijoux', 'vetements']);
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
 const int = (v, min, max, dflt = min) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt; };
@@ -101,7 +104,7 @@ export function applyStock(order, store, direction) {
 export function registerCatalogRoutes(app, { limit, isAdmin, store }) {
   app.get('/api/catalog', (_req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.json({ products: store.getCatalog(), updatedAt: store.getCatalogUpdatedAt() });
+    res.json({ products: store.getCatalog()?.filter(p => !isPaused(p)) ?? null, updatedAt: store.getCatalogUpdatedAt() });
   });
 
   /* Gérante : publier tout le catalogue (première fois, ou « restaurer le catalogue ») */

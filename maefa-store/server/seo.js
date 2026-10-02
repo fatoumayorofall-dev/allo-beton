@@ -8,6 +8,7 @@
 // ============================================================
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPaused } from './catalog.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clip = (s, n = 160) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t; };
@@ -52,7 +53,7 @@ export function registerSeoRoutes(app, { store, dist }) {
     const onSale = new Set(d.categories.map(c => c.id));
     const catalog = store.getCatalog();
     if (!catalog) return d.products;
-    return catalog.filter(p => onSale.has(p.category)).map(p => ({ id: p.id, slug: p.slug, name: p.name, category: p.category, price: p.price, image: p.images?.[0], description: p.description }));
+    return catalog.filter(p => onSale.has(p.category) && !isPaused(p)).map(p => ({ id: p.id, slug: p.slug, name: p.name, category: p.category, price: p.price, image: p.images?.[0], description: p.description }));
   };
   const marketProducts = () => {
     const names = new Set(data().categories.map(c => c.name.toLowerCase()));
