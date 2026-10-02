@@ -6,7 +6,7 @@ import { useAccount } from '../context/AccountContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import type { CategoryId } from '../data/types';
 import { FEATURES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
-import { formatPrice } from '../utils/format';
+import { shownPrice } from '../utils/format';
 import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from '../utils/fetes';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { Logo } from './Logo';
@@ -180,7 +180,7 @@ export const Navbar: React.FC = () => {
                   <div>
                     <p className="font-script text-2xl text-gold-dark">Notre coup de cœur</p>
                     <p className="font-display text-3xl mt-3 leading-tight">{megaData[mega].featured!.name}</p>
-                    <p className="text-sm mt-2 text-ink/75">{formatPrice(megaData[mega].featured!.price)}</p>
+                    <p className="text-sm mt-2 text-ink/75">{shownPrice(megaData[mega].featured!.price)}</p>
                     <span className="mt-5 inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold">Découvrir <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
                   </div>
                 </Link>

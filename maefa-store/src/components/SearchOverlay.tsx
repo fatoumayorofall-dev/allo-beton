@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Search, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { formatPrice } from '../utils/format';
+import { shownPrice } from '../utils/format';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
 
@@ -77,7 +77,7 @@ export const SearchOverlay: React.FC<{ open: boolean; onClose: () => void }> = (
                       <Link to={`/produit/${p.slug}`} onClick={onClose} className="group block">
                         <div className="aspect-[3/4] overflow-hidden rounded-3xl"><ProductImage src={p.images[0]} alt={p.name} className="w-full h-full group-hover:scale-105 transition-transform duration-700" sizes="200px" /></div>
                         <p className="font-display text-lg mt-2 leading-tight line-clamp-1">{p.name}</p>
-                        <p className="text-xs text-ink/70">{formatPrice(p.price)}</p>
+                        <p className="text-xs text-ink/70">{shownPrice(p.price)}</p>
                       </Link>
                     </li>
                   ))}

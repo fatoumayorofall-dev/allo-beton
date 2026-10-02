@@ -4,7 +4,7 @@ import { ChevronRight, CreditCard, Globe2, MessageCircle, Minus, PackageCheck, P
 import { useStore } from '../context/StoreContext';
 import { buildProductWhatsAppMessage, buildWhatsAppLink } from '../config/site';
 import { WhatsAppWithPhoto } from '../components/WhatsAppWithPhoto';
-import { discountPercent, formatPrice } from '../utils/format';
+import { discountPercent, formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { delayLabel, marketAsProduct, useMarket } from '../utils/market';
 import { ProductImage } from '../components/ProductImage';
@@ -16,7 +16,7 @@ export const MarketProduct: React.FC = () => {
   const { products, loading } = useMarket();
   const { addToCart, setCartOpen } = useStore();
   const product = products?.find(p => p.slug === slug) ?? null;
-  usePageTitle(product?.name ?? 'Le Marché', product ? `${product.name} — ${formatPrice(product.price)}, livré chez vous en ${delayLabel(product.delayMin, product.delayMax)}.` : undefined, { image: product?.images[0] });
+  usePageTitle(product?.name ?? 'Le Marché', product ? `${product.name} — ${shownPrice(product.price)}, livré chez vous en ${delayLabel(product.delayMin, product.delayMax)}.` : undefined, { image: product?.images[0] });
   const [img, setImg] = useState(0);
   const [choice, setChoice] = useState<Record<string, string>>({});
   const [qty, setQty] = useState(1);
@@ -70,7 +70,7 @@ export const MarketProduct: React.FC = () => {
           )}
           <div className="relative flex-1 min-w-0 aspect-[4/5] bg-ivory-deep rounded-[2.5rem] overflow-hidden">
             <ProductImage src={product.images[img] ?? product.images[0]} alt={product.name} className="w-full h-full" />
-            {off > 0 && <span className="absolute top-4 left-4 px-3 py-1 bg-wine text-white text-[10px] uppercase tracking-[0.2em] font-semibold rounded-full">-{off}%</span>}
+            {off > 0 && <span className="absolute top-4 left-4 px-3 py-1 bg-wine text-white text-[10px] uppercase tracking-[0.2em] font-semibold rounded-full">{pricesHidden() ? 'Promo' : `-${off}%`}</span>}
           </div>
         </div>
 
@@ -79,8 +79,8 @@ export const MarketProduct: React.FC = () => {
           <p className="eyebrow inline-flex items-center gap-2"><Globe2 className="w-3.5 h-3.5" /> Le Marché · {product.category}</p>
           <h1 className="font-display text-4xl sm:text-5xl leading-[1.05] mt-3">{product.name}</h1>
           <p className="flex items-baseline gap-3 mt-5">
-            <span className={`font-display text-4xl ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
-            {product.oldPrice && <span className="text-ink/70 line-through">{formatPrice(product.oldPrice)}</span>}
+            <span className={`font-display text-4xl ${off ? 'text-wine' : ''}`}>{shownPrice(product.price)}</span>
+            {product.oldPrice && !pricesHidden() && <span className="text-ink/70 line-through">{formatPrice(product.oldPrice)}</span>}
           </p>
           <p className="mt-4 inline-flex items-center gap-2 px-4 h-10 rounded-full border border-ink/10 text-sm" data-testid="market-delay">
             <Truck className="w-4 h-4 text-wine" /> Livré chez vous en <strong>{delayLabel(product.delayMin, product.delayMax)}</strong>

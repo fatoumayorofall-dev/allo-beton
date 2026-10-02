@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Heart, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { discountPercent, formatPrice } from '../utils/format';
+import { discountPercent, formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
 import { ProductVideo } from './ProductVideo';
@@ -57,13 +57,13 @@ export const QuickView: React.FC = () => {
             <div className="min-w-0 pr-10 sm:pr-0">
               <p className="eyebrow">{product.subcategory}</p>
               <h2 className="font-display text-2xl sm:text-4xl mt-1 sm:mt-3 leading-[1.05]">{product.name}</h2>
-              <p className={`sm:hidden mt-1.5 font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}{product.oldPrice && <span className="ml-2 text-ink/70 line-through text-xs font-normal">{formatPrice(product.oldPrice)}</span>}</p>
+              <p className={`sm:hidden mt-1.5 font-semibold ${off ? 'text-wine' : ''}`}>{shownPrice(product.price)}{product.oldPrice && !pricesHidden() && <span className="ml-2 text-ink/70 line-through text-xs font-normal">{formatPrice(product.oldPrice)}</span>}</p>
             </div>
           </div>
           {product.reviewCount > 0 && <div className="hidden sm:flex mt-3 items-center gap-2 text-xs text-ink/70"><Stars rating={product.rating} /> {product.reviewCount} avis</div>}
           <div className="hidden sm:flex mt-5 items-baseline gap-3">
-            <span className={`text-xl font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(product.price)}</span>
-            {product.oldPrice && <span className="text-ink/70 line-through text-sm">{formatPrice(product.oldPrice)}</span>}
+            <span className={`text-xl font-semibold ${off ? 'text-wine' : ''}`}>{shownPrice(product.price)}</span>
+            {product.oldPrice && !pricesHidden() && <span className="text-ink/70 line-through text-sm">{formatPrice(product.oldPrice)}</span>}
             <ForeignPrice amount={product.price} className="text-sm text-ink/60" />
           </div>
           <p className="hidden sm:block mt-5 text-sm text-ink/75 leading-relaxed line-clamp-3">{product.description}</p>

@@ -13,6 +13,8 @@ import { ProductImage } from '../components/ProductImage';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { GoldDust } from '../components/Magic';
 import { Sparkle } from '../components/Decor';
+import { PRICE_BANDS } from '../config/site';
+import { priceBand, pricesHidden } from '../utils/format';
 
 const PAGE_SIZE = 12;
 
@@ -25,12 +27,16 @@ const SORTS = {
 } as const;
 type SortKey = keyof typeof SORTS;
 
-const PRICE_RANGES = [
+const EXACT_RANGES = [
   { id: 'lt20', label: 'Moins de 20 000', test: (p: number) => p < 20000 },
   { id: '20-30', label: '20 000 – 30 000', test: (p: number) => p >= 20000 && p <= 30000 },
   { id: '30-40', label: '30 000 – 40 000', test: (p: number) => p > 30000 && p <= 40000 },
   { id: 'gt40', label: 'Plus de 40 000', test: (p: number) => p > 40000 },
 ];
+/** Filtre par prix : les classes de prix quand les prix sont confidentiels. */
+const PRICE_RANGES = pricesHidden()
+  ? PRICE_BANDS.map(b => ({ id: b.id, label: b.label, test: (p: number) => priceBand(p).id === b.id }))
+  : EXACT_RANGES;
 
 const normalize = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -122,7 +128,7 @@ export const Catalog: React.FC = () => {
       )}
       <FilterGroup title="Prix (FCFA)">
         <Radio name="prix" checked={!price} onChange={() => setParam('prix', null)} label="Tous les prix" />
-        {PRICE_RANGES.map(r => <Radio name="prix" key={r.id} checked={price === r.id} onChange={() => setParam('prix', r.id)} label={r.label} />)}
+        {PRICE_RANGES.filter(r => products.some(p => r.test(p.price))).map(r => <Radio name="prix" key={r.id} checked={price === r.id} onChange={() => setParam('prix', r.id)} label={r.label} />)}
       </FilterGroup>
       <FilterGroup title="Couleur">
         <div className="flex flex-wrap gap-2.5">

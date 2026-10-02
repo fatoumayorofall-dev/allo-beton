@@ -5,7 +5,7 @@ import { Banknote, Check, ChevronLeft, Home, Phone, ShoppingBag, Truck, PackageC
 import { useStore } from '../context/StoreContext';
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import type { Product } from '../data/types';
-import { discountPercent, formatPrice } from '../utils/format';
+import { discountPercent, formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { findByCode, productCode, shortLink } from '../utils/share';
 import { usePageTitle } from '../utils/usePageTitle';
 import { getShowcase, trackVisit, type VisitSource } from '../services/api';
@@ -38,7 +38,7 @@ export const SimpleCard: React.FC<{ product: Product; source?: VisitSource }> = 
       {!canBuy(product) && <span className="absolute inset-x-0 bottom-0 py-1.5 bg-ink/80 text-ivory text-center text-xs font-bold">ÉPUISÉ</span>}
     </div>
     <div className="p-3 text-center">
-      <p className="text-xl font-extrabold text-wine">{formatPrice(product.price)}</p>
+      <p className="text-xl font-extrabold text-wine">{shownPrice(product.price)}</p>
       <div className="flex justify-center gap-1 mt-1.5">
         {product.colors.slice(0, 5).map(c => <span key={c.name} className="w-4 h-4 rounded-full border border-black/10" style={{ background: c.hex }} />)}
       </div>
@@ -58,7 +58,7 @@ export const SimpleProduct: React.FC = () => {
   const sizesRef = useRef<HTMLDivElement>(null);
   const scroller = useRef<HTMLDivElement>(null);
 
-  usePageTitle(product?.name, product ? `${product.name} — ${formatPrice(product.price)}. Voir les photos, les couleurs et commander sur WhatsApp.` : undefined, { image: product?.images[0], canonicalPath: product ? `/produit/${product.slug}` : undefined });
+  usePageTitle(product?.name, product ? `${product.name} — ${shownPrice(product.price)}. Voir les photos, les couleurs et commander sur WhatsApp.` : undefined, { image: product?.images[0], canonicalPath: product ? `/produit/${product.slug}` : undefined });
 
   useEffect(() => {
     if (!product) return;
@@ -87,7 +87,7 @@ export const SimpleProduct: React.FC = () => {
     const lines = [
       'Bonjour Maefa 🌸 Je veux commander :',
       `*${product.name}*`,
-      `💰 ${formatPrice(product.price)}`,
+      `💰 ${shownPrice(product.price)}`,
     ];
     if (color) lines.push(`🎨 Couleur : ${color}`);
     if (product.sizes.length) lines.push(`📏 Taille : ${size || 'je ne sais pas encore'}`);
@@ -142,7 +142,7 @@ export const SimpleProduct: React.FC = () => {
               <ProductImage key={img} src={img} alt={product.name} className="w-full shrink-0 snap-center aspect-square" />
             ))}
           </div>
-          {off > 0 && <span className="absolute top-4 left-4 px-4 py-2 rounded-full bg-wine text-white text-lg font-extrabold">-{off}%</span>}
+          {off > 0 && <span className="absolute top-4 left-4 px-4 py-2 rounded-full bg-wine text-white text-lg font-extrabold">{pricesHidden() ? 'Promo' : `-${off}%`}</span>}
           <ListenButton product={product} big className="absolute bottom-3 right-3" />
           {product.images.length + (product.video ? 1 : 0) > 1 && (
             <div className="absolute bottom-5 left-5 flex gap-2">
@@ -154,8 +154,8 @@ export const SimpleProduct: React.FC = () => {
         {/* Nom + prix en très gros */}
         <h1 className="font-display text-3xl leading-tight mt-4 text-center">{product.name}</h1>
         <div className="mt-2 text-center">
-          <p className={`text-5xl font-extrabold tracking-tight ${off ? 'text-wine' : 'text-ink'}`}>{formatPrice(product.price)}</p>
-          {product.oldPrice && <p className="text-lg text-ink/70 line-through mt-1">{formatPrice(product.oldPrice)}</p>}
+          <p className={`text-5xl font-extrabold tracking-tight ${off ? 'text-wine' : 'text-ink'}`}>{shownPrice(product.price)}</p>
+          {product.oldPrice && !pricesHidden() && <p className="text-lg text-ink/70 line-through mt-1">{formatPrice(product.oldPrice)}</p>}
         </div>
         <p className={`mt-3 mx-auto w-fit px-4 py-2 rounded-full text-base font-bold flex items-center gap-2 ${outOfStock ? 'bg-ink/10 text-ink/75' : 'bg-emerald-100 text-emerald-800'}`}>
           {outOfStock ? '❌ Épuisé' : isPreorder(product) ? <>⏳ Sur commande · {product.preorderDays} jours</> : <><Check className="w-5 h-5" /> Disponible</>}

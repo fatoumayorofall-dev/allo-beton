@@ -15,7 +15,7 @@ import { ShopAdvisor } from './ShopAdvisor';
 import { voiceForReply } from '../data/wolofVoices';
 import { ADVISOR_TEXT } from '../utils/shopAdvisor';
 import { newBrainState, reply as brainReply, type BrainState } from '../assistant/brain';
-import { formatPrice } from '../utils/format';
+import { shownPrice } from '../utils/format';
 import { useEscape } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
 import { OPEN_ASSISTANT_EVENT } from './assistantBus';
@@ -80,7 +80,7 @@ const CitedProducts: React.FC<{ text: string; getProduct: (s: string) => Product
           <ProductImage src={p.images[0]} alt={p.name} label="" className="w-full h-28" sizes="200px" />
           <div className="p-2">
             <p className="text-[11px] leading-tight line-clamp-2">{p.name}</p>
-            <p className="text-[11px] font-semibold mt-1">{formatPrice(p.price)}</p>
+            <p className="text-[11px] font-semibold mt-1">{shownPrice(p.price)}</p>
           </div>
         </Link>
       ))}

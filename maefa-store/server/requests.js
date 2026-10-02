@@ -1,3 +1,4 @@
+import { CONFIDENTIAL_PRICES } from './prices.js';
 // ============================================================
 //  DEMANDES WHATSAPP
 //  La boutique est revendeuse : quand une cliente touche « Acheter », WhatsApp s'ouvre
@@ -51,7 +52,10 @@ export function registerRequestRoutes(app, { limit, isAdmin, store }) {
     if (!limit(`req-get:${req.ip}`, 120, 600e3)) return res.status(429).json({ error: 'Trop de demandes' });
     const r = store.getRequest(clip(req.params.id, 12).toUpperCase());
     if (!r) return res.status(404).json({ error: 'Demande introuvable' });
-    res.json({ id: r.id, status: r.status, items: r.items, total: r.total, note: r.note ?? '', orderId: r.orderId ?? null });
+    // Prix confidentiels : le prix exact n'apparaît qu'une fois la demande confirmée par la gérante
+    const priced = !CONFIDENTIAL_PRICES || r.status === 'disponible' || r.status === 'commandee';
+    const items = priced ? r.items : r.items.map(({ price: _p, ...i }) => i);
+    res.json({ id: r.id, status: r.status, items, total: priced ? r.total : undefined, note: r.note ?? '', orderId: r.orderId ?? null });
   });
 
   app.get('/api/admin/requests', (req, res) => {

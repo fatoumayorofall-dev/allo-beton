@@ -3,7 +3,7 @@
  * photo en arche, nom, prix en grand, couleurs disponibles et lien court à taper.
  */
 import type { Product } from '../data/types';
-import { discountPercent, formatPrice } from './format';
+import { discountPercent, formatPrice, pricesHidden, shownPrice } from './format';
 import { displayLink } from './share';
 
 const W = 1080;
@@ -114,7 +114,7 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
 
   // Pastille promo / nouveauté
   const off = discountPercent(p.price, p.oldPrice);
-  const badge = off ? `-${off}%` : p.isNew ? 'NOUVEAU' : '';
+  const badge = off ? (pricesHidden() ? 'PROMO' : `-${off}%`) : p.isNew ? 'NOUVEAU' : '';
   if (badge) {
     ctx.font = '700 40px Jost, sans-serif';
     const bw = ctx.measureText(badge).width + 64;
@@ -134,11 +134,11 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
 
   // Prix
   y += 118;
-  ctx.font = '800 112px Jost, sans-serif';
+  ctx.font = pricesHidden() ? '700 76px Jost, sans-serif' : '800 112px Jost, sans-serif';
   ctx.fillStyle = off ? WINE : INK;
-  const price = formatPrice(p.price);
+  const price = shownPrice(p.price);
   ctx.fillText(price, W / 2, y);
-  if (p.oldPrice) {
+  if (p.oldPrice && !pricesHidden()) {
     y += 58;
     ctx.font = '500 44px Jost, sans-serif';
     ctx.fillStyle = 'rgba(58,31,45,.45)';

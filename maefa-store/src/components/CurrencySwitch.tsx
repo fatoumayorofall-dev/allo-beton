@@ -1,3 +1,4 @@
+import { pricesHidden } from '../utils/format';
 import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ChevronDown } from 'lucide-react';
 
@@ -39,7 +40,7 @@ export function foreign(amount: number, id: CurrencyId): string | null {
 
 export const ForeignPrice: React.FC<{ amount: number; className?: string }> = ({ amount, className = '' }) => {
   const id = useCurrency();
-  const text = foreign(amount, id);
+  const text = pricesHidden() ? null : foreign(amount, id);
   return text ? <span className={className} data-testid="foreign-price" title="Montant indicatif : le paiement se fait en FCFA">{text}</span> : null;
 };
 

@@ -5,7 +5,7 @@
  */
 import type { Order, Product } from '../data/types';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, buildWhatsAppLink } from '../config/site';
-import { formatPrice } from '../utils/format';
+import { formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from '../utils/fetes';
 import { canBuy } from '../utils/stock';
 import { FAQ_ITEMS } from '../data/faq';
@@ -107,10 +107,10 @@ function present(p: Product, w: Wishes, products: Product[], lang: Lang): string
   const others = otherColors(p, products).slice(0, 4);
   const size = w.size && p.sizes.includes(w.size) ? w.size : '';
   if (lang === 'wo') {
-    return `- [${p.name}](/produit/${p.slug}) — **${formatPrice(p.price)}**. ${occ ? `Dafa baax ngir ${OCC_WO[occ]}. ` : ''}${size ? `Am na sa pointure ${size}. ` : ''}${others.length ? `Am na itam ci ${others.join(', ')}.` : ''}`.trim();
+    return `- [${p.name}](/produit/${p.slug}) — **${shownPrice(p.price)}**. ${occ ? `Dafa baax ngir ${OCC_WO[occ]}. ` : ''}${size ? `Am na sa pointure ${size}. ` : ''}${others.length ? `Am na itam ci ${others.join(', ')}.` : ''}`.trim();
   }
   const tip = p.styleTip ? ` ${p.styleTip}` : '';
-  return `- [${p.name}](/produit/${p.slug}) — **${formatPrice(p.price)}**. ${occ ? `Idéal pour ${OCC_FR[occ]}.` : ''}${tip}${size ? ` Disponible en ${size}.` : ''}${others.length ? ` Existe aussi en ${others.join(', ')}.` : ''}`.trim();
+  return `- [${p.name}](/produit/${p.slug}) — **${shownPrice(p.price)}**. ${occ ? `Idéal pour ${OCC_FR[occ]}.` : ''}${tip}${size ? ` Disponible en ${size}.` : ''}${others.length ? ` Existe aussi en ${others.join(', ')}.` : ''}`.trim();
 }
 
 /* ---------- Questions de la vendeuse ---------- */
@@ -175,8 +175,8 @@ function crossSell(items: Product[], products: Product[], state: BrainState): st
     && (!state.wishes.size || !p.sizes.length || p.sizes.includes(state.wishes.size)));
   if (!match) return '';
   return L(state.lang,
-    `👗 Pour compléter le look : [${match.name}](/produit/${match.slug}) (${formatPrice(match.price)}) va très bien avec.`,
-    `👗 Ngir mu dëppoo : [${match.name}](/produit/${match.slug}) (${formatPrice(match.price)}) dafa dëppoo ak moom.`);
+    `👗 Pour compléter le look : [${match.name}](/produit/${match.slug}) (${shownPrice(match.price)}) va très bien avec.`,
+    `👗 Ngir mu dëppoo : [${match.name}](/produit/${match.slug}) (${shownPrice(match.price)}) dafa dëppoo ak moom.`);
 }
 
 /** Fête proche (vraies dates) : commander à temps. */
@@ -353,23 +353,25 @@ export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply
       if (min && !productsFor(products, state).items.length) {
         state.wishes.budget = min;
         return out(L(lang,
-          `Ce sont déjà nos prix les plus doux 🌸 : à partir de **${formatPrice(min)}**. Je vous montre d'autres modèles à ce prix ?`,
-          `Njëg yii ñoo gën a yomb 🌸 : **${formatPrice(min)}**. Ndax ma wone la yeneen ci njëg jooju ?`), L(lang, '🔄 Autres modèles|🛒 Comment commander ?', '🔄 Yeneen|🛒 Naka laay jënde ?').split('|'));
+          `Ce sont déjà nos prix les plus doux 🌸 : ${pricesHidden() ? `classe **${shownPrice(min)}**` : `à partir de **${formatPrice(min)}**`}. Je vous montre d'autres modèles à ce prix ?`,
+          `Njëg yii ñoo gën a yomb 🌸 : **${shownPrice(min)}**. Ndax ma wone la yeneen ci njëg jooju ?`), L(lang, '🔄 Autres modèles|🛒 Comment commander ?', '🔄 Yeneen|🛒 Naka laay jënde ?').split('|'));
       }
       const r = showProducts(products, state, { fr: 'Voici des pièces plus douces pour le budget 💸', wo: 'Yii ñoo gën a yomb 💸' });
       return out(r.text, r.chips);
     }
     case 'prix': {
       const m = slots.model ? products.filter(x => modelOf(x) === slots.model && canBuy(x)) : state.shown.map(id => products.find(x => x.id === id)).filter((x): x is Product => !!x);
-      if (!m.length) return out(L(lang, 'De quelle pièce voulez-vous le prix ? Nos sacs et chaussures vont de 15 000 à 25 000 FCFA.', 'Ban la nga bëgg xam njëgam ? Sac yi ak dàll yi, 15 000 ba 25 000 FCFA lañu.'), KIND_CHIPS);
+      if (!m.length) return out(pricesHidden()
+        ? L(lang, 'De quelle pièce voulez-vous le prix ? Je vous donne sa classe de prix ; le prix exact vous est donné sur WhatsApp, après vérification de la disponibilité.', 'Ban la nga bëgg xam njëgam ? Dinaa la wax ci ban kilaas la bokk ; njëg bi leer, ci WhatsApp lañu koy wax.')
+        : L(lang, 'De quelle pièce voulez-vous le prix ? Nos sacs et chaussures vont de 15 000 à 25 000 FCFA.', 'Ban la nga bëgg xam njëgam ? Sac yi ak dàll yi, 15 000 ba 25 000 FCFA lañu.'), KIND_CHIPS);
       const first = m[0];
       const colors = m.map(x => x.colors[0]?.name.toLowerCase()).filter(Boolean);
       if (slots.model) {
         return out(L(lang,
-          `Le **${slots.model}** est à **${formatPrice(first.price)}**, en ${plural(colors.length, 'couleur')} : ${colors.join(', ')}. [Voir la pièce](/produit/${first.slug}) 🌸`,
-          `**${slots.model}**, **${formatPrice(first.price)}** la. Am na ci ${colors.join(', ')}. [Xool ko](/produit/${first.slug}) 🌸`), L(lang, '🛒 Comment commander ?|🔄 Autres modèles', '🛒 Naka laay jënde ?|🔄 Yeneen').split('|'));
+          `Le **${slots.model}** ${pricesHidden() ? `est dans la classe **${shownPrice(first.price)}** (prix exact sur WhatsApp)` : `est à **${formatPrice(first.price)}**`}, en ${plural(colors.length, 'couleur')} : ${colors.join(', ')}. [Voir la pièce](/produit/${first.slug}) 🌸`,
+          `**${slots.model}**, **${shownPrice(first.price)}** la. Am na ci ${colors.join(', ')}. [Xool ko](/produit/${first.slug}) 🌸`), L(lang, '🛒 Comment commander ?|🔄 Autres modèles', '🛒 Naka laay jënde ?|🔄 Yeneen').split('|'));
       }
-      return out(m.map(x => `- [${x.name}](/produit/${x.slug}) — **${formatPrice(x.price)}**`).join('\n'));
+      return out(m.map(x => `- [${x.name}](/produit/${x.slug}) — **${shownPrice(x.price)}**`).join('\n'));
     }
     case 'livraison': return out(livraison(slots, lang));
     case 'paiement': return out(L(lang,

@@ -54,7 +54,22 @@ export const SITE_CONFIG = {
   /** Carte bancaire : à activer seulement une fois une passerelle (PayDunya…) branchée */
   cardPayments: false,
   giftWrapFee: 2000,
+  /**
+   * Prix confidentiels : les clientes (et les autres revendeurs) ne voient qu'une classe de prix
+   * (« 20 000 – 30 000 F »). Le prix exact se donne sur WhatsApp, puis s'affiche seulement sur la page
+   * de commande envoyée par la gérante et dans l'espace gérant. Mettre false pour réafficher les prix.
+   */
+  confidentialPrices: true,
 };
+
+/** Classes de prix (FCFA) : une pièce appartient à la classe dont elle est sous le plafond `max`. */
+export const PRICE_BANDS: { id: string; max: number; label: string }[] = [
+  { id: 'a', max: 10000, label: 'Moins de 10 000 F' },
+  { id: 'b', max: 20000, label: '10 000 – 20 000 F' },
+  { id: 'c', max: 30000, label: '20 000 – 30 000 F' },
+  { id: 'd', max: 50000, label: '30 000 – 50 000 F' },
+  { id: 'e', max: Infinity, label: 'Plus de 50 000 F' },
+];
 
 /** Point de départ des livraisons (boutique) et centre de la carte par défaut */
 export const SHOP_LOCATION = { lat: 14.7195, lng: -17.4655 };
@@ -134,11 +149,11 @@ export function buildProductWhatsAppMessage(opts: { name: string; price: number;
     ``,
     `Je suis intéressé(e) par :`,
     `▸ *${opts.name}*`,
-    `▸ Prix : ${opts.price.toLocaleString('fr-FR')} FCFA`,
+    ...(SITE_CONFIG.confidentialPrices ? [] : [`▸ Prix : ${opts.price.toLocaleString('fr-FR')} FCFA`]),
   ];
   if (opts.size) lines.push(`▸ Taille : ${opts.size}`);
   if (opts.color) lines.push(`▸ Couleur : ${opts.color}`);
   if (opts.url) lines.push(``, `Lien : ${opts.url}`);
-  lines.push(``, `Est-il disponible ? Merci !`);
+  lines.push(``, SITE_CONFIG.confidentialPrices ? `Est-il disponible, et à quel prix ? Merci !` : `Est-il disponible ? Merci !`);
   return lines.join('\n');
 }

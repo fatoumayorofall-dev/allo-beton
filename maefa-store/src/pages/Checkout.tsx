@@ -4,7 +4,7 @@ import { Banknote, Check, ChevronDown, ChevronLeft, Clock, Copy, CreditCard, Gif
 import { useStore } from '../context/StoreContext';
 import { DELIVERY_ZONES, SHOP_LOCATION, SITE_CONFIG, zoneForPoint } from '../config/site';
 import type { DeliveryLocation, PaymentMethod } from '../data/types';
-import { formatPrice } from '../utils/format';
+import { formatPrice, pricesHidden } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { PromoBox } from './Cart';
@@ -76,6 +76,7 @@ export const Checkout: React.FC = () => {
       setRequest({ status: r.data.status, note: r.data.note, orderId: r.data.orderId });
       // Pièces confirmées : le panier devient exactement la demande
       if (r.data.status === 'disponible') {
+        try { sessionStorage.setItem('maefa_demande', requestId); } catch { /* ignore */ }
         replaceCart(r.data.items.map(i => ({ key: `${i.productId}|${i.size ?? ''}|${i.color ?? ''}`, productId: i.productId, name: i.name, image: i.image ?? '', price: i.price, size: i.size, color: i.color, quantity: i.quantity })));
       }
     });
@@ -104,6 +105,12 @@ export const Checkout: React.FC = () => {
     );
   }
 
+  // Prix confidentiels : on ne finalise (et on ne voit les prix exacts) qu'avec le lien envoyé par la gérante
+  if (pricesHidden() && !requestId && !processing) {
+    let last: string | null = null;
+    try { last = sessionStorage.getItem('maefa_demande'); } catch { /* ignore */ }
+    return <Navigate to={last ? `/commande?demande=${last}` : '/panier'} replace />;
+  }
   if (cart.length === 0 && !processing) return <Navigate to="/panier" replace />;
 
   const zone = DELIVERY_ZONES.find(z => z.name === form.zone) ?? DELIVERY_ZONES[0];

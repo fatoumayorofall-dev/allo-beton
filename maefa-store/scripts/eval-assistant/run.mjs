@@ -49,8 +49,8 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; lines.push(`${c
   ok('pointure demandée pour les chaussures', nextQuestion({ kind: 'chaussures', occasion: 'soiree', color: 'noir', budget: 0 })?.key === 'size');
   ok('pas de pointure pour un sac', nextQuestion({ kind: 'sacs', occasion: 'soiree', color: 'noir', budget: 0 }) === null);
   const p = shoes.items[0];
-  ok('présentation wolof : prix et pointure', /FCFA/.test(pitch(p, { size: '38', occasion: 'soiree' }, 'wo')) && /pointure 38/.test(pitch(p, { size: '38', occasion: 'soiree' }, 'wo')));
-  ok('présentation français : prix', /FCFA/.test(pitch(p, { occasion: 'soiree' }, 'fr')));
+  ok('présentation wolof : classe de prix et pointure', /\d – \d.* F/.test(pitch(p, { size: '38', occasion: 'soiree' }, 'wo')) && /pointure 38/.test(pitch(p, { size: '38', occasion: 'soiree' }, 'wo')));
+  ok('présentation français : classe de prix, jamais le prix exact', /\d – \d.* F/.test(pitch(p, { occasion: 'soiree' }, 'fr')) && !pitch(p, { occasion: 'soiree' }, 'fr').includes(p.price.toLocaleString('fr-FR')));
   ok('secours wolof : paiement', /Wave/.test(M.wolofLocalAnswer('naka laay fey')));
   ok('secours wolof : livraison', /24 waxtu/.test(M.wolofLocalAnswer('yónnee ci Dakar')));
   // Aucune grande marque de copie dans les noms du catalogue

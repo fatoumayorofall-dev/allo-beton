@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Globe2 } from 'lucide-react';
 import type { MarketProduct } from '../data/types';
-import { discountPercent, formatPrice } from '../utils/format';
+import { discountPercent, formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { delayShort } from '../utils/market';
 import { ProductImage } from './ProductImage';
 
@@ -17,14 +17,14 @@ export const MarketCard: React.FC<{ product: MarketProduct }> = ({ product: p })
         <span className="absolute top-3 left-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/90 backdrop-blur text-[10px] font-semibold text-ink">
           <Globe2 className="w-3 h-3 text-wine" /> {delayShort(p.delayMin, p.delayMax)}
         </span>
-        {off > 0 && <span className="absolute top-3 right-3 px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">-{off}%</span>}
+        {off > 0 && <span className="absolute top-3 right-3 px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">{pricesHidden() ? 'Promo' : `-${off}%`}</span>}
       </div>
       <div className="pt-4">
         <p className="text-[9px] uppercase tracking-[0.25em] text-ink/70">{p.category}</p>
         <p className="font-display text-[19px] leading-tight mt-1 line-clamp-2 group-hover:text-gold-dark transition-colors">{p.name}</p>
         <p className="flex items-baseline gap-2.5 text-[13px] mt-1.5">
-          <span className={`font-semibold ${off ? 'text-wine' : ''}`}>{formatPrice(p.price)}</span>
-          {p.oldPrice && <span className="text-ink/70 line-through">{formatPrice(p.oldPrice)}</span>}
+          <span className={`font-semibold ${off ? 'text-wine' : ''}`}>{shownPrice(p.price)}</span>
+          {p.oldPrice && !pricesHidden() && <span className="text-ink/70 line-through">{formatPrice(p.oldPrice)}</span>}
         </p>
       </div>
     </Link>

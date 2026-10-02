@@ -295,7 +295,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [products]);
 
   const removeFromCart = useCallback((key: string) => setCart(items => items.filter(i => i.key !== key)), []);
-  const replaceCart = useCallback((items: CartItem[]) => setCart(items), []);
+  // Panier repris d'une demande confirmée : une pièce vendue « sur commande » garde son délai
+  const replaceCart = useCallback((items: CartItem[]) => setCart(items.map(i => {
+    if (i.market || i.preorder) return i;
+    const p = products.find(x => x.id === i.productId);
+    return p && isPreorder(p) ? { ...i, preorder: { days: p.preorderDays! } } : i;
+  })), [products]);
   const clearCart = useCallback(() => {
     setCart([]);
     setPromoCode(null);

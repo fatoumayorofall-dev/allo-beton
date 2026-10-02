@@ -5,6 +5,7 @@
  */
 import type { OccasionId, Product } from '../data/types';
 import { canBuy } from './stock';
+import { pricesHidden, shownPrice } from './format';
 
 export type Lang = 'fr' | 'wo';
 export type Kind = 'sacs' | 'chaussures' | 'tout';
@@ -146,7 +147,7 @@ export function nextQuestion(w: Wishes): Question | null {
 const OCC_WO: Record<OccasionId, string> = { mariage: 'céet ak ngénte', ceremonie: 'Tabaski ak Kori', soiree: 'soirée', bureau: 'liggéey', quotidien: 'bés bu nekk', vacances: 'vacances' };
 const OCC_FR: Record<OccasionId, string> = { mariage: 'un mariage ou un baptême', ceremonie: 'la Tabaski ou la Korité', soiree: 'une soirée', bureau: 'le bureau', quotidien: 'tous les jours', vacances: 'les vacances' };
 
-const price = (n: number) => `${n.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA`;
+const price = (n: number) => (pricesHidden() ? shownPrice(n) : `${n.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA`);
 
 /** Une phrase de présentation, comme la vendeuse qui tend la pièce. */
 export function pitch(p: Product, w: Wishes, lang: Lang): string {

@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Gift, Minus, Plus, ShieldCheck, X } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
-import { formatPrice } from '../utils/format';
+import { formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { SITE_CONFIG } from '../config/site';
 import { useEscape, useLockBody } from '../utils/hooks';
 import { ProductImage } from './ProductImage';
@@ -88,7 +88,7 @@ export const CartDrawer: React.FC = () => {
                       <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex justify-between gap-3">
                           <p className="font-display text-lg leading-tight line-clamp-2">{item.name}</p>
-                          <span className="text-sm font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
+                          <span className="text-sm font-semibold whitespace-nowrap">{pricesHidden() ? shownPrice(item.price) : formatPrice(item.price * item.quantity)}</span>
                         </div>
                         <p className="text-xs text-ink/70 mt-1">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
 {item.market && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-market">Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
@@ -118,7 +118,7 @@ export const CartDrawer: React.FC = () => {
                         </Link>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs leading-tight line-clamp-2">{p.name}</p>
-                          <p className="text-[11px] text-ink/70 mt-0.5">{formatPrice(p.price)}</p>
+                          <p className="text-[11px] text-ink/70 mt-0.5">{shownPrice(p.price)}</p>
                           {p.sizes.length === 0
                             ? <button onClick={() => addToCart(p, { color: p.colors[0]?.name })} className="mt-1 text-[11px] font-semibold text-wine inline-flex items-center gap-1" aria-label={`Ajouter ${p.name}`}><Plus className="w-3 h-3" /> Ajouter</button>
                             : <Link to={`/produit/${p.slug}`} onClick={close} className="mt-1 text-[11px] font-semibold text-ink/75 underline underline-offset-4 decoration-ink/20 inline-block">Choisir la taille</Link>}
@@ -132,10 +132,10 @@ export const CartDrawer: React.FC = () => {
 
             <footer className="border-t border-ink/10 px-6 sm:px-8 py-5 space-y-4 bg-ivory shrink-0">
               <GiftWrapOption />
-              <div className="flex justify-between items-baseline">
+              {pricesHidden() ? <p className="text-xs text-ink/75 text-center"><strong className="text-ink">Prix exact et total sur WhatsApp</strong>, après vérification de chaque pièce.</p> : <div className="flex justify-between items-baseline">
                 <span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Sous-total</span>
                 <span className="text-right"><span className="block font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span>
-              </div>
+              </div>}
               <button onClick={() => { close(); startWhatsAppOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, image: i.image, size: i.size, color: i.color, quantity: i.quantity })), savedCustomer); }} data-testid="drawer-whatsapp" className="w-full h-[52px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Commander sur WhatsApp</button>
               <p className="text-[11px] text-ink/70 text-center -mt-1">Disponibilité confirmée sur WhatsApp, puis lien pour finaliser.</p>
               <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70"><ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave · Orange Money · à la livraison</p>

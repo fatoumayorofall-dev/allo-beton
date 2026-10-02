@@ -6,7 +6,7 @@ import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { buildProductWhatsAppMessage } from '../config/site';
 import { WhatsAppWithPhoto } from '../components/WhatsAppWithPhoto';
 import { startWhatsAppOrder } from '../utils/whatsappOrder';
-import { discountPercent, formatPrice } from '../utils/format';
+import { discountPercent, formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { useInView } from '../utils/hooks';
 import { canBuy, isPreorder, maxQty } from '../utils/stock';
@@ -138,7 +138,7 @@ export const ProductDetail: React.FC = () => {
       '@context': 'https://schema.org', '@type': 'Product', name: product.name, description: product.description,
       image: product.images, sku: product.id, brand: { '@type': 'Brand', name: 'Maefa Store' }, material: product.material,
       ...(product.reviewCount > 0 ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: product.rating, reviewCount: product.reviewCount } } : {}),
-      offers: { '@type': 'Offer', priceCurrency: 'XOF', price: product.price, url: window.location.href,
+      offers: { '@type': 'Offer', ...(pricesHidden() ? {} : { priceCurrency: 'XOF', price: product.price }), url: window.location.href,
         availability: product.stock > 0 ? 'https://schema.org/InStock' : isPreorder(product) ? 'https://schema.org/PreOrder' : 'https://schema.org/OutOfStock' },
     });
     document.head.appendChild(el);
@@ -185,7 +185,7 @@ export const ProductDetail: React.FC = () => {
 
   const share = async () => {
     const url = shortLink(product, 'partage');
-    const data = { title: product.name, text: `${product.name} — ${formatPrice(product.price)} chez Maefa Store`, url };
+    const data = { title: product.name, text: `${product.name} — ${shownPrice(product.price)} chez Maefa Store`, url };
     try {
       if (navigator.share) await navigator.share(data);
       else { await navigator.clipboard.writeText(url); notify('Lien copié dans le presse-papiers', 'info'); }
@@ -209,7 +209,7 @@ export const ProductDetail: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-10 lg:gap-20 items-start">
           {/* Galerie */}
           <ProductGallery images={product.images} video={product.video} name={product.name} badges={<>
-            {off > 0 && <span className="px-2.5 py-1 border border-wine/40 text-wine text-[9px] uppercase tracking-[0.24em] font-semibold">-{off}%</span>}
+            {off > 0 && <span className="px-2.5 py-1 border border-wine/40 text-wine text-[9px] uppercase tracking-[0.24em] font-semibold">{pricesHidden() ? 'Promo' : `-${off}%`}</span>}
             {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
           </>} />
 
@@ -228,8 +228,8 @@ export const ProductDetail: React.FC = () => {
             )}
 
             <div className="mt-7 flex items-baseline gap-4">
-              <span className="text-2xl font-medium tracking-wide" data-testid="detail-price">{formatPrice(product.price)}</span>
-              {product.oldPrice && <span className="text-ink/65 line-through">{formatPrice(product.oldPrice)}</span>}
+              <span className="text-2xl font-medium tracking-wide" data-testid="detail-price">{shownPrice(product.price)}</span>
+              {product.oldPrice && !pricesHidden() && <span className="text-ink/65 line-through">{formatPrice(product.oldPrice)}</span>}
               <ForeignPrice amount={product.price} className="text-sm text-ink/60" />
             </div>
             <p className="text-[11px] text-ink/70 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
@@ -369,7 +369,7 @@ export const ProductDetail: React.FC = () => {
       <div className={`lg:hidden fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/10 px-4 py-3 flex items-center gap-3 transition-transform duration-500 ease-luxe ${pastBuy && !buyVisible ? 'translate-y-0' : 'translate-y-full'}`}>
         <div className="flex-1 min-w-0">
           <p className="font-display text-lg leading-tight truncate">{product.name}</p>
-          <p className="text-xs text-ink/75">{formatPrice(product.price)}{size && ` · T. ${size}`}</p>
+          <p className="text-xs text-ink/75">{shownPrice(product.price)}{size && ` · T. ${size}`}</p>
         </div>
         <button onClick={handleAdd} disabled={outOfStock} className="btn-dark !h-12 !px-5 shrink-0">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter'}</button>
       </div>

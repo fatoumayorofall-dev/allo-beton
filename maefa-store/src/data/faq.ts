@@ -1,6 +1,7 @@
 /** Questions fréquentes : affichées sur la page FAQ et fournies à l'assistante IA. */
 export const FAQ_ITEMS: { q: string; a: string }[] = [
   { q: 'Quels sont les délais de livraison ?', a: 'Nous livrons en 24h à Dakar et en 48h à 5 jours dans les autres régions du Sénégal. Vous êtes appelé(e) avant chaque livraison.' },
+  { q: 'Pourquoi le prix exact n\'est pas affiché ?', a: 'Chaque pièce indique sa classe de prix (par exemple 20 000 – 30 000 F). Le prix exact vous est donné sur WhatsApp, après vérification de la disponibilité chez notre fournisseur, puis il s\'affiche sur votre page de commande.' },
   { q: 'Quels moyens de paiement acceptez-vous ?', a: 'Wave ou Orange Money, en envoyant le montant directement au 77 309 38 19 (Maefa Store), ou en espèces à la livraison. Après votre commande, envoyez-nous la capture du paiement sur WhatsApp : nous confirmons tout de suite.' },
   { q: 'Puis-je échanger ou retourner un article ?', a: 'Non. Chaque pièce est contrôlée avant l\'envoi : vérifiez votre commande à la réception, en présence du livreur. Une fois la livraison acceptée, aucun échange ni retour n\'est possible. Un doute sur la pointure ou la couleur ? Écrivez-nous sur WhatsApp avant de commander, nous vous conseillons avec plaisir.' },
   { q: 'Comment suivre ma commande ?', a: 'Rendez-vous sur la page « Suivre ma commande » avec votre numéro de commande (reçu à la confirmation) et votre numéro de téléphone.' },

@@ -7,7 +7,7 @@
 import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import type { CustomerInfo, RequestItem } from '../data/types';
 import { createRequest } from '../services/api';
-import { formatPrice } from './format';
+import { formatPrice, pricesHidden } from './format';
 
 // Sans I, O, 0, 1 : impossible à confondre en le lisant au téléphone
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -24,11 +24,12 @@ export function buildOrderMessage(items: RequestItem[], id: string, customer?: C
   const lines = [`Bonjour ${SITE_CONFIG.name} 👋`, ``, `Je voudrais commander :`];
   for (const it of items) {
     const details = [it.color && `couleur ${it.color}`, it.size && `pointure ${it.size}`, `quantité ${it.quantity}`].filter(Boolean).join(' · ');
-    lines.push(``, `▸ *${it.name}*`, `   ${details}`, `   ${formatPrice(it.price * it.quantity)}`, `   ${productLink(it.productId)}`);
+    // Prix confidentiels : la cliente ne voit pas le prix exact dans son message, la gérante le donne en réponse
+    lines.push(``, `▸ *${it.name}*`, `   ${details}`, ...(pricesHidden() ? [] : [`   ${formatPrice(it.price * it.quantity)}`]), `   ${productLink(it.productId)}`);
   }
-  lines.push(``, `Total : *${formatPrice(total)}* (livraison en plus)`);
+  if (!pricesHidden()) lines.push(``, `Total : *${formatPrice(total)}* (livraison en plus)`);
   if (customer?.firstName) lines.push(``, `Je suis ${customer.firstName}${customer.zone ? `, quartier ${customer.zone}` : ''}.`);
-  lines.push(``, `Réf. ${id}`, `Est-ce disponible ? Merci 🙏`);
+  lines.push(``, `Réf. ${id}`, pricesHidden() ? `Est-ce disponible, et à quel prix ? Merci 🙏` : `Est-ce disponible ? Merci 🙏`);
   return lines.join('\n');
 }
 

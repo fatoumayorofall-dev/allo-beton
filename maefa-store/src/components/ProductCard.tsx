@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Eye, Heart, Play, Plus, ShoppingBag } from 'lucide-react';
 import type { Product } from '../data/types';
 import { useStore } from '../context/StoreContext';
-import { discountPercent, formatPrice } from '../utils/format';
+import { discountPercent, formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { ProductImage } from './ProductImage';
 import { ProductVideo } from './ProductVideo';
 import { flyToCart } from '../utils/flyToCart';
@@ -60,7 +60,7 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
           {outOfStock && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink/75">Épuisé</span>}
           {preorder && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink" data-testid="badge-preorder">Sur commande · {product.preorderDays} j</span>}
           
-          {off > 0 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">-{off}%</span>}
+          {off > 0 && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-wine">{pricesHidden() ? 'Promo' : `-${off}%`}</span>}
           {product.isNew && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-ink">Nouveau</span>}
           {!product.isNew && !off && product.isBestseller && <span className="px-2 py-1 bg-ivory/90 backdrop-blur text-[9px] uppercase tracking-[0.24em] font-semibold text-gold-dark">Coup de cœur</span>}
         </div>
@@ -120,8 +120,8 @@ export const ProductCard: React.FC<{ product: Product; priority?: boolean }> = (
         </div>
         <Link to={`/produit/${product.slug}`} className="font-display text-[19px] leading-tight text-ink hover:text-gold-dark transition-colors line-clamp-1">{product.name}</Link>
         <div className="flex items-baseline gap-2.5 text-[13px] tracking-wide">
-          <span className={`font-medium ${off ? 'text-wine' : 'text-ink/85'}`}>{formatPrice(product.price)}</span>
-          {product.oldPrice && <span className="text-ink/65 line-through"><span className="sr-only">au lieu de </span>{formatPrice(product.oldPrice)}</span>}
+          <span className={`font-medium ${off ? 'text-wine' : 'text-ink/85'}`}>{shownPrice(product.price)}</span>
+          {product.oldPrice && !pricesHidden() && <span className="text-ink/65 line-through"><span className="sr-only">au lieu de </span>{formatPrice(product.oldPrice)}</span>}
         </div>
         <ForeignPrice amount={product.price} className="text-[11px] text-ink/65 -mt-1" />
       </div>

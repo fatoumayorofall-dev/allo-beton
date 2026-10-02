@@ -1,4 +1,15 @@
+import { PRICE_BANDS, SITE_CONFIG } from '../config/site';
+
 export const formatPrice = (n: number): string => `${Math.round(n).toLocaleString('fr-FR')} FCFA`;
+
+/** Classe de prix d'une pièce (voir PRICE_BANDS). */
+export const priceBand = (n: number) => PRICE_BANDS.find(b => n < b.max) ?? PRICE_BANDS[PRICE_BANDS.length - 1];
+
+/** Prix montré aux clientes : la classe de prix si les prix sont confidentiels, sinon le prix exact. */
+export const shownPrice = (n: number): string => (SITE_CONFIG.confidentialPrices ? priceBand(n).label : formatPrice(n));
+
+/** Vrai quand le prix exact ne doit pas être montré aux clientes. */
+export const pricesHidden = (): boolean => SITE_CONFIG.confidentialPrices;
 
 export const formatDate = (iso: string): string =>
   new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });

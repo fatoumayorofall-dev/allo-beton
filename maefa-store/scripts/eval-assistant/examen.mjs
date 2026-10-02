@@ -68,7 +68,7 @@ export const CONVERSATIONS = [
     ['Vous avez des chaussures en 43 ?', { mentions: /43/, noProducts: true }],
   ] },
   { id: 'prix-modele', lang: 'fr', turns: [
-    ['Combien coûte le sac Ndella ?', { intent: 'prix', mentions: /25\s?000/ }],
+    ['Combien coûte le sac Ndella ?', { intent: 'prix', mentions: /^(?![\s\S]*25\s?000)[\s\S]*20\s?000 – 30\s?000/ }],
   ] },
   { id: 'livraison-ville', lang: 'wo', turns: [
     ['Ci Thiès, yónnee bi ñaata la ?', { intent: 'livraison', mentions: /4\s?000/, wolof: true }],

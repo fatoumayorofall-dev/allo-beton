@@ -9,10 +9,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { isPaused } from './catalog.js';
+import { CONFIDENTIAL_PRICES, publicPrice } from './prices.js';
 
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const clip = (s, n = 160) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t; };
-const fcfa = n => `${Math.round(n).toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ')} FCFA`;
 
 /** Pages privées : jamais dans les résultats de recherche. */
 const PRIVATE = /^\/(admin|livreur\/|commande|compte|confirmation\/|mes-commandes|panier|favoris)/;
@@ -77,12 +77,12 @@ export function registerSeoRoutes(app, { store, dist }) {
       const list = shopProducts();
       const p = m[2] ? list.find(x => x.slug === m[2]) : list.find(x => x.id.replace(/^(MAE|EFA|FAB)-/, '').toLowerCase() === m[3]);
       if (!p) return base;
-      return { ...titled(p.name, clip(`${p.name} — ${fcfa(p.price)}. ${p.description || ''}`)), image: p.image, type: 'product', price: p.price, canonical: `/produit/${p.slug}` };
+      return { ...titled(p.name, clip(`${p.name} — ${publicPrice(p)}. ${p.description || ''}`)), image: p.image, type: 'product', price: CONFIDENTIAL_PRICES ? undefined : p.price, canonical: `/produit/${p.slug}` };
     }
     if (pathname === '/marche') return titled('Le Marché', `Le Marché ${site} : encore plus de chaussures et de sacs, commandés pour vous chez nos partenaires et livrés chez vous au Sénégal.`);
     if ((m = /^\/marche\/([^/]+)$/.exec(pathname))) {
       const p = marketProducts().find(x => x.slug === m[1]);
-      return p ? { ...titled(p.name, clip(`${p.name} — ${fcfa(p.price)}, livré chez vous au Sénégal. ${p.description || ''}`)), image: p.images?.[0], type: 'product', price: p.price } : base;
+      return p ? { ...titled(p.name, clip(`${p.name} — ${publicPrice(p)}, livré chez vous au Sénégal. ${p.description || ''}`)), image: p.images?.[0], type: 'product', price: CONFIDENTIAL_PRICES ? undefined : p.price } : base;
     }
     if (pathname === '/journal') return titled('Le journal', 'Conseils de style, guides d\'occasion et astuces d\'entretien par l\'équipe Maefa Store.');
     if ((m = /^\/journal\/([^/]+)$/.exec(pathname))) {

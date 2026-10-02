@@ -4,7 +4,7 @@ import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, QrCode, ScanSear
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
 import { FEATURES } from '../config/site';
-import { formatPrice } from '../utils/format';
+import { shownPrice } from '../utils/format';
 import { usePrefersReducedMotion } from '../utils/hooks';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductCard } from '../components/ProductCard';
@@ -150,7 +150,7 @@ export const Home: React.FC = () => {
                 <span className="min-w-0">
                   <span className="eyebrow block">Pièce du moment</span>
                   <span className="block font-display text-lg sm:text-xl leading-tight mt-1 line-clamp-2">{featured.name}</span>
-                  <span className="flex items-center gap-2 mt-1 text-sm font-semibold text-wine">{formatPrice(featured.price)} <ArrowUpRight className="w-4 h-4 text-ink transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
+                  <span className="flex items-center gap-2 mt-1 text-sm font-semibold text-wine">{shownPrice(featured.price)} <ArrowUpRight className="w-4 h-4 text-ink transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
                 </span>
               </Link>
             )}

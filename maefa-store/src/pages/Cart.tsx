@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { Minus, Plus, ShieldCheck, Tag, Truck, X, PackageCheck } from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { PROMO_CODES } from '../config/site';
-import { formatPrice } from '../utils/format';
+import { formatPrice, pricesHidden, shownPrice } from '../utils/format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { ProductImage } from '../components/ProductImage';
 import { GiftWrapOption } from '../components/CartDrawer';
@@ -26,7 +26,7 @@ export const PromoBox: React.FC = () => {
       <div className={`flex items-center justify-between gap-3 px-4 py-3 text-sm border rounded-2xl ${shortfall ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-emerald-200 bg-emerald-50 text-emerald-900'}`}>
         <span className="flex items-start gap-2.5"><Tag className="w-4 h-4 mt-0.5 shrink-0" strokeWidth={1.5} />
           <span><strong>{promoCode}</strong> — {PROMO_CODES[promoCode].label}
-            {shortfall > 0 && <span className="block text-xs mt-0.5">Encore {formatPrice(shortfall)} d'achat pour l'activer.</span>}
+            {shortfall > 0 && <span className="block text-xs mt-0.5">{pricesHidden() ? 'Il s\'appliquera si votre commande atteint le montant prévu.' : `Encore ${formatPrice(shortfall)} d'achat pour l'activer.`}</span>}
           </span>
         </span>
         <button onClick={removePromo} aria-label="Retirer le code" className="shrink-0"><X className="w-4 h-4" /></button>
@@ -93,7 +93,7 @@ export const Cart: React.FC = () => {
 {item.market && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-market">Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
 {item.preorder && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-preorder">Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
                     </div>
-                    <span className="font-semibold whitespace-nowrap">{formatPrice(item.price * item.quantity)}</span>
+                    <span className="font-semibold whitespace-nowrap">{pricesHidden() ? shownPrice(item.price) : formatPrice(item.price * item.quantity)}</span>
                   </div>
                   <div className="mt-auto flex items-center justify-between pt-4">
                     <div className="flex items-center border border-ink/15 h-10 rounded-full overflow-hidden">
@@ -114,6 +114,11 @@ export const Cart: React.FC = () => {
           <h2 className="font-display text-3xl">Récapitulatif</h2>
           <GiftWrapOption />
           <PromoBox />
+          {pricesHidden() ? (
+            <p className="text-sm text-ink/80 border-t border-ink/10 pt-6 leading-relaxed" data-testid="price-on-whatsapp">
+              <strong className="text-ink">Prix exact sur WhatsApp.</strong> Nous vérifions chaque pièce chez notre fournisseur, puis nous vous donnons le prix et le total (livraison selon votre quartier).
+            </p>
+          ) : (<>
           <dl className="space-y-3 text-sm border-t border-ink/10 pt-6">
             <div className="flex justify-between"><dt className="text-ink/75">Sous-total</dt><dd>{formatPrice(t.subtotal)}</dd></div>
             {t.discount > 0 && <div className="flex justify-between text-emerald-800"><dt>Réduction</dt><dd>-{formatPrice(t.discount)}</dd></div>}
@@ -121,6 +126,7 @@ export const Cart: React.FC = () => {
             <div className="flex justify-between"><dt className="text-ink/75">Livraison</dt><dd className="text-ink/75">Selon votre zone</dd></div>
           </dl>
           <div className="flex justify-between items-baseline border-t border-ink/10 pt-6"><span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Total</span><span className="text-right"><span className="block font-display text-4xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span></div>
+          </>)}
           <button onClick={() => startWhatsAppOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, image: i.image, size: i.size, color: i.color, quantity: i.quantity })), savedCustomer)} data-testid="cart-whatsapp" className="w-full h-[56px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Commander sur WhatsApp</button>
           <p className="text-[11px] text-ink/70 text-center leading-relaxed">Nous vérifions la disponibilité de chaque pièce, puis vous envoyons le lien pour finaliser (livraison, paiement).</p>
           <Link to="/boutique" className="block py-3 -my-3 text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Continuer mes achats</Link>

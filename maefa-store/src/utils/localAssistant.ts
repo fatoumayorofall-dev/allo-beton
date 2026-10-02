@@ -6,7 +6,7 @@
 import type { Category, Order, Product } from '../data/types';
 import { ALL_CATEGORIES, CATEGORIES, OCCASIONS } from '../data/catalog';
 import { DELIVERY_ZONES, PROMO_CODES, SITE_CONFIG, isOnSale } from '../config/site';
-import { formatPrice } from './format';
+import { formatPrice, shownPrice } from './format';
 import { daysUntil, formatDay, inDays, orderBy, upcomingFetes } from './fetes';
 
 const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -35,7 +35,7 @@ const onSaleLabel = () => {
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}` : names[0];
 };
 
-const link = (p: Product) => `[${p.name}](/produit/${p.slug}) — ${formatPrice(p.price)}${p.stock <= 0 ? ' (épuisé)' : ''}`;
+const link = (p: Product) => `[${p.name}](/produit/${p.slug}) — ${shownPrice(p.price)}${p.stock <= 0 ? ' (épuisé)' : ''}`;
 
 function searchProducts(q: string, products: Product[]): Product[] | null {
   const occasion = OCCASIONS.find(o => has(q, ...{
