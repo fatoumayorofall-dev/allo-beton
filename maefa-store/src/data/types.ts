@@ -74,6 +74,8 @@ export interface CartItem {
   market?: { delayMin: number; delayMax: number };
   /** Pièce de la boutique épuisée, vendue « sur commande » (délai en jours) */
   preorder?: { days: number };
+  /** Prix convenu avec la gérante (demande confirmée) : le catalogue ne le remplace pas */
+  agreed?: boolean;
 }
 
 export interface CustomerInfo {
@@ -283,7 +285,7 @@ export interface DriverTour {
 
 /* ---------- Demandes WhatsApp (« Acheter » → vérification chez le fournisseur) ---------- */
 export type RequestStatus = 'nouvelle' | 'disponible' | 'indisponible' | 'commandee';
-export interface RequestItem { productId: string; name: string; price: number; image?: string; size?: string; color?: string; quantity: number }
+export interface RequestItem { productId: string; name: string; price: number; /** Prix du catalogue, si la gérante a convenu d'un autre prix */ catalogPrice?: number; image?: string; size?: string; color?: string; quantity: number }
 export interface PurchaseRequest {
   id: string; status: RequestStatus; createdAt: string; items: RequestItem[]; total: number; note?: string; orderId?: string;
   customer?: { firstName?: string; phone?: string; zone?: string };

@@ -86,6 +86,8 @@ export const TRAINING: Record<Intent, string[]> = {
   promo: [
     'vous avez une promo', 'code promo', 'réduction', 'remise', 'il y a des soldes', 'vous faites des prix', 'un bon de réduction', 'une offre',
     'am na promo', 'wàññi njëg bi', 'wanni ma', 'mën ngeen wàññi', 'waññi tuuti', 'am na réduction',
+    'c\'est quoi le dernier prix', 'le prix est négociable', 'on peut négocier', 'baissez un peu le prix', 'vous pouvez faire un geste', 'c\'est trop cher pour moi',
+    'njëg bi mu mujj', 'wàññil ma tuuti', 'mën nañu waxtaan njëg bi', 'dafa cher',
   ],
   cadeau: [
     'offrir à ma maman', 'un cadeau pour ma tante', 'pour faire plaisir à ma sœur', 'je cherche à offrir', 'une surprise pour ma copine', 'offrir pour la fête des mères',

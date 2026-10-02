@@ -108,7 +108,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; lines.push(`${c
       if (e.crossSell && !/compléter le look|Ngir mu dëppoo/.test(r.text)) bad.push('pas de pièce pour compléter le look');
       if (e.varied && prevText && r.text.split('\n')[0] === prevText.split('\n')[0]) bad.push('même phrase d\'intro que la réponse d\'avant');
       // Marketing honnête : jamais de fausse rareté, de fausse promo ou de faux avis
-      if (/derni[eè]res? pi[eè]ces?|plus que \d|stock limité|il n'en reste|-\s?\d+\s?%|\d+ (clientes|avis)|best-seller n°/i.test(r.text.replace(/BIENVENUE \(-10 %[^)]*\)/, ''))) bad.push('argument trompeur');
+      if (/derni[eè]res? pi[eè]ces?|plus que \d|stock limité|il n'en reste|-\s?\d+\s?%|\d+ (clientes|avis)|best-seller n°/i.test(r.text.replace(/BIENVENUE\**\s?\(-10 %[^)]*\)/, ''))) bad.push('argument trompeur');
       if (slugs.some(sl => !bySlug.has(sl))) bad.push('lien vers une pièce inexistante');
       ok(name, !bad.length, bad.join(', '));
       report.push(`**Cliente :** ${said}\n\n**Maé :** ${r.text}${r.chips.length ? `\n\n_Boutons : ${r.chips.join(' · ')}_` : ''}\n`);

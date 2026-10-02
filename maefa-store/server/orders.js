@@ -14,7 +14,7 @@
 import crypto from 'node:crypto';
 import { distanceM, etaMinutes, nearbyPlaces, reverseGeocode, roadRoute, roadTable, routeEtaMinutes, searchPlaces, trafficFactor, validPoint } from './geo.js';
 import { bestOrder, pathLength } from './tourPlanner.js';
-import { linkRequestToOrder } from './requests.js';
+import { agreedPrices, linkRequestToOrder } from './requests.js';
 import { checkMarketItems } from './market.js';
 import { applyStock, checkStock } from './catalog.js';
 
@@ -200,7 +200,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     const market = checkMarketItems(o, store);
     if (market.error) return res.status(409).json({ error: market.error });
     // Pièces de la boutique : prix à jour, stock suffisant ou vente « sur commande »
-    const stock = checkStock(o, store);
+    const stock = checkStock(o, store, o.requestId ? agreedPrices(store, o.requestId) : undefined);
     if (stock.error) return res.status(409).json({ error: stock.error });
     const now = new Date().toISOString();
     const order = {

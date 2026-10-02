@@ -213,9 +213,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const preorder = isPreorder(p) ? { days: p.preorderDays! } : undefined;
         const quantity = Math.min(item.quantity, preorder ? PREORDER_MAX : p.stock);
         const image = p.images[0] ?? item.image;
-        if (quantity !== item.quantity || p.price !== item.price || p.name !== item.name || image !== item.image || item.preorder?.days !== preorder?.days) changed = true;
+        // Prix convenu avec la gérante : on le garde
+        const price = item.agreed ? item.price : p.price;
+        if (quantity !== item.quantity || price !== item.price || p.name !== item.name || image !== item.image || item.preorder?.days !== preorder?.days) changed = true;
         const { preorder: _old, ...rest } = item;
-        next.push({ ...rest, quantity, price: p.price, name: p.name, image, ...(preorder ? { preorder } : {}) });
+        next.push({ ...rest, quantity, price, name: p.name, image, ...(preorder ? { preorder } : {}) });
       }
       return changed ? next : items;
     });

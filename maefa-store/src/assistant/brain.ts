@@ -409,8 +409,8 @@ export function reply(text: string, prev: BrainState, ctx: BrainCtx): BrainReply
       'Je vous réponds franchement 🌸 Nos pièces portent des **noms Maefa** : ce ne sont pas des articles de grandes marques (Hermès, Chanel, Gucci…). Seules nos pièces **Zara** sont de la marque Zara. Chaque pièce est choisie et contrôlée par notre équipe avant l\'envoi.',
       'Dama lay wax dëgg 🌸 Sac yi ak dàll yi, **modèle Maefa** lañu : du Hermès, du Chanel, du Gucci. **Zara** yi rekk ñoo di Zara. Nu ngi leen seet bu baax balaa ñuy yónnee.'));
     case 'promo': return out(L(lang,
-      `Nos codes du moment : ${Object.entries(PROMO_CODES).map(([k, v]) => `**${k}** (${v.label})`).join(', ')}. À saisir dans le panier ✨`,
-      `Am na ay code : ${Object.entries(PROMO_CODES).map(([k, v]) => `**${k}** (${v.label})`).join(', ')}. Bindal ko ci panier bi ✨`));
+      `Nos codes du moment : ${Object.entries(PROMO_CODES).map(([k, v]) => `**${k}** (${v.label})`).join(', ')}. À saisir dans le panier ✨${pricesHidden() ? `\nEt le prix se discute avec nous sur [WhatsApp](${buildWhatsAppLink('Bonjour Maefa 👋 Je voudrais discuter le prix d\'une pièce.')}) 😉` : ''}`,
+      `Am na ay code : ${Object.entries(PROMO_CODES).map(([k, v]) => `**${k}** (${v.label})`).join(', ')}. Bindal ko ci panier bi ✨${pricesHidden() ? `\nTe njëg bi, mën nañu ko waxtaan ci [WhatsApp](${buildWhatsAppLink('Asalaa maalekum Maefa 👋 Dama bëgg waxtaan njëgu benn pièce.')}) 😉` : ''}`));
     case 'cadeau': {
       state.wishes.budget ??= 20000;
       const r = showProducts(products, state, {

@@ -62,7 +62,7 @@ export function cleanCatalogProduct(p, existing) {
  * Vérifie les pièces de la boutique d'une commande : produit en ligne, prix à jour, stock suffisant
  * (ou vente « sur commande »). Renvoie { error } ou { preorder: Map<productId, jours> }.
  */
-export function checkStock(order, store) {
+export function checkStock(order, store, agreed = new Map()) {
   const catalog = store.getCatalog();
   const preorder = new Map();
   if (!catalog) return { preorder }; // catalogue pas encore publié : pas de contrôle (mode démo)
@@ -71,7 +71,8 @@ export function checkStock(order, store) {
     if (isMarketId(it.productId)) continue;
     const p = catalog.find(x => x.id === it.productId);
     if (!p) return { error: `« ${it.name} » n'est plus disponible` };
-    if (Math.round(it.price) !== p.price) return { error: `Le prix de « ${p.name} » a changé : rechargez la page` };
+    const deal = agreed.get(`${it.productId}|${it.size ?? ''}|${it.color ?? ''}`);
+    if (Math.round(it.price) !== p.price && Math.round(it.price) !== deal) return { error: `Le prix de « ${p.name} » a changé : rechargez la page` };
     qty.set(p.id, (qty.get(p.id) || 0) + (Number(it.quantity) || 0));
   }
   for (const [id, n] of qty) {

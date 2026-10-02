@@ -77,7 +77,7 @@ export const Checkout: React.FC = () => {
       // Pièces confirmées : le panier devient exactement la demande
       if (r.data.status === 'disponible') {
         try { sessionStorage.setItem('maefa_demande', requestId); } catch { /* ignore */ }
-        replaceCart(r.data.items.map(i => ({ key: `${i.productId}|${i.size ?? ''}|${i.color ?? ''}`, productId: i.productId, name: i.name, image: i.image ?? '', price: i.price, size: i.size, color: i.color, quantity: i.quantity })));
+        replaceCart(r.data.items.map(i => ({ key: `${i.productId}|${i.size ?? ''}|${i.color ?? ''}`, productId: i.productId, name: i.name, image: i.image ?? '', price: i.price, size: i.size, color: i.color, quantity: i.quantity, agreed: true })));
       }
     });
   }, [requestId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -176,7 +176,7 @@ export const Checkout: React.FC = () => {
     // Vérification par la boutique juste avant de payer : prix à jour, stock encore disponible
     const server = await getServerStatus();
     if (server.orders || hasOnDemand) {
-      const check = await checkOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity, color: i.color })), method);
+      const check = await checkOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity, size: i.size, color: i.color })), method, requestId || undefined);
       if (!check.ok && (check.status !== 0 || hasOnDemand)) {
         setProcessing(false);
         notify(check.status === 0 ? 'Connexion nécessaire pour les pièces sur commande' : check.error, 'error');

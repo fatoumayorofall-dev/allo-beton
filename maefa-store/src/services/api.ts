@@ -333,8 +333,8 @@ export const importMarketProduct = (url: string, pin: string) =>
 export const patchSupplier = (orderId: string, patch: { status?: SupplierStatus; ref?: string; tracking?: string; trackingUrl?: string }, pin: string) =>
   call<{ order: Order; sent: SendResult | null }>(`/api/admin/orders/${encodeURIComponent(orderId)}/supplier`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
 /** Vérification avant paiement : pièces en ligne, prix à jour, stock ou « sur commande », moyen de paiement accepté. */
-export const checkOrder = (items: { productId: string; name: string; price: number; quantity: number; color?: string }[], paymentMethod: string) =>
-  call<{ ok: true; preorder: Record<string, number> }>('/api/orders/check', { method: 'POST', body: JSON.stringify({ items, paymentMethod }) });
+export const checkOrder = (items: { productId: string; name: string; price: number; quantity: number; size?: string; color?: string }[], paymentMethod: string, requestId?: string) =>
+  call<{ ok: true; preorder: Record<string, number> }>('/api/orders/check', { method: 'POST', body: JSON.stringify({ items, paymentMethod, requestId }) });
 
 /* ---------- Catalogue partagé, avis, alertes de retour en stock ---------- */
 
@@ -383,7 +383,7 @@ export function createRequest(body: { id: string; items: RequestItem[]; customer
 }
 export const fetchRequest = (id: string) => call<{ id: string; status: RequestStatus; items: RequestItem[]; total: number; note: string; orderId: string | null }>(`/api/requests/${encodeURIComponent(id)}`);
 export const fetchAdminRequests = (pin: string) => getJson<{ requests: PurchaseRequest[] }>('/api/admin/requests', pin).then(r => r?.requests ?? null);
-export const patchRequest = (pin: string, id: string, patch: { status?: RequestStatus; note?: string }) =>
+export const patchRequest = (pin: string, id: string, patch: { status?: RequestStatus; note?: string; prices?: number[] }) =>
   call<{ request: PurchaseRequest }>(`/api/admin/requests/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(patch), headers: { 'x-admin-pin': pin } });
 
 /** Lieux connus autour d'un point (mosquée, pharmacie, école…), du plus proche au plus loin. */

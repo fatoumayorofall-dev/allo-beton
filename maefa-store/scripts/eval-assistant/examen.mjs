@@ -67,6 +67,12 @@ export const CONVERSATIONS = [
   { id: 'pointure-absente', lang: 'fr', turns: [
     ['Vous avez des chaussures en 43 ?', { mentions: /43/, noProducts: true }],
   ] },
+  { id: 'marchander', lang: 'fr', turns: [
+    ['Le prix est négociable ?', { intent: 'promo', mentions: /se discute[\s\S]*WhatsApp/ }],
+  ] },
+  { id: 'marchander-wo', lang: 'wo', turns: [
+    ['Wàññil ma tuuti njëg bi', { intent: 'promo', mentions: /waxtaan/ }],
+  ] },
   { id: 'prix-modele', lang: 'fr', turns: [
     ['Combien coûte le sac Ndella ?', { intent: 'prix', mentions: /^(?![\s\S]*25\s?000)[\s\S]*20\s?000 – 30\s?000/ }],
   ] },

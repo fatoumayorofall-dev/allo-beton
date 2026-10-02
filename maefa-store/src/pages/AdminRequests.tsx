@@ -29,7 +29,8 @@ export const finishLink = (id: string) => `${window.location.origin}/commande?de
 export function availableMessage(r: PurchaseRequest) {
   return [
     `Bonne nouvelle ✨ Votre commande est disponible !`,
-    ...r.items.map(i => `▸ ${i.name}${i.color ? ` · ${i.color}` : ''}${i.size ? ` · pointure ${i.size}` : ''} × ${i.quantity}`),
+    ...r.items.map(i => `▸ ${i.name}${i.color ? ` · ${i.color}` : ''}${i.size ? ` · pointure ${i.size}` : ''} × ${i.quantity} : ${formatPrice(i.price * i.quantity)}`),
+    `Total : *${formatPrice(r.total)}* (livraison en plus, selon votre quartier)`,
     ``,
     `Pour la recevoir, indiquez votre maison sur la carte et choisissez le paiement (Wave, Orange Money ou à la livraison) ici :`,
     finishLink(r.id),
@@ -56,6 +57,12 @@ export const RequestsTab: React.FC<{ pin: string }> = ({ pin }) => {
   const [busy, setBusy] = useState('');
   const [answered, setAnswered] = useState<Record<string, string>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
+  // Prix convenus (marchandage sur WhatsApp), un champ par article
+  const [deals, setDeals] = useState<Record<string, string[]>>({});
+  const dealOf = (r: PurchaseRequest) => deals[r.id] ?? r.items.map(i => String(i.price));
+  const dealPrices = (r: PurchaseRequest) => dealOf(r).map(v => Math.round(Number(v.replace(/\D/g, ''))));
+  const dealChanged = (r: PurchaseRequest) => dealPrices(r).some((v, k) => v !== r.items[k].price);
+  const dealValid = (r: PurchaseRequest) => dealPrices(r).every(v => v > 0);
 
   const reload = useCallback(() => fetchAdminRequests(pin).then(r => r && setList(r)), [pin]);
   useEffect(() => { reload(); }, [reload]);
@@ -71,10 +78,11 @@ export const RequestsTab: React.FC<{ pin: string }> = ({ pin }) => {
   const answer = async (r: PurchaseRequest, status: 'disponible' | 'indisponible') => {
     setBusy(r.id);
     const note = notes[r.id] ?? '';
-    const res = await patchRequest(pin, r.id, { status, note: status === 'indisponible' ? note : undefined });
+    if (status === 'disponible' && !dealValid(r)) { setBusy(''); notify('Indiquez un prix pour chaque article', 'error'); return; }
+    const res = await patchRequest(pin, r.id, { status, note: status === 'indisponible' ? note : undefined, prices: status === 'disponible' && dealChanged(r) ? dealPrices(r) : undefined });
     setBusy('');
     if (!res.ok) { notify(res.error, 'error'); return; }
-    setAnswered(a => ({ ...a, [r.id]: status === 'disponible' ? availableMessage(r) : unavailableMessage(r, note) }));
+    setAnswered(a => ({ ...a, [r.id]: status === 'disponible' ? availableMessage(res.data.request) : unavailableMessage(r, note) }));
     setList(l => (l ?? []).map(x => (x.id === r.id ? res.data.request : x)));
   };
 
@@ -113,11 +121,24 @@ export const RequestsTab: React.FC<{ pin: string }> = ({ pin }) => {
                   <span className="block font-semibold truncate">{i.name}</span>
                   <span className="block text-xs text-ink/65">{[i.color, i.size && `pointure ${i.size}`, `× ${i.quantity}`].filter(Boolean).join(' · ')}</span>
                 </span>
-                <span className="text-sm font-semibold shrink-0">{formatPrice(i.price * i.quantity)}</span>
+                {(r.status === 'nouvelle' || r.status === 'disponible') && !answered[r.id] ? (
+                  <label className="shrink-0 text-right">
+                    <span className="block text-[10px] uppercase tracking-[0.14em] text-ink/60">Prix convenu{i.quantity > 1 ? ' (1 pièce)' : ''}</span>
+                    <input inputMode="numeric" value={dealOf(r)[k]} data-testid="deal-price"
+                      onChange={e => setDeals(d => ({ ...d, [r.id]: dealOf(r).map((v, j) => (j === k ? e.target.value.replace(/[^\d\s]/g, '') : v)) }))}
+                      className="w-28 h-10 px-3 rounded-xl border border-ink/15 text-right font-semibold" aria-label={`Prix convenu pour ${i.name}`} />
+                    {(i.catalogPrice ?? i.price) !== Number(dealOf(r)[k].replace(/\D/g, '')) && <span className="block text-[10px] text-ink/55 mt-0.5">catalogue : {formatPrice(i.catalogPrice ?? i.price)}</span>}
+                  </label>
+                ) : (
+                  <span className="text-sm font-semibold shrink-0 text-right">{formatPrice(i.price * i.quantity)}{i.catalogPrice && i.catalogPrice !== i.price && <span className="block text-[10px] font-normal text-ink/55 line-through">{formatPrice(i.catalogPrice * i.quantity)}</span>}</span>
+                )}
               </li>
             ))}
           </ul>
-          <p className="text-sm text-right">Total articles : <strong>{formatPrice(r.total)}</strong></p>
+          <p className="text-sm text-right">Total articles : <strong data-testid="request-total">{formatPrice(answered[r.id] || r.status === 'commandee' || r.status === 'indisponible' ? r.total : dealPrices(r).reduce((s, v, k) => s + (v || 0) * r.items[k].quantity, 0))}</strong></p>
+          {r.status === 'disponible' && !answered[r.id] && dealChanged(r) && (
+            <button onClick={() => answer(r, 'disponible')} disabled={!!busy} data-testid="deal-save" className="w-full h-12 rounded-2xl bg-ink text-ivory font-semibold">Enregistrer le prix convenu</button>
+          )}
 
           {r.status === 'nouvelle' && !answered[r.id] && (
             <div className="space-y-3">

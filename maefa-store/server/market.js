@@ -9,6 +9,7 @@
 import crypto from 'node:crypto';
 import net from 'node:net';
 import { checkStock } from './catalog.js';
+import { agreedPrices } from './requests.js';
 
 const CURRENCIES = new Set(['XOF', 'EUR', 'USD', 'CNY']);
 export const SUPPLIER_STATUSES = ['a_commander', 'commandee', 'expediee', 'arrivee'];
@@ -174,7 +175,8 @@ export function registerMarketRoutes(app, { limit, isAdmin, store, wa }) {
     const order = { items, paymentMethod: req.body?.paymentMethod };
     const r = checkMarketItems(order, store);
     if (r.error) return res.status(409).json({ error: r.error });
-    const s = checkStock(order, store);
+    // Lien de la gérante : les prix convenus de la demande sont acceptés
+    const s = checkStock(order, store, req.body?.requestId ? agreedPrices(store, req.body.requestId) : undefined);
     if (s.error) return res.status(409).json({ error: s.error });
     res.json({ ok: true, preorder: Object.fromEntries(s.preorder) });
   };

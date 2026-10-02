@@ -68,7 +68,16 @@ export function registerRequestRoutes(app, { limit, isAdmin, store }) {
     if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
     const r = store.getRequest(clip(req.params.id, 12).toUpperCase());
     if (!r) return res.status(404).json({ error: 'Demande introuvable' });
-    const { status, note } = req.body || {};
+    const { status, note, prices } = req.body || {};
+    // Prix convenu avec la cliente (marchandage sur WhatsApp) : un prix par article, dans l'ordre
+    if (prices !== undefined) {
+      if (r.status === 'commandee') return res.status(409).json({ error: 'Déjà commandée' });
+      if (!Array.isArray(prices) || prices.length !== r.items.length) return res.status(400).json({ error: 'Prix invalides' });
+      const clean = prices.map(v => Math.round(Number(v)));
+      if (!clean.every(v => Number.isFinite(v) && v > 0 && v <= 50_000_000)) return res.status(400).json({ error: 'Prix invalides' });
+      r.items = r.items.map((it, i) => ({ ...it, catalogPrice: it.catalogPrice ?? it.price, price: clean[i] }));
+      r.total = r.items.reduce((s, i) => s + i.price * i.quantity, 0);
+    }
     if (status !== undefined) {
       if (!STATUSES.has(status) || status === 'commandee') return res.status(400).json({ error: 'Statut invalide' });
       if (r.status === 'commandee') return res.status(409).json({ error: 'Déjà commandée' });
@@ -78,6 +87,19 @@ export function registerRequestRoutes(app, { limit, isAdmin, store }) {
     store.saveRequest(r);
     res.json({ request: r });
   });
+}
+
+const itemKey = i => `${i.productId}|${i.size ?? ''}|${i.color ?? ''}`;
+
+/**
+ * Prix convenus d'une demande confirmée (« disponible ») : la commande passée avec ce lien peut
+ * reprendre ces prix, même s'ils diffèrent du catalogue (prix discuté avec la cliente).
+ */
+export function agreedPrices(store, requestId) {
+  const id = clip(requestId, 12).toUpperCase();
+  const r = REQUEST_ID.test(id) && store.getRequest(id);
+  if (!r || r.status !== 'disponible') return new Map();
+  return new Map(r.items.map(i => [itemKey(i), i.price]));
 }
 
 /** Une commande passée avec la référence : la demande devient « commandée ». */
