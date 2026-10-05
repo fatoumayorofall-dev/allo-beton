@@ -129,8 +129,23 @@ for (const name of wanted) {
     `${failed ? '✗' : '✓'} ${name.padEnd(12)} ${String(ok).padStart(3)} vérifications réussies${failed ? `, échecs :\n    ${(bad.length ? bad : lines.slice(-5)).slice(0, 6).join('\n    ')}` : ''}  (${secs} s)`,
   );
   console.log(summary[summary.length - 1]);
+  // Sur GitHub Actions : chaque échec devient une annotation visible dans le contrôle
+  if (failed && process.env.GITHUB_ACTIONS) {
+    const detail = (bad.length ? bad : lines.slice(-8))
+      .slice(0, 8)
+      .join(' | ')
+      .replace(/%/g, '%25')
+      .replace(/\r?\n/g, ' ');
+    console.log(`::error title=Scénario ${name}::${detail.slice(0, 900)}`);
+  }
 }
 
 stopAll();
 console.log(`\n${wanted.length - failures}/${wanted.length} scénarios réussis`);
+if (process.env.GITHUB_STEP_SUMMARY) {
+  fs.appendFileSync(
+    process.env.GITHUB_STEP_SUMMARY,
+    `## Tests de bout en bout\n\n\`\`\`\n${summary.join('\n')}\n\`\`\`\n`,
+  );
+}
 process.exit(failures ? 1 : 0);
