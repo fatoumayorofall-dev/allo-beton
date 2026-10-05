@@ -414,6 +414,22 @@ paths:
       security: [{ session: [] }]
       responses:
         '200': { description: OK }
+    delete:
+      tags: [Comptes clientes]
+      summary: "Droit à l'effacement : supprimer le compte, ses sessions et son historique"
+      security: [{ session: [] }]
+      responses:
+        '200': { description: Compte supprimé }
+        '401': { description: Non connectée }
+        '409': { description: Une commande est en cours }
+  /api/me/export:
+    get:
+      tags: [Comptes clientes]
+      summary: "Droit d'accès (loi 2008-12) : toutes les données gardées sur la cliente"
+      security: [{ session: [] }]
+      responses:
+        '200': { description: Fichier JSON (profil, adresses, commandes), sans le code secret }
+        '401': { description: Non connectée }
   /api/me/pin:
     post:
       tags: [Comptes clientes]
