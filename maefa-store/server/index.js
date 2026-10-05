@@ -267,7 +267,10 @@ app.delete('/api/voice/:slug', (req, res) => {
 });
 
 /* ---------- Comptes clientes (numéro de téléphone + code WhatsApp) ---------- */
-registerAuthRoutes(app, { limit, wa, store, isAdmin });
+const { currentUser } = registerAuthRoutes(app, { limit, wa, store, isAdmin });
+// Avis et questions sur les pièces, visibles par toutes ; modération par la gérante
+const { registerCommentRoutes } = await import('./comments.js');
+registerCommentRoutes(app, { limit, isAdmin, store, currentUser, toE164: wa.toE164 });
 
 /* ---------- Commandes, livraison et suivi GPS du livreur ---------- */
 // Géolocalisation et tournées : intégrées, ou microservice si GEO_SERVICE_URL est défini

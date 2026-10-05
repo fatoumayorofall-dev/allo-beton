@@ -17,7 +17,7 @@ import {
 import { useStore } from './StoreContext';
 
 const TOKEN_KEY = 'maefa_token';
-const readToken = () => {
+export const readToken = () => {
   try {
     return localStorage.getItem(TOKEN_KEY);
   } catch {

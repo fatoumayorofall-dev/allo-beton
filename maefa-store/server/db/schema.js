@@ -230,6 +230,24 @@ export const marketProducts = pgTable('market_products', {
   data: jsonb('data').notNull(),
 });
 
+/** Avis et questions sur les pièces (association NOTER : CLIENTE – PRODUIT). */
+export const productComments = pgTable(
+  'product_comments',
+  {
+    id: text('id').primaryKey(),
+    productId: text('product_id').notNull(),
+    status: text('status').notNull(),
+    rating: integer('rating'),
+    createdAt: createdAt().notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [
+    index('comments_product_idx').on(t.productId),
+    check('note_valide', sql`${t.rating} is null or ${t.rating} between 1 and 5`),
+    check('statut_avis', sql`${t.status} in ('publie', 'masque')`),
+  ],
+);
+
 /** Réglages et petits documents (vitrine, visites, réglages du Marché, date du catalogue). */
 export const appSettings = pgTable('app_settings', {
   key: text('key').primaryKey(),

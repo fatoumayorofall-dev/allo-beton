@@ -212,6 +212,7 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
       responsable: 'Maefa Store, Dakar (Sénégal)',
       profil: profile,
       commandes: shopOrders.length ? shopOrders : store.getOrders(user.phone),
+      avis: store.listComments().filter(c => c.customerPhone === user.phone),
     });
   });
 
@@ -360,4 +361,6 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     res.json({ customers });
   });
+
+  return { currentUser };
 }

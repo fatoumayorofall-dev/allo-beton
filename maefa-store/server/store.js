@@ -34,6 +34,7 @@ let state = {
   catalogUpdatedAt: null,
   stockAlerts: [],
   authCodes: {},
+  comments: {},
 };
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
@@ -220,6 +221,8 @@ export function deleteUserAccount(phone) {
   delete state.users[phone];
   for (const [hash, s] of Object.entries(state.sessions)) if (s.phone === phone) delete state.sessions[hash];
   delete state.orders[phone];
+  // Les avis publiés restent (prénom seulement) mais ne sont plus reliés au compte
+  for (const c of Object.values(state.comments ?? {})) if (c.customerPhone === phone) c.customerPhone = null;
   persist();
 }
 
@@ -364,6 +367,20 @@ export function addStockAlert(productId, contact) {
 }
 export function removeStockAlerts(productId) {
   state.stockAlerts = state.stockAlerts.filter(a => a.productId !== productId);
+  persist();
+}
+
+/* ---------- Avis et questions sur les pièces (visibles par toutes, modérés par la gérante) ---------- */
+export const getComment = id => (state.comments ??= {})[id] ?? null;
+export const listComments = () =>
+  Object.values(state.comments ?? {}).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export function saveComment(c) {
+  (state.comments ??= {})[c.id] = c;
+  persist();
+  return c;
+}
+export function deleteComment(id) {
+  delete (state.comments ??= {})[id];
   persist();
 }
 

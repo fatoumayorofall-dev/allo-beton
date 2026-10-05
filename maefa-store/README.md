@@ -25,7 +25,7 @@ npm run format:check     # mise en forme (Prettier) ; npm run format pour corrig
 npm run typecheck        # vérification des types (TypeScript)
 npm run test:unit        # 34 tests unitaires et d'intégration (PostgreSQL et Redis si TEST_DATABASE_URL / TEST_REDIS_URL)
 npm run test:assistant   # 66 vérifications de l'assistante Maé
-npm run build && npm run test:e2e   # 19 scénarios Playwright (cliente, gérante, livreur)
+npm run build && npm run test:e2e   # 20 scénarios Playwright (cliente, gérante, livreur)
 docker compose up --build           # site + microservice geo + PostgreSQL + Redis : http://localhost:8787
 npm run db:generate      # nouvelle migration PostgreSQL après une modification de server/db/schema.js
 npm run data:pipeline    # rapport du pipeline de données et évaluation du modèle de recommandation

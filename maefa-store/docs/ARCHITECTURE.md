@@ -323,7 +323,7 @@ flowchart LR
 | Tests unitaires et d'intégration | `npm run test:unit` (testeur intégré de Node.js) | 34 tests : JWT, tournées (comparées à la recherche exhaustive), prix, ORM PostgreSQL (aller-retour, cascade, contraintes), cache Redis, microservice et repli, pipeline de données, modèle de recommandation |
 | Analyse statique | TypeScript strict, ESLint, Prettier | erreurs de types, règles React (hooks), mise en forme |
 | Tests de l'assistante | `npm run test:assistant` | 66 vérifications : intentions, entités, langue, honnêteté commerciale |
-| Tests de bout en bout | `npm run test:e2e` (Playwright) | 19 scénarios, 311 vérifications, sur téléphones et ordinateurs simulés, avec PostgreSQL, Redis et le microservice |
+| Tests de bout en bout | `npm run test:e2e` (Playwright) | 20 scénarios, 321 vérifications, sur téléphones et ordinateurs simulés, avec PostgreSQL, Redis et le microservice |
 | Charge | test ponctuel | 200 commandes simultanées sans erreur |
 
 Les scénarios de bout en bout lancent un serveur neuf par scénario et simulent les services de
@@ -341,6 +341,7 @@ carte (`tests/e2e/geomock.cjs`) : ils ne dépendent d'aucun service extérieur.
 | `expert` | catalogue partagé, « sur commande », Le Marché |
 | `compte` | connexion par code, profil, commandes, jeton JWT |
 | `donnees` | politique de confidentialité, téléchargement des données, suppression du compte |
+| `avis` | avis et questions visibles par toutes, refus des numéros, réponse et modération, « Cliente vérifiée » |
 | `ia` | collecte anonyme, pipeline, recommandations apprises, tableau « Données & IA » |
 | autres | espace cliente, statut WhatsApp, authenticité, assistante, wolof |
 

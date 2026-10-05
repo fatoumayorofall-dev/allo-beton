@@ -198,6 +198,20 @@ const TABLES = [
     rows: s => Object.values(s.market.products).map(p => ({ id: p.id, slug: p.slug, createdAt: p.createdAt, data: p })),
   },
   {
+    table: t.productComments,
+    pk: [t.productComments.id],
+    key: r => r.id,
+    rows: s =>
+      Object.values(s.comments ?? {}).map(c => ({
+        id: c.id,
+        productId: c.productId,
+        status: c.status,
+        rating: c.rating ?? null,
+        createdAt: c.createdAt,
+        data: c,
+      })),
+  },
+  {
     table: t.appSettings,
     pk: [t.appSettings.key],
     key: r => r.key,
@@ -252,6 +266,7 @@ export async function createPgRepository(url) {
       deliveries: Object.fromEntries(all.get(t.deliveries).map(d => [d.orderId, d.data])),
       tours: Object.fromEntries(all.get(t.tours).map(x => [x.id, x.data])),
       authCodes: Object.fromEntries(all.get(t.authCodes).map(c => [c.code, c.data])),
+      comments: Object.fromEntries(all.get(t.productComments).map(c => [c.id, c.data])),
       market: {
         products: Object.fromEntries(all.get(t.marketProducts).map(p => [p.id, p.data])),
         settings: settings.marketSettings ?? null,

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Sparkles,
+  MessageSquare,
   AlertTriangle,
   ArrowRight,
   BarChart3,
@@ -61,6 +62,7 @@ import { AuthenticityTab } from './AdminAuthenticity';
 import { ToursTab } from './AdminTours';
 import { RequestsTab } from './AdminRequests';
 import { AnalyticsTab } from './AdminAnalytics';
+import { CommentsTab } from './AdminComments';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 import { mediaUrl, normalizeVideoInput, staticMode } from '../utils/media';
 
@@ -98,7 +100,8 @@ type Tab =
   | 'customers'
   | 'status'
   | 'authenticity'
-  | 'data';
+  | 'data'
+  | 'comments';
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   en_attente: 'bg-amber-100 text-amber-800',
@@ -218,6 +221,7 @@ export const Admin: React.FC = () => {
             ['customers', 'Clientes', Users],
             ['status', 'Statut WhatsApp', Send],
             ['authenticity', 'Authenticité', ShieldCheck],
+            ['comments', 'Avis', MessageSquare],
             ['data', 'Données & IA', Sparkles],
           ] as const
         ).map(([id, label, Icon]) => (
@@ -237,6 +241,7 @@ export const Admin: React.FC = () => {
       {tab === 'dashboard' && <Dashboard onGoto={setTab} />}
       {tab === 'requests' && <RequestsTab pin={adminPin()} />}
       {tab === 'data' && <AnalyticsTab pin={adminPin()} />}
+      {tab === 'comments' && <CommentsTab pin={adminPin()} />}
       {tab === 'orders' && <Orders />}
       {tab === 'tours' && <ToursTab pin={adminPin()} />}
       {tab === 'products' && <Products />}

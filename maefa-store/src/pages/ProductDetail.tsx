@@ -34,6 +34,7 @@ import { shortLink } from '../utils/share';
 import { PaymentLogos, WhatsAppGlyph } from '../components/BrandLogos';
 import { track } from '../utils/track';
 import { fetchReco } from '../services/api';
+import { ProductComments, useProductComments } from '../components/ProductComments';
 
 /** Date de livraison estimée à Dakar : demain si la commande part avant 16 h (le dimanche est sauté). */
 const DeliveryEstimate: React.FC = () => {
@@ -88,66 +89,6 @@ const Accordion: React.FC<{
     </div>
   </div>
 );
-
-const ReviewForm: React.FC<{ onSubmit: (r: { author: string; rating: number; comment: string }) => void }> = ({
-  onSubmit,
-}) => {
-  const [open, setOpen] = useState(false);
-  const [author, setAuthor] = useState('');
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
-  if (!open)
-    return (
-      <button onClick={() => setOpen(true)} className="btn-outline !h-11 !px-6 mt-2">
-        Donner mon avis
-      </button>
-    );
-  return (
-    <form
-      className="space-y-4 mt-2 p-6 bg-white border border-ink/[0.07] rounded-3xl shadow-soft"
-      onSubmit={e => {
-        e.preventDefault();
-        if (!author.trim() || comment.trim().length < 10) return;
-        onSubmit({ author: author.trim(), rating, comment: comment.trim() });
-        setOpen(false);
-        setAuthor('');
-        setComment('');
-        setRating(5);
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <span className="field-label !mb-0">Votre note</span>
-        <Stars rating={rating} size={18} onRate={setRating} />
-      </div>
-      <input
-        required
-        value={author}
-        onChange={e => setAuthor(e.target.value)}
-        placeholder="Prénom et initiale (ex : Awa D.)"
-        aria-label="Votre nom"
-        maxLength={40}
-        className="field"
-      />
-      <textarea
-        required
-        minLength={10}
-        value={comment}
-        onChange={e => setComment(e.target.value)}
-        rows={3}
-        maxLength={400}
-        placeholder="Qualité, taille, confort… (10 caractères minimum)"
-        aria-label="Votre avis"
-        className="field resize-none"
-      />
-      <div className="flex gap-2">
-        <button type="button" onClick={() => setOpen(false)} className="btn-outline !h-11 flex-1">
-          Annuler
-        </button>
-        <button className="btn-dark !h-11 flex-1">Publier</button>
-      </div>
-    </form>
-  );
-};
 
 /** Formulaire « Me prévenir du retour en stock » pour une pièce épuisée. */
 const StockAlertForm: React.FC<{ onSubmit: (contact: string) => void }> = ({ onSubmit }) => {
@@ -204,7 +145,6 @@ export const ProductDetail: React.FC = () => {
     markViewed,
     setCartOpen,
     notify,
-    addReview,
     addStockAlert,
     savedCustomer,
   } = useStore();
@@ -218,6 +158,8 @@ export const ProductDetail: React.FC = () => {
   const sizeRef = useRef<HTMLDivElement>(null);
   const { ref: buyRef, inView: buyVisible } = useInView<HTMLDivElement>('0px');
   const [pastBuy, setPastBuy] = useState(false);
+  // Avis et questions, partagés entre toutes les visiteuses
+  const comments = useProductComments(product?.id);
   // « Vous aimerez aussi » : modèle de recommandation du serveur (repli : même catégorie)
   const [reco, setReco] = useState<string[] | null>(null);
   useEffect(() => {
@@ -437,7 +379,7 @@ export const ProductDetail: React.FC = () => {
               </button>
             </div>
             <h1 className="font-display text-5xl sm:text-6xl mt-3 leading-[0.98]">{product.name}</h1>
-            {product.reviewCount > 0 && (
+            {comments.summary.average !== null && (
               <button
                 onClick={() => {
                   setOpenSection('avis');
@@ -445,9 +387,9 @@ export const ProductDetail: React.FC = () => {
                 }}
                 className="tap mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink"
               >
-                <Stars rating={product.rating} />{' '}
+                <Stars rating={comments.summary.average} />{' '}
                 <span>
-                  {product.rating.toFixed(1)} · {product.reviewCount} avis
+                  {comments.summary.average.toFixed(1)} · {comments.summary.rated} avis
                 </span>
               </button>
             )}
@@ -692,49 +634,11 @@ export const ProductDetail: React.FC = () => {
               </Accordion>
               <Accordion
                 id="avis"
-                title={`Avis clientes (${product.reviewCount})`}
+                title={`Avis et questions (${comments.summary.count})`}
                 open={openSection === 'avis'}
                 onToggle={() => toggle('avis')}
               >
-                {product.reviewCount > 0 ? (
-                  <div className="flex items-center gap-4 mb-5">
-                    <span className="font-display text-5xl text-ink">{product.rating.toFixed(1)}</span>
-                    <span>
-                      <Stars rating={product.rating} size={15} />
-                      <span className="block text-xs mt-1">{product.reviewCount} avis vérifiés</span>
-                    </span>
-                  </div>
-                ) : (
-                  <p className="mb-5">Pas encore d'avis sur cette pièce : soyez la première à donner le vôtre.</p>
-                )}
-                {product.reviews?.length ? (
-                  <ul className="space-y-5 mb-6">
-                    {product.reviews.slice(0, 5).map(r => (
-                      <li key={r.author + r.date} className="pb-5 border-b border-ink/5 last:border-0">
-                        <div className="flex items-center justify-between">
-                          <strong className="text-ink text-[13px]">{r.author}</strong>
-                          <Stars rating={r.rating} size={11} />
-                        </div>
-                        <p className="mt-2">{r.comment}</p>
-                        <p className="text-[11px] text-ink/70 mt-1.5">
-                          {new Date(r.date).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric',
-                          })}
-                        </p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mb-5">Soyez la première personne à partager votre expérience.</p>
-                )}
-                <ReviewForm
-                  onSubmit={r => {
-                    addReview(product.id, r);
-                    notify('Merci pour votre avis !');
-                  }}
-                />
+                <ProductComments state={comments} />
               </Accordion>
             </div>
           </div>

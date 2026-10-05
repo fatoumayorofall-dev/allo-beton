@@ -724,3 +724,53 @@ export const fetchReco = (productId: string, signal?: AbortSignal) =>
     .then(r => (r.ok ? r.json() : null))
     .then((r: { ids: string[] } | null) => r?.ids ?? null)
     .catch(() => null);
+
+/* ---------- Avis et questions sur les pièces ---------- */
+export interface ProductComment {
+  id: string;
+  author: string;
+  text: string;
+  rating: number | null;
+  verified: boolean;
+  createdAt: string;
+  reply: { text: string; at: string } | null;
+}
+export interface CommentSummary {
+  count: number;
+  rated: number;
+  average: number | null;
+}
+export interface AdminComment extends ProductComment {
+  productId: string;
+  status: 'publie' | 'masque';
+}
+export const fetchComments = (productId: string) =>
+  call<{ comments: ProductComment[]; summary: CommentSummary }>(
+    `/api/products/${encodeURIComponent(productId)}/comments`,
+  );
+export const postComment = (
+  productId: string,
+  body: { author: string; text: string; rating?: number | null },
+  token?: string | null,
+) =>
+  call<{ comment: ProductComment; summary: CommentSummary }>(
+    `/api/products/${encodeURIComponent(productId)}/comments`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+      token: token ?? undefined,
+    },
+  );
+export const fetchAdminComments = (pin: string) =>
+  call<{ comments: AdminComment[] }>('/api/admin/comments', { headers: { 'x-admin-pin': pin } });
+export const patchComment = (pin: string, id: string, patch: { status?: 'publie' | 'masque'; reply?: string }) =>
+  call<{ comment: AdminComment }>(`/api/admin/comments/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+    headers: { 'x-admin-pin': pin },
+  });
+export const deleteComment = (pin: string, id: string) =>
+  call<{ ok: true }>(`/api/admin/comments/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: { 'x-admin-pin': pin },
+  });

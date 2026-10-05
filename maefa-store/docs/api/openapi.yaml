@@ -682,3 +682,47 @@ paths:
       responses:
         '200': { description: Rapport }
         '403': { description: Accès gérante requis }
+  /api/products/{id}/comments:
+    get:
+      tags: [Avis]
+      summary: 'Avis et questions publiés sur une pièce, avec la note moyenne'
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: Messages publiés (prénom, texte, note, cliente vérifiée, réponse de Maefa) }
+    post:
+      tags: [Avis]
+      summary: 'Publier un avis ou une question (liens et numéros refusés) ; « Cliente vérifiée » si la pièce a été livrée'
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [author, text]
+              properties:
+                author: { type: string, maxLength: 40 }
+                text: { type: string, maxLength: 600 }
+                rating: { type: integer, minimum: 1, maximum: 5, nullable: true }
+      responses:
+        '201': { description: Publié }
+        '400': { description: Prénom ou message manquant, lien ou numéro de téléphone }
+        '429': { description: Trop de messages }
+  /api/admin/comments:
+    get:
+      tags: [Avis]
+      summary: 'Tous les messages (gérante)'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/comments/{id}:
+    patch:
+      tags: [Avis]
+      summary: 'Répondre, masquer ou republier'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+    delete:
+      tags: [Avis]
+      summary: 'Supprimer un message'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
