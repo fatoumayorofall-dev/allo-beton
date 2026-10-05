@@ -352,6 +352,10 @@ export const updateMe = (token: string, patch: Partial<Omit<Account, 'phone' | '
   call<{ user: Account }>('/api/me', { method: 'PATCH', token, body: JSON.stringify(patch) });
 export const changeMyPin = (token: string, current: string, next: string) =>
   call<{ ok: true }>('/api/me/pin', { method: 'POST', token, body: JSON.stringify({ current, next }) });
+/** Droit d'accès : toutes les données gardées sur la cliente (fichier JSON). */
+export const exportMyData = (token: string) => call<Record<string, unknown>>('/api/me/export', { token });
+/** Droit à l'effacement : suppression du compte. */
+export const deleteMyAccount = (token: string) => call<{ ok: true }>('/api/me', { method: 'DELETE', token });
 export const saveMyOrder = (token: string, order: Order) =>
   call<{ ok: true }>('/api/me/orders', { method: 'POST', token, body: JSON.stringify({ order }) });
 

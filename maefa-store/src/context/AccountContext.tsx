@@ -9,6 +9,8 @@ import {
   fetchMe,
   getServerStatus,
   saveMyOrder,
+  exportMyData,
+  deleteMyAccount,
   updateMe,
   type Account,
 } from '../services/api';
@@ -45,6 +47,10 @@ interface AccountContextValue {
   changePin: (current: string, next: string) => Promise<{ ok: boolean; error?: string }>;
   recordOrder: (order: Order) => void;
   logout: () => void;
+  /** Droit d'accès : télécharge le fichier de ses données */
+  exportData: () => Promise<{ ok: boolean; error?: string }>;
+  /** Droit à l'effacement : supprime le compte puis déconnecte */
+  deleteAccount: () => Promise<{ ok: boolean; error?: string }>;
 }
 
 const AccountContext = createContext<AccountContextValue | null>(null);
@@ -180,6 +186,25 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setStatus('guest');
   }, [token]);
 
+  const exportData = useCallback(async () => {
+    if (!token) return { ok: false, error: 'Non connectée' };
+    const r = await exportMyData(token);
+    if (!r.ok) return { ok: false, error: r.error };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(r.data, null, 2)], { type: 'application/json' }));
+    const a = Object.assign(document.createElement('a'), { href: url, download: 'mes-donnees-maefa.json' });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return { ok: true };
+  }, [token]);
+
+  const deleteAccount = useCallback(async () => {
+    if (!token) return { ok: false, error: 'Non connectée' };
+    const r = await deleteMyAccount(token);
+    if (!r.ok) return { ok: false, error: r.error };
+    logout();
+    return { ok: true };
+  }, [token, logout]);
+
   const value = useMemo<AccountContextValue>(
     () => ({
       status,
@@ -192,8 +217,22 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
       changePin,
       recordOrder,
       logout,
+      exportData,
+      deleteAccount,
     }),
-    [status, user, remoteOrders, verifyCode, loginWithPin, saveProfile, changePin, recordOrder, logout],
+    [
+      status,
+      user,
+      remoteOrders,
+      verifyCode,
+      loginWithPin,
+      saveProfile,
+      changePin,
+      recordOrder,
+      logout,
+      exportData,
+      deleteAccount,
+    ],
   );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;

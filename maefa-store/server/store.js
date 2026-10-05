@@ -171,6 +171,17 @@ export function deleteSession(tokenHash) {
   persist();
 }
 
+/**
+ * Droit à l'effacement (loi sénégalaise 2008-12) : le compte, ses sessions et l'historique rattaché
+ * sont supprimés. Les commandes de la boutique restent (obligations comptables), sans lien avec le compte.
+ */
+export function deleteUserAccount(phone) {
+  delete state.users[phone];
+  for (const [hash, s] of Object.entries(state.sessions)) if (s.phone === phone) delete state.sessions[hash];
+  delete state.orders[phone];
+  persist();
+}
+
 /** Commandes rattachées au compte (retrouvées sur n'importe quel téléphone). */
 export const getOrders = phone => state.orders[phone] ?? [];
 export function saveOrder(phone, order) {

@@ -182,6 +182,36 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     res.json({ user: publicUser(user), orders: store.getOrders(user.phone) });
   });
 
+  /** Droit d'accès : toutes les données gardées sur la cliente, dans un fichier lisible. */
+  app.get('/api/me/export', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Non connectée' });
+    const { pinHash: _secret, ...profile } = user;
+    const shopOrders = store.listShopOrders().filter(o => wa.toE164(o.customer?.phone) === user.phone);
+    res.set('Content-Disposition', 'attachment; filename="mes-donnees-maefa.json"');
+    res.json({
+      exportedAt: new Date().toISOString(),
+      responsable: 'Maefa Store, Dakar (Sénégal)',
+      profil: profile,
+      commandes: shopOrders.length ? shopOrders : store.getOrders(user.phone),
+    });
+  });
+
+  /** Droit à l'effacement : suppression du compte (refusée tant qu'une commande est en cours). */
+  app.delete('/api/me', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Non connectée' });
+    const active = store
+      .listShopOrders()
+      .some(o => wa.toE164(o.customer?.phone) === user.phone && !['livree', 'annulee'].includes(o.status));
+    if (active)
+      return res
+        .status(409)
+        .json({ error: 'Une commande est en cours : le compte pourra être supprimé après la livraison.' });
+    store.deleteUserAccount(user.phone);
+    res.json({ ok: true });
+  });
+
   app.patch('/api/me', (req, res) => {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ error: 'Non connectée' });

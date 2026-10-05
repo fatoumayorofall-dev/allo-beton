@@ -22,7 +22,7 @@ const SUITES = fs
   .map(f => f.replace(/\.cjs$/, ''))
   .sort();
 /** Réglages propres à un scénario (ex. : code SMS affiché à l'écran pour la connexion). */
-const EXTRA_ENV = { compte: { OTP_DEV_MODE: '1' } };
+const EXTRA_ENV = { compte: { OTP_DEV_MODE: '1' }, donnees: { OTP_DEV_MODE: '1' } };
 const GEO = 'http://localhost:9922';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));

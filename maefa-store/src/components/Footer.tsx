@@ -177,6 +177,11 @@ export const Footer: React.FC = () => {
                 Notre maison
               </Link>
             </li>
+            <li>
+              <Link to="/confidentialite" className={lnk}>
+                Confidentialité
+              </Link>
+            </li>
           </ul>
         </div>
 

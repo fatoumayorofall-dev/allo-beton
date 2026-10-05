@@ -8,6 +8,7 @@ import {
   Heart,
   KeyRound,
   Loader2,
+  Download,
   Lock,
   LogOut,
   MapPin,
@@ -835,6 +836,63 @@ const STEPS: { status: OrderStatus[]; label: string }[] = [
 ];
 
 /** Mes adresses : Maison, Bureau, Chez maman… choisies en un geste à la commande. */
+/** Droits de la cliente sur ses données (loi sénégalaise 2008-12) : accès et effacement. */
+const MyDataPanel: React.FC = () => {
+  const { exportData, deleteAccount } = useAccount();
+  const [busy, setBusy] = useState<'' | 'export' | 'delete'>('');
+  const [message, setMessage] = useState('');
+  const run = async (kind: 'export' | 'delete') => {
+    if (
+      kind === 'delete' &&
+      !window.confirm('Supprimer définitivement votre compte, vos adresses et votre historique ?')
+    )
+      return;
+    setBusy(kind);
+    setMessage('');
+    const r = kind === 'export' ? await exportData() : await deleteAccount();
+    setBusy('');
+    setMessage(
+      r.ok ? (kind === 'export' ? 'Fichier de vos données téléchargé.' : '') : (r.error ?? 'Une erreur est survenue'),
+    );
+  };
+  return (
+    <section className="bg-white rounded-[2rem] border border-ink/[0.06] p-5 sm:p-7" data-testid="my-data">
+      <h2 className="font-display text-2xl">Mes données personnelles</h2>
+      <p className="text-sm text-ink/70 mt-2">
+        Vous pouvez récupérer toutes les données que nous gardons sur vous, ou supprimer votre compte.{' '}
+        <Link to="/confidentialite" className="underline">
+          En savoir plus
+        </Link>
+      </p>
+      <div className="mt-4 grid sm:grid-cols-2 gap-3">
+        <button
+          onClick={() => run('export')}
+          disabled={!!busy}
+          data-testid="export-data"
+          className="h-12 rounded-full border border-ink/15 text-sm font-semibold inline-flex items-center justify-center gap-2 hover:border-ink/40"
+        >
+          {busy === 'export' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}{' '}
+          Télécharger mes données
+        </button>
+        <button
+          onClick={() => run('delete')}
+          disabled={!!busy}
+          data-testid="delete-account"
+          className="h-12 rounded-full border border-wine/30 text-wine text-sm font-semibold inline-flex items-center justify-center gap-2 hover:bg-wine/5"
+        >
+          {busy === 'delete' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Supprimer
+          mon compte
+        </button>
+      </div>
+      {message && (
+        <p className="text-sm mt-3 text-ink/80" role="status" data-testid="my-data-message">
+          {message}
+        </p>
+      )}
+    </section>
+  );
+};
+
 const SavedAddressesPanel: React.FC = () => {
   const { addresses, remove } = useSavedAddresses();
   return (
@@ -1334,6 +1392,8 @@ const Dashboard: React.FC = () => {
       </Panel>
 
       <SavedAddressesPanel />
+
+      <MyDataPanel />
 
       {/* Raccourcis */}
       <nav aria-label="Mon compte" className="grid grid-cols-2 lg:grid-cols-4 gap-3">

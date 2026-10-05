@@ -785,6 +785,12 @@ export const Checkout: React.FC = () => {
                 Chaque pièce est contrôlée avant l'envoi. Vérifiez votre commande à la réception, devant le livreur :
                 aucun échange ni retour après la livraison.
               </p>
+              <p className="text-[11px] text-center text-ink/60" data-testid="checkout-privacy">
+                Vos coordonnées servent uniquement à préparer et livrer votre commande.{' '}
+                <Link to="/confidentialite" className="underline">
+                  Confidentialité
+                </Link>
+              </p>
             </div>
           )}
         </div>

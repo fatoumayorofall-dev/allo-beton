@@ -37,6 +37,7 @@ const MyOrders = page(() => import('./pages/MyOrders'), 'MyOrders');
 const Account = page(() => import('./pages/Account'), 'Account');
 const About = page(() => import('./pages/About'), 'About');
 const FAQ = page(() => import('./pages/FAQ'), 'FAQ');
+const Privacy = page(() => import('./pages/Privacy'), 'Privacy');
 const NotFound = page(() => import('./pages/NotFound'), 'NotFound');
 const Journal = page(() => import('./pages/Journal'), 'Journal');
 const ArticlePage = page(() => import('./pages/Journal'), 'ArticlePage');
@@ -165,6 +166,7 @@ export default function App() {
                     />
                     <Route path="/a-propos" element={<About />} />
                     <Route path="/faq" element={<FAQ />} />
+                    <Route path="/confidentialite" element={<Privacy />} />
                     <Route path="/authentique" element={<Authenticity />} />
                     <Route path="/authentique/:code" element={<Authenticity />} />
                     <Route path="/admin" element={<Admin />} />
