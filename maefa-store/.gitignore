@@ -5,3 +5,4 @@ dist
 server/.env
 server/data/
 __pycache__/
+tests/e2e/.out/
