@@ -1,0 +1,19 @@
+# Lancer Maefa Store en local en une commande : docker compose up --build
+# puis ouvrir http://localhost:8787 (espace gérante : /admin, code PIN ci-dessous).
+services:
+  maefa:
+    build: .
+    ports: ['8787:8787']
+    environment:
+      ADMIN_PIN: ${ADMIN_PIN:-changez-moi}
+      SITE_URL: http://localhost:8787
+      # Facultatif : assistante IA en ligne, WhatsApp automatique
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+    volumes:
+      - maefa-data:/data
+    restart: unless-stopped
+
+volumes:
+  maefa-data:

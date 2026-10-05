@@ -1,0 +1,10 @@
+node_modules
+dist
+tests/e2e/.out
+maefa-wamp.zip
+impression
+marketing
+outils
+**/__pycache__
+server/data
+server/.env
