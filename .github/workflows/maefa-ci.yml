@@ -1,0 +1,56 @@
+# Intégration continue de Maefa Store : à chaque envoi de code, le projet est vérifié
+# (analyse du code, types, compilation, tests de l'assistante, tests de bout en bout).
+# Un seul échec suffit à marquer l'envoi en rouge sur GitHub.
+name: Maefa CI
+
+on:
+  push:
+    paths: ['maefa-store/**', '.github/workflows/maefa-ci.yml']
+  pull_request:
+    paths: ['maefa-store/**', '.github/workflows/maefa-ci.yml']
+
+defaults:
+  run:
+    working-directory: maefa-store
+
+jobs:
+  qualite:
+    name: Analyse, types et compilation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: maefa-store/package-lock.json }
+      - run: npm ci
+      - name: Analyse statique (ESLint)
+        run: npm run lint
+      - name: Mise en forme (Prettier)
+        run: npm run format:check
+      - name: Vérification des types (TypeScript)
+        run: npm run typecheck
+      - name: Tests de l'assistante Maé (compréhension, honnêteté)
+        run: npm run test:assistant
+      - name: Compilation du site
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        with: { name: site-compile, path: maefa-store/dist, retention-days: 3 }
+
+  e2e:
+    name: Tests de bout en bout (Playwright)
+    needs: qualite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: maefa-store/package-lock.json }
+      - run: npm ci
+      - name: Navigateur Chromium
+        run: npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with: { name: site-compile, path: maefa-store/dist }
+      - name: Scénarios cliente, gérante et livreur
+        run: npm run test:e2e
+      - name: Captures d'écran en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: captures-e2e, path: maefa-store/tests/e2e/.out, retention-days: 7 }
