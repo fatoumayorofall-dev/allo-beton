@@ -1,0 +1,620 @@
+openapi: 3.0.3
+info:
+  title: API Maefa Store
+  version: 1.0.0
+  description: |
+    API REST du serveur Maefa Store (Node.js + Express). Toutes les réponses sont en JSON.
+    Ouvrir ce fichier dans https://editor.swagger.io pour une page interactive.
+
+    Accès :
+    - **gérante** : en-tête `x-admin-pin` (jeton signé obtenu par `POST /api/admin/login`) ;
+    - **cliente connectée** : en-tête `Authorization: Bearer <jeton>` (obtenu par `/api/auth/verify`) ;
+    - **livreur** : jeton secret dans l'adresse (`/api/driver/{token}`, `/api/tour/{token}`).
+servers:
+  - url: https://maefa-store.onrender.com
+  - url: http://localhost:8787
+components:
+  securitySchemes:
+    admin: { type: apiKey, in: header, name: x-admin-pin }
+    session: { type: http, scheme: bearer }
+  schemas:
+    Erreur:
+      type: object
+      properties: { error: { type: string, example: 'Accès gérante requis' } }
+    ArticleDemande:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: string, example: MAE-103 }
+        name: { type: string }
+        price: { type: integer, description: "Prix en FCFA (absent tant que la demande n'est pas confirmée)" }
+        catalogPrice: { type: integer, description: 'Prix catalogue quand un autre prix a été convenu' }
+        color: { type: string }
+        size: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 20 }
+    Demande:
+      type: object
+      properties:
+        id: { type: string, pattern: '^DEM-[A-HJ-NP-Z2-9]{5}$', example: DEM-K7Q2M }
+        status: { type: string, enum: [nouvelle, disponible, indisponible, commandee] }
+        items: { type: array, items: { $ref: '#/components/schemas/ArticleDemande' } }
+        total: { type: integer }
+        note: { type: string }
+        orderId: { type: string, nullable: true }
+paths:
+  /api/health:
+    get:
+      tags: [Système]
+      summary: 'État du serveur et des services branchés (assistante IA, WhatsApp, API gérante)'
+      responses:
+        '200': { description: OK }
+  /api/stats:
+    get:
+      tags: [Système]
+      summary: 'Statistiques de visites'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/track:
+    post:
+      tags: [Système]
+      summary: "Enregistre la visite d'une fiche produit"
+      responses:
+        '200': { description: OK }
+  /api/catalog:
+    get:
+      tags: [Catalogue]
+      summary: 'Catalogue publié (prix confidentiels : classe de prix côté affichage)'
+      responses:
+        '200': { description: OK }
+  /api/admin/catalog:
+    put:
+      tags: [Catalogue]
+      summary: 'Publier tout le catalogue'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/catalog/products/{id}:
+    put:
+      tags: [Catalogue]
+      summary: 'Créer ou modifier un produit'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+    delete:
+      tags: [Catalogue]
+      summary: 'Supprimer un produit'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/catalog/products/{id}/reviews:
+    post:
+      tags: [Catalogue]
+      summary: 'Laisser un avis'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/stock-alerts:
+    post:
+      tags: [Catalogue]
+      summary: 'Demander une alerte de retour en stock'
+      responses:
+        '200': { description: OK }
+  /api/admin/stock-alerts:
+    get:
+      tags: [Catalogue]
+      summary: 'Liste des alertes de retour en stock'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/stock-alerts/{productId}:
+    delete:
+      tags: [Catalogue]
+      summary: "Clore les alertes d'un produit"
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/requests:
+    post:
+      tags: [Demandes WhatsApp]
+      summary: "Noter une demande d'achat (référence DEM-XXXXX)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, items]
+              properties:
+                id: { type: string, example: DEM-K7Q2M }
+                items: { type: array, items: { $ref: '#/components/schemas/ArticleDemande' } }
+                customer:
+                  {
+                    type: object,
+                    properties: { firstName: { type: string }, phone: { type: string }, zone: { type: string } },
+                  }
+      responses:
+        '201': { description: Demande notée }
+        '400':
+          {
+            description: Référence ou articles invalides,
+            content: { application/json: { schema: { $ref: '#/components/schemas/Erreur' } } },
+          }
+  /api/requests/{id}:
+    get:
+      tags: [Demandes WhatsApp]
+      summary: "État d'une demande ; prix exacts seulement une fois confirmée"
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          { description: Demande, content: { application/json: { schema: { $ref: '#/components/schemas/Demande' } } } }
+        '404': { description: Demande introuvable }
+  /api/admin/requests:
+    get:
+      tags: [Demandes WhatsApp]
+      summary: 'Demandes reçues'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/requests/{id}:
+    patch:
+      tags: [Demandes WhatsApp]
+      summary: 'Répondre : disponible / pas disponible, note, prix convenus'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [nouvelle, disponible, indisponible] }
+                note: { type: string, maxLength: 300 }
+                prices:
+                  {
+                    type: array,
+                    items: { type: integer, minimum: 1 },
+                    description: "Prix convenus, un par article, dans l'ordre",
+                  }
+      responses:
+        '200':
+          {
+            description: Demande mise à jour,
+            content:
+              {
+                application/json:
+                  { schema: { type: object, properties: { request: { $ref: '#/components/schemas/Demande' } } } },
+              },
+          }
+        '400': { description: Statut ou prix invalides }
+        '403': { description: Accès gérante requis }
+        '409': { description: Demande déjà commandée }
+  /api/orders/check:
+    post:
+      tags: [Commandes]
+      summary: 'Vérification avant paiement : stock, prix (catalogue ou convenus), moyen de paiement'
+      responses:
+        '200': { description: OK }
+  /api/orders:
+    post:
+      tags: [Commandes]
+      summary: 'Passer commande (totaux, stock et prix contrôlés par le serveur)'
+      responses:
+        '200': { description: OK }
+  /api/orders/lookup:
+    get:
+      tags: [Commandes]
+      summary: "Suivi d'une commande (numéro + téléphone)"
+      responses:
+        '200': { description: OK }
+  /api/orders/rating:
+    post:
+      tags: [Commandes]
+      summary: 'Noter la livraison'
+      responses:
+        '200': { description: OK }
+  /api/admin/orders:
+    get:
+      tags: [Commandes]
+      summary: 'Liste des commandes'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/orders/{id}:
+    patch:
+      tags: [Commandes]
+      summary: "Changer le statut ou le paiement d'une commande"
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/orders/{id}/driver:
+    post:
+      tags: [Livraison]
+      summary: 'Confier une commande à un livreur'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/orders/{id}/relay:
+    put:
+      tags: [Livraison]
+      summary: 'Relais entre livreurs'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/orders/{id}/supplier:
+    patch:
+      tags: [Le Marché]
+      summary: 'Suivi de la commande fournisseur'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/driver/{token}:
+    get:
+      tags: [Livraison]
+      summary: 'Fiche du livreur pour une commande'
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/driver/{token}/start:
+    post:
+      tags: [Livraison]
+      summary: 'Départ du livreur'
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/driver/{token}/position:
+    post:
+      tags: [Livraison]
+      summary: 'Position GPS du livreur'
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/driver/{token}/delivered:
+    post:
+      tags: [Livraison]
+      summary: 'Colis remis (code de livraison)'
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/admin/tours:
+    get:
+      tags: [Tournées]
+      summary: 'Tournées enregistrées'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+    post:
+      tags: [Tournées]
+      summary: 'Enregistrer une tournée et créer le lien livreur'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/tours/plan:
+    post:
+      tags: [Tournées]
+      summary: "Calculer l'ordre optimal des arrêts (temps de trajet routiers)"
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/tours/{id}:
+    delete:
+      tags: [Tournées]
+      summary: 'Supprimer une tournée'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/tour/{token}:
+    get:
+      tags: [Tournées]
+      summary: 'Tournée du livreur, arrêt par arrêt'
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/tour/{token}/skip:
+    post:
+      tags: [Tournées]
+      summary: 'Reporter un arrêt'
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/geo/search:
+    get:
+      tags: [Géolocalisation]
+      summary: 'Rechercher une adresse ou un lieu'
+      responses:
+        '200': { description: OK }
+  /api/geo/reverse:
+    get:
+      tags: [Géolocalisation]
+      summary: "Adresse d'un point de la carte"
+      responses:
+        '200': { description: OK }
+  /api/geo/nearby:
+    get:
+      tags: [Géolocalisation]
+      summary: "Lieux connus autour d'un point (mosquée, pharmacie, école…)"
+      responses:
+        '200': { description: OK }
+  /api/auth/start:
+    post:
+      tags: [Comptes clientes]
+      summary: 'Envoyer un code de connexion par SMS'
+      responses:
+        '200': { description: OK }
+  /api/auth/verify:
+    post:
+      tags: [Comptes clientes]
+      summary: 'Vérifier le code, ouvrir la session'
+      responses:
+        '200': { description: OK }
+  /api/auth/pin:
+    post:
+      tags: [Comptes clientes]
+      summary: 'Connexion par code personnel'
+      responses:
+        '200': { description: OK }
+  /api/auth/logout:
+    post:
+      tags: [Comptes clientes]
+      summary: 'Se déconnecter'
+      security: [{ session: [] }]
+      responses:
+        '200': { description: OK }
+  /api/me:
+    get:
+      tags: [Comptes clientes]
+      summary: 'Profil de la cliente'
+      security: [{ session: [] }]
+      responses:
+        '200': { description: OK }
+    patch:
+      tags: [Comptes clientes]
+      summary: 'Modifier le profil et les adresses enregistrées'
+      security: [{ session: [] }]
+      responses:
+        '200': { description: OK }
+  /api/me/pin:
+    post:
+      tags: [Comptes clientes]
+      summary: 'Choisir un code personnel'
+      security: [{ session: [] }]
+      responses:
+        '200': { description: OK }
+  /api/me/orders:
+    post:
+      tags: [Comptes clientes]
+      summary: 'Rattacher des commandes au compte'
+      security: [{ session: [] }]
+      responses:
+        '200': { description: OK }
+  /api/admin/customers:
+    get:
+      tags: [Comptes clientes]
+      summary: 'Liste des clientes'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/customers/{phone}/reset-pin:
+    post:
+      tags: [Comptes clientes]
+      summary: "Réinitialiser le code d'une cliente"
+      parameters:
+        - { name: phone, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/login:
+    post:
+      tags: [Gérante]
+      summary: 'Connexion de la gérante (PIN vérifié côté serveur)'
+      responses:
+        '200': { description: OK }
+  /api/admin/media:
+    post:
+      tags: [Gérante]
+      summary: 'Envoyer une photo ou une vidéo'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/showcase:
+    get:
+      tags: [Statut WhatsApp]
+      summary: 'Vitrine des nouveautés (/s)'
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Statut WhatsApp]
+      summary: 'Mettre à jour la vitrine'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/voice:
+    get:
+      tags: [Voix]
+      summary: 'Notes vocales disponibles'
+      responses:
+        '200': { description: OK }
+  /api/voice/{slug}:
+    get:
+      tags: [Voix]
+      summary: "Note vocale d'un produit"
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      tags: [Voix]
+      summary: 'Enregistrer une note vocale'
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+    delete:
+      tags: [Voix]
+      summary: 'Supprimer une note vocale'
+      parameters:
+        - { name: slug, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/chat:
+    post:
+      tags: [Assistante]
+      summary: 'Assistante Maé en ligne (si une clé IA est configurée)'
+      responses:
+        '200': { description: OK }
+  /api/authentique/{code}:
+    get:
+      tags: [Authenticité]
+      summary: "Vérifier l'authenticité d'une pièce"
+      parameters:
+        - { name: code, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /api/admin/authenticite:
+    get:
+      tags: [Authenticité]
+      summary: "Registre des codes d'authenticité"
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+    post:
+      tags: [Authenticité]
+      summary: "Créer des codes d'authenticité"
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/marque-securisee:
+    get:
+      tags: [Authenticité]
+      summary: 'Marque sécurisée (gérante uniquement)'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/marche:
+    get:
+      tags: [Le Marché]
+      summary: 'Catalogue du Marché (fournisseurs partenaires)'
+      responses:
+        '200': { description: OK }
+  /api/marche/check:
+    post:
+      tags: [Le Marché]
+      summary: 'Vérifier les articles du Marché avant paiement'
+      responses:
+        '200': { description: OK }
+  /api/admin/marche:
+    get:
+      tags: [Le Marché]
+      summary: 'Produits et réglages du Marché'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/marche/import:
+    post:
+      tags: [Le Marché]
+      summary: 'Importer un produit depuis un lien fournisseur'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/marche/products:
+    post:
+      tags: [Le Marché]
+      summary: 'Créer ou modifier un produit du Marché'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/marche/products/{id}:
+    delete:
+      tags: [Le Marché]
+      summary: 'Supprimer un produit du Marché'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/admin/marche/settings:
+    put:
+      tags: [Le Marché]
+      summary: 'Délais et taux de change'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/notify/order:
+    post:
+      tags: [Notifications]
+      summary: 'Notifier une commande sur WhatsApp'
+      responses:
+        '200': { description: OK }
+  /api/notify/status:
+    post:
+      tags: [Notifications]
+      summary: 'Notifier un changement de statut'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }
+  /api/notify/restock:
+    post:
+      tags: [Notifications]
+      summary: "Prévenir les clientes d'un retour en stock"
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: OK }
+        '403': { description: Accès refusé }

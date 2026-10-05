@@ -17,6 +17,22 @@ npm run build      # vérification TypeScript + build de production dans dist/
 Le site fonctionne sans le serveur : l'assistante répond alors en mode « réponses rapides » (sans IA)
 et les messages WhatsApp se font en un clic, avec un texte prérempli.
 
+## Qualité, tests et livraison
+
+```bash
+npm run lint             # analyse statique (ESLint)
+npm run format:check     # mise en forme (Prettier) ; npm run format pour corriger
+npm run typecheck        # vérification des types (TypeScript)
+npm run test:assistant   # 66 vérifications de l'assistante Maé
+npm run build && npm run test:e2e   # 17 scénarios Playwright (cliente, gérante, livreur)
+docker compose up --build           # le site complet dans Docker : http://localhost:8787
+```
+
+À chaque envoi sur GitHub, l'intégration continue (`.github/workflows/maefa-ci.yml`) lance toutes ces
+vérifications. Le dossier technique (architecture, données, flux, sécurité, tests) est dans
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) et la description de l'API dans
+[`docs/api/openapi.yaml`](docs/api/openapi.yaml) (à ouvrir dans https://editor.swagger.io).
+
 ## Assistante IA « Maé » et notifications WhatsApp
 
 Copiez `server/.env.example` en `server/.env`, puis renseignez :
