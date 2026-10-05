@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Sparkles,
   AlertTriangle,
   ArrowRight,
   BarChart3,
@@ -59,6 +60,7 @@ import { MarketTab, SupplierPanel } from './AdminMarket';
 import { AuthenticityTab } from './AdminAuthenticity';
 import { ToursTab } from './AdminTours';
 import { RequestsTab } from './AdminRequests';
+import { AnalyticsTab } from './AdminAnalytics';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 import { mediaUrl, normalizeVideoInput, staticMode } from '../utils/media';
 
@@ -87,7 +89,16 @@ const EVENT_LABELS: Record<string, string> = { nouvelle: 'Nouvelle commande', ..
 
 const SESSION_KEY = 'maefa_admin';
 type Tab =
-  'dashboard' | 'requests' | 'orders' | 'tours' | 'products' | 'market' | 'customers' | 'status' | 'authenticity';
+  | 'dashboard'
+  | 'requests'
+  | 'orders'
+  | 'tours'
+  | 'products'
+  | 'market'
+  | 'customers'
+  | 'status'
+  | 'authenticity'
+  | 'data';
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   en_attente: 'bg-amber-100 text-amber-800',
@@ -207,6 +218,7 @@ export const Admin: React.FC = () => {
             ['customers', 'Clientes', Users],
             ['status', 'Statut WhatsApp', Send],
             ['authenticity', 'Authenticité', ShieldCheck],
+            ['data', 'Données & IA', Sparkles],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
@@ -224,6 +236,7 @@ export const Admin: React.FC = () => {
       </div>
       {tab === 'dashboard' && <Dashboard onGoto={setTab} />}
       {tab === 'requests' && <RequestsTab pin={adminPin()} />}
+      {tab === 'data' && <AnalyticsTab pin={adminPin()} />}
       {tab === 'orders' && <Orders />}
       {tab === 'tours' && <ToursTab pin={adminPin()} />}
       {tab === 'products' && <Products />}

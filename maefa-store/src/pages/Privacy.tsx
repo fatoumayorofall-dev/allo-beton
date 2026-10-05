@@ -70,7 +70,9 @@ export const Privacy: React.FC = () => {
             <strong>Échanges</strong> : vos demandes envoyées sur WhatsApp, vos messages à l'assistante Maé.
           </li>
           <li>
-            <strong>Mesure d'audience</strong> : nombre de visites par article, sans vous identifier.
+            <strong>Parcours anonyme</strong> : articles vus, mis en favori, au panier ou demandés, liés à un
+            identifiant tiré au hasard (ni nom, ni numéro). Il sert aux statistiques de la boutique et aux suggestions «
+            Vous aimerez aussi ».
           </li>
         </ul>
       </Section>

@@ -634,3 +634,51 @@ paths:
       responses:
         '200': { description: OK }
         '403': { description: Accès refusé }
+  /api/events:
+    post:
+      tags: [Données et IA]
+      summary: 'Collecte anonyme du parcours (vue, favori, panier, demande), identifiant de visite aléatoire'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                visitor: { type: string, example: 3f2c9a1e-7b4d-4e2a-9c1f-5d6e7f8a9b0c }
+                events:
+                  type: array
+                  maxItems: 50
+                  items:
+                    type: object
+                    properties:
+                      t: { type: string, enum: [view, wish, cart, request] }
+                      p: { type: string, example: MAE-103 }
+      responses:
+        '202': { description: Événements valides gardés (champ kept) }
+  /api/reco/{productId}:
+    get:
+      tags: [Données et IA]
+      summary: 'Recommandations « Vous aimerez aussi » (filtrage collaboratif, repli par contenu)'
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string } }
+        - { name: k, in: query, schema: { type: integer, maximum: 8, default: 4 } }
+      responses:
+        '200':
+          description: Pièces recommandées
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ids: { type: array, items: { type: string } }
+                  source: { type: string, enum: [collaboratif, contenu] }
+  /api/admin/analytics:
+    get:
+      tags: [Données et IA]
+      summary: 'Rapport du pipeline : volume, nettoyage, indicateurs par jour, entonnoir, évaluation du modèle, cache'
+      security: [{ admin: [] }]
+      parameters:
+        - { name: refresh, in: query, schema: { type: string, enum: ['1'] } }
+      responses:
+        '200': { description: Rapport }
+        '403': { description: Accès gérante requis }

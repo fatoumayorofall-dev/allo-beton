@@ -5,25 +5,13 @@
 //  Les résultats sont mis en cache ; les URL sont réglables (PHOTON_URL, NOMINATIM_URL)
 //  pour utiliser un service payant ou auto-hébergé en production.
 // ============================================================
+import { cached } from './cache.js'; // mémoire + Redis (si REDIS_URL)
 const PHOTON_URL = process.env.PHOTON_URL || 'https://photon.komoot.io';
 const NOMINATIM_URL = process.env.NOMINATIM_URL || 'https://nominatim.openstreetmap.org';
 const UA = `MaefaStore/1.0 (${process.env.SITE_URL || 'https://maefastore.sn'})`;
 // Sénégal : ouest, sud, est, nord
 const SN_BBOX = [-17.7, 12.2, -11.3, 16.8];
 const DAKAR = { lat: 14.7167, lng: -17.4677 };
-
-const cache = new Map();
-function cached(key, ms, fn) {
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < ms) return hit.value;
-  const value = fn().catch(err => {
-    cache.delete(key);
-    throw err;
-  });
-  cache.set(key, { at: Date.now(), value });
-  if (cache.size > 2000) cache.delete(cache.keys().next().value);
-  return value;
-}
 
 const round = (n, d = 5) => Math.round(n * 10 ** d) / 10 ** d;
 

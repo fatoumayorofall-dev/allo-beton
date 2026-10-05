@@ -15,6 +15,7 @@ import type {
 } from '../data/types';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
+import { track } from '../utils/track';
 
 /* ------------------------------------------------------------------ */
 /*  Persistance locale                                                 */
@@ -302,6 +303,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   /* ---------- Panier ---------- */
   const addToCart: StoreContextValue['addToCart'] = useCallback(
     (product, opts = {}) => {
+      track('cart', product.id);
       const size = opts.size || undefined;
       const color = opts.color || undefined;
       const quantity = opts.quantity ?? 1;
@@ -437,6 +439,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const toggleWishlist = useCallback(
     (productId: string) => {
       const has = wishlist.includes(productId);
+      if (!has) track('wish', productId);
       setWishlist(list => (has ? list.filter(id => id !== productId) : [...list, productId]));
       notify(has ? 'Retiré de vos favoris' : 'Ajouté à vos favoris', has ? 'info' : 'success');
     },

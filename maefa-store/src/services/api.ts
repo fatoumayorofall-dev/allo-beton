@@ -28,6 +28,7 @@ import type {
 } from '../data/types';
 
 const API = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+export const API_BASE = API;
 
 export interface ServerStatus {
   ok: boolean;
@@ -716,3 +717,10 @@ export const fetchNearby = (p: { lat: number; lng: number }, signal?: AbortSigna
     .then(r => (r.ok ? r.json() : { places: [] }))
     .then((r: { places: NearbyPlace[] }) => r.places ?? [])
     .catch(() => [] as NearbyPlace[]);
+
+/** Recommandations pour une pièce (modèle collaboratif du serveur) ; null si indisponible. */
+export const fetchReco = (productId: string, signal?: AbortSignal) =>
+  fetch(`${API}/api/reco/${encodeURIComponent(productId)}?k=4`, { signal })
+    .then(r => (r.ok ? r.json() : null))
+    .then((r: { ids: string[] } | null) => r?.ids ?? null)
+    .catch(() => null);

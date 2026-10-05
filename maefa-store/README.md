@@ -23,9 +23,20 @@ et les messages WhatsApp se font en un clic, avec un texte prérempli.
 npm run lint             # analyse statique (ESLint)
 npm run format:check     # mise en forme (Prettier) ; npm run format pour corriger
 npm run typecheck        # vérification des types (TypeScript)
+npm run test:unit        # 34 tests unitaires et d'intégration (PostgreSQL et Redis si TEST_DATABASE_URL / TEST_REDIS_URL)
 npm run test:assistant   # 66 vérifications de l'assistante Maé
-npm run build && npm run test:e2e   # 17 scénarios Playwright (cliente, gérante, livreur)
-docker compose up --build           # le site complet dans Docker : http://localhost:8787
+npm run build && npm run test:e2e   # 19 scénarios Playwright (cliente, gérante, livreur)
+docker compose up --build           # site + microservice geo + PostgreSQL + Redis : http://localhost:8787
+npm run db:generate      # nouvelle migration PostgreSQL après une modification de server/db/schema.js
+npm run data:pipeline    # rapport du pipeline de données et évaluation du modèle de recommandation
+```
+
+Variables facultatives du serveur : `DATABASE_URL` (PostgreSQL, sinon fichier JSON), `REDIS_URL`
+(cache partagé), `GEO_SERVICE_URL` (microservice de géolocalisation, sinon calcul intégré).
+Pour les tests de bout en bout : `E2E_DATABASE_URL`, `E2E_REDIS_URL`, `E2E_GEO_SERVICE=1`.
+
+```bash
+# Documentation : docs/CAHIER-DES-CHARGES.md, docs/MERISE.md, docs/ARCHITECTURE.md, docs/api/openapi.yaml
 ```
 
 À chaque envoi sur GitHub, l'intégration continue (`.github/workflows/maefa-ci.yml`) lance toutes ces

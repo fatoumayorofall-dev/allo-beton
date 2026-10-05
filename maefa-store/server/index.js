@@ -272,6 +272,7 @@ registerAuthRoutes(app, { limit, wa, store, isAdmin });
 /* ---------- Commandes, livraison et suivi GPS du livreur ---------- */
 // Géolocalisation et tournées : intégrées, ou microservice si GEO_SERVICE_URL est défini
 const { createGeoGateway } = await import('./geoGateway.js');
+const { cacheBackend } = await import('./cache.js');
 const geo = createGeoGateway();
 registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder, geo });
 
@@ -283,6 +284,9 @@ registerAuthenticityRoutes(app, { limit, isAdmin, store });
 
 /* ---------- Vidéos des pièces (envoyées depuis l'espace gérant) ---------- */
 registerMediaRoutes(app, { limit, isAdmin, dataDir: store.DATA_DIR });
+// Données : collecte anonyme, pipeline (indicateurs + modèle de recommandation)
+const { registerAnalyticsRoutes } = await import('./analytics/routes.js');
+registerAnalyticsRoutes(app, { limit, isAdmin, store, dataDir: store.DATA_DIR });
 
 /* ---------- Demandes WhatsApp (vérification chez le fournisseur avant confirmation) ---------- */
 const { registerRequestRoutes } = await import('./requests.js');
@@ -312,6 +316,7 @@ app.listen(PORT, () => {
   console.log(`  WhatsApp     : ${wa.whatsappEnabled() ? 'activé' : 'simulé (identifiants Twilio manquants)'}`);
   console.log(`  Données      : ${store.STORAGE === 'postgresql' ? 'PostgreSQL (ORM Drizzle)' : 'fichier JSON'}`);
   console.log(`  Géolocalisation : ${geo.kind}`);
+  console.log(`  Cache        : ${cacheBackend()}`);
 });
 
 // Arrêt demandé (mise à jour ou redémarrage sur Render) : dernières données écrites avant de quitter

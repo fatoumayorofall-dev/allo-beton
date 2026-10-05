@@ -24,6 +24,9 @@ jobs:
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U maefa" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,9 +38,9 @@ jobs:
         run: npm run format:check
       - name: Vérification des types (TypeScript)
         run: npm run typecheck
-      - name: Tests unitaires et d'intégration PostgreSQL (JWT, tournées, prix, ORM)
+      - name: Tests unitaires et d'intégration (JWT, tournées, prix, ORM PostgreSQL, Redis, pipeline, IA)
         run: npm run test:unit
-        env: { TEST_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa' }
+        env: { TEST_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa', TEST_REDIS_URL: 'redis://localhost:6379' }
       - name: Tests de l'assistante Maé (compréhension, honnêteté)
         run: npm run test:assistant
       - name: Compilation du site
@@ -46,7 +49,7 @@ jobs:
         with: { name: site-compile, path: maefa-store/dist, retention-days: 3 }
 
   e2e:
-    name: Tests de bout en bout (Playwright, PostgreSQL, microservice geo)
+    name: Tests de bout en bout (Playwright, PostgreSQL, Redis, microservice geo)
     needs: qualite
     runs-on: ubuntu-latest
     services:
@@ -56,6 +59,9 @@ jobs:
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U maefa" --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7
+        ports: ['6379:6379']
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -67,8 +73,34 @@ jobs:
         with: { name: site-compile, path: maefa-store/dist }
       - name: Scénarios cliente, gérante et livreur
         run: npm run test:e2e
-        env: { E2E_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa', E2E_GEO_SERVICE: '1' }
+        env:
+          E2E_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa'
+          E2E_GEO_SERVICE: '1'
+          E2E_REDIS_URL: 'redis://localhost:6379'
       - name: Captures d'écran en cas d'échec
         if: failure()
         uses: actions/upload-artifact@v4
         with: { name: captures-e2e, path: maefa-store/tests/e2e/.out, retention-days: 7 }
+
+  docker:
+    name: Docker (image, docker compose, contrôle de santé)
+    needs: qualite
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construction et lancement (api + geo + PostgreSQL + Redis)
+        run: ADMIN_PIN=ci-1234 docker compose up -d --build --wait --wait-timeout 180
+      - name: Le site répond, avec PostgreSQL, Redis et le microservice
+        run: |
+          health=$(curl -fsS http://localhost:8787/api/health)
+          echo "$health"
+          echo "$health" | grep -q '"database":"postgresql"'
+          curl -fsS http://localhost:8787/ | grep -qi '<html'
+          docker compose logs api | grep -q 'microservice'
+          docker compose logs api | grep -q 'Redis'
+      - name: Journaux en cas d'échec
+        if: failure()
+        run: docker compose logs
+      - name: Arrêt
+        if: always()
+        run: docker compose down -v

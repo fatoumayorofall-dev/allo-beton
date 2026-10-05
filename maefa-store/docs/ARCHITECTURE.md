@@ -108,7 +108,7 @@ maefa-store/
 adresse d'un point, lieux connus, itinéraire, matrice des temps de trajet et **optimisation des
 tournées**. Le serveur principal l'appelle quand `GEO_SERVICE_URL` est défini ; s'il ne répond pas,
 la passerelle calcule localement (le site ne tombe jamais en panne à cause de lui). Avec Docker,
-`docker compose up` lance trois conteneurs : `api`, `geo` et `db` (PostgreSQL).
+`docker compose up` lance quatre conteneurs : `api`, `geo`, `db` (PostgreSQL) et `cache` (Redis).
 
 ---
 
@@ -270,7 +270,36 @@ sequenceDiagram
 
 ---
 
-## 6. Sécurité
+## 6. Données et intelligence artificielle
+
+```mermaid
+flowchart LR
+  V[Visiteuses<br/>parcours anonyme] -- POST /api/events --> J[(Journal JSONL<br/>partitionné par jour)]
+  J --> P[Pipeline en flux<br/>nettoyage, agrégation]
+  P --> R[Rapport : indicateurs,<br/>entonnoir, heures, top]
+  P --> M[Modèle collaboratif<br/>similarité cosinus]
+  M --> E[Évaluation hors ligne<br/>réussite @4 vs référence]
+  M -- GET /api/reco --> F[« Vous aimerez aussi »]
+  R --> G[Tableau « Données & IA »]
+  C[(Cache mémoire + Redis)] -.-> F
+```
+
+- **Collecte** : vues, favoris, paniers et demandes, liés à un identifiant de visite aléatoire
+  (aucune donnée personnelle), envoyés par lots ; journal JSONL en ajout seul, un fichier par jour.
+- **Traitement** : lecture en flux, ligne par ligne (mémoire constante) ; lignes illisibles, types
+  invalides, pièces inconnues et doublons rapprochés écartés ; agrégation par jour et entonnoir de
+  conversion. Mesuré sur un jeu **synthétique** de 550 000 événements (100 000 visiteuses
+  simulées, `npm run data:generate`) : traitement en environ 3 secondes.
+- **Apprentissage** : filtrage collaboratif article-article (similarité cosinus des intérêts),
+  réentraîné toutes les heures. Évaluation « dernière pièce cachée » : sur le jeu synthétique,
+  23 % de réussite dans les 4 suggestions contre 9 % pour la référence « plus populaires ». Sans
+  historique, repli sur une similarité par le contenu (catégorie, couleurs).
+- **Classification supervisée** : l'assistante Maé classe chaque phrase par intention avec un
+  classifieur bayésien naïf entraîné sur des exemples en français et en wolof (`src/assistant/`).
+- **Cache** : mémoire du processus, puis Redis partagé entre le serveur et le microservice
+  (adresses, itinéraires, lieux connus, recommandations).
+
+## 7. Sécurité
 
 - **Contrôle côté serveur** de tout ce qui vient du navigateur : totaux, réductions, frais de
   livraison (jamais nuls), prix (catalogue ou prix convenu par la gérante), stock.
@@ -287,14 +316,14 @@ sequenceDiagram
 
 ---
 
-## 7. Qualité et tests
+## 8. Qualité et tests
 
 | Niveau | Outil | Contenu |
 |---|---|---|
-| Tests unitaires | `npm run test:unit` (testeur intégré de Node.js) | JWT, optimisation des tournées (comparée à la recherche exhaustive), classes de prix, contrôle des prix convenus |
+| Tests unitaires et d'intégration | `npm run test:unit` (testeur intégré de Node.js) | 34 tests : JWT, tournées (comparées à la recherche exhaustive), prix, ORM PostgreSQL (aller-retour, cascade, contraintes), cache Redis, microservice et repli, pipeline de données, modèle de recommandation |
 | Analyse statique | TypeScript strict, ESLint, Prettier | erreurs de types, règles React (hooks), mise en forme |
 | Tests de l'assistante | `npm run test:assistant` | 66 vérifications : intentions, entités, langue, honnêteté commerciale |
-| Tests de bout en bout | `npm run test:e2e` (Playwright) | 17 scénarios, 292 vérifications, sur téléphones et ordinateurs simulés |
+| Tests de bout en bout | `npm run test:e2e` (Playwright) | 19 scénarios, 311 vérifications, sur téléphones et ordinateurs simulés, avec PostgreSQL, Redis et le microservice |
 | Charge | test ponctuel | 200 commandes simultanées sans erreur |
 
 Les scénarios de bout en bout lancent un serveur neuf par scénario et simulent les services de
@@ -310,12 +339,14 @@ carte (`tests/e2e/geomock.cjs`) : ils ne dépendent d'aucun service extérieur.
 | `tour` | tournée optimisée, notifications, suivi par la cliente |
 | `audit` | stock, annulation, réalignement des prix |
 | `expert` | catalogue partagé, « sur commande », Le Marché |
-| `compte` | connexion par code, profil, commandes |
+| `compte` | connexion par code, profil, commandes, jeton JWT |
+| `donnees` | politique de confidentialité, téléchargement des données, suppression du compte |
+| `ia` | collecte anonyme, pipeline, recommandations apprises, tableau « Données & IA » |
 | autres | espace cliente, statut WhatsApp, authenticité, assistante, wolof |
 
 ---
 
-## 8. Intégration et déploiement continus
+## 9. Intégration et déploiement continus
 
 ```mermaid
 flowchart LR
@@ -323,21 +354,24 @@ flowchart LR
   gh --> ci{GitHub Actions<br/>Maefa CI}
   ci --> l[ESLint + Prettier]
   ci --> t[TypeScript]
-  ci --> a[Tests Maé]
+  ci --> a[Tests unitaires<br/>PostgreSQL + Redis]
   ci --> b[Compilation]
-  b --> e[Tests Playwright]
+  b --> e[Tests Playwright<br/>architecture complète]
+  ci --> d[Docker compose<br/>contrôle de santé]
   gh --> r[Render<br/>déploiement automatique]
   r --> prod[(maefa-store.onrender.com<br/>HTTPS)]
 ```
 
 - **Docker** : `docker compose up --build` lance le site complet (image en deux étapes :
-  compilation, puis image d'exécution minimale ; données dans un volume).
+  compilation, puis image d'exécution minimale, utilisateur non root) avec le microservice,
+  PostgreSQL et Redis. L'intégration continue construit l'image, démarre les quatre conteneurs et
+  vérifie que le site répond avec la base et le cache.
 - **Render** : déploiement automatique à chaque envoi sur la branche.
 - **WAMP** : paquet hors ligne (`maefa-wamp.zip`) pour une démonstration sans Internet.
 
 ---
 
-## 9. Démarche et rôle de l'intelligence artificielle
+## 10. Démarche et rôle de l'intelligence artificielle
 
 Le projet a été mené de façon itérative : chaque besoin exprimé par la gérante (exemples :
 « les clientes ne savent pas lire une carte », « on aime marchander », « pas de livraison
@@ -350,7 +384,7 @@ la cheffe de projet. L'historique Git (messages de commit) garde la trace de cha
 
 ---
 
-## 10. Limites et perspectives
+## 11. Limites et perspectives
 
 - Héberger la base PostgreSQL en production (Render Postgres, Neon ou Supabase) : il suffit de définir `DATABASE_URL`.
 - Publier l'application sur le **Play Store** (enveloppe Android de la PWA).

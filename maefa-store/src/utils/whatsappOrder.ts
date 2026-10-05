@@ -8,6 +8,7 @@ import { SITE_CONFIG, buildWhatsAppLink } from '../config/site';
 import type { CustomerInfo, RequestItem } from '../data/types';
 import { createRequest } from '../services/api';
 import { formatPrice, pricesHidden } from './format';
+import { track } from './track';
 
 // Sans I, O, 0, 1 : impossible à confondre en le lisant au téléphone
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -50,6 +51,7 @@ export function buildOrderMessage(items: RequestItem[], id: string, customer?: C
 /** Note la demande et ouvre WhatsApp tout de suite (dans le même geste : jamais bloqué par le téléphone). */
 export function startWhatsAppOrder(items: RequestItem[], customer?: CustomerInfo | null): string {
   const id = newRequestId();
+  for (const i of items) track('request', i.productId);
   createRequest({
     id,
     items,

@@ -32,6 +32,8 @@ import { sparkleBurst } from '../components/Magic';
 import { ListenButton } from '../components/ListenButton';
 import { shortLink } from '../utils/share';
 import { PaymentLogos, WhatsAppGlyph } from '../components/BrandLogos';
+import { track } from '../utils/track';
+import { fetchReco } from '../services/api';
 
 /** Date de livraison estimée à Dakar : demain si la commande part avant 16 h (le dimanche est sauté). */
 const DeliveryEstimate: React.FC = () => {
@@ -216,6 +218,15 @@ export const ProductDetail: React.FC = () => {
   const sizeRef = useRef<HTMLDivElement>(null);
   const { ref: buyRef, inView: buyVisible } = useInView<HTMLDivElement>('0px');
   const [pastBuy, setPastBuy] = useState(false);
+  // « Vous aimerez aussi » : modèle de recommandation du serveur (repli : même catégorie)
+  const [reco, setReco] = useState<string[] | null>(null);
+  useEffect(() => {
+    if (!product) return;
+    setReco(null);
+    const ctrl = new AbortController();
+    fetchReco(product.id, ctrl.signal).then(setReco);
+    return () => ctrl.abort();
+  }, [product?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   usePageTitle(product?.name, product ? `${product.name} — ${product.description}` : undefined, {
     image: product?.images[0],
@@ -224,6 +235,7 @@ export const ProductDetail: React.FC = () => {
   useEffect(() => {
     if (!product) return;
     markViewed(product.id);
+    track('view', product.id);
     setSize('');
     setColor(product.colors[0]?.name ?? '');
     setQty(1);
@@ -307,7 +319,12 @@ export const ProductDetail: React.FC = () => {
   const liked = isInWishlist(product.id);
   const preorder = isPreorder(product);
   const outOfStock = !canBuy(product);
-  const related = products.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const fromModel = (reco ?? [])
+    .map(id => products.find(p => p.id === id))
+    .filter((p): p is (typeof products)[number] => !!p);
+  const related = (
+    fromModel.length >= 2 ? fromModel : products.filter(p => p.category === product.category && p.id !== product.id)
+  ).slice(0, 4);
 
   const validate = () => {
     if (product.sizes.length > 0 && !size) {

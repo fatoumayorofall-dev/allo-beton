@@ -25,6 +25,7 @@ const SUITES = fs
 const EXTRA_ENV = { compte: { OTP_DEV_MODE: '1' }, donnees: { OTP_DEV_MODE: '1' } };
 const GEO = 'http://localhost:9922';
 const DB_URL = process.env.E2E_DATABASE_URL;
+const REDIS_URL = process.env.E2E_REDIS_URL;
 async function resetDatabase() {
   const { default: pg } = await import('pg');
   const c = new pg.Client({ connectionString: DB_URL });
@@ -88,7 +89,13 @@ if (GEO_SERVICE) {
   launch(
     'node',
     ['services/geo/server.js'],
-    { PHOTON_URL: GEO, NOMINATIM_URL: GEO, OSRM_URL: GEO, OVERPASS_URL: GEO + '/api/interpreter' },
+    {
+      ...(REDIS_URL ? { REDIS_URL } : {}),
+      PHOTON_URL: GEO,
+      NOMINATIM_URL: GEO,
+      OSRM_URL: GEO,
+      OVERPASS_URL: GEO + '/api/interpreter',
+    },
     path.join(OUT, 'geo-service.log'),
   );
   await waitFor(GEO_SERVICE + '/health');
@@ -114,6 +121,7 @@ for (const name of wanted) {
       OSRM_URL: GEO,
       OVERPASS_URL: GEO + '/api/interpreter',
       ...(DB_URL ? { DATABASE_URL: DB_URL } : {}),
+      ...(REDIS_URL ? { REDIS_URL } : {}),
       ...(GEO_SERVICE ? { GEO_SERVICE_URL: GEO_SERVICE } : {}),
       ...(EXTRA_ENV[name] ?? {}),
     },
