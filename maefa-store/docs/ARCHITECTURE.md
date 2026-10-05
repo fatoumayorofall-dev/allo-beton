@@ -29,7 +29,9 @@ flowchart LR
     API[API REST /api/*]
     SEC[Sécurité : en-têtes, limites,<br/>jetons JWT HS256, PIN gérante]
     DOM[Métier : commandes, demandes,<br/>catalogue, tournées, authenticité]
-    STO[(Stockage JSON<br/>écriture atomique)]
+    MEM[État en mémoire<br/>cache de lecture]
+    STO[(PostgreSQL 16<br/>ORM Drizzle)]
+    JS[(ou fichier JSON<br/>écriture atomique)]
   end
   subgraph Ext["Services externes"]
     OSM[OpenStreetMap<br/>Photon, Nominatim, OSRM, Overpass]
@@ -40,7 +42,9 @@ flowchart LR
   UI --> CTX --> API
   MAE -. sans réseau .-> UI
   MAP --> API
-  API --> SEC --> DOM --> STO
+  API --> SEC --> DOM --> MEM
+  MEM -- écriture différée --> STO
+  MEM -. sans base .-> JS
   DOM --> OSM
   DOM --> WA
   API --> IA
@@ -50,7 +54,7 @@ flowchart LR
 |---|---|---|
 | Front-end | React 18, TypeScript 5, React Router 7, Tailwind CSS 3, Leaflet, Vite 6 | `src/` |
 | Back-end | Node.js 22, Express 5, compression | `server/` |
-| Données | Fichier JSON avec écriture atomique et sauvegarde différée ; schéma relationnel équivalent | `server/store.js`, `docs/base-de-donnees/` |
+| Données | PostgreSQL 16 via l'ORM Drizzle (migrations générées), état en mémoire comme cache ; fichier JSON en mode autonome | `server/store.js`, `server/db/`, `docs/MERISE.md` |
 | Tests | Playwright (bout en bout), banc d'essai de l'assistante | `tests/e2e/`, `scripts/eval-assistant/` |
 | Qualité | TypeScript strict, ESLint, Prettier | `eslint.config.js`, `.prettierrc.json` |
 | Livraison | GitHub Actions, Docker, Render | `.github/workflows/maefa-ci.yml`, `Dockerfile` |
@@ -112,10 +116,21 @@ flowchart LR
 
 ## 3. Modèle de données
 
-Le serveur range ses données dans un document JSON (`server/store.js`) : écriture dans un fichier
-temporaire puis renommage (atomique), sauvegarde regroupée pour tenir la charge, et écriture forcée
-à l'arrêt du serveur. L'équivalent relationnel complet (MySQL 8, 21 tables) est dans
-`docs/base-de-donnees/maefa-mysql.sql` avec son diagramme EER.
+Le serveur travaille sur un **état en mémoire** (lectures instantanées, même pendant un pic) et
+l'enregistre de deux façons, au choix :
+
+- **PostgreSQL** (variable `DATABASE_URL`) : 15 tables relationnelles décrites avec l'**ORM Drizzle**
+  (`server/db/schema.js`), créées par une **migration** générée (`server/db/migrations/`). Clés
+  primaires et étrangères (suppression en cascade), contraintes CHECK (prix positif, statut valide,
+  coordonnées GPS), index. Le dépôt `server/db/pgRepository.js` recharge l'état au démarrage et
+  n'écrit que les lignes modifiées, dans une transaction, au plus toutes les 300 ms. Au premier
+  démarrage sur une base vide, les données du fichier JSON y sont copiées.
+- **Fichier JSON** (mode autonome, sans base) : écriture dans un fichier temporaire puis renommage
+  (atomique), écriture forcée à l'arrêt du serveur.
+
+La démarche MERISE complète (règles de gestion, dictionnaire, MCD, MLD) est dans
+[`MERISE.md`](MERISE.md) ; un équivalent MySQL (21 tables, diagramme EER) dans
+`docs/base-de-donnees/`.
 
 ```mermaid
 classDiagram
@@ -312,7 +327,7 @@ la cheffe de projet. L'historique Git (messages de commit) garde la trace de cha
 
 ## 10. Limites et perspectives
 
-- Passer du stockage JSON à **PostgreSQL** (le schéma relationnel existe déjà).
+- Héberger la base PostgreSQL en production (Render Postgres, Neon ou Supabase) : il suffit de définir `DATABASE_URL`.
 - Publier l'application sur le **Play Store** (enveloppe Android de la PWA).
 - Paiement en ligne intégré (Wave Business, Orange Money API).
 - Ouvrir la plateforme à d'autres commerçantes.

@@ -1,7 +1,7 @@
 # Modélisation MERISE — Maefa Store
 
 Démarche : règles de gestion → dictionnaire des données → **MCD** (modèle conceptuel) →
-**MLD** (modèle logique relationnel) → **MPD** (schéma physique PostgreSQL, `server/db/schema.sql`,
+**MLD** (modèle logique relationnel) → **MPD** (schéma physique PostgreSQL : `server/db/schema.js` et sa migration `server/db/migrations/`,
 et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 
 ---
@@ -140,6 +140,6 @@ variables (couleurs, photos, étapes de livraison) sans multiplier les tables.
 
 ## 5. MPD
 
-Le schéma physique PostgreSQL est créé par la migration `server/db/schema.sql` (tables, clés
+Le schéma physique PostgreSQL est décrit avec l'ORM Drizzle dans `server/db/schema.js` ; la migration générée (`server/db/migrations/0000_schema_initial.sql`) crée les tables, clés
 primaires et étrangères, contraintes CHECK, index). Un équivalent MySQL complet est fourni dans
 `docs/base-de-donnees/maefa-mysql.sql` avec son diagramme EER.

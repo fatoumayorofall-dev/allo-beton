@@ -136,6 +136,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
     storage: true,
+    database: store.STORAGE,
     accounts: true,
     orders: true,
     maps: true,
@@ -306,11 +307,12 @@ app.listen(PORT, () => {
     `  Assistant IA : ${assistantEnabled() ? 'activé' : 'désactivé (ANTHROPIC_API_KEY manquante → mode hors ligne côté site)'}`,
   );
   console.log(`  WhatsApp     : ${wa.whatsappEnabled() ? 'activé' : 'simulé (identifiants Twilio manquants)'}`);
+  console.log(`  Données      : ${store.STORAGE === 'postgresql' ? 'PostgreSQL (ORM Drizzle)' : 'fichier JSON'}`);
 });
 
 // Arrêt demandé (mise à jour ou redémarrage sur Render) : dernières données écrites avant de quitter
 for (const sig of ['SIGTERM', 'SIGINT'])
-  process.once(sig, () => {
-    store.flushSync();
+  process.once(sig, async () => {
+    await store.flush().catch(e => console.error('Sauvegarde :', e.message));
     process.exit(0);
   });

@@ -24,6 +24,14 @@ const SUITES = fs
 /** Réglages propres à un scénario (ex. : code SMS affiché à l'écran pour la connexion). */
 const EXTRA_ENV = { compte: { OTP_DEV_MODE: '1' }, donnees: { OTP_DEV_MODE: '1' } };
 const GEO = 'http://localhost:9922';
+const DB_URL = process.env.E2E_DATABASE_URL;
+async function resetDatabase() {
+  const { default: pg } = await import('pg');
+  const c = new pg.Client({ connectionString: DB_URL });
+  await c.connect();
+  await c.query('DROP SCHEMA IF EXISTS drizzle CASCADE; DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+  await c.end();
+}
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function waitFor(url, ms = 20000) {
@@ -80,6 +88,8 @@ for (const name of wanted) {
   // Un serveur neuf par scénario : données vides, mêmes réglages qu'en production
   const dataDir = path.join(OUT, 'data');
   fs.rmSync(dataDir, { recursive: true, force: true });
+  // Avec E2E_DATABASE_URL : le serveur enregistre dans PostgreSQL, vidé avant chaque scénario
+  if (DB_URL) await resetDatabase();
   const server = launch(
     'node',
     ['server/index.js'],
@@ -91,6 +101,7 @@ for (const name of wanted) {
       NOMINATIM_URL: GEO,
       OSRM_URL: GEO,
       OVERPASS_URL: GEO + '/api/interpreter',
+      ...(DB_URL ? { DATABASE_URL: DB_URL } : {}),
       ...(EXTRA_ENV[name] ?? {}),
     },
     path.join(OUT, 'server.log'),

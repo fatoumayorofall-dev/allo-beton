@@ -1,7 +1,10 @@
 // ============================================================
-//  PETIT STOCKAGE SERVEUR (fichier JSON + dossier audio)
-//  Partagé par toutes les visiteuses : vitrine du statut, compteurs
-//  de visites, notes vocales des produits.
+//  STOCKAGE SERVEUR : état en mémoire + persistance
+//  - les lectures se font en mémoire (instantanées, même pendant un pic) ;
+//  - les écritures sont regroupées puis enregistrées :
+//      · dans PostgreSQL via l'ORM Drizzle si DATABASE_URL est défini (server/db/) ;
+//      · sinon dans un fichier JSON (écriture atomique) ;
+//  - les notes vocales restent des fichiers audio (dossier voice/).
 // ============================================================
 import fs from 'node:fs';
 import path from 'node:path';
@@ -35,10 +38,24 @@ let state = {
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
 const renameRefs = raw => raw.replace(/"(?:FAB|EFA)-([A-Z0-9]+)/g, '"MAE-$1');
+let fileState = null;
 try {
-  state = { ...state, ...JSON.parse(renameRefs(fs.readFileSync(FILE, 'utf8'))) };
+  fileState = JSON.parse(renameRefs(fs.readFileSync(FILE, 'utf8')));
 } catch {
   /* premier démarrage */
+}
+
+/** Base PostgreSQL (facultative). Au premier démarrage sur une base vide, les données du fichier JSON y sont copiées. */
+const repo = process.env.DATABASE_URL
+  ? await (await import('./db/pgRepository.js')).createPgRepository(process.env.DATABASE_URL)
+  : null;
+export const STORAGE = repo ? 'postgresql' : 'json';
+if (repo) {
+  const { state: fromDb, empty } = await repo.load();
+  state = { ...state, ...(empty && fileState ? fileState : fromDb) };
+  if (empty && fileState) await repo.sync(state);
+} else if (fileState) {
+  state = { ...state, ...fileState };
 }
 
 /*
@@ -51,6 +68,7 @@ let writing = false;
 let again = false;
 function writeNow() {
   timer = null;
+  if (repo) return void writeDb();
   if (writing) {
     again = true;
     return;
@@ -75,13 +93,36 @@ function writeNow() {
     });
   });
 }
+/** Base PostgreSQL : une seule transaction à la fois ; si des changements arrivent pendant l'écriture, on recommence. */
+let dbWrite = Promise.resolve();
+function writeDb() {
+  dbWrite = dbWrite
+    .then(() => repo.sync(state))
+    .catch(e => {
+      console.error('Sauvegarde PostgreSQL :', e.message);
+      persist(); // nouvel essai au prochain passage
+    });
+  return dbWrite;
+}
 function persist() {
   if (!timer) timer = setTimeout(writeNow, 300);
 }
-/** Écriture immédiate (arrêt du serveur, par exemple lors d'une mise à jour sur Render). */
+/** Écriture immédiate avant l'arrêt du serveur (mise à jour ou redémarrage sur Render). */
+export async function flush() {
+  clearTimeout(timer);
+  timer = null;
+  if (repo) {
+    await writeDb();
+    await repo.close();
+    return;
+  }
+  flushSync();
+}
+/** Écriture immédiate dans le fichier JSON. */
 export function flushSync() {
   clearTimeout(timer);
   timer = null;
+  if (repo) return;
   try {
     fs.writeFileSync(`${FILE}.tmp`, JSON.stringify(state));
     fs.renameSync(`${FILE}.tmp`, FILE);

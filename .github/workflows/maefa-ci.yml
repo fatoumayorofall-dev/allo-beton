@@ -17,6 +17,13 @@ jobs:
   qualite:
     name: Analyse, types et compilation
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: maefa, POSTGRES_PASSWORD: maefa, POSTGRES_DB: maefa }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U maefa" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -28,8 +35,9 @@ jobs:
         run: npm run format:check
       - name: Vérification des types (TypeScript)
         run: npm run typecheck
-      - name: Tests unitaires (JWT, tournées, prix)
+      - name: Tests unitaires et d'intégration PostgreSQL (JWT, tournées, prix, ORM)
         run: npm run test:unit
+        env: { TEST_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa' }
       - name: Tests de l'assistante Maé (compréhension, honnêteté)
         run: npm run test:assistant
       - name: Compilation du site
@@ -38,9 +46,16 @@ jobs:
         with: { name: site-compile, path: maefa-store/dist, retention-days: 3 }
 
   e2e:
-    name: Tests de bout en bout (Playwright)
+    name: Tests de bout en bout (Playwright, données dans PostgreSQL)
     needs: qualite
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: maefa, POSTGRES_PASSWORD: maefa, POSTGRES_DB: maefa }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U maefa" --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,6 +67,7 @@ jobs:
         with: { name: site-compile, path: maefa-store/dist }
       - name: Scénarios cliente, gérante et livreur
         run: npm run test:e2e
+        env: { E2E_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa' }
       - name: Captures d'écran en cas d'échec
         if: failure()
         uses: actions/upload-artifact@v4
