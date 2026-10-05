@@ -3,7 +3,16 @@ import { CATALOG_VERSION, INITIAL_PRODUCTS, isPaused } from '../data/catalog';
 import { isOnSale } from '../config/site';
 import { fetchCatalog, postReview, postStockAlert } from '../services/api';
 import { PREORDER_MAX, isPreorder } from '../utils/stock';
-import type { CartItem, CustomerInfo, Order, OrderNotification, OrderStatus, Product, Review, StockAlert } from '../data/types';
+import type {
+  CartItem,
+  CustomerInfo,
+  Order,
+  OrderNotification,
+  OrderStatus,
+  Product,
+  Review,
+  StockAlert,
+} from '../data/types';
 import { PROMO_CODES, SITE_CONFIG } from '../config/site';
 import { formatPrice } from '../utils/format';
 
@@ -92,7 +101,10 @@ interface StoreContextValue {
   addReview: (productId: string, review: Omit<Review, 'date'>) => void;
 
   cart: CartItem[];
-  addToCart: (product: Product, opts?: { size?: string; color?: string; quantity?: number; silent?: boolean; market?: CartItem['market'] }) => boolean;
+  addToCart: (
+    product: Product,
+    opts?: { size?: string; color?: string; quantity?: number; silent?: boolean; market?: CartItem['market'] },
+  ) => boolean;
   updateQuantity: (key: string, quantity: number) => void;
   removeFromCart: (key: string) => void;
   clearCart: () => void;
@@ -178,7 +190,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     reloadCatalog();
     // Prix et stocks rafraîchis quand la cliente revient sur l'onglet
-    const onVisible = () => { if (document.visibilityState === 'visible' && Date.now() - lastCatalogFetch.current > 60_000) reloadCatalog(); };
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastCatalogFetch.current > 60_000) reloadCatalog();
+    };
     document.addEventListener('visibilitychange', onVisible);
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, [reloadCatalog]);
@@ -206,16 +220,29 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const next: CartItem[] = [];
       for (const item of items) {
         // Articles du Marché : hors catalogue de la boutique, leur prix est revérifié par le serveur au paiement
-        if (item.market) { next.push(item); continue; }
+        if (item.market) {
+          next.push(item);
+          continue;
+        }
         const p = products.find(x => x.id === item.productId);
-        if (!p || (p.stock <= 0 && !p.preorderDays)) { changed = true; continue; }
+        if (!p || (p.stock <= 0 && !p.preorderDays)) {
+          changed = true;
+          continue;
+        }
         // Épuisée entre-temps mais vendue sur commande : l'article reste, marqué « sur commande »
         const preorder = isPreorder(p) ? { days: p.preorderDays! } : undefined;
         const quantity = Math.min(item.quantity, preorder ? PREORDER_MAX : p.stock);
         const image = p.images[0] ?? item.image;
         // Prix convenu avec la gérante : on le garde
         const price = item.agreed ? item.price : p.price;
-        if (quantity !== item.quantity || price !== item.price || p.name !== item.name || image !== item.image || item.preorder?.days !== preorder?.days) changed = true;
+        if (
+          quantity !== item.quantity ||
+          price !== item.price ||
+          p.name !== item.name ||
+          image !== item.image ||
+          item.preorder?.days !== preorder?.days
+        )
+          changed = true;
         const { preorder: _old, ...rest } = item;
         next.push({ ...rest, quantity, price, name: p.name, image, ...(preorder ? { preorder } : {}) });
       }
@@ -240,69 +267,124 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const resetCatalog = useCallback(() => setProducts(INITIAL_PRODUCTS), []);
 
   const addStockAlert = useCallback((productId: string, contact: string) => {
-    setStockAlerts(list => (list.some(a => a.productId === productId && a.contact === contact)
-      ? list : [...list, { productId, contact, createdAt: new Date().toISOString() }]));
+    setStockAlerts(list =>
+      list.some(a => a.productId === productId && a.contact === contact)
+        ? list
+        : [...list, { productId, contact, createdAt: new Date().toISOString() }],
+    );
     postStockAlert(productId, contact); // la gérante la voit depuis n'importe quel appareil
   }, []);
-  const removeStockAlerts = useCallback((productId: string) => setStockAlerts(list => list.filter(a => a.productId !== productId)), []);
+  const removeStockAlerts = useCallback(
+    (productId: string) => setStockAlerts(list => list.filter(a => a.productId !== productId)),
+    [],
+  );
 
   const addReview = useCallback((productId: string, review: Omit<Review, 'date'>) => {
-    setProducts(list => list.map(p => {
-      if (p.id !== productId) return p;
-      const reviewCount = p.reviewCount + 1;
-      const rating = Math.round(((p.rating * p.reviewCount + review.rating) / reviewCount) * 10) / 10;
-      return { ...p, rating, reviewCount, reviews: [{ ...review, date: new Date().toISOString().slice(0, 10) }, ...(p.reviews ?? [])] };
-    }));
+    setProducts(list =>
+      list.map(p => {
+        if (p.id !== productId) return p;
+        const reviewCount = p.reviewCount + 1;
+        const rating = Math.round(((p.rating * p.reviewCount + review.rating) / reviewCount) * 10) / 10;
+        return {
+          ...p,
+          rating,
+          reviewCount,
+          reviews: [{ ...review, date: new Date().toISOString().slice(0, 10) }, ...(p.reviews ?? [])],
+        };
+      }),
+    );
     // Publié pour toutes les visiteuses quand le catalogue est en ligne
-    postReview(productId, review).then(r => { if (r.ok) setProducts(list => list.map(p => (p.id === productId ? r.data.product : p))); });
+    postReview(productId, review).then(r => {
+      if (r.ok) setProducts(list => list.map(p => (p.id === productId ? r.data.product : p)));
+    });
   }, []);
 
   /* ---------- Panier ---------- */
-  const addToCart: StoreContextValue['addToCart'] = useCallback((product, opts = {}) => {
-    const size = opts.size || undefined;
-    const color = opts.color || undefined;
-    const quantity = opts.quantity ?? 1;
-    const key = [product.id, size ?? '', color ?? ''].join('|');
-    const inCart = cart.filter(i => i.productId === product.id).reduce((s, i) => s + i.quantity, 0);
-    // Épuisée mais vendue sur commande : commandable avec un délai
-    const preorder = isPreorder(product) ? { days: product.preorderDays! } : undefined;
-    const available = (preorder ? PREORDER_MAX : product.stock) - inCart;
-    if (available <= 0) {
-      notify(preorder ? `Maximum ${PREORDER_MAX} pièces sur commande` : product.stock <= 0 ? 'Cet article est épuisé' : 'Quantité maximale atteinte pour cette pièce', 'error');
-      return false;
-    }
-    const qty = Math.min(quantity, available);
-    setCart(items => {
-      const existing = items.find(i => i.key === key);
-      if (existing) return items.map(i => (i.key === key ? { ...i, quantity: i.quantity + qty } : i));
-      return [...items, { key, productId: product.id, name: product.name, image: product.images[0], price: product.price, size, color, quantity: qty, ...(opts.market ? { market: opts.market } : {}), ...(preorder ? { preorder } : {}) }];
-    });
-    if (!opts.silent) {
-      notify(qty < quantity ? `Seulement ${qty} ajouté(s) : stock limité` : `« ${product.name} » ajouté au panier${preorder ? ' (sur commande)' : ''}`, qty < quantity ? 'info' : 'success');
-    }
-    return true;
-  }, [cart, notify]);
+  const addToCart: StoreContextValue['addToCart'] = useCallback(
+    (product, opts = {}) => {
+      const size = opts.size || undefined;
+      const color = opts.color || undefined;
+      const quantity = opts.quantity ?? 1;
+      const key = [product.id, size ?? '', color ?? ''].join('|');
+      const inCart = cart.filter(i => i.productId === product.id).reduce((s, i) => s + i.quantity, 0);
+      // Épuisée mais vendue sur commande : commandable avec un délai
+      const preorder = isPreorder(product) ? { days: product.preorderDays! } : undefined;
+      const available = (preorder ? PREORDER_MAX : product.stock) - inCart;
+      if (available <= 0) {
+        notify(
+          preorder
+            ? `Maximum ${PREORDER_MAX} pièces sur commande`
+            : product.stock <= 0
+              ? 'Cet article est épuisé'
+              : 'Quantité maximale atteinte pour cette pièce',
+          'error',
+        );
+        return false;
+      }
+      const qty = Math.min(quantity, available);
+      setCart(items => {
+        const existing = items.find(i => i.key === key);
+        if (existing) return items.map(i => (i.key === key ? { ...i, quantity: i.quantity + qty } : i));
+        return [
+          ...items,
+          {
+            key,
+            productId: product.id,
+            name: product.name,
+            image: product.images[0],
+            price: product.price,
+            size,
+            color,
+            quantity: qty,
+            ...(opts.market ? { market: opts.market } : {}),
+            ...(preorder ? { preorder } : {}),
+          },
+        ];
+      });
+      if (!opts.silent) {
+        notify(
+          qty < quantity
+            ? `Seulement ${qty} ajouté(s) : stock limité`
+            : `« ${product.name} » ajouté au panier${preorder ? ' (sur commande)' : ''}`,
+          qty < quantity ? 'info' : 'success',
+        );
+      }
+      return true;
+    },
+    [cart, notify],
+  );
 
-  const updateQuantity = useCallback((key: string, quantity: number) => {
-    setCart(items => {
-      if (quantity <= 0) return items.filter(i => i.key !== key);
-      const item = items.find(i => i.key === key);
-      if (!item) return items;
-      const product = products.find(p => p.id === item.productId);
-      const stock = item.market ? PREORDER_MAX : item.preorder ? PREORDER_MAX : product?.stock ?? quantity;
-      const others = items.filter(i => i.productId === item.productId && i.key !== key).reduce((s, i) => s + i.quantity, 0);
-      const capped = Math.max(1, Math.min(quantity, stock - others));
-      return items.map(i => (i.key === key ? { ...i, quantity: capped } : i));
-    });
-  }, [products]);
+  const updateQuantity = useCallback(
+    (key: string, quantity: number) => {
+      setCart(items => {
+        if (quantity <= 0) return items.filter(i => i.key !== key);
+        const item = items.find(i => i.key === key);
+        if (!item) return items;
+        const product = products.find(p => p.id === item.productId);
+        const stock = item.market ? PREORDER_MAX : item.preorder ? PREORDER_MAX : (product?.stock ?? quantity);
+        const others = items
+          .filter(i => i.productId === item.productId && i.key !== key)
+          .reduce((s, i) => s + i.quantity, 0);
+        const capped = Math.max(1, Math.min(quantity, stock - others));
+        return items.map(i => (i.key === key ? { ...i, quantity: capped } : i));
+      });
+    },
+    [products],
+  );
 
   const removeFromCart = useCallback((key: string) => setCart(items => items.filter(i => i.key !== key)), []);
   // Panier repris d'une demande confirmée : une pièce vendue « sur commande » garde son délai
-  const replaceCart = useCallback((items: CartItem[]) => setCart(items.map(i => {
-    if (i.market || i.preorder) return i;
-    const p = products.find(x => x.id === i.productId);
-    return p && isPreorder(p) ? { ...i, preorder: { days: p.preorderDays! } } : i;
-  })), [products]);
+  const replaceCart = useCallback(
+    (items: CartItem[]) =>
+      setCart(
+        items.map(i => {
+          if (i.market || i.preorder) return i;
+          const p = products.find(x => x.id === i.productId);
+          return p && isPreorder(p) ? { ...i, preorder: { days: p.preorderDays! } } : i;
+        }),
+      ),
+    [products],
+  );
   const clearCart = useCallback(() => {
     setCart([]);
     setPromoCode(null);
@@ -310,39 +392,56 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   /* ---------- Promo & totaux ---------- */
-  const applyPromo = useCallback((code: string) => {
-    const normalized = code.trim().toUpperCase();
-    const promo = PROMO_CODES[normalized];
-    if (!promo) return { ok: false, message: 'Ce code promo n\'existe pas' };
-    setPromoCode(normalized);
-    const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-    if (promo.minSubtotal && subtotal < promo.minSubtotal) {
-      return { ok: true, message: `Code enregistré : il s'appliquera dès ${formatPrice(promo.minSubtotal)} d'achat` };
-    }
-    return { ok: true, message: `Code ${normalized} appliqué` };
-  }, [cart]);
+  const applyPromo = useCallback(
+    (code: string) => {
+      const normalized = code.trim().toUpperCase();
+      const promo = PROMO_CODES[normalized];
+      if (!promo) return { ok: false, message: "Ce code promo n'existe pas" };
+      setPromoCode(normalized);
+      const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+      if (promo.minSubtotal && subtotal < promo.minSubtotal) {
+        return { ok: true, message: `Code enregistré : il s'appliquera dès ${formatPrice(promo.minSubtotal)} d'achat` };
+      }
+      return { ok: true, message: `Code ${normalized} appliqué` };
+    },
+    [cart],
+  );
   const removePromo = useCallback(() => setPromoCode(null), []);
 
-  const computeTotals = useCallback((deliveryFee: number): Totals => {
-    const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-    const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
-    const promo = promoCode ? PROMO_CODES[promoCode] : undefined;
-    const promoShortfall = promo?.minSubtotal ? Math.max(0, promo.minSubtotal - subtotal) : 0;
-    const promoActive = !!promo && promoShortfall === 0;
-    let discount = 0;
-    if (promoActive && promo.percent) discount = Math.round((subtotal * promo.percent) / 100);
-    if (promoActive && promo.amount) discount = Math.min(promo.amount, subtotal);
-    const fee = promoActive && promo.freeShipping ? 0 : deliveryFee;
-    const giftFee = giftWrap.enabled && cart.length > 0 ? SITE_CONFIG.giftWrapFee : 0;
-    return { subtotal, discount, deliveryFee: fee, giftFee, total: Math.max(0, subtotal - discount + fee + giftFee), itemCount, promoShortfall };
-  }, [cart, promoCode, giftWrap.enabled]);
+  const computeTotals = useCallback(
+    (deliveryFee: number): Totals => {
+      const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+      const itemCount = cart.reduce((s, i) => s + i.quantity, 0);
+      const promo = promoCode ? PROMO_CODES[promoCode] : undefined;
+      const promoShortfall = promo?.minSubtotal ? Math.max(0, promo.minSubtotal - subtotal) : 0;
+      const promoActive = !!promo && promoShortfall === 0;
+      let discount = 0;
+      if (promoActive && promo.percent) discount = Math.round((subtotal * promo.percent) / 100);
+      if (promoActive && promo.amount) discount = Math.min(promo.amount, subtotal);
+      const fee = promoActive && promo.freeShipping ? 0 : deliveryFee;
+      const giftFee = giftWrap.enabled && cart.length > 0 ? SITE_CONFIG.giftWrapFee : 0;
+      return {
+        subtotal,
+        discount,
+        deliveryFee: fee,
+        giftFee,
+        total: Math.max(0, subtotal - discount + fee + giftFee),
+        itemCount,
+        promoShortfall,
+      };
+    },
+    [cart, promoCode, giftWrap.enabled],
+  );
 
   /* ---------- Favoris & vus récemment ---------- */
-  const toggleWishlist = useCallback((productId: string) => {
-    const has = wishlist.includes(productId);
-    setWishlist(list => (has ? list.filter(id => id !== productId) : [...list, productId]));
-    notify(has ? 'Retiré de vos favoris' : 'Ajouté à vos favoris', has ? 'info' : 'success');
-  }, [wishlist, notify]);
+  const toggleWishlist = useCallback(
+    (productId: string) => {
+      const has = wishlist.includes(productId);
+      setWishlist(list => (has ? list.filter(id => id !== productId) : [...list, productId]));
+      notify(has ? 'Retiré de vos favoris' : 'Ajouté à vos favoris', has ? 'info' : 'success');
+    },
+    [wishlist, notify],
+  );
   const mergeWishlist = useCallback((ids: string[]) => {
     setWishlist(list => {
       const extra = ids.filter(id => !list.includes(id));
@@ -357,46 +456,78 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   /* ---------- Commandes ---------- */
   const adjustStock = useCallback((items: CartItem[], direction: 1 | -1) => {
-    setProducts(list => list.map(p => {
-      const qty = items.filter(i => i.productId === p.id).reduce((s, i) => s + i.quantity, 0);
-      return qty ? { ...p, stock: Math.max(0, p.stock + direction * qty) } : p;
-    }));
+    setProducts(list =>
+      list.map(p => {
+        const qty = items.filter(i => i.productId === p.id).reduce((s, i) => s + i.quantity, 0);
+        return qty ? { ...p, stock: Math.max(0, p.stock + direction * qty) } : p;
+      }),
+    );
   }, []);
 
-  const placeOrder: StoreContextValue['placeOrder'] = useCallback((data) => {
-    const now = new Date().toISOString();
-    const id = `MAE-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-    const order: Order = { ...data, id, createdAt: now, status: 'en_attente', history: [{ status: 'en_attente', date: now }] };
-    setOrders(list => [order, ...list]);
-    adjustStock(data.items, -1);
-    return order;
-  }, [adjustStock]);
+  const placeOrder: StoreContextValue['placeOrder'] = useCallback(
+    data => {
+      const now = new Date().toISOString();
+      const id = `MAE-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+      const order: Order = {
+        ...data,
+        id,
+        createdAt: now,
+        status: 'en_attente',
+        history: [{ status: 'en_attente', date: now }],
+      };
+      setOrders(list => [order, ...list]);
+      adjustStock(data.items, -1);
+      return order;
+    },
+    [adjustStock],
+  );
 
-  const updateOrderStatus = useCallback((id: string, status: OrderStatus) => {
-    const order = orders.find(o => o.id === id);
-    if (!order || order.status === status) return;
-    // Une annulation remet les articles en stock ; une réactivation les retire à nouveau.
-    if (status === 'annulee') adjustStock(order.items, 1);
-    if (order.status === 'annulee') adjustStock(order.items, -1);
-    setOrders(list => list.map(o => (o.id === id
-      ? { ...o, status, history: [...o.history, { status, date: new Date().toISOString() }], paymentStatus: status === 'livree' ? 'paye' : o.paymentStatus }
-      : o)));
-  }, [orders, adjustStock]);
+  const updateOrderStatus = useCallback(
+    (id: string, status: OrderStatus) => {
+      const order = orders.find(o => o.id === id);
+      if (!order || order.status === status) return;
+      // Une annulation remet les articles en stock ; une réactivation les retire à nouveau.
+      if (status === 'annulee') adjustStock(order.items, 1);
+      if (order.status === 'annulee') adjustStock(order.items, -1);
+      setOrders(list =>
+        list.map(o =>
+          o.id === id
+            ? {
+                ...o,
+                status,
+                history: [...o.history, { status, date: new Date().toISOString() }],
+                paymentStatus: status === 'livree' ? 'paye' : o.paymentStatus,
+              }
+            : o,
+        ),
+      );
+    },
+    [orders, adjustStock],
+  );
 
   const markOrderPaid = useCallback((id: string) => {
     setOrders(list => list.map(o => (o.id === id ? { ...o, paymentStatus: 'paye' } : o)));
   }, []);
 
   const logNotification = useCallback((id: string, entry: Omit<OrderNotification, 'date'>) => {
-    setOrders(list => list.map(o => (o.id === id
-      ? { ...o, notifications: [...(o.notifications ?? []), { ...entry, date: new Date().toISOString() }] }
-      : o)));
+    setOrders(list =>
+      list.map(o =>
+        o.id === id
+          ? { ...o, notifications: [...(o.notifications ?? []), { ...entry, date: new Date().toISOString() }] }
+          : o,
+      ),
+    );
   }, []);
 
-  const findOrder = useCallback((id: string, phone: string) => {
-    const digits = (s: string) => s.replace(/\D/g, '').slice(-9);
-    return orders.find(o => o.id.toUpperCase() === id.trim().toUpperCase() && digits(o.customer.phone) === digits(phone));
-  }, [orders]);
+  const findOrder = useCallback(
+    (id: string, phone: string) => {
+      const digits = (s: string) => s.replace(/\D/g, '').slice(-9);
+      return orders.find(
+        o => o.id.toUpperCase() === id.trim().toUpperCase() && digits(o.customer.phone) === digits(phone),
+      );
+    },
+    [orders],
+  );
 
   const syncOrders = useCallback((list: Order[]) => {
     if (!list.length) return;
@@ -413,20 +544,95 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     });
   }, []);
 
-  const value = useMemo<StoreContextValue>(() => ({
-    products, getProduct, saveProduct, deleteProduct, resetCatalog, catalogLive, reloadCatalog, addReview,
-    cart, addToCart, updateQuantity, removeFromCart, clearCart, replaceCart, cartOpen, setCartOpen,
-    promoCode, applyPromo, removePromo, giftWrap, setGiftWrap, computeTotals,
-    wishlist, toggleWishlist, mergeWishlist, isInWishlist,
-    recentlyViewed, markViewed,
-    quickView, openQuickView: setQuickView,
-    savedCustomer, saveCustomer: setSavedCustomer,
-    stockAlerts, addStockAlert, removeStockAlerts,
-    orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, syncOrders,
-    toasts, notify,
-  }), [products, getProduct, saveProduct, deleteProduct, resetCatalog, catalogLive, reloadCatalog, addReview, cart, addToCart, updateQuantity, removeFromCart, clearCart,
-    cartOpen, promoCode, applyPromo, removePromo, giftWrap, computeTotals, wishlist, toggleWishlist, mergeWishlist, isInWishlist, recentlyViewed, markViewed,
-    quickView, savedCustomer, stockAlerts, addStockAlert, removeStockAlerts, orders, placeOrder, updateOrderStatus, markOrderPaid, logNotification, findOrder, syncOrders, toasts, notify]);
+  const value = useMemo<StoreContextValue>(
+    () => ({
+      products,
+      getProduct,
+      saveProduct,
+      deleteProduct,
+      resetCatalog,
+      catalogLive,
+      reloadCatalog,
+      addReview,
+      cart,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      replaceCart,
+      cartOpen,
+      setCartOpen,
+      promoCode,
+      applyPromo,
+      removePromo,
+      giftWrap,
+      setGiftWrap,
+      computeTotals,
+      wishlist,
+      toggleWishlist,
+      mergeWishlist,
+      isInWishlist,
+      recentlyViewed,
+      markViewed,
+      quickView,
+      openQuickView: setQuickView,
+      savedCustomer,
+      saveCustomer: setSavedCustomer,
+      stockAlerts,
+      addStockAlert,
+      removeStockAlerts,
+      orders,
+      placeOrder,
+      updateOrderStatus,
+      markOrderPaid,
+      logNotification,
+      findOrder,
+      syncOrders,
+      toasts,
+      notify,
+    }),
+    [
+      products,
+      getProduct,
+      saveProduct,
+      deleteProduct,
+      resetCatalog,
+      catalogLive,
+      reloadCatalog,
+      addReview,
+      cart,
+      addToCart,
+      updateQuantity,
+      removeFromCart,
+      clearCart,
+      cartOpen,
+      promoCode,
+      applyPromo,
+      removePromo,
+      giftWrap,
+      computeTotals,
+      wishlist,
+      toggleWishlist,
+      mergeWishlist,
+      isInWishlist,
+      recentlyViewed,
+      markViewed,
+      quickView,
+      savedCustomer,
+      stockAlerts,
+      addStockAlert,
+      removeStockAlerts,
+      orders,
+      placeOrder,
+      updateOrderStatus,
+      markOrderPaid,
+      logNotification,
+      findOrder,
+      syncOrders,
+      toasts,
+      notify,
+    ],
+  );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 };

@@ -18,7 +18,11 @@ const DATA_DIR = process.env.DATA_DIR || path.join(here, 'data');
 export function shopSecret() {
   if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET;
   const file = path.join(DATA_DIR, 'auth-secret');
-  try { return fs.readFileSync(file, 'utf8').trim(); } catch { /* première fois */ }
+  try {
+    return fs.readFileSync(file, 'utf8').trim();
+  } catch {
+    /* première fois */
+  }
   const s = crypto.randomBytes(32).toString('hex');
   fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(file, s, { mode: 0o600 });
@@ -37,7 +41,10 @@ export function secretMarks() {
   const keyHole = h[9] % 3 !== 0; // deux boutiques sur trois : point évidé dans le losange
   return { gapLine, gapFrom: Math.round(gapFrom), gapTo: Math.round(gapFrom) + 6, dots, keyHole };
 }
-const clock = d => { const h = Math.round(((d / 30) + 3) % 12) || 12; return `${h} h`; };
+const clock = d => {
+  const h = Math.round((d / 30 + 3) % 12) || 12;
+  return `${h} h`;
+};
 /** Description en clair pour la gérante (vérification à la loupe). */
 export function describeMarks(m = secretMarks()) {
   return [
@@ -50,14 +57,26 @@ export function describeMarks(m = secretMarks()) {
 const f3 = n => n.toFixed(3);
 // mêmes paramètres que le générateur du logo : anneau extérieur centré en (51, 56.5), r = 22, amplitude 2,8, 18 ondes, 14 lignes
 function outerBand(gap) {
-  const cx = 51, cy = 56.5, r0 = 22, a = 2.8, k = 18, m = 14; let d = '';
+  const cx = 51,
+    cy = 56.5,
+    r0 = 22,
+    a = 2.8,
+    k = 18,
+    m = 14;
+  let d = '';
   for (let i = 0; i < m; i++) {
-    const ph = (i * 2 * Math.PI) / m; let pen = false;
+    const ph = (i * 2 * Math.PI) / m;
+    let pen = false;
     for (let j = 0; j <= 720; j++) {
-      const t = (j / 720) * Math.PI * 2, deg = t * 180 / Math.PI;
-      if (i === gap.line && deg > gap.from && deg < gap.to) { pen = false; continue; }
+      const t = (j / 720) * Math.PI * 2,
+        deg = (t * 180) / Math.PI;
+      if (i === gap.line && deg > gap.from && deg < gap.to) {
+        pen = false;
+        continue;
+      }
       const r = r0 + a * Math.sin(k * t + ph);
-      d += (pen ? 'L' : 'M') + f3(cx + r * Math.cos(t)) + ' ' + f3(cy + r * Math.sin(t)); pen = true;
+      d += (pen ? 'L' : 'M') + f3(cx + r * Math.cos(t)) + ' ' + f3(cy + r * Math.sin(t));
+      pen = true;
     }
   }
   return d;
@@ -67,9 +86,17 @@ function outerBand(gap) {
 export function labelMarkSvg(dist) {
   const base = fs.readFileSync(path.join(dist, 'brand', 'maefa-monogramme-securise.svg'), 'utf8');
   const m = secretMarks();
-  const dots = m.dots.map(dg => { const t = dg * Math.PI / 180; return `<circle cx="${f3(51 + 13.2 * Math.cos(t))}" cy="${f3(56.5 + 13.2 * Math.sin(t))}" r=".3" fill="#f0c9c1" fill-opacity=".85"/>`; }).join('');
+  const dots = m.dots
+    .map(dg => {
+      const t = (dg * Math.PI) / 180;
+      return `<circle cx="${f3(51 + 13.2 * Math.cos(t))}" cy="${f3(56.5 + 13.2 * Math.sin(t))}" r=".3" fill="#f0c9c1" fill-opacity=".85"/>`;
+    })
+    .join('');
   return base
-    .replace(/<path id="guilloche-ext" d="[^"]*"\/>/, `<path d="${outerBand({ line: m.gapLine, from: m.gapFrom, to: m.gapTo })}"/>`)
+    .replace(
+      /<path id="guilloche-ext" d="[^"]*"\/>/,
+      `<path d="${outerBand({ line: m.gapLine, from: m.gapFrom, to: m.gapTo })}"/>`,
+    )
     .replace('<!--secret-->', dots)
     .replace('</svg>', `${m.keyHole ? '<circle cx="50" cy="11.2" r=".42" fill="#3d1d2d"/>' : ''}</svg>`);
 }
@@ -77,7 +104,10 @@ export function labelMarkSvg(dist) {
 export function registerBrandSecurityRoutes(app, { isAdmin, dist }) {
   app.get('/api/admin/marque-securisee', (req, res) => {
     if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
-    try { res.set('Cache-Control', 'no-store').json({ svg: labelMarkSvg(dist), marks: describeMarks() }); }
-    catch { res.status(503).json({ error: 'Écrin sécurisé introuvable : compilez le site (npm run build)' }); }
+    try {
+      res.set('Cache-Control', 'no-store').json({ svg: labelMarkSvg(dist), marks: describeMarks() });
+    } catch {
+      res.status(503).json({ error: 'Écrin sécurisé introuvable : compilez le site (npm run build)' });
+    }
   });
 }

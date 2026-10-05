@@ -30,7 +30,8 @@ export function registerMediaRoutes(app, { limit, isAdmin, dataDir }) {
   /* Envoi d'une vidéo (corps brut, jusqu'à 40 Mo) */
   app.post('/api/admin/media', express.raw({ type: () => true, limit: `${MAX_VIDEO_MB}mb` }), (req, res) => {
     if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
-    if (!limit(`media:${req.ip}`, 40, 3600e3)) return res.status(429).json({ error: 'Trop d\'envois, réessayez dans une heure' });
+    if (!limit(`media:${req.ip}`, 40, 3600e3))
+      return res.status(429).json({ error: "Trop d'envois, réessayez dans une heure" });
     const buf = req.body;
     if (!Buffer.isBuffer(buf) || !buf.length) return res.status(400).json({ error: 'Fichier vide' });
     const ext = sniff(buf);
@@ -42,17 +43,25 @@ export function registerMediaRoutes(app, { limit, isAdmin, dataDir }) {
   });
 
   /* Lecture : fichiers au nom tiré du contenu, donc jamais modifiés → cache d'un an */
-  app.use('/media', express.static(dir, {
-    immutable: true, maxAge: '1y', index: false, dotfiles: 'deny',
-    setHeaders: (res, file) => {
-      res.set('X-Content-Type-Options', 'nosniff');
-      res.type(file.endsWith('.webm') ? 'video/webm' : 'video/mp4');
-    },
-  }), (_req, res) => res.status(404).end());
+  app.use(
+    '/media',
+    express.static(dir, {
+      immutable: true,
+      maxAge: '1y',
+      index: false,
+      dotfiles: 'deny',
+      setHeaders: (res, file) => {
+        res.set('X-Content-Type-Options', 'nosniff');
+        res.type(file.endsWith('.webm') ? 'video/webm' : 'video/mp4');
+      },
+    }),
+    (_req, res) => res.status(404).end(),
+  );
 
   /* Erreur de taille : message clair plutôt qu'une page d'erreur */
   app.use('/api/admin/media', (err, _req, res, next) => {
-    if (err?.type === 'entity.too.large') return res.status(413).json({ error: `Vidéo trop lourde (${MAX_VIDEO_MB} Mo au maximum)` });
+    if (err?.type === 'entity.too.large')
+      return res.status(413).json({ error: `Vidéo trop lourde (${MAX_VIDEO_MB} Mo au maximum)` });
     next(err);
   });
 }

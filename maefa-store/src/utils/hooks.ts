@@ -8,7 +8,13 @@ export function useLockBody(locked: boolean) {
     // vole le geste du doigt au menu. On fige donc la page à sa place, puis on la rend telle quelle.
     const { body, documentElement: html } = document;
     const y = window.scrollY;
-    const prev = { bo: body.style.overflow, ho: html.style.overflow, pos: body.style.position, top: body.style.top, w: body.style.width };
+    const prev = {
+      bo: body.style.overflow,
+      ho: html.style.overflow,
+      pos: body.style.position,
+      top: body.style.top,
+      w: body.style.width,
+    };
     html.style.overflow = 'hidden';
     body.style.overflow = 'hidden';
     body.style.position = 'fixed';
@@ -31,7 +37,9 @@ export function useEscape(active: boolean, onEscape: () => void) {
   cb.current = onEscape;
   useEffect(() => {
     if (!active) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') cb.current(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') cb.current();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [active]);
@@ -44,10 +52,19 @@ export function useInView<T extends Element>(rootMargin = '0px 0px -10% 0px') {
   useEffect(() => {
     const el = ref.current;
     if (!el || inView) return;
-    if (typeof IntersectionObserver === 'undefined') { setInView(true); return; }
-    const obs = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setInView(true); obs.disconnect(); }
-    }, { rootMargin });
+    if (typeof IntersectionObserver === 'undefined') {
+      setInView(true);
+      return;
+    }
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setInView(true);
+          obs.disconnect();
+        }
+      },
+      { rootMargin },
+    );
     obs.observe(el);
     return () => obs.disconnect();
   }, [inView, rootMargin]);
@@ -55,6 +72,8 @@ export function useInView<T extends Element>(rootMargin = '0px 0px -10% 0px') {
 }
 
 export function usePrefersReducedMotion() {
-  const [reduced] = useState(() => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  const [reduced] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+  );
   return reduced;
 }

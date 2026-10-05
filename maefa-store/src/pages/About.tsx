@@ -5,26 +5,51 @@ import { ProductImage } from '../components/ProductImage';
 import { Reveal } from '../components/Reveal';
 import { usePageTitle } from '../utils/usePageTitle';
 
-
 export const About: React.FC = () => {
-  usePageTitle('Notre maison', 'L\'histoire d\'Maefa Store, maison dakaroise de chaussures et de sacs pour femme : notre sélection, nos engagements et notre boutique à Sacré-Cœur.');
+  usePageTitle(
+    'Notre maison',
+    "L'histoire d'Maefa Store, maison dakaroise de chaussures et de sacs pour femme : notre sélection, nos engagements et notre boutique à Sacré-Cœur.",
+  );
   return (
     <div>
       <section className="max-w-5xl mx-auto px-5 sm:px-8 pt-20 text-center">
         <p className="eyebrow animate-fade-up">Notre maison</p>
-        <h1 className="font-display text-6xl sm:text-8xl leading-[0.95] mt-6 animate-fade-up" style={{ animationDelay: '120ms' }}>Née à Dakar,<br />{' '}<span className="font-script text-gold-dark text-[1.1em]">pensée pour elle</span></h1>
+        <h1
+          className="font-display text-6xl sm:text-8xl leading-[0.95] mt-6 animate-fade-up"
+          style={{ animationDelay: '120ms' }}
+        >
+          Née à Dakar,
+          <br /> <span className="font-script text-gold-dark text-[1.1em]">pensée pour elle</span>
+        </h1>
       </section>
 
       <Reveal className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 mt-16">
-        <ProductImage src="/produits/sac-ndella-bordeaux-1.jpg" alt="Sac Ndella bordeaux" label="Maefa Store" className="w-full aspect-[16/9] sm:aspect-[21/9] rounded-[3rem]" />
+        <ProductImage
+          src="/produits/sac-ndella-bordeaux-1.jpg"
+          alt="Sac Ndella bordeaux"
+          label="Maefa Store"
+          className="w-full aspect-[16/9] sm:aspect-[21/9] rounded-[3rem]"
+        />
       </Reveal>
 
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 mt-24 grid lg:grid-cols-12 gap-10">
-        <Reveal className="lg:col-span-4"><p className="eyebrow">Boutique en ligne</p><h2 className="font-display text-4xl sm:text-5xl mt-4 leading-tight">Une exigence, une promesse</h2></Reveal>
+        <Reveal className="lg:col-span-4">
+          <p className="eyebrow">Boutique en ligne</p>
+          <h2 className="font-display text-4xl sm:text-5xl mt-4 leading-tight">Une exigence, une promesse</h2>
+        </Reveal>
         <Reveal className="lg:col-span-7 lg:col-start-6 space-y-6 text-ink/70 leading-relaxed text-[15px]" delay={120}>
-          <p className="font-display text-2xl sm:text-3xl text-ink leading-snug">Maefa est née d'une conviction simple : chaque femme mérite de se sentir belle, sans que l'élégance soit un luxe inaccessible.</p>
-          <p>Nous sélectionnons nos sacs et nos chaussures avec la même exigence que s'ils nous étaient destinés, et nous contrôlons chaque pièce avant de vous l'envoyer.</p>
-          <p>Commandez en quelques instants, réglez par Wave ou Orange Money, et recevez vos pièces dès le lendemain à Dakar, soigneusement emballées.</p>
+          <p className="font-display text-2xl sm:text-3xl text-ink leading-snug">
+            Maefa est née d'une conviction simple : chaque femme mérite de se sentir belle, sans que l'élégance soit un
+            luxe inaccessible.
+          </p>
+          <p>
+            Nous sélectionnons nos sacs et nos chaussures avec la même exigence que s'ils nous étaient destinés, et nous
+            contrôlons chaque pièce avant de vous l'envoyer.
+          </p>
+          <p>
+            Commandez en quelques instants, réglez par Wave ou Orange Money, et recevez vos pièces dès le lendemain à
+            Dakar, soigneusement emballées.
+          </p>
         </Reveal>
       </section>
 
@@ -35,7 +60,11 @@ export const About: React.FC = () => {
           ['03', 'Service', 'Un conseil personnalisé sur WhatsApp, 7 jours sur 7.'],
           ['04', 'Livraison', 'Livraison suivie en direct sur la carte, partout au Sénégal.'],
         ].map(([n, t, d], i) => (
-          <Reveal key={t} delay={i * 90} className={`py-10 sm:pr-8 ${i > 0 ? 'sm:pl-8 sm:border-l' : ''} border-ink/10`}>
+          <Reveal
+            key={t}
+            delay={i * 90}
+            className={`py-10 sm:pr-8 ${i > 0 ? 'sm:pl-8 sm:border-l' : ''} border-ink/10`}
+          >
             <p className="font-script text-gold-dark text-4xl">{n}</p>
             <h3 className="font-display text-3xl mt-4">{t}</h3>
             <p className="text-sm text-ink/75 mt-3 leading-relaxed">{d}</p>
@@ -45,8 +74,16 @@ export const About: React.FC = () => {
 
       <section className="bg-ink text-ivory mt-20">
         <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-20 grid grid-cols-2 md:grid-cols-4 gap-10 text-center">
-          {[['100 %', 'en ligne'], ['24h', 'livraison à Dakar'], ['7j/7', 'conseil sur WhatsApp'], ['Wave', 'Orange Money · espèces']].map(([n, l]) => (
-            <Reveal key={l}><p className="font-display text-5xl sm:text-6xl text-gold-light">{n}</p><p className="text-[10px] uppercase tracking-luxe text-ivory/60 mt-3">{l}</p></Reveal>
+          {[
+            ['100 %', 'en ligne'],
+            ['24h', 'livraison à Dakar'],
+            ['7j/7', 'conseil sur WhatsApp'],
+            ['Wave', 'Orange Money · espèces'],
+          ].map(([n, l]) => (
+            <Reveal key={l}>
+              <p className="font-display text-5xl sm:text-6xl text-gold-light">{n}</p>
+              <p className="text-[10px] uppercase tracking-luxe text-ivory/60 mt-3">{l}</p>
+            </Reveal>
           ))}
         </div>
       </section>
@@ -54,7 +91,9 @@ export const About: React.FC = () => {
       <section className="text-center pt-24 px-5">
         <h2 className="font-display text-4xl sm:text-5xl">Découvrez la boutique</h2>
         <p className="text-ink/75 mt-3">Boutique 100 % en ligne — livraison partout au Sénégal.</p>
-        <Link to="/boutique" className="btn-dark mt-8">Entrer dans la boutique <ArrowRight className="w-4 h-4" /></Link>
+        <Link to="/boutique" className="btn-dark mt-8">
+          Entrer dans la boutique <ArrowRight className="w-4 h-4" />
+        </Link>
       </section>
     </div>
   );

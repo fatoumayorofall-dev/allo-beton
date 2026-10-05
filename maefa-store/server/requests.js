@@ -20,8 +20,13 @@ function cleanItems(items, catalog) {
     const quantity = Math.round(Number(it.quantity));
     if (!(quantity >= 1 && quantity <= 20)) return null;
     out.push({
-      productId: clip(it.productId, 40), name: p?.name ?? clip(it.name, 120), price: p?.price ?? Math.max(0, Math.round(Number(it.price) || 0)),
-      image: p?.images?.[0] ?? clip(it.image, 300), size: clip(it.size, 10) || undefined, color: clip(it.color, 40) || undefined, quantity,
+      productId: clip(it.productId, 40),
+      name: p?.name ?? clip(it.name, 120),
+      price: p?.price ?? Math.max(0, Math.round(Number(it.price) || 0)),
+      image: p?.images?.[0] ?? clip(it.image, 300),
+      size: clip(it.size, 10) || undefined,
+      color: clip(it.color, 40) || undefined,
+      quantity,
     });
   }
   return out;
@@ -38,9 +43,16 @@ export function registerRequestRoutes(app, { limit, isAdmin, store }) {
     if (!items) return res.status(400).json({ error: 'Articles invalides' });
     const c = req.body?.customer ?? {};
     const r = {
-      id, status: 'nouvelle', createdAt: new Date().toISOString(), items,
+      id,
+      status: 'nouvelle',
+      createdAt: new Date().toISOString(),
+      items,
       total: items.reduce((s, i) => s + i.price * i.quantity, 0),
-      customer: { firstName: clip(c.firstName, 40) || undefined, phone: clip(c.phone, 20) || undefined, zone: clip(c.zone, 60) || undefined },
+      customer: {
+        firstName: clip(c.firstName, 40) || undefined,
+        phone: clip(c.phone, 20) || undefined,
+        zone: clip(c.zone, 60) || undefined,
+      },
       history: [{ status: 'nouvelle', date: new Date().toISOString() }],
     };
     store.saveRequest(r);
@@ -55,7 +67,14 @@ export function registerRequestRoutes(app, { limit, isAdmin, store }) {
     // Prix confidentiels : le prix exact n'apparaît qu'une fois la demande confirmée par la gérante
     const priced = !CONFIDENTIAL_PRICES || r.status === 'disponible' || r.status === 'commandee';
     const items = priced ? r.items : r.items.map(({ price: _p, ...i }) => i);
-    res.json({ id: r.id, status: r.status, items, total: priced ? r.total : undefined, note: r.note ?? '', orderId: r.orderId ?? null });
+    res.json({
+      id: r.id,
+      status: r.status,
+      items,
+      total: priced ? r.total : undefined,
+      note: r.note ?? '',
+      orderId: r.orderId ?? null,
+    });
   });
 
   app.get('/api/admin/requests', (req, res) => {
@@ -72,16 +91,21 @@ export function registerRequestRoutes(app, { limit, isAdmin, store }) {
     // Prix convenu avec la cliente (marchandage sur WhatsApp) : un prix par article, dans l'ordre
     if (prices !== undefined) {
       if (r.status === 'commandee') return res.status(409).json({ error: 'Déjà commandée' });
-      if (!Array.isArray(prices) || prices.length !== r.items.length) return res.status(400).json({ error: 'Prix invalides' });
+      if (!Array.isArray(prices) || prices.length !== r.items.length)
+        return res.status(400).json({ error: 'Prix invalides' });
       const clean = prices.map(v => Math.round(Number(v)));
-      if (!clean.every(v => Number.isFinite(v) && v > 0 && v <= 50_000_000)) return res.status(400).json({ error: 'Prix invalides' });
+      if (!clean.every(v => Number.isFinite(v) && v > 0 && v <= 50_000_000))
+        return res.status(400).json({ error: 'Prix invalides' });
       r.items = r.items.map((it, i) => ({ ...it, catalogPrice: it.catalogPrice ?? it.price, price: clean[i] }));
       r.total = r.items.reduce((s, i) => s + i.price * i.quantity, 0);
     }
     if (status !== undefined) {
       if (!STATUSES.has(status) || status === 'commandee') return res.status(400).json({ error: 'Statut invalide' });
       if (r.status === 'commandee') return res.status(409).json({ error: 'Déjà commandée' });
-      if (r.status !== status) { r.status = status; r.history.push({ status, date: new Date().toISOString() }); }
+      if (r.status !== status) {
+        r.status = status;
+        r.history.push({ status, date: new Date().toISOString() });
+      }
     }
     if (note !== undefined) r.note = clip(note, 300);
     store.saveRequest(r);

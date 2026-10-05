@@ -23,4 +23,9 @@ function migrate(store: Storage) {
   }
 }
 
-try { migrate(localStorage); migrate(sessionStorage); } catch { /* stockage indisponible : rien à reprendre */ }
+try {
+  migrate(localStorage);
+  migrate(sessionStorage);
+} catch {
+  /* stockage indisponible : rien à reprendre */
+}

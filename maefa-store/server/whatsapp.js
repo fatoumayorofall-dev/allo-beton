@@ -8,8 +8,8 @@ import twilio from 'twilio';
 const {
   TWILIO_ACCOUNT_SID = '',
   TWILIO_AUTH_TOKEN = '',
-  TWILIO_WHATSAPP_FROM = '',          // ex : whatsapp:+14155238886 (bac à sable) ou votre numéro WhatsApp Business
-  OWNER_WHATSAPP = '+221773093819',  // numéro de la gérante : reçoit chaque nouvelle commande
+  TWILIO_WHATSAPP_FROM = '', // ex : whatsapp:+14155238886 (bac à sable) ou votre numéro WhatsApp Business
+  OWNER_WHATSAPP = '+221773093819', // numéro de la gérante : reçoit chaque nouvelle commande
   SITE_URL = 'http://localhost:5174',
   // Modèles de messages approuvés par Meta (obligatoires hors fenêtre de 24 h en production)
   TWILIO_TPL_NEW_ORDER = '',
@@ -31,16 +31,25 @@ export function toE164(phone) {
   return null;
 }
 
-const fcfa = n => `${Math.round(Number(n) || 0).toLocaleString('fr-FR').replace(/ /g, ' ')} FCFA`;
+const fcfa = n =>
+  `${Math.round(Number(n) || 0)
+    .toLocaleString('fr-FR')
+    .replace(/ /g, ' ')} FCFA`;
 
-const PAYMENT = { wave: 'Wave', orange_money: 'Orange Money', free_money: 'Free Money', card: 'Carte bancaire', cash: 'À la livraison' };
+const PAYMENT = {
+  wave: 'Wave',
+  orange_money: 'Orange Money',
+  free_money: 'Free Money',
+  card: 'Carte bancaire',
+  cash: 'À la livraison',
+};
 
 export const STATUS_MESSAGES = {
   confirmee: 'est confirmée ✅ Nous la préparons avec soin.',
   en_preparation: 'est en cours de préparation 🎀 Elle sera bientôt prête à partir.',
   expediee: 'est en route 🛵 Suivez votre livreur en direct sur la carte avec le lien ci-dessous.',
   livree: 'a bien été livrée 🌸 Merci pour votre confiance ! Un avis sur votre pièce nous ferait très plaisir.',
-  annulee: 'a été annulée. Si c\'est une erreur, répondez simplement à ce message.',
+  annulee: "a été annulée. Si c'est une erreur, répondez simplement à ce message.",
 };
 
 /** Lien Google Maps vers le point de livraison (ouvre l'itinéraire sur le téléphone). */
@@ -59,7 +68,10 @@ export function buildOwnerMessage(order) {
     `📍 ${c.zone} — ${c.address}`,
     ...(c.location ? [`🗺️ ${mapsLink(c.location)}`] : []),
     ``,
-    ...order.items.map(i => `• ${i.quantity}× ${i.name}${[i.color, i.size && `T.${i.size}`].filter(Boolean).length ? ` (${[i.color, i.size && `T.${i.size}`].filter(Boolean).join(', ')})` : ''} — ${fcfa(i.price * i.quantity)}`),
+    ...order.items.map(
+      i =>
+        `• ${i.quantity}× ${i.name}${[i.color, i.size && `T.${i.size}`].filter(Boolean).length ? ` (${[i.color, i.size && `T.${i.size}`].filter(Boolean).join(', ')})` : ''} — ${fcfa(i.price * i.quantity)}`,
+    ),
     ``,
     `💰 *Total : ${fcfa(order.total)}* — ${PAYMENT[order.paymentMethod] || order.paymentMethod} (${order.paymentStatus === 'paye' ? 'payé' : 'à encaisser'})`,
   ];
@@ -83,7 +95,13 @@ export function buildCustomerReceivedMessage(order) {
 export function buildStatusMessage(order, status) {
   const text = STATUS_MESSAGES[status];
   if (!text) return null;
-  return [`Bonjour ${order.customer.firstName} 🌸`, ``, `Votre commande *${order.id}* ${text}`, ``, `Suivi : ${trackingUrl(order)}`].join('\n');
+  return [
+    `Bonjour ${order.customer.firstName} 🌸`,
+    ``,
+    `Votre commande *${order.id}* ${text}`,
+    ``,
+    `Suivi : ${trackingUrl(order)}`,
+  ].join('\n');
 }
 
 /**
@@ -99,35 +117,64 @@ export async function sendWhatsApp(to, body, template) {
   }
   try {
     const params = template?.sid
-      ? { from: TWILIO_WHATSAPP_FROM, to: `whatsapp:${dest}`, contentSid: template.sid, contentVariables: JSON.stringify(template.variables) }
+      ? {
+          from: TWILIO_WHATSAPP_FROM,
+          to: `whatsapp:${dest}`,
+          contentSid: template.sid,
+          contentVariables: JSON.stringify(template.variables),
+        }
       : { from: TWILIO_WHATSAPP_FROM, to: `whatsapp:${dest}`, body };
     const msg = await client.messages.create(params);
     return { ok: true, sid: msg.sid };
   } catch (err) {
-    console.error('WhatsApp : échec de l\'envoi', err.message);
+    console.error("WhatsApp : échec de l'envoi", err.message);
     return { ok: false, error: err.message };
   }
 }
 
 export async function notifyNewOrder(order) {
   const owner = OWNER_WHATSAPP
-    ? await sendWhatsApp(OWNER_WHATSAPP, buildOwnerMessage(order),
-      TWILIO_TPL_NEW_ORDER && { sid: TWILIO_TPL_NEW_ORDER, variables: { 1: order.id, 2: `${order.customer.firstName} ${order.customer.lastName}`, 3: fcfa(order.total) } })
-    : (console.log(`📱 [WHATSAPP SIMULÉ] → gérante (OWNER_WHATSAPP non configuré)\n${buildOwnerMessage(order)}\n`), { ok: false, simulated: true });
-  const customer = await sendWhatsApp(order.customer.phone, buildCustomerReceivedMessage(order),
-    TWILIO_TPL_ORDER_RECEIVED && { sid: TWILIO_TPL_ORDER_RECEIVED, variables: { 1: order.customer.firstName, 2: order.id, 3: fcfa(order.total) } });
+    ? await sendWhatsApp(
+        OWNER_WHATSAPP,
+        buildOwnerMessage(order),
+        TWILIO_TPL_NEW_ORDER && {
+          sid: TWILIO_TPL_NEW_ORDER,
+          variables: { 1: order.id, 2: `${order.customer.firstName} ${order.customer.lastName}`, 3: fcfa(order.total) },
+        },
+      )
+    : (console.log(`📱 [WHATSAPP SIMULÉ] → gérante (OWNER_WHATSAPP non configuré)\n${buildOwnerMessage(order)}\n`),
+      { ok: false, simulated: true });
+  const customer = await sendWhatsApp(
+    order.customer.phone,
+    buildCustomerReceivedMessage(order),
+    TWILIO_TPL_ORDER_RECEIVED && {
+      sid: TWILIO_TPL_ORDER_RECEIVED,
+      variables: { 1: order.customer.firstName, 2: order.id, 3: fcfa(order.total) },
+    },
+  );
   return { owner, customer };
 }
 
 export async function notifyStatus(order, status) {
   const body = buildStatusMessage(order, status);
   if (!body) return { ok: false, error: 'statut sans message' };
-  return sendWhatsApp(order.customer.phone, body,
-    TWILIO_TPL_STATUS && { sid: TWILIO_TPL_STATUS, variables: { 1: order.customer.firstName, 2: order.id, 3: STATUS_MESSAGES[status] } });
+  return sendWhatsApp(
+    order.customer.phone,
+    body,
+    TWILIO_TPL_STATUS && {
+      sid: TWILIO_TPL_STATUS,
+      variables: { 1: order.customer.firstName, 2: order.id, 3: STATUS_MESSAGES[status] },
+    },
+  );
 }
 
 export function buildRestockMessage(product) {
-  return [`Bonjour 🌸`, ``, `Bonne nouvelle : *${product.name}* est de retour chez Maefa Store !`, `Les pièces partent vite : ${SITE_URL}/produit/${product.slug}`].join('\n');
+  return [
+    `Bonjour 🌸`,
+    ``,
+    `Bonne nouvelle : *${product.name}* est de retour chez Maefa Store !`,
+    `Les pièces partent vite : ${SITE_URL}/produit/${product.slug}`,
+  ].join('\n');
 }
 
 /* ---------- Livraison suivie en direct (un livreur ou plusieurs en relais) ---------- */
@@ -146,22 +193,35 @@ export function buildDriverMessage(order, link, ctx = {}) {
   const lines = [`🛵 *Livraison ${order.id}* — Maefa Store`];
   if (total > 1) lines.push(`🔁 Relais : étape ${index + 1} sur ${total}`);
   lines.push('');
-  if (prev) lines.push(`📦 Vous recevez le colis de ${prev.driverName} (${prev.driverPhone})${prev.to?.label ? ` à : ${prev.to.label}` : ''}.`);
+  if (prev)
+    lines.push(
+      `📦 Vous recevez le colis de ${prev.driverName} (${prev.driverPhone})${prev.to?.label ? ` à : ${prev.to.label}` : ''}.`,
+    );
   else if (total > 1) lines.push('📦 Vous prenez le colis à la boutique.');
   if (final) {
-    lines.push(`Cliente : ${c.firstName} ${c.lastName} — ${c.phone}`, `Quartier : ${c.location?.label || c.zone}${c.address ? ` — ${c.address}` : ''}`,
-      order.paymentStatus === 'paye' ? 'Déjà payé ✅' : `À encaisser : *${fcfa(order.total)}*`);
+    lines.push(
+      `Cliente : ${c.firstName} ${c.lastName} — ${c.phone}`,
+      `Quartier : ${c.location?.label || c.zone}${c.address ? ` — ${c.address}` : ''}`,
+      order.paymentStatus === 'paye' ? 'Déjà payé ✅' : `À encaisser : *${fcfa(order.total)}*`,
+    );
   } else {
     lines.push(`🤝 Vous le remettez à ${next.driverName} (${next.driverPhone}) à : *${leg.to?.label}*.`);
   }
-  lines.push('', '1. Ouvrez ce lien :', link,
-    `2. Touchez « ${prev ? 'J\'ai reçu le colis' : 'Démarrer la course'} » et gardez la page ouverte pendant le trajet (la cliente vous suit sur la carte).`,
-    '3. Touchez « Colis remis » à l\'arrivée.');
+  lines.push(
+    '',
+    '1. Ouvrez ce lien :',
+    link,
+    `2. Touchez « ${prev ? "J'ai reçu le colis" : 'Démarrer la course'} » et gardez la page ouverte pendant le trajet (la cliente vous suit sur la carte).`,
+    "3. Touchez « Colis remis » à l'arrivée.",
+  );
   return lines.join('\n');
 }
 
 /** Code de remise : la cliente le donne au livreur, seulement quand elle a son colis en main. */
-const codeLines = code => (code ? [``, `🔐 Votre code de remise : *${code}*`, `Donnez-le au livreur seulement quand vous avez votre colis en main.`] : []);
+const codeLines = code =>
+  code
+    ? [``, `🔐 Votre code de remise : *${code}*`, `Donnez-le au livreur seulement quand vous avez votre colis en main.`]
+    : [];
 
 export function buildOnTheWayMessage(order, driverName, legs = [], code) {
   const lines = [
@@ -170,9 +230,15 @@ export function buildOnTheWayMessage(order, driverName, legs = [], code) {
     `Votre commande *${order.id}* est en route 🛵${driverName ? ` avec ${driverName}` : ''}.`,
   ];
   if (legs.length > 1) lines.push(`Elle voyage en relais jusqu'à vous : ${legs.map(who).join(' → ')}.`);
-  lines.push(`Suivez-la en direct sur la carte, comme un taxi :`, trackingUrl(order), ``,
-    legs.length > 1 ? `Vous recevrez un message à chaque passage de relais.` : `Il vient à l'endroit que vous avez indiqué sur la carte, pas besoin d'expliquer le chemin.`,
-    ...codeLines(code));
+  lines.push(
+    `Suivez-la en direct sur la carte, comme un taxi :`,
+    trackingUrl(order),
+    ``,
+    legs.length > 1
+      ? `Vous recevrez un message à chaque passage de relais.`
+      : `Il vient à l'endroit que vous avez indiqué sur la carte, pas besoin d'expliquer le chemin.`,
+    ...codeLines(code),
+  );
   return lines.join('\n');
 }
 
@@ -183,7 +249,9 @@ export function buildHandoverMessage(order, leg, index, total, code) {
     `Bonjour ${order.customer.firstName} 🌸`,
     ``,
     `🔁 Votre colis *${order.id}* a passé le relais (étape ${index + 1} sur ${total}) :`,
-    final ? `il est maintenant avec ${who(leg)}, qui vous l'apporte jusqu'à chez vous.` : `il est maintenant avec ${who(leg)}, en route vers ${leg.to?.label}.`,
+    final
+      ? `il est maintenant avec ${who(leg)}, qui vous l'apporte jusqu'à chez vous.`
+      : `il est maintenant avec ${who(leg)}, en route vers ${leg.to?.label}.`,
     ``,
     `Suivez-le : ${trackingUrl(order)}`,
     ...(final ? codeLines(code) : []),
@@ -192,8 +260,10 @@ export function buildHandoverMessage(order, leg, index, total, code) {
 
 /** Messages au livreur suivant : départ du colis, arrivée proche, colis remis. */
 export function buildRelayMessage(kind, order, prev, link, minutes) {
-  if (kind === 'depart') return `🔁 *Relais ${order.id}* — ${prev.driverName} a le colis et part vers ${prev.to?.label}. Suivez-le sur la carte pour le retrouver :\n${link}`;
-  if (kind === 'proche') return `🔁 *Relais ${order.id}* — ${prev.driverName} arrive au point de relais (${prev.to?.label}) dans ${minutes <= 1 ? 'une minute' : `environ ${minutes} minutes`}. Préparez-vous !\n${link}`;
+  if (kind === 'depart')
+    return `🔁 *Relais ${order.id}* — ${prev.driverName} a le colis et part vers ${prev.to?.label}. Suivez-le sur la carte pour le retrouver :\n${link}`;
+  if (kind === 'proche')
+    return `🔁 *Relais ${order.id}* — ${prev.driverName} arrive au point de relais (${prev.to?.label}) dans ${minutes <= 1 ? 'une minute' : `environ ${minutes} minutes`}. Préparez-vous !\n${link}`;
   return `🔁 *Relais ${order.id}* — ${prev.driverName} indique vous avoir remis le colis. Ouvrez votre lien pour que la cliente vous suive :\n${link}`;
 }
 

@@ -6,7 +6,8 @@ import { CATEGORIES } from '../data/catalog';
 import { FEATURES } from '../config/site';
 
 /** Le Marché suit la boutique : seules les catégories en vente (chaussures, sacs…) sont proposées. */
-export const marketCategoryOnSale = (category: string) => CATEGORIES.some(c => c.name.toLowerCase() === category.trim().toLowerCase());
+export const marketCategoryOnSale = (category: string) =>
+  CATEGORIES.some(c => c.name.toLowerCase() === category.trim().toLowerCase());
 
 /** Coût d'achat en FCFA (produit + port du fournisseur). */
 export function costInXof(cost: number, shipping: number, currency: Currency, settings: MarketSettings): number {
@@ -27,29 +28,61 @@ export const delayShort = (min: number, max: number) => (min === max ? `${min} j
 /** Le panier attend un « Product » : on adapte le produit du Marché (stock illimité chez le fournisseur). */
 export function marketAsProduct(p: MarketProduct): Product {
   return {
-    id: p.id, slug: p.slug, name: p.name, category: 'sacs', subcategory: p.category, occasions: [], material: '', care: '', styleTip: '',
-    price: p.price, oldPrice: p.oldPrice, images: p.images, colors: [], sizes: [], stock: 999, description: p.description, details: [],
-    rating: 0, reviewCount: 0, createdAt: p.createdAt,
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    category: 'sacs',
+    subcategory: p.category,
+    occasions: [],
+    material: '',
+    care: '',
+    styleTip: '',
+    price: p.price,
+    oldPrice: p.oldPrice,
+    images: p.images,
+    colors: [],
+    sizes: [],
+    stock: 999,
+    description: p.description,
+    details: [],
+    rating: 0,
+    reviewCount: 0,
+    createdAt: p.createdAt,
   };
 }
 
 /* Catalogue du Marché partagé par toute la visite (une seule requête) */
 let cache: Promise<{ products: MarketProduct[]; delay: { min: number; max: number } } | null> | null = null;
 export function useMarket() {
-  const [state, setState] = useState<{ products: MarketProduct[] | null; loading: boolean; offline: boolean }>({ products: null, loading: true, offline: false });
+  const [state, setState] = useState<{ products: MarketProduct[] | null; loading: boolean; offline: boolean }>({
+    products: null,
+    loading: true,
+    offline: false,
+  });
   useEffect(() => {
     let alive = true;
     // Marché éteint : aucune pièce du Marché sur l'accueil ni dans la boutique
-    if (!FEATURES.marche) { setState({ products: [], loading: false, offline: false }); return; }
+    if (!FEATURES.marche) {
+      setState({ products: [], loading: false, offline: false });
+      return;
+    }
     cache ??= fetchMarket();
     cache.then(r => {
       if (!alive) return;
       if (!r) cache = null; // réessayer à la prochaine page
-      setState({ products: (r?.products ?? []).filter(p => marketCategoryOnSale(p.category)), loading: false, offline: !r });
+      setState({
+        products: (r?.products ?? []).filter(p => marketCategoryOnSale(p.category)),
+        loading: false,
+        offline: !r,
+      });
     });
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, []);
   return state;
 }
 /** À appeler après une modification par la gérante pour recharger le catalogue. */
-export const refreshMarket = () => { cache = null; };
+export const refreshMarket = () => {
+  cache = null;
+};

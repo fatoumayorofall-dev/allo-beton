@@ -13,14 +13,23 @@ import { WhatsAppGlyph } from '../components/BrandLogos';
  * en grandes photos avec le prix. Sans serveur, on affiche les nouveautés.
  */
 export const Showcase: React.FC = () => {
-  usePageTitle('Les nouveautés du statut', 'Toutes les pièces du statut WhatsApp d\'Maefa Store : photos, prix et commande en un clic.');
+  usePageTitle(
+    'Les nouveautés du statut',
+    "Toutes les pièces du statut WhatsApp d'Maefa Store : photos, prix et commande en un clic.",
+  );
   const { products } = useStore();
   const [items, setItems] = useState<Product[] | null>(null);
 
   useEffect(() => {
     getShowcase().then(list => {
-      const fromShowcase = (list ?? []).map(i => products.find(p => p.slug === i.slug)).filter((p): p is Product => !!p);
-      setItems(fromShowcase.length ? fromShowcase : [...products].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12));
+      const fromShowcase = (list ?? [])
+        .map(i => products.find(p => p.slug === i.slug))
+        .filter((p): p is Product => !!p);
+      setItems(
+        fromShowcase.length
+          ? fromShowcase
+          : [...products].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 12),
+      );
     });
   }, [products]);
 
@@ -37,16 +46,33 @@ export const Showcase: React.FC = () => {
           <p className="mt-4 text-base">👇 Touchez une photo pour voir le prix, les couleurs et commander</p>
         </div>
         {items === null ? (
-          <div className="mt-8 grid grid-cols-2 gap-3">{[0, 1, 2, 3].map(i => <div key={i} className="aspect-[4/5] rounded-[1.75rem] bg-white/70 animate-pulse" />)}</div>
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            {[0, 1, 2, 3].map(i => (
+              <div key={i} className="aspect-[4/5] rounded-[1.75rem] bg-white/70 animate-pulse" />
+            ))}
+          </div>
         ) : (
-          <div className="mt-8 grid grid-cols-2 gap-3">{items.map(p => <SimpleCard key={p.id} product={p} source="vitrine" />)}</div>
+          <div className="mt-8 grid grid-cols-2 gap-3">
+            {items.map(p => (
+              <SimpleCard key={p.id} product={p} source="vitrine" />
+            ))}
+          </div>
         )}
-        <Link to="/boutique" className="mt-8 flex h-14 items-center justify-center rounded-full bg-white font-bold shadow-sm">🛍️ Toute la boutique</Link>
+        <Link
+          to="/boutique"
+          className="mt-8 flex h-14 items-center justify-center rounded-full bg-white font-bold shadow-sm"
+        >
+          🛍️ Toute la boutique
+        </Link>
       </div>
       <div className="fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/[0.06] pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-4 py-3">
-          <a href={buildWhatsAppLink('Bonjour Maefa 🌸 J\'ai vu votre statut, je voudrais des informations.')} target="_blank" rel="noopener noreferrer"
-            className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#177a41] text-white text-lg font-extrabold shadow-luxe">
+          <a
+            href={buildWhatsAppLink("Bonjour Maefa 🌸 J'ai vu votre statut, je voudrais des informations.")}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-16 items-center justify-center gap-3 rounded-full bg-[#177a41] text-white text-lg font-extrabold shadow-luxe"
+          >
             <WhatsAppGlyph className="w-7 h-7" /> Écrire sur WhatsApp
           </a>
         </div>

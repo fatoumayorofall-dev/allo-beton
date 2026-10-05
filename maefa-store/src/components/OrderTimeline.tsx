@@ -24,7 +24,11 @@ const FLOW: OrderStatus[] = ['en_attente', 'confirmee', 'en_preparation', 'exped
 
 export const OrderTimeline: React.FC<{ order: Order }> = ({ order }) => {
   if (order.status === 'annulee') {
-    return <p className="flex items-center gap-2 text-wine text-sm"><XCircle className="w-5 h-5" strokeWidth={1.5} /> Cette commande a été annulée.</p>;
+    return (
+      <p className="flex items-center gap-2 text-wine text-sm">
+        <XCircle className="w-5 h-5" strokeWidth={1.5} /> Cette commande a été annulée.
+      </p>
+    );
   }
   const currentIdx = FLOW.indexOf(order.status);
   return (
@@ -35,10 +39,14 @@ export const OrderTimeline: React.FC<{ order: Order }> = ({ order }) => {
         return (
           <li key={s} className="flex gap-5">
             <div className="flex flex-col items-center">
-              <span className={`w-7 h-7 rounded-full grid place-items-center border transition-colors ${done ? 'bg-ink border-ink text-gold-light' : 'border-ink/20'} ${i === currentIdx ? 'ring-4 ring-gold/20' : ''}`}>
+              <span
+                className={`w-7 h-7 rounded-full grid place-items-center border transition-colors ${done ? 'bg-ink border-ink text-gold-light' : 'border-ink/20'} ${i === currentIdx ? 'ring-4 ring-gold/20' : ''}`}
+              >
                 {done && <Check className="w-3.5 h-3.5" />}
               </span>
-              {i < FLOW.length - 1 && <span className={`w-px flex-1 min-h-8 ${i < currentIdx ? 'bg-ink' : 'bg-ink/15'}`} />}
+              {i < FLOW.length - 1 && (
+                <span className={`w-px flex-1 min-h-8 ${i < currentIdx ? 'bg-ink' : 'bg-ink/15'}`} />
+              )}
             </div>
             <div className="pb-7">
               <p className={`text-sm ${done ? 'font-semibold' : 'text-ink/70'}`}>{STATUS_LABELS[s]}</p>

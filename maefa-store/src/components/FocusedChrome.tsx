@@ -11,20 +11,33 @@ import { PaymentLogos, WhatsAppGlyph } from './BrandLogos';
  * - l'espace gérant, qui a son propre bandeau de gestion au lieu de la vitrine de la boutique
  */
 
-
 /** En-tête du paiement : le logo, la promesse de sécurité et l'aide, rien d'autre. */
 export const CheckoutHeader: React.FC = () => (
-  <header className="sticky top-0 z-50 bg-ivory/95 backdrop-blur-md border-b border-ink/[0.07] print:hidden" data-testid="checkout-header">
+  <header
+    className="sticky top-0 z-50 bg-ivory/95 backdrop-blur-md border-b border-ink/[0.07] print:hidden"
+    data-testid="checkout-header"
+  >
     <div className="max-w-6xl mx-auto px-4 sm:px-8 h-16 sm:h-[72px] grid grid-cols-[1fr_auto_1fr] items-center gap-3">
       <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-[0.2em] font-semibold text-emerald-800">
-        <span className="w-8 h-8 rounded-full bg-emerald-50 grid place-items-center shrink-0"><Lock className="w-3.5 h-3.5" /></span>
+        <span className="w-8 h-8 rounded-full bg-emerald-50 grid place-items-center shrink-0">
+          <Lock className="w-3.5 h-3.5" />
+        </span>
         <span className="hidden sm:inline">Paiement sécurisé</span>
       </p>
       <Logo />
-      <a href={buildWhatsAppLink('Bonjour Maefa Store, j\'ai une question sur ma commande.')} target="_blank" rel="noopener noreferrer"
-        className="justify-self-end inline-flex items-center gap-2 text-[11px] text-ink/75 hover:text-ink">
-        <span className="hidden md:inline text-right leading-tight"><span className="block uppercase tracking-[0.2em] text-[10px] text-ink/70">Une question ?</span>{SITE_CONFIG.phone}</span>
-        <span className="w-9 h-9 rounded-full border border-ink/15 grid place-items-center"><Headphones className="w-4 h-4" strokeWidth={1.6} /></span>
+      <a
+        href={buildWhatsAppLink("Bonjour Maefa Store, j'ai une question sur ma commande.")}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="justify-self-end inline-flex items-center gap-2 text-[11px] text-ink/75 hover:text-ink"
+      >
+        <span className="hidden md:inline text-right leading-tight">
+          <span className="block uppercase tracking-[0.2em] text-[10px] text-ink/70">Une question ?</span>
+          {SITE_CONFIG.phone}
+        </span>
+        <span className="w-9 h-9 rounded-full border border-ink/15 grid place-items-center">
+          <Headphones className="w-4 h-4" strokeWidth={1.6} />
+        </span>
         <span className="sr-only">Écrire à la boutique sur WhatsApp</span>
       </a>
     </div>
@@ -43,17 +56,33 @@ export const CheckoutFooter: React.FC = () => (
         ].map(({ Icon, t, d }) => (
           <li key={t} className="flex items-center gap-3">
             <Icon className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.4} />
-            <span><span className="block font-semibold text-ink">{t}</span>{d}</span>
+            <span>
+              <span className="block font-semibold text-ink">{t}</span>
+              {d}
+            </span>
           </li>
         ))}
       </ul>
-      <div aria-label="Moyens de paiement acceptés" role="group"><PaymentLogos className="md:justify-end" /></div>
+      <div aria-label="Moyens de paiement acceptés" role="group">
+        <PaymentLogos className="md:justify-end" />
+      </div>
     </div>
     <p className="max-w-6xl mx-auto px-4 sm:px-8 pb-8 text-[11px] text-ink/70 flex flex-wrap gap-x-4 gap-y-1">
-      <span>© {new Date().getFullYear()} {SITE_CONFIG.name}</span>
-      <Link to="/faq" className="hover:text-ink">Livraison &amp; réception</Link>
-      <Link to="/authentique" className="hover:text-ink">Vérifier l'authenticité</Link>
-      <a href={buildWhatsAppLink('Bonjour Maefa Store, j\'ai besoin d\'aide pour ma commande.')} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-ink">
+      <span>
+        © {new Date().getFullYear()} {SITE_CONFIG.name}
+      </span>
+      <Link to="/faq" className="hover:text-ink">
+        Livraison &amp; réception
+      </Link>
+      <Link to="/authentique" className="hover:text-ink">
+        Vérifier l'authenticité
+      </Link>
+      <a
+        href={buildWhatsAppLink("Bonjour Maefa Store, j'ai besoin d'aide pour ma commande.")}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 hover:text-ink"
+      >
         <WhatsAppGlyph className="w-3.5 h-3.5 text-[#177a41]" /> Aide sur WhatsApp
       </a>
     </p>
@@ -67,7 +96,9 @@ export const AdminHeader: React.FC = () => (
       <Link to="/admin" className="flex items-center gap-3" aria-label="Espace gérant — Maefa Store">
         <BrandMark light compact className="h-8 w-auto" />
         <Wordmark tagline={false} className="hidden sm:block h-4 w-auto text-ivory" />
-        <span className="px-2.5 py-1 rounded-full bg-ivory/10 text-[10px] uppercase tracking-[0.22em] text-gold-light">Gestion</span>
+        <span className="px-2.5 py-1 rounded-full bg-ivory/10 text-[10px] uppercase tracking-[0.22em] text-gold-light">
+          Gestion
+        </span>
       </Link>
       <Link to="/" className="inline-flex items-center gap-2 text-xs text-ivory/80 hover:text-ivory">
         Voir la boutique <ExternalLink className="w-3.5 h-3.5" />

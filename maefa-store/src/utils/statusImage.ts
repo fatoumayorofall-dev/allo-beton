@@ -47,7 +47,10 @@ function wrap(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, max
   let line = '';
   for (const w of words) {
     const test = line ? `${line} ${w}` : w;
-    if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = w; } else line = test;
+    if (ctx.measureText(test).width > maxWidth && line) {
+      lines.push(line);
+      line = w;
+    } else line = test;
   }
   if (line) lines.push(line);
   return lines.slice(0, maxLines);
@@ -69,7 +72,11 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   // Fond : crème rosée + halos pastel
   ctx.fillStyle = '#fdf7f5';
   ctx.fillRect(0, 0, W, H);
-  for (const [x, y, r, c] of [[120, 260, 620, 'rgba(245,213,214,.85)'], [1000, 700, 520, 'rgba(185,150,184,.28)'], [540, 1900, 700, 'rgba(240,201,193,.7)']] as const) {
+  for (const [x, y, r, c] of [
+    [120, 260, 620, 'rgba(245,213,214,.85)'],
+    [1000, 700, 520, 'rgba(185,150,184,.28)'],
+    [540, 1900, 700, 'rgba(240,201,193,.7)'],
+  ] as const) {
     const g = ctx.createRadialGradient(x, y, 0, x, y, r);
     g.addColorStop(0, c);
     g.addColorStop(1, 'rgba(253,247,245,0)');
@@ -87,7 +94,10 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   ctx.fillText('✿  S T O R E  ✿', W / 2, 212);
 
   // Photo en arche
-  const ax = 150, ay = 260, aw = 780, ah = 960;
+  const ax = 150,
+    ay = 260,
+    aw = 780,
+    ah = 960;
   ctx.save();
   archPath(ctx, ax, ay, aw, ah, 48);
   ctx.clip();
@@ -99,12 +109,15 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   const img = p.images[0] ? await loadImage(p.images[0]) : null;
   if (img) {
     const scale = Math.max(aw / img.width, ah / img.height);
-    const iw = img.width * scale, ih = img.height * scale;
+    const iw = img.width * scale,
+      ih = img.height * scale;
     ctx.drawImage(img, ax + (aw - iw) / 2, ay + (ah - ih) / 2, iw, ih);
   } else {
     ctx.fillStyle = 'rgba(58,31,45,.55)';
     ctx.font = 'italic 400 64px "Bodoni Moda", serif';
-    wrap(ctx, p.name, aw - 140, 3).forEach((l, i, arr) => ctx.fillText(l, W / 2, ay + ah / 2 - (arr.length - 1) * 38 + i * 76));
+    wrap(ctx, p.name, aw - 140, 3).forEach((l, i, arr) =>
+      ctx.fillText(l, W / 2, ay + ah / 2 - (arr.length - 1) * 38 + i * 76),
+    );
   }
   ctx.restore();
   ctx.strokeStyle = 'rgba(255,255,255,.7)';
@@ -151,7 +164,9 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   // Couleurs
   if (p.colors.length) {
     y += 78;
-    const n = Math.min(p.colors.length, 6), r = 30, gap = 22;
+    const n = Math.min(p.colors.length, 6),
+      r = 30,
+      gap = 22;
     const total = n * r * 2 + (n - 1) * gap;
     p.colors.slice(0, 6).forEach((c, i) => {
       const cx = W / 2 - total / 2 + r + i * (r * 2 + gap);
@@ -159,7 +174,9 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
       ctx.arc(cx, y, r, 0, Math.PI * 2);
       if (c.hex.startsWith('linear')) {
         const cg = ctx.createLinearGradient(cx - r, y - r, cx + r, y + r);
-        cg.addColorStop(0, '#e0a526'); cg.addColorStop(0.5, '#b33a1f'); cg.addColorStop(1, '#1f5f8b');
+        cg.addColorStop(0, '#e0a526');
+        cg.addColorStop(0.5, '#b33a1f');
+        cg.addColorStop(1, '#1f5f8b');
         ctx.fillStyle = cg;
       } else ctx.fillStyle = c.hex;
       ctx.fill();
@@ -184,7 +201,10 @@ export async function renderStatusImage(p: Product): Promise<Blob> {
   ctx.fillStyle = '#fff';
   const link = displayLink(p);
   let size = 52;
-  do { ctx.font = `700 ${size}px Jost, sans-serif`; size -= 2; } while (ctx.measureText(link).width > W - 220 && size > 28);
+  do {
+    ctx.font = `700 ${size}px Jost, sans-serif`;
+    size -= 2;
+  } while (ctx.measureText(link).width > W - 220 && size > 28);
   ctx.fillText(link, W / 2, by + 128);
 
   return new Promise((resolve, reject) => {

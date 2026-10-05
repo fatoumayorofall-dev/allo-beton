@@ -16,7 +16,10 @@ const cache = new Map();
 function cached(key, ms, fn) {
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < ms) return hit.value;
-  const value = fn().catch(err => { cache.delete(key); throw err; });
+  const value = fn().catch(err => {
+    cache.delete(key);
+    throw err;
+  });
   cache.set(key, { at: Date.now(), value });
   if (cache.size > 2000) cache.delete(cache.keys().next().value);
   return value;
@@ -25,14 +28,20 @@ function cached(key, ms, fn) {
 const round = (n, d = 5) => Math.round(n * 10 ** d) / 10 ** d;
 
 function photonLabel(p) {
-  const parts = [p.name, p.street && `${p.street}${p.housenumber ? ` ${p.housenumber}` : ''}`, p.district || p.locality, p.city || p.county]
-    .filter(Boolean);
+  const parts = [
+    p.name,
+    p.street && `${p.street}${p.housenumber ? ` ${p.housenumber}` : ''}`,
+    p.district || p.locality,
+    p.city || p.county,
+  ].filter(Boolean);
   return [...new Set(parts)].join(', ');
 }
 
 /** Recherche de lieux au Sénégal (quartier, rue, mosquée, école, pharmacie…). */
 export function searchPlaces(q, near) {
-  const query = String(q || '').trim().slice(0, 120);
+  const query = String(q || '')
+    .trim()
+    .slice(0, 120);
   if (query.length < 2) return Promise.resolve([]);
   const bias = near && Number.isFinite(near.lat) ? near : DAKAR;
   return cached(`s:${query.toLowerCase()}:${round(bias.lat, 2)},${round(bias.lng, 2)}`, 24 * 3600e3, async () => {
@@ -41,8 +50,13 @@ export function searchPlaces(q, near) {
     if (!res.ok) throw new Error(`photon ${res.status}`);
     const data = await res.json();
     return (data.features || [])
-      .filter(f => f.properties?.countrycode ? f.properties.countrycode === 'SN' : true)
-      .map(f => ({ label: photonLabel(f.properties), kind: f.properties.osm_value || f.properties.type || '', lat: round(f.geometry.coordinates[1]), lng: round(f.geometry.coordinates[0]) }))
+      .filter(f => (f.properties?.countrycode ? f.properties.countrycode === 'SN' : true))
+      .map(f => ({
+        label: photonLabel(f.properties),
+        kind: f.properties.osm_value || f.properties.type || '',
+        lat: round(f.geometry.coordinates[1]),
+        lng: round(f.geometry.coordinates[0]),
+      }))
       .filter(r => r.label);
   });
 }
@@ -65,8 +79,10 @@ export function reverseGeocode(lat, lng) {
 
 /** Distance en mètres entre deux points (formule de haversine). */
 export function distanceM(a, b) {
-  const R = 6371e3, toRad = x => (x * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+  const R = 6371e3,
+    toRad = x => (x * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat),
+    dLng = toRad(b.lng - a.lng);
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
@@ -80,7 +96,8 @@ export function etaMinutes(from, to, vehicle = 'moto') {
   return Math.max(1, Math.round(((distanceM(from, to) * detour) / 1000 / kmh) * 60));
 }
 
-export const validPoint = p => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
+export const validPoint = p =>
+  p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && Math.abs(p.lat) <= 90 && Math.abs(p.lng) <= 180;
 
 /* ---------- Itinéraire par la route (OSRM, gratuit, sans clé) ----------
  * Le vrai chemin du livreur (pas la ligne droite) : distance et durée par les rues,
@@ -156,13 +173,20 @@ export async function roadTable(points) {
   const coords = points.map(p => `${round(p.lng, 5)},${round(p.lat, 5)}`).join(';');
   try {
     return await cached(`tb:${coords}`, 10 * 60e3, async () => {
-      const res = await fetch(`${OSRM_URL}/table/v1/driving/${coords}?annotations=distance,duration`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(8000) });
+      const res = await fetch(`${OSRM_URL}/table/v1/driving/${coords}?annotations=distance,duration`, {
+        headers: { 'User-Agent': UA },
+        signal: AbortSignal.timeout(8000),
+      });
       if (!res.ok) throw new Error(`osrm table ${res.status}`);
       const j = await res.json();
       if (!Array.isArray(j.distances) || j.distances.length !== points.length) throw new Error('osrm table vide');
       // Case manquante (point hors des routes connues) : vol d'oiseau × détour
-      const distanceM2 = j.distances.map((r, i) => r.map((m, k) => (Number.isFinite(m) ? Math.round(m) : Math.round(distanceM(points[i], points[k]) * 1.35))));
-      const durationS2 = (j.durations ?? j.distances).map((r, i) => r.map((s, k) => (Number.isFinite(s) ? Math.round(s) : Math.round(distanceM2[i][k] / (22 / 3.6)))));
+      const distanceM2 = j.distances.map((r, i) =>
+        r.map((m, k) => (Number.isFinite(m) ? Math.round(m) : Math.round(distanceM(points[i], points[k]) * 1.35))),
+      );
+      const durationS2 = (j.durations ?? j.distances).map((r, i) =>
+        r.map((s, k) => (Number.isFinite(s) ? Math.round(s) : Math.round(distanceM2[i][k] / (22 / 3.6)))),
+      );
       return { distanceM: distanceM2, durationS: durationS2, routed: true };
     });
   } catch {
@@ -179,16 +203,37 @@ const NEARBY = process.env.NEARBY !== 'off';
 
 /** Genre de lieu → libellé et icône compréhensibles par tout le monde. */
 const KINDS = {
-  'amenity=place_of_worship': ['Mosquée / église', '🕌'], 'amenity=pharmacy': ['Pharmacie', '💊'], 'amenity=school': ['École', '🏫'],
-  'amenity=kindergarten': ['Jardin d\'enfants', '🧸'], 'amenity=college': ['Lycée', '🏫'], 'amenity=university': ['Université', '🎓'],
-  'amenity=hospital': ['Hôpital', '🏥'], 'amenity=clinic': ['Clinique', '🏥'], 'amenity=doctors': ['Cabinet médical', '🩺'],
-  'amenity=marketplace': ['Marché', '🛒'], 'amenity=fuel': ['Station-service', '⛽'], 'amenity=bank': ['Banque', '🏦'],
-  'amenity=atm': ['Distributeur', '🏧'], 'amenity=restaurant': ['Restaurant', '🍽️'], 'amenity=fast_food': ['Fast-food', '🍔'],
-  'amenity=cafe': ['Café', '☕'], 'amenity=police': ['Police', '👮'], 'amenity=post_office': ['Poste', '📮'],
-  'amenity=bus_station': ['Gare routière', '🚌'], 'highway=bus_stop': ['Arrêt de bus', '🚏'], 'amenity=townhall': ['Mairie', '🏛️'],
-  'shop=supermarket': ['Supermarché', '🛒'], 'shop=convenience': ['Boutique', '🏪'], 'shop=bakery': ['Boulangerie', '🥖'],
-  'shop=mobile_phone': ['Boutique téléphones', '📱'], 'shop=hairdresser': ['Salon de coiffure', '💇'], 'shop=clothes': ['Boutique', '👗'],
-  'leisure=stadium': ['Stade', '🏟️'], 'leisure=park': ['Parc', '🌳'], 'tourism=hotel': ['Hôtel', '🏨'], 'amenity=community_centre': ['Centre', '🏢'],
+  'amenity=place_of_worship': ['Mosquée / église', '🕌'],
+  'amenity=pharmacy': ['Pharmacie', '💊'],
+  'amenity=school': ['École', '🏫'],
+  'amenity=kindergarten': ["Jardin d'enfants", '🧸'],
+  'amenity=college': ['Lycée', '🏫'],
+  'amenity=university': ['Université', '🎓'],
+  'amenity=hospital': ['Hôpital', '🏥'],
+  'amenity=clinic': ['Clinique', '🏥'],
+  'amenity=doctors': ['Cabinet médical', '🩺'],
+  'amenity=marketplace': ['Marché', '🛒'],
+  'amenity=fuel': ['Station-service', '⛽'],
+  'amenity=bank': ['Banque', '🏦'],
+  'amenity=atm': ['Distributeur', '🏧'],
+  'amenity=restaurant': ['Restaurant', '🍽️'],
+  'amenity=fast_food': ['Fast-food', '🍔'],
+  'amenity=cafe': ['Café', '☕'],
+  'amenity=police': ['Police', '👮'],
+  'amenity=post_office': ['Poste', '📮'],
+  'amenity=bus_station': ['Gare routière', '🚌'],
+  'highway=bus_stop': ['Arrêt de bus', '🚏'],
+  'amenity=townhall': ['Mairie', '🏛️'],
+  'shop=supermarket': ['Supermarché', '🛒'],
+  'shop=convenience': ['Boutique', '🏪'],
+  'shop=bakery': ['Boulangerie', '🥖'],
+  'shop=mobile_phone': ['Boutique téléphones', '📱'],
+  'shop=hairdresser': ['Salon de coiffure', '💇'],
+  'shop=clothes': ['Boutique', '👗'],
+  'leisure=stadium': ['Stade', '🏟️'],
+  'leisure=park': ['Parc', '🌳'],
+  'tourism=hotel': ['Hôtel', '🏨'],
+  'amenity=community_centre': ['Centre', '🏢'],
 };
 const KIND_KEYS = Object.keys(KINDS);
 
@@ -200,18 +245,27 @@ export async function nearbyPlaces(lat, lng, radius = 350) {
   if (!NEARBY) return [];
   const r = Math.max(80, Math.min(800, Math.round(radius)));
   const filters = ['amenity', 'shop', 'leisure', 'tourism', 'highway']
-    .map(k => `nwr(around:${r},${lat},${lng})["name"]["${k}"];`).join('');
+    .map(k => `nwr(around:${r},${lat},${lng})["name"]["${k}"];`)
+    .join('');
   const query = `[out:json][timeout:8];(${filters});out center 80;`;
   try {
     return await cached(`nb:${round(lat, 3.4)},${round(lng, 3.4)}:${r}`, 6 * 3600e3, async () => {
-      const res = await fetch(OVERPASS_URL, { method: 'POST', headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' }, body: `data=${encodeURIComponent(query)}`, signal: AbortSignal.timeout(9000) });
+      const res = await fetch(OVERPASS_URL, {
+        method: 'POST',
+        headers: { 'User-Agent': UA, 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: AbortSignal.timeout(9000),
+      });
       if (!res.ok) throw new Error(`overpass ${res.status}`);
       const data = await res.json();
       const seen = new Set();
       const out = [];
       for (const el of data.elements || []) {
         const t = el.tags || {};
-        const key = KIND_KEYS.find(k => { const [a, b] = k.split('='); return t[a] === b; });
+        const key = KIND_KEYS.find(k => {
+          const [a, b] = k.split('=');
+          return t[a] === b;
+        });
         if (!key || !t.name) continue;
         const p = { lat: el.lat ?? el.center?.lat, lng: el.lon ?? el.center?.lon };
         if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) continue;
@@ -219,8 +273,21 @@ export async function nearbyPlaces(lat, lng, radius = 350) {
         if (seen.has(name.toLowerCase())) continue;
         seen.add(name.toLowerCase());
         let [kind, icon] = KINDS[key];
-        if (key === 'amenity=place_of_worship') [kind, icon] = t.religion === 'christian' ? ['Église', '⛪'] : t.religion === 'muslim' ? ['Mosquée', '🕌'] : ['Lieu de culte', '🕌'];
-        out.push({ name, kind, icon, lat: round(p.lat), lng: round(p.lng), distanceM: Math.round(distanceM({ lat, lng }, p)) });
+        if (key === 'amenity=place_of_worship')
+          [kind, icon] =
+            t.religion === 'christian'
+              ? ['Église', '⛪']
+              : t.religion === 'muslim'
+                ? ['Mosquée', '🕌']
+                : ['Lieu de culte', '🕌'];
+        out.push({
+          name,
+          kind,
+          icon,
+          lat: round(p.lat),
+          lng: round(p.lng),
+          distanceM: Math.round(distanceM({ lat, lng }, p)),
+        });
       }
       return out.sort((a, b) => a.distanceM - b.distanceM).slice(0, 20);
     });

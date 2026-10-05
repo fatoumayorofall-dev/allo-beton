@@ -22,7 +22,18 @@ const STATUS_TEXT: Record<Order['status'], string> = {
 };
 
 const CATEGORY_WORDS: Record<Category['id'], string[]> = {
-  chaussures: ['chaussure', 'escarpin', 'sandale', 'basket', 'sneaker', 'mule', 'ballerine', 'talon', 'bottine', 'compensee'],
+  chaussures: [
+    'chaussure',
+    'escarpin',
+    'sandale',
+    'basket',
+    'sneaker',
+    'mule',
+    'ballerine',
+    'talon',
+    'bottine',
+    'compensee',
+  ],
   sacs: ['sac', 'pochette', 'cabas', 'besace'],
   accessoires: ['lunette', 'montre ', 'montres', 'foulard', 'ceinture', 'chapeau', 'capeline', 'accessoire'],
   bijoux: ['bijou', 'collier', 'bague', 'bracelet', 'creole', 'boucle d', 'parure'],
@@ -35,17 +46,23 @@ const onSaleLabel = () => {
   return names.length > 1 ? `${names.slice(0, -1).join(', ')} et ${names[names.length - 1]}` : names[0];
 };
 
-const link = (p: Product) => `[${p.name}](/produit/${p.slug}) — ${shownPrice(p.price)}${p.stock <= 0 ? ' (épuisé)' : ''}`;
+const link = (p: Product) =>
+  `[${p.name}](/produit/${p.slug}) — ${shownPrice(p.price)}${p.stock <= 0 ? ' (épuisé)' : ''}`;
 
 function searchProducts(q: string, products: Product[]): Product[] | null {
-  const occasion = OCCASIONS.find(o => has(q, ...{
-    mariage: ['mariage', 'bapteme', 'ceremonie de mariage'],
-    ceremonie: ['tabaski', 'korite', 'fete', 'ramadan'],
-    soiree: ['soiree', 'gala', 'diner'],
-    bureau: ['bureau', 'travail', 'reunion'],
-    quotidien: ['quotidien', 'tous les jours', 'casual'],
-    vacances: ['vacances', 'plage', 'saly', 'ete'],
-  }[o.id]));
+  const occasion = OCCASIONS.find(o =>
+    has(
+      q,
+      ...{
+        mariage: ['mariage', 'bapteme', 'ceremonie de mariage'],
+        ceremonie: ['tabaski', 'korite', 'fete', 'ramadan'],
+        soiree: ['soiree', 'gala', 'diner'],
+        bureau: ['bureau', 'travail', 'reunion'],
+        quotidien: ['quotidien', 'tous les jours', 'casual'],
+        vacances: ['vacances', 'plage', 'saly', 'ete'],
+      }[o.id],
+    ),
+  );
   const category = CATEGORIES.find(c => has(q, ...CATEGORY_WORDS[c.id]));
   const budgetMatch = q.match(/(?:moins de|max(?:imum)?|budget(?: de)?|jusqu'a)\s*(\d[\d\s.]*)\s*(k|000|f|fcfa)?/);
   let budget = budgetMatch ? Number(budgetMatch[1].replace(/[\s.]/g, '')) : 0;
@@ -54,7 +71,12 @@ function searchProducts(q: string, products: Product[]): Product[] | null {
 
   if (!occasion && !category && !budget) return null;
   return products
-    .filter(p => (!occasion || p.occasions.includes(occasion.id)) && (!category || p.category === category.id) && (!budget || p.price <= budget))
+    .filter(
+      p =>
+        (!occasion || p.occasions.includes(occasion.id)) &&
+        (!category || p.category === category.id) &&
+        (!budget || p.price <= budget),
+    )
     .sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0) || b.rating - a.rating)
     .slice(0, 3);
 }
@@ -73,13 +95,22 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
   }
 
   // Date d'une fête : « c'est quand la Tabaski ? », « Korité kañ ? »
-  const FETE_WORDS: Record<string, string[]> = { korite: ['korite'], tabaski: ['tabaski'], magal: ['magal'], gamou: ['gamou', 'maouloud', 'mawlid'], noel: ['noel'], reveillon: ['reveillon', 'nouvel an'], 'saint-valentin': ['saint-valentin', 'saint valentin'], independance: ['independance', '4 avril'] };
+  const FETE_WORDS: Record<string, string[]> = {
+    korite: ['korite'],
+    tabaski: ['tabaski'],
+    magal: ['magal'],
+    gamou: ['gamou', 'maouloud', 'mawlid'],
+    noel: ['noel'],
+    reveillon: ['reveillon', 'nouvel an'],
+    'saint-valentin': ['saint-valentin', 'saint valentin'],
+    independance: ['independance', '4 avril'],
+  };
   const feteId = Object.keys(FETE_WORDS).find(id => has(q, ...FETE_WORDS[id]));
   if (feteId && has(q, 'quand', 'date', 'quel jour', 'kan ', 'kan?', 'kanj', 'dans combien')) {
     const f = upcomingFetes().find(x => x.id === feteId);
     if (f) {
       const n = daysUntil(f.date);
-      return `La prochaine **${f.name}** tombe ${f.lunar ? 'vers le' : 'le'} **${formatDay(f.date)}** (${inDays(n)})${f.lunar ? ', selon l\'observation de la lune' : ''}.${n > 3 ? ` Pour être livrée à temps, commandez avant le **${formatDay(orderBy(f.date))}** à Dakar ou le **${formatDay(orderBy(f.date, true))}** en régions.` : ''} Notre [sélection pour les fêtes](/boutique?occasion=${f.occasion}) vous attend ✨`;
+      return `La prochaine **${f.name}** tombe ${f.lunar ? 'vers le' : 'le'} **${formatDay(f.date)}** (${inDays(n)})${f.lunar ? ", selon l'observation de la lune" : ''}.${n > 3 ? ` Pour être livrée à temps, commandez avant le **${formatDay(orderBy(f.date))}** à Dakar ou le **${formatDay(orderBy(f.date, true))}** en régions.` : ''} Notre [sélection pour les fêtes](/boutique?occasion=${f.occasion}) vous attend ✨`;
     }
   }
 
@@ -92,16 +123,21 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
     return 'Vous pouvez payer par **Wave** ou **Orange Money** en envoyant le montant au **77 309 38 19** (Maefa Store), ou **en espèces à la livraison**. Envoyez ensuite la capture du paiement sur notre WhatsApp, nous confirmons tout de suite ✨';
   }
   if (has(q, 'echange', 'retour', 'rembours', 'pas la bonne taille', 'trop petit', 'trop grand')) {
-    return 'Chaque pièce est contrôlée avant l\'envoi. Vérifiez votre commande **à la réception, en présence du livreur** : une fois la livraison acceptée, **aucun échange ni retour** n\'est possible. Un doute sur la pointure ? Écrivez-nous sur WhatsApp **avant** de commander, nous vous conseillons 🌸';
+    return "Chaque pièce est contrôlée avant l'envoi. Vérifiez votre commande **à la réception, en présence du livreur** : une fois la livraison acceptée, **aucun échange ni retour** n'est possible. Un doute sur la pointure ? Écrivez-nous sur WhatsApp **avant** de commander, nous vous conseillons 🌸";
   }
   if (has(q, 'promo', 'code', 'reduction', 'remise', 'solde')) {
-    return `Nos codes du moment : ${Object.entries(PROMO_CODES).map(([k, v]) => `**${k}** (${v.label})`).join(', ')}. À saisir dans votre panier ! Découvrez aussi [nos offres](/boutique?promo=1).`;
+    return `Nos codes du moment : ${Object.entries(PROMO_CODES)
+      .map(([k, v]) => `**${k}** (${v.label})`)
+      .join(', ')}. À saisir dans votre panier ! Découvrez aussi [nos offres](/boutique?promo=1).`;
   }
   if (has(q, 'taille', 'pointure', 'mesure')) {
     return 'Notre [guide des tailles](/faq#tailles) vous aide à choisir. Entre deux tailles, prenez la plus grande ; nos escarpins Aminata taillent un peu petit.';
   }
   if (has(q, 'cadeau', 'offrir', 'anniversaire', 'fete des meres', 'saint-valentin')) {
-    const gifts = ctx.products.filter(p => p.stock > 0 && p.price <= 20000).sort((a, b) => b.rating - a.rating).slice(0, 3);
+    const gifts = ctx.products
+      .filter(p => p.stock > 0 && p.price <= 20000)
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 3);
     return `Bonne idée 🎁 Pensez à l'**emballage cadeau signature** (${formatPrice(SITE_CONFIG.giftWrapFee)}) avec votre mot doux, à cocher dans le panier. Quelques idées appréciées :\n${gifts.map(p => `- ${link(p)}`).join('\n')}`;
   }
   if (has(q, 'horaire', 'ouvert', 'adresse', 'ou etes', 'boutique physique', 'magasin')) {
@@ -118,18 +154,19 @@ export function localAnswer(question: string, ctx: { products: Product[]; orders
   if (found) {
     return found.length
       ? `Voici ce que je vous conseille ✨\n${found.map(p => `- ${link(p)}`).join('\n')}\n\nVoulez-vous d'autres suggestions ?`
-      : 'Je n\'ai pas de pièce qui corresponde exactement. Essayez [toute la boutique](/boutique) ou demandez conseil à notre équipe sur WhatsApp.';
+      : "Je n'ai pas de pièce qui corresponde exactement. Essayez [toute la boutique](/boutique) ou demandez conseil à notre équipe sur WhatsApp.";
   }
   // Wolof : salutations, remerciements, au revoir
   if (has(q, 'nanga def', 'na nga def', 'nangadef', 'jamm nga am', 'jam nga am')) {
     return 'Maa ngi fi rekk, jërëjëf ! Dalal ak jàmm chez Maefa 🌸 Je peux vous conseiller une paire ou un sac, vous parler de la livraison ou suivre votre commande. Lan nga bëgg ? (Que recherchez-vous ?)';
   }
-  if (has(q, 'jerejef', 'jarajef', 'jerrejef', 'dieuredieuf', 'diaradieuf', 'jerejeuf')) return 'Ñoo ko bokk ! Avec plaisir 🌸 Ba beneen yoon !';
+  if (has(q, 'jerejef', 'jarajef', 'jerrejef', 'dieuredieuf', 'diaradieuf', 'jerejeuf'))
+    return 'Ñoo ko bokk ! Avec plaisir 🌸 Ba beneen yoon !';
   if (has(q, 'ba beneen', 'ba benen', 'ba ci kanam')) return 'Ba beneen yoon ! Merci de votre visite chez Maefa 🌸';
   if (has(q, 'bonjour', 'salut', 'bonsoir', 'hello', 'coucou', 'salam')) {
     return 'Bonjour et dalal ak jàmm chez Maefa 🌸 Je peux vous conseiller une tenue, vous parler de la livraison ou suivre votre commande. Que recherchez-vous ?';
   }
   if (has(q, 'merci')) return 'Avec plaisir ! Belle journée à vous 🌸';
 
-  return 'Je ne suis pas sûre de bien comprendre. Je peux vous aider pour : une tenue selon l\'occasion, la livraison, le paiement, la réception ou le suivi de commande. Pour tout le reste, notre équipe vous répond sur WhatsApp.';
+  return "Je ne suis pas sûre de bien comprendre. Je peux vous aider pour : une tenue selon l'occasion, la livraison, le paiement, la réception ou le suivi de commande. Pour tout le reste, notre équipe vous répond sur WhatsApp.";
 }

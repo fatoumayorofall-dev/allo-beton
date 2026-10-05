@@ -17,14 +17,27 @@ export const RelaySteps: React.FC<{ delivery: DeliveryInfo; admin?: boolean }> =
         const active = l.state === 'en_route';
         return (
           <li key={k} className={`flex items-start gap-3 p-3 rounded-2xl ${active ? 'bg-blush/50' : 'bg-ivory'}`}>
-            <span className={`w-9 h-9 rounded-full grid place-items-center shrink-0 text-lg ${l.state === 'remis' ? 'bg-emerald-100' : active ? 'bg-wine text-white' : 'bg-white border border-ink/10'}`}>
+            <span
+              className={`w-9 h-9 rounded-full grid place-items-center shrink-0 text-lg ${l.state === 'remis' ? 'bg-emerald-100' : active ? 'bg-wine text-white' : 'bg-white border border-ink/10'}`}
+            >
               {l.state === 'remis' ? '✓' : VEHICLE_ICONS[l.vehicle]}
             </span>
             <div className="text-sm min-w-0">
-              <p className="font-semibold">Étape {k + 1} · {l.driverName}{admin && <span className="font-normal text-ink/70"> · {l.driverPhone}</span>}</p>
-              <p className="text-ink/75">{l.to ? `jusqu'à ${l.to.label}` : 'jusqu\'à la cliente'}</p>
-              <p className={`text-xs mt-0.5 ${l.state === 'remis' ? 'text-emerald-800' : active ? 'text-wine font-semibold' : 'text-ink/70'}`}>
-                {l.state === 'remis' ? (l.to ? 'Relais passé' : 'Colis remis') : active ? 'A le colis, en route' : 'En attente du colis'}
+              <p className="font-semibold">
+                Étape {k + 1} · {l.driverName}
+                {admin && <span className="font-normal text-ink/70"> · {l.driverPhone}</span>}
+              </p>
+              <p className="text-ink/75">{l.to ? `jusqu'à ${l.to.label}` : "jusqu'à la cliente"}</p>
+              <p
+                className={`text-xs mt-0.5 ${l.state === 'remis' ? 'text-emerald-800' : active ? 'text-wine font-semibold' : 'text-ink/70'}`}
+              >
+                {l.state === 'remis'
+                  ? l.to
+                    ? 'Relais passé'
+                    : 'Colis remis'
+                  : active
+                    ? 'A le colis, en route'
+                    : 'En attente du colis'}
               </p>
             </div>
           </li>
@@ -38,24 +51,57 @@ export const RelaySteps: React.FC<{ delivery: DeliveryInfo; admin?: boolean }> =
  * Carte du suivi en direct : la maison de la cliente et le livreur qui avance (comme un taxi Yango).
  * En relais, on suit le livreur de l'étape en cours et son point de relais.
  */
-export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delivery?: DeliveryInfo | null; compact?: boolean }> = ({ location, delivery, compact }) => {
+export const LiveTracking: React.FC<{
+  location?: DeliveryLocation | null;
+  delivery?: DeliveryInfo | null;
+  compact?: boolean;
+}> = ({ location, delivery, compact }) => {
   const driver = delivery?.state === 'en_route' ? delivery.position : null;
-  const relayTarget = delivery && !delivery.final && delivery.target?.lat != null && delivery.target.lng != null ? delivery.target : null;
+  const relayTarget =
+    delivery && !delivery.final && delivery.target?.lat != null && delivery.target.lng != null ? delivery.target : null;
   const markers = useMemo<MapMarker[]>(() => {
     const list: MapMarker[] = [];
     if (location) list.push({ id: 'home', kind: 'home', lat: location.lat, lng: location.lng, label: 'Livraison' });
-    if (relayTarget) list.push({ id: 'relay', kind: 'relay', lat: relayTarget.lat!, lng: relayTarget.lng!, label: relayTarget.label });
-    if (driver) list.push({ id: 'driver', kind: 'driver', lat: driver.lat, lng: driver.lng, label: delivery?.driverName, icon: delivery?.vehicle ? VEHICLE_ICONS[delivery.vehicle] : undefined });
+    if (relayTarget)
+      list.push({ id: 'relay', kind: 'relay', lat: relayTarget.lat!, lng: relayTarget.lng!, label: relayTarget.label });
+    if (driver)
+      list.push({
+        id: 'driver',
+        kind: 'driver',
+        lat: driver.lat,
+        lng: driver.lng,
+        label: delivery?.driverName,
+        icon: delivery?.vehicle ? VEHICLE_ICONS[delivery.vehicle] : undefined,
+      });
     if (!list.length) list.push({ id: 'shop', kind: 'shop', ...SHOP_LOCATION, label: 'Maefa Store' });
     return list;
-  }, [location?.lat, location?.lng, driver?.lat, driver?.lng, delivery?.driverName, delivery?.vehicle, relayTarget?.lat, relayTarget?.lng]);
+  }, [
+    location?.lat,
+    location?.lng,
+    driver?.lat,
+    driver?.lng,
+    delivery?.driverName,
+    delivery?.vehicle,
+    relayTarget?.lat,
+    relayTarget?.lng,
+  ]);
 
   const icon = delivery?.vehicle ? VEHICLE_ICONS[delivery.vehicle] : '🛵';
   const where = delivery && !delivery.final && delivery.target ? ` à ${delivery.target.label}` : '';
 
   return (
-    <div className={`overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white ${compact ? '' : 'shadow-soft'}`} data-testid="live-tracking">
-      <MapView center={markers[0]} zoom={16} markers={markers} path={driver ? delivery?.route : null} fitMarkers className={compact ? 'h-56' : 'h-80 sm:h-96'} />
+    <div
+      className={`overflow-hidden rounded-[1.5rem] border border-ink/10 bg-white ${compact ? '' : 'shadow-soft'}`}
+      data-testid="live-tracking"
+    >
+      <MapView
+        center={markers[0]}
+        zoom={16}
+        markers={markers}
+        path={driver ? delivery?.route : null}
+        fitMarkers
+        className={compact ? 'h-56' : 'h-80 sm:h-96'}
+      />
       {delivery && (
         <div className="p-4 sm:p-5 space-y-4">
           <div className="flex flex-wrap items-center gap-4">
@@ -65,42 +111,78 @@ export const LiveTracking: React.FC<{ location?: DeliveryLocation | null; delive
                 <>
                   <p className="font-display text-2xl leading-tight">
                     {delivery.etaMin != null
-                      ? (delivery.final ? (delivery.etaMin <= 1 ? 'Arrive dans 1 minute' : `Arrive dans ~${formatEta(delivery.etaMin)}`) : `Au relais${where} dans ~${formatEta(delivery.etaMin)}`)
-                      : delivery.final ? 'Votre livreur est en route' : `En route vers le relais${where}`}
+                      ? delivery.final
+                        ? delivery.etaMin <= 1
+                          ? 'Arrive dans 1 minute'
+                          : `Arrive dans ~${formatEta(delivery.etaMin)}`
+                        : `Au relais${where} dans ~${formatEta(delivery.etaMin)}`
+                      : delivery.final
+                        ? 'Votre livreur est en route'
+                        : `En route vers le relais${where}`}
                   </p>
                   <p className="text-sm text-ink/75">
                     {delivery.relay && `Étape ${(delivery.current ?? 0) + 1} sur ${delivery.legs?.length} · `}
-                    {delivery.driverName}{delivery.distanceM != null && ` · à ${formatDistance(delivery.distanceM)}`}
+                    {delivery.driverName}
+                    {delivery.distanceM != null && ` · à ${formatDistance(delivery.distanceM)}`}
                     {driver?.stale && ` · position d'il y a ${minutesAgo(driver.at)} min`}
                     {!driver && ' · en attente du GPS'}
                   </p>
-                  {delivery.routed && <p className="text-xs text-ink/65 mt-0.5" data-testid="eta-routed">Calculé par les rues, embouteillages compris</p>}
+                  {delivery.routed && (
+                    <p className="text-xs text-ink/65 mt-0.5" data-testid="eta-routed">
+                      Calculé par les rues, embouteillages compris
+                    </p>
+                  )}
                 </>
               )}
               {delivery.state === 'assignee' && delivery.tour && (
                 <div data-testid="tour-queue">
                   <p className="font-display text-2xl leading-tight">
                     {delivery.tour.started
-                      ? (delivery.tour.ahead === 0 ? 'Vous êtes la prochaine livraison !' : `${delivery.tour.ahead} livraison${delivery.tour.ahead > 1 ? 's' : ''} avant la vôtre`)
+                      ? delivery.tour.ahead === 0
+                        ? 'Vous êtes la prochaine livraison !'
+                        : `${delivery.tour.ahead} livraison${delivery.tour.ahead > 1 ? 's' : ''} avant la vôtre`
                       : `Votre colis part aujourd'hui avec ${delivery.tour.driverName}`}
                   </p>
-                  <p className="text-sm text-ink/75">{delivery.tour.started ? `${delivery.tour.driverName} fait sa tournée` : `Vous êtes la livraison n° ${delivery.tour.position} sur ${delivery.tour.total}`}. Vous recevrez un WhatsApp dès qu'il partira chez vous, et vous le suivrez ici sur la carte.</p>
+                  <p className="text-sm text-ink/75">
+                    {delivery.tour.started
+                      ? `${delivery.tour.driverName} fait sa tournée`
+                      : `Vous êtes la livraison n° ${delivery.tour.position} sur ${delivery.tour.total}`}
+                    . Vous recevrez un WhatsApp dès qu'il partira chez vous, et vous le suivrez ici sur la carte.
+                  </p>
                   <div className="mt-2 flex gap-1" aria-hidden>
-                    {Array.from({ length: delivery.tour.total }, (_, k) => <span key={k} className={`h-1.5 flex-1 rounded-full ${k + 1 === delivery.tour!.position ? 'bg-wine' : k + 1 < delivery.tour!.position ? 'bg-ink/30' : 'bg-ink/10'}`} />)}
+                    {Array.from({ length: delivery.tour.total }, (_, k) => (
+                      <span
+                        key={k}
+                        className={`h-1.5 flex-1 rounded-full ${k + 1 === delivery.tour!.position ? 'bg-wine' : k + 1 < delivery.tour!.position ? 'bg-ink/30' : 'bg-ink/10'}`}
+                      />
+                    ))}
                   </div>
                 </div>
               )}
-              {delivery.state === 'assignee' && !delivery.tour && <><p className="font-display text-2xl leading-tight">{delivery.relay ? 'Livraison en relais prévue' : `Livreur choisi : ${delivery.driverName}`}</p><p className="text-sm text-ink/75">Vous pourrez suivre votre colis ici dès son départ.</p></>}
+              {delivery.state === 'assignee' && !delivery.tour && (
+                <>
+                  <p className="font-display text-2xl leading-tight">
+                    {delivery.relay ? 'Livraison en relais prévue' : `Livreur choisi : ${delivery.driverName}`}
+                  </p>
+                  <p className="text-sm text-ink/75">Vous pourrez suivre votre colis ici dès son départ.</p>
+                </>
+              )}
               {delivery.state === 'livree' && <p className="font-display text-2xl leading-tight">Colis remis 🌸</p>}
             </div>
             {delivery.state !== 'livree' && (
-              <a href={`tel:${delivery.driverPhone}`} className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-emerald-700 text-white font-semibold">
+              <a
+                href={`tel:${delivery.driverPhone}`}
+                className="inline-flex items-center gap-2 px-5 h-12 rounded-full bg-emerald-700 text-white font-semibold"
+              >
                 <Phone className="w-4 h-4" /> Appeler
               </a>
             )}
           </div>
           {delivery.code && delivery.state !== 'livree' && (
-            <div className="flex items-center gap-4 p-4 rounded-2xl bg-ivory border border-ink/[0.07]" data-testid="delivery-code">
+            <div
+              className="flex items-center gap-4 p-4 rounded-2xl bg-ivory border border-ink/[0.07]"
+              data-testid="delivery-code"
+            >
               <ShieldCheck className="w-6 h-6 text-emerald-700 shrink-0" />
               <div className="flex-1 min-w-0 text-sm">
                 <p className="font-semibold">Votre code de remise</p>

@@ -42,21 +42,28 @@ export const modelOf = (p: Product) => p.name.split(' — ')[0];
 export function recommend(products: Product[], w: Wishes, max = 3): { items: Product[]; exact: boolean } {
   const buyable = products.filter(canBuy);
   const score = (p: Product) =>
-    (w.occasion && w.occasion !== 'tout' && p.occasions.includes(w.occasion) ? 3 : 0)
-    + (w.color && w.color !== 'tout' && colorFamilies(p).includes(w.color) ? 2 : 0)
-    + (p.isNew ? 0.5 : 0) + (p.isBestseller ? 0.5 : 0);
+    (w.occasion && w.occasion !== 'tout' && p.occasions.includes(w.occasion) ? 3 : 0) +
+    (w.color && w.color !== 'tout' && colorFamilies(p).includes(w.color) ? 2 : 0) +
+    (p.isNew ? 0.5 : 0) +
+    (p.isBestseller ? 0.5 : 0);
   const fits = (p: Product, strict: boolean) =>
-    (!w.kind || w.kind === 'tout' || p.category === w.kind)
-    && (!w.budget || p.price <= w.budget)
-    && (!w.size || !p.sizes.length || p.sizes.includes(w.size))
-    && (!strict || !w.color || w.color === 'tout' || colorFamilies(p).includes(w.color))
-    && (!strict || !w.occasion || w.occasion === 'tout' || p.occasions.includes(w.occasion));
+    (!w.kind || w.kind === 'tout' || p.category === w.kind) &&
+    (!w.budget || p.price <= w.budget) &&
+    (!w.size || !p.sizes.length || p.sizes.includes(w.size)) &&
+    (!strict || !w.color || w.color === 'tout' || colorFamilies(p).includes(w.color)) &&
+    (!strict || !w.occasion || w.occasion === 'tout' || p.occasions.includes(w.occasion));
   // Un modèle par famille (pas trois fois le même sac dans trois couleurs)
   const oneByModel = (list: Product[]) => {
     const seen = new Set<string>();
-    return list.filter(p => { const m = modelOf(p); if (seen.has(m)) return false; seen.add(m); return true; });
+    return list.filter(p => {
+      const m = modelOf(p);
+      if (seen.has(m)) return false;
+      seen.add(m);
+      return true;
+    });
   };
-  const sorted = (list: Product[]) => [...list].sort((a, b) => score(b) - score(a) || b.createdAt.localeCompare(a.createdAt));
+  const sorted = (list: Product[]) =>
+    [...list].sort((a, b) => score(b) - score(a) || b.createdAt.localeCompare(a.createdAt));
   const strict = oneByModel(sorted(buyable.filter(p => fits(p, true))));
   if (strict.length) return { items: strict.slice(0, max), exact: true };
   // Rien d'exact : on garde le type, le budget et la pointure, on relâche couleur et occasion
@@ -76,7 +83,7 @@ export interface Question<K extends keyof Wishes = keyof Wishes> {
 export const QUESTIONS: { [K in keyof Wishes]-?: Question<K> } = {
   kind: {
     key: 'kind',
-    fr: 'Qu\'est-ce qui vous ferait plaisir aujourd\'hui ?',
+    fr: "Qu'est-ce qui vous ferait plaisir aujourd'hui ?",
     wo: 'Lan nga bëgg tey ?',
     options: [
       { value: 'sacs', emoji: '👜', fr: 'Un sac', wo: 'Sac' },
@@ -86,7 +93,7 @@ export const QUESTIONS: { [K in keyof Wishes]-?: Question<K> } = {
   },
   occasion: {
     key: 'occasion',
-    fr: 'C\'est pour quelle occasion ?',
+    fr: "C'est pour quelle occasion ?",
     wo: 'Ngir lan la ?',
     options: [
       { value: 'mariage', emoji: '💍', fr: 'Mariage, baptême', wo: 'Céet, ngénte' },
@@ -116,8 +123,8 @@ export const QUESTIONS: { [K in keyof Wishes]-?: Question<K> } = {
     fr: 'Quel budget voulez-vous mettre ?',
     wo: 'Ñaata nga bëgg a joxe ?',
     options: [
-      { value: 16000, emoji: '💵', fr: 'Jusqu\'à 16 000 F', wo: 'Ba 16 000 F' },
-      { value: 20000, emoji: '💵', fr: 'Jusqu\'à 20 000 F', wo: 'Ba 20 000 F' },
+      { value: 16000, emoji: '💵', fr: "Jusqu'à 16 000 F", wo: 'Ba 16 000 F' },
+      { value: 20000, emoji: '💵', fr: "Jusqu'à 20 000 F", wo: 'Ba 20 000 F' },
       { value: 0, emoji: '👌', fr: 'Peu importe', wo: 'Lépp baax na' },
     ],
   },
@@ -144,14 +151,30 @@ export function nextQuestion(w: Wishes): Question | null {
 
 /* ---------- Présentation des pièces, à voix de vendeuse ---------- */
 
-const OCC_WO: Record<OccasionId, string> = { mariage: 'céet ak ngénte', ceremonie: 'Tabaski ak Kori', soiree: 'soirée', bureau: 'liggéey', quotidien: 'bés bu nekk', vacances: 'vacances' };
-const OCC_FR: Record<OccasionId, string> = { mariage: 'un mariage ou un baptême', ceremonie: 'la Tabaski ou la Korité', soiree: 'une soirée', bureau: 'le bureau', quotidien: 'tous les jours', vacances: 'les vacances' };
+const OCC_WO: Record<OccasionId, string> = {
+  mariage: 'céet ak ngénte',
+  ceremonie: 'Tabaski ak Kori',
+  soiree: 'soirée',
+  bureau: 'liggéey',
+  quotidien: 'bés bu nekk',
+  vacances: 'vacances',
+};
+const OCC_FR: Record<OccasionId, string> = {
+  mariage: 'un mariage ou un baptême',
+  ceremonie: 'la Tabaski ou la Korité',
+  soiree: 'une soirée',
+  bureau: 'le bureau',
+  quotidien: 'tous les jours',
+  vacances: 'les vacances',
+};
 
 const price = (n: number) => (pricesHidden() ? shownPrice(n) : `${n.toLocaleString('fr-FR').replace(/\s/g, ' ')} FCFA`);
 
 /** Une phrase de présentation, comme la vendeuse qui tend la pièce. */
 export function pitch(p: Product, w: Wishes, lang: Lang): string {
-  const occ = (w.occasion && w.occasion !== 'tout' && p.occasions.includes(w.occasion) ? w.occasion : p.occasions[0]) as OccasionId | undefined;
+  const occ = (
+    w.occasion && w.occasion !== 'tout' && p.occasions.includes(w.occasion) ? w.occasion : p.occasions[0]
+  ) as OccasionId | undefined;
   const colors = p.colors.map(c => c.name.toLowerCase()).join(', ');
   if (lang === 'wo') {
     return `**${p.name}**, ${price(p.price)}. ${occ ? `Dafa baax ngir ${OCC_WO[occ]}. ` : ''}${w.size && p.sizes.includes(w.size) ? `Am na sa pointure ${w.size}. ` : ''}Melo : ${colors}.`;
@@ -161,10 +184,19 @@ export function pitch(p: Product, w: Wishes, lang: Lang): string {
 
 export const ADVISOR_TEXT = {
   start: { fr: '🛍️ Conseil comme en boutique', wo: '🛍️ Wone ma li am' },
-  startHint: { fr: 'Je vous pose 4 petites questions et je vous apporte les pièces', wo: 'Dama lay laaj ñeenti laaj, ma indil la li dëppoo' },
+  startHint: {
+    fr: 'Je vous pose 4 petites questions et je vous apporte les pièces',
+    wo: 'Dama lay laaj ñeenti laaj, ma indil la li dëppoo',
+  },
   results: { fr: 'Voici ce que je vous ai choisi 👇', wo: 'Xoolal li ma la tànnal 👇' },
-  near: { fr: 'Je n\'ai pas exactement ça en ce moment, mais regardez ces pièces 👇', wo: 'Amul lu dëppoo bu wér léegi, waaye xoolal yii 👇' },
-  none: { fr: 'Je n\'ai rien dans ce budget pour le moment. Écrivez-nous sur WhatsApp : nous vous prévenons des arrivages.', wo: 'Amul dara ci njëg jooju léegi. Bindal nu walla yónnee vocal ci WhatsApp.' },
+  near: {
+    fr: "Je n'ai pas exactement ça en ce moment, mais regardez ces pièces 👇",
+    wo: 'Amul lu dëppoo bu wér léegi, waaye xoolal yii 👇',
+  },
+  none: {
+    fr: "Je n'ai rien dans ce budget pour le moment. Écrivez-nous sur WhatsApp : nous vous prévenons des arrivages.",
+    wo: 'Amul dara ci njëg jooju léegi. Bindal nu walla yónnee vocal ci WhatsApp.',
+  },
   add: { fr: 'Ajouter au panier', wo: 'Yokk ci panier' },
   see: { fr: 'Voir', wo: 'Xool' },
   again: { fr: 'Autre chose', wo: 'Leneen' },

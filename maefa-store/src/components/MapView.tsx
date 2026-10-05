@@ -6,18 +6,28 @@ import 'leaflet/dist/leaflet.css';
  * Carte OpenStreetMap (Leaflet), gratuite et sans clé.
  * Le fond de carte se change avec VITE_MAP_TILES (ex. MapTiler, Stadia, Carto) pour la production.
  */
-const TILES = (import.meta.env.VITE_MAP_TILES as string | undefined) || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-const ATTRIBUTION = (import.meta.env.VITE_MAP_ATTRIBUTION as string | undefined) || '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+const TILES =
+  (import.meta.env.VITE_MAP_TILES as string | undefined) || 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const ATTRIBUTION =
+  (import.meta.env.VITE_MAP_ATTRIBUTION as string | undefined) ||
+  '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 /**
  * Vue satellite (Esri World Imagery) + noms des rues et des lieux par-dessus : la cliente voit les toits
  * et pose l'épingle exactement sur sa maison. Remplaçable par VITE_MAP_SATELLITE (ex. MapTiler avec clé).
  */
 const ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services';
-const SAT_TILES = (import.meta.env.VITE_MAP_SATELLITE as string | undefined) || `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`;
-const SAT_LABELS = [`${ESRI}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`, `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`];
+const SAT_TILES =
+  (import.meta.env.VITE_MAP_SATELLITE as string | undefined) || `${ESRI}/World_Imagery/MapServer/tile/{z}/{y}/{x}`;
+const SAT_LABELS = [
+  `${ESRI}/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}`,
+  `${ESRI}/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}`,
+];
 const SAT_ATTRIBUTION = 'Imagerie © <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics';
 
-export interface LatLng { lat: number; lng: number }
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
 export interface MapMarker extends LatLng {
   id: string;
   kind: 'home' | 'driver' | 'shop' | 'relay' | 'me' | 'stop' | 'poi';
@@ -33,26 +43,59 @@ export interface MapMarker extends LatLng {
 const ICONS: Record<MapMarker['kind'], (m: MapMarker) => L.DivIcon> = {
   // « Vous êtes ici » : point bleu qui pulse (comme dans les applis de VTC)
   // Lieu connu (mosquée, pharmacie…) : petite pastille avec son icône
-  poi: m => L.divIcon({ className: 'maefa-pin', iconSize: [30, 30], iconAnchor: [15, 15], html: `<span class="maefa-poi${m.tone === 'current' ? ' is-on' : ''}">${m.icon ?? '📍'}</span>` }),
+  poi: m =>
+    L.divIcon({
+      className: 'maefa-pin',
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      html: `<span class="maefa-poi${m.tone === 'current' ? ' is-on' : ''}">${m.icon ?? '📍'}</span>`,
+    }),
   // Arrêt numéroté d'une tournée de livraison
-  stop: m => L.divIcon({ className: 'maefa-pin', iconSize: [34, 34], iconAnchor: [17, 17], html: `<span class="maefa-stop maefa-stop-${m.tone ?? 'next'}">${m.tone === 'done' ? '✓' : String(m.label ?? '').slice(0, 3)}</span>` }),
-  me: () => L.divIcon({ className: 'maefa-pin', iconSize: [28, 28], iconAnchor: [14, 14], html: '<span class="maefa-me"><span class="maefa-me-pulse"></span><span class="maefa-me-dot"></span></span>' }),
-  home: () => L.divIcon({
-    className: 'maefa-pin', iconSize: [44, 52], iconAnchor: [22, 50],
-    html: '<span class="maefa-pin-home"><span>🏠</span></span>',
-  }),
-  driver: m => L.divIcon({
-    className: 'maefa-pin', iconSize: [52, 52], iconAnchor: [26, 26],
-    html: '<span class="maefa-pin-driver"><span class="maefa-pin-pulse"></span><span class="maefa-pin-scooter">' + (m.icon ?? '🛵') + '</span></span>',
-  }),
-  relay: () => L.divIcon({
-    className: 'maefa-pin', iconSize: [40, 40], iconAnchor: [20, 20],
-    html: '<span class="maefa-pin-relay">🔁</span>',
-  }),
-  shop: () => L.divIcon({
-    className: 'maefa-pin', iconSize: [40, 40], iconAnchor: [20, 20],
-    html: '<span class="maefa-pin-shop">F</span>',
-  }),
+  stop: m =>
+    L.divIcon({
+      className: 'maefa-pin',
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+      html: `<span class="maefa-stop maefa-stop-${m.tone ?? 'next'}">${m.tone === 'done' ? '✓' : String(m.label ?? '').slice(0, 3)}</span>`,
+    }),
+  me: () =>
+    L.divIcon({
+      className: 'maefa-pin',
+      iconSize: [28, 28],
+      iconAnchor: [14, 14],
+      html: '<span class="maefa-me"><span class="maefa-me-pulse"></span><span class="maefa-me-dot"></span></span>',
+    }),
+  home: () =>
+    L.divIcon({
+      className: 'maefa-pin',
+      iconSize: [44, 52],
+      iconAnchor: [22, 50],
+      html: '<span class="maefa-pin-home"><span>🏠</span></span>',
+    }),
+  driver: m =>
+    L.divIcon({
+      className: 'maefa-pin',
+      iconSize: [52, 52],
+      iconAnchor: [26, 26],
+      html:
+        '<span class="maefa-pin-driver"><span class="maefa-pin-pulse"></span><span class="maefa-pin-scooter">' +
+        (m.icon ?? '🛵') +
+        '</span></span>',
+    }),
+  relay: () =>
+    L.divIcon({
+      className: 'maefa-pin',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      html: '<span class="maefa-pin-relay">🔁</span>',
+    }),
+  shop: () =>
+    L.divIcon({
+      className: 'maefa-pin',
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+      html: '<span class="maefa-pin-shop">F</span>',
+    }),
 };
 
 interface Props {
@@ -86,7 +129,10 @@ interface Props {
 /** Déplacement fluide d'un marqueur (le livreur glisse au lieu de sauter). */
 function glide(marker: L.Marker, to: L.LatLng) {
   const from = marker.getLatLng();
-  if (from.distanceTo(to) > 2000) { marker.setLatLng(to); return; }
+  if (from.distanceTo(to) > 2000) {
+    marker.setLatLng(to);
+    return;
+  }
   const start = performance.now();
   const step = (now: number) => {
     const t = Math.min(1, (now - start) / 1200);
@@ -97,7 +143,24 @@ function glide(marker: L.Marker, to: L.LatLng) {
   requestAnimationFrame(step);
 }
 
-export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circle, path, onCenterChange, pinCenter, fitMarkers, satellite = false, pinLifted = false, onMoveStart, onMarkerClick, zoomButtons, interactive = true, className = '', children }) => {
+export const MapView: React.FC<Props> = ({
+  center,
+  zoom = 15,
+  markers = [],
+  circle,
+  path,
+  onCenterChange,
+  pinCenter,
+  fitMarkers,
+  satellite = false,
+  pinLifted = false,
+  onMoveStart,
+  onMarkerClick,
+  zoomButtons,
+  interactive = true,
+  className = '',
+  children,
+}) => {
   const base = useRef<{ plan: L.TileLayer; sat: L.LayerGroup } | null>(null);
   const el = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
@@ -117,20 +180,35 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
   useEffect(() => {
     if (!el.current) return;
     const m = L.map(el.current, {
-      center: [center.lat, center.lng], zoom, zoomControl: zoomButtons ?? interactive, attributionControl: true,
+      center: [center.lat, center.lng],
+      zoom,
+      zoomControl: zoomButtons ?? interactive,
+      attributionControl: true,
       // avec l'épingle au centre, le zoom garde le même point sous l'épingle
-      dragging: interactive, touchZoom: interactive ? (pinCenter ? 'center' : true) : false, scrollWheelZoom: interactive ? (pinCenter ? 'center' : true) : false, doubleClickZoom: interactive, boxZoom: false, keyboard: interactive,
+      dragging: interactive,
+      touchZoom: interactive ? (pinCenter ? 'center' : true) : false,
+      scrollWheelZoom: interactive ? (pinCenter ? 'center' : true) : false,
+      doubleClickZoom: interactive,
+      boxZoom: false,
+      keyboard: interactive,
     });
     const plan = L.tileLayer(TILES, { maxZoom: 20, maxNativeZoom: 19, attribution: ATTRIBUTION, crossOrigin: true });
     const sat = L.layerGroup([
       L.tileLayer(SAT_TILES, { maxZoom: 20, maxNativeZoom: 19, attribution: SAT_ATTRIBUTION, crossOrigin: true }),
-      ...(import.meta.env.VITE_MAP_SATELLITE ? [] : SAT_LABELS.map(u => L.tileLayer(u, { maxZoom: 20, maxNativeZoom: 19, crossOrigin: true }))),
+      ...(import.meta.env.VITE_MAP_SATELLITE
+        ? []
+        : SAT_LABELS.map(u => L.tileLayer(u, { maxZoom: 20, maxNativeZoom: 19, crossOrigin: true }))),
     ]);
     (satellite ? sat : plan).addTo(m);
     base.current = { plan, sat };
     m.attributionControl.setPrefix(false);
-    m.on('dragstart', () => { dragging.current = true; onStart.current?.(); });
-    m.on('zoomstart', () => { if (pinCenter) onStart.current?.(); });
+    m.on('dragstart', () => {
+      dragging.current = true;
+      onStart.current?.();
+    });
+    m.on('zoomstart', () => {
+      if (pinCenter) onStart.current?.();
+    });
     m.on('moveend', () => {
       // Un « moveend » peut arriver pendant que le doigt glisse encore (marqueurs mis à jour…) :
       // on attend la vraie fin du glissement pour ne pas reposer l'épingle trop tôt
@@ -143,12 +221,22 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     // La carte peut apparaître dans un bloc qui change de taille (formulaire, fenêtre)
     const ro = new ResizeObserver(() => m.invalidateSize());
     ro.observe(el.current);
-    return () => { ro.disconnect(); m.remove(); map.current = null; base.current = null; layers.current.clear(); circleRef.current = null; pathRef.current = []; fitted.current = false; };
+    return () => {
+      ro.disconnect();
+      m.remove();
+      map.current = null;
+      base.current = null;
+      layers.current.clear();
+      circleRef.current = null;
+      pathRef.current = [];
+      fitted.current = false;
+    };
   }, []); // la carte est créée une seule fois
 
   // Plan ↔ satellite
   useEffect(() => {
-    const m = map.current, b = base.current;
+    const m = map.current,
+      b = base.current;
     if (!m || !b) return;
     const [on, off] = satellite ? [b.sat, b.plan] : [b.plan, b.sat];
     if (m.hasLayer(off)) m.removeLayer(off);
@@ -178,14 +266,21 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
       } else {
         const tip = mk.title ?? mk.label;
         const marker = L.marker([mk.lat, mk.lng], { icon: ICONS[mk.kind](mk), keyboard: false, title: tip });
-        if (tip) marker.bindTooltip(tip, { direction: 'top', offset: [0, mk.kind === 'stop' || mk.kind === 'poi' ? -16 : -40] });
+        if (tip)
+          marker.bindTooltip(tip, {
+            direction: 'top',
+            offset: [0, mk.kind === 'stop' || mk.kind === 'poi' ? -16 : -40],
+          });
         marker.on('click', () => onMarker.current?.(mk.id));
         marker.addTo(m);
         layers.current.set(mk.id, marker);
       }
     }
     for (const [id, marker] of layers.current) {
-      if (!seen.has(id)) { marker.remove(); layers.current.delete(id); }
+      if (!seen.has(id)) {
+        marker.remove();
+        layers.current.delete(id);
+      }
     }
     if (fitMarkers && markers.length) {
       const bounds = L.latLngBounds(markers.map(mk => [mk.lat, mk.lng] as [number, number]));
@@ -201,11 +296,34 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     const m = map.current;
     if (!m) return;
     const pts = path && path.length > 1 ? path : null;
-    if (!pts) { pathRef.current.forEach(l => l.remove()); pathRef.current = []; return; }
-    if (pathRef.current.length) { pathRef.current.forEach(l => l.setLatLngs(pts)); return; }
+    if (!pts) {
+      pathRef.current.forEach(l => l.remove());
+      pathRef.current = [];
+      return;
+    }
+    if (pathRef.current.length) {
+      pathRef.current.forEach(l => l.setLatLngs(pts));
+      return;
+    }
     pathRef.current = [
-      L.polyline(pts, { color: '#ffffff', weight: 9, opacity: 0.95, lineCap: 'round', lineJoin: 'round', interactive: false, className: 'maefa-route-casing' }).addTo(m),
-      L.polyline(pts, { color: '#7a2e4a', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round', interactive: false, className: 'maefa-route' }).addTo(m),
+      L.polyline(pts, {
+        color: '#ffffff',
+        weight: 9,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false,
+        className: 'maefa-route-casing',
+      }).addTo(m),
+      L.polyline(pts, {
+        color: '#7a2e4a',
+        weight: 5,
+        opacity: 0.9,
+        lineCap: 'round',
+        lineJoin: 'round',
+        interactive: false,
+        className: 'maefa-route',
+      }).addTo(m),
     ];
   }, [pathKey]);
 
@@ -215,7 +333,14 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
     if (!m) return;
     circleRef.current?.remove();
     circleRef.current = circle
-      ? L.circle([circle.lat, circle.lng], { radius: circle.radius, color: '#9c4a63', weight: 1, fillColor: '#e8b4c1', fillOpacity: 0.18, interactive: false }).addTo(m)
+      ? L.circle([circle.lat, circle.lng], {
+          radius: circle.radius,
+          color: '#9c4a63',
+          weight: 1,
+          fillColor: '#e8b4c1',
+          fillOpacity: 0.18,
+          interactive: false,
+        }).addTo(m)
       : null;
   }, [circle?.lat, circle?.lng, circle?.radius]);
 
@@ -225,7 +350,9 @@ export const MapView: React.FC<Props> = ({ center, zoom = 15, markers = [], circ
       {pinCenter && (
         // Épingle « sucette » : se soulève pendant le déplacement, retombe avec un petit rebond à l'arrêt
         <div className={`maefa-cpin ${pinLifted ? 'is-lifted' : 'is-down'}`} aria-hidden data-testid="center-pin">
-          <span className="maefa-cpin-head"><span className="maefa-cpin-eye" /></span>
+          <span className="maefa-cpin-head">
+            <span className="maefa-cpin-eye" />
+          </span>
           <span className="maefa-cpin-stick" />
           <span className="maefa-cpin-shadow" />
         </div>

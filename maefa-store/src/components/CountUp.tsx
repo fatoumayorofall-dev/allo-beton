@@ -10,7 +10,10 @@ export const CountUp: React.FC<{ value: string; className?: string }> = ({ value
   const [n, setN] = useState(0);
   useEffect(() => {
     if (!inView || !match) return;
-    if (reduced) { setN(target); return; }
+    if (reduced) {
+      setN(target);
+      return;
+    }
     const start = performance.now();
     let raf = 0;
     const step = (now: number) => {
@@ -21,5 +24,9 @@ export const CountUp: React.FC<{ value: string; className?: string }> = ({ value
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [inView]); // eslint-disable-line react-hooks/exhaustive-deps
-  return <span ref={ref} className={className}>{match ? `${n}${match[2]}` : value}</span>;
+  return (
+    <span ref={ref} className={className}>
+      {match ? `${n}${match[2]}` : value}
+    </span>
+  );
 };

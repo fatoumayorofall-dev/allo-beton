@@ -31,8 +31,17 @@ export const FloatingPetals: React.FC<{ className?: string }> = ({ className = '
   <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`} aria-hidden>
     <Flower className="absolute top-[12%] left-[6%] w-8 h-8 text-blush animate-floaty" />
     <Sparkle className="absolute top-[20%] right-[10%] w-4 h-4 text-gold animate-twinkle" />
-    <Flower className="absolute bottom-[14%] right-[7%] w-10 h-10 text-mauve/40 animate-floaty" style={{ animationDelay: '1.5s' }} />
-    <Sparkle className="absolute bottom-[22%] left-[14%] w-3 h-3 text-gold-dark animate-twinkle" style={{ animationDelay: '1s' }} />
-    <Sparkle className="absolute top-[55%] left-[48%] w-2.5 h-2.5 text-gold animate-twinkle" style={{ animationDelay: '2s' }} />
+    <Flower
+      className="absolute bottom-[14%] right-[7%] w-10 h-10 text-mauve/40 animate-floaty"
+      style={{ animationDelay: '1.5s' }}
+    />
+    <Sparkle
+      className="absolute bottom-[22%] left-[14%] w-3 h-3 text-gold-dark animate-twinkle"
+      style={{ animationDelay: '1s' }}
+    />
+    <Sparkle
+      className="absolute top-[55%] left-[48%] w-2.5 h-2.5 text-gold animate-twinkle"
+      style={{ animationDelay: '2s' }}
+    />
   </div>
 );

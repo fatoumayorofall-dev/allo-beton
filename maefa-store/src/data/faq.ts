@@ -1,14 +1,47 @@
 /** Questions fréquentes : affichées sur la page FAQ et fournies à l'assistante IA. */
 export const FAQ_ITEMS: { q: string; a: string }[] = [
-  { q: 'Quels sont les délais de livraison ?', a: 'Nous livrons en 24h à Dakar et en 48h à 5 jours dans les autres régions du Sénégal. Vous êtes appelé(e) avant chaque livraison.' },
-  { q: 'Pourquoi le prix exact n\'est pas affiché ?', a: 'Chaque pièce indique sa classe de prix (par exemple 20 000 – 30 000 F). Le prix exact vous est donné sur WhatsApp, après vérification de la disponibilité chez notre fournisseur, puis il s\'affiche sur votre page de commande.' },
-  { q: 'Quels moyens de paiement acceptez-vous ?', a: 'Wave ou Orange Money, en envoyant le montant directement au 77 309 38 19 (Maefa Store), ou en espèces à la livraison. Après votre commande, envoyez-nous la capture du paiement sur WhatsApp : nous confirmons tout de suite.' },
-  { q: 'Puis-je échanger ou retourner un article ?', a: 'Non. Chaque pièce est contrôlée avant l\'envoi : vérifiez votre commande à la réception, en présence du livreur. Une fois la livraison acceptée, aucun échange ni retour n\'est possible. Un doute sur la pointure ou la couleur ? Écrivez-nous sur WhatsApp avant de commander, nous vous conseillons avec plaisir.' },
-  { q: 'Comment suivre ma commande ?', a: 'Rendez-vous sur la page « Suivre ma commande » avec votre numéro de commande (reçu à la confirmation) et votre numéro de téléphone.' },
-  { q: 'Les articles sont-ils authentiques et de qualité ?', a: 'Chaque article est sélectionné et contrôlé par notre équipe avant expédition. Nos créations en wax sont confectionnées à Dakar.' },
-  { q: 'Puis-je commander pour offrir ?', a: 'Bien sûr : cochez « Emballage cadeau signature » dans le panier (2 000 FCFA) et écrivez votre mot doux, nous le recopions à la main sur une carte. Le prix n\'apparaît sur aucun document glissé dans le colis.' },
-  { q: 'Comment être prévenue du retour d\'une pièce épuisée ?', a: 'Sur la fiche de la pièce, laissez votre numéro WhatsApp ou votre e-mail dans « Victime de son succès » : nous vous écrivons dès qu\'elle revient.' },
-  { q: 'Serai-je livrée à temps pour la Korité ou la Tabaski ?', a: 'Oui, si vous commandez au moins 3 jours avant la fête à Dakar et 6 jours avant en régions. Les semaines de fête, les commandes affluent : n\'attendez pas le dernier moment. Les prochaines dates sont indiquées sur la page d\'accueil.' },
-  { q: 'Livrez-vous à Touba, Saint-Louis, Mbour ou Kaolack ?', a: 'Oui : 48 à 72 h pour Mbour / Saly, Touba, Kaolack et Saint-Louis (4 500 à 5 000 FCFA), 3 à 5 jours pour les autres régions. Le livreur vous appelle avant de passer : indiquez un point de repère (mosquée, pharmacie, boutique…) pour qu\'il vous trouve facilement.' },
-  { q: 'Avez-vous une boutique physique ?', a: 'Non : Maefa est une boutique 100 % en ligne. Commandez sur le site, sur WhatsApp ou par téléphone, et nous livrons partout au Sénégal.' },
+  {
+    q: 'Quels sont les délais de livraison ?',
+    a: 'Nous livrons en 24h à Dakar et en 48h à 5 jours dans les autres régions du Sénégal. Vous êtes appelé(e) avant chaque livraison.',
+  },
+  {
+    q: "Pourquoi le prix exact n'est pas affiché ?",
+    a: "Chaque pièce indique sa classe de prix (par exemple 20 000 – 30 000 F). Le prix exact vous est donné sur WhatsApp, après vérification de la disponibilité chez notre fournisseur, puis il s'affiche sur votre page de commande.",
+  },
+  {
+    q: 'Quels moyens de paiement acceptez-vous ?',
+    a: 'Wave ou Orange Money, en envoyant le montant directement au 77 309 38 19 (Maefa Store), ou en espèces à la livraison. Après votre commande, envoyez-nous la capture du paiement sur WhatsApp : nous confirmons tout de suite.',
+  },
+  {
+    q: 'Puis-je échanger ou retourner un article ?',
+    a: "Non. Chaque pièce est contrôlée avant l'envoi : vérifiez votre commande à la réception, en présence du livreur. Une fois la livraison acceptée, aucun échange ni retour n'est possible. Un doute sur la pointure ou la couleur ? Écrivez-nous sur WhatsApp avant de commander, nous vous conseillons avec plaisir.",
+  },
+  {
+    q: 'Comment suivre ma commande ?',
+    a: 'Rendez-vous sur la page « Suivre ma commande » avec votre numéro de commande (reçu à la confirmation) et votre numéro de téléphone.',
+  },
+  {
+    q: 'Les articles sont-ils authentiques et de qualité ?',
+    a: 'Chaque article est sélectionné et contrôlé par notre équipe avant expédition. Nos créations en wax sont confectionnées à Dakar.',
+  },
+  {
+    q: 'Puis-je commander pour offrir ?',
+    a: "Bien sûr : cochez « Emballage cadeau signature » dans le panier (2 000 FCFA) et écrivez votre mot doux, nous le recopions à la main sur une carte. Le prix n'apparaît sur aucun document glissé dans le colis.",
+  },
+  {
+    q: "Comment être prévenue du retour d'une pièce épuisée ?",
+    a: "Sur la fiche de la pièce, laissez votre numéro WhatsApp ou votre e-mail dans « Victime de son succès » : nous vous écrivons dès qu'elle revient.",
+  },
+  {
+    q: 'Serai-je livrée à temps pour la Korité ou la Tabaski ?',
+    a: "Oui, si vous commandez au moins 3 jours avant la fête à Dakar et 6 jours avant en régions. Les semaines de fête, les commandes affluent : n'attendez pas le dernier moment. Les prochaines dates sont indiquées sur la page d'accueil.",
+  },
+  {
+    q: 'Livrez-vous à Touba, Saint-Louis, Mbour ou Kaolack ?',
+    a: "Oui : 48 à 72 h pour Mbour / Saly, Touba, Kaolack et Saint-Louis (4 500 à 5 000 FCFA), 3 à 5 jours pour les autres régions. Le livreur vous appelle avant de passer : indiquez un point de repère (mosquée, pharmacie, boutique…) pour qu'il vous trouve facilement.",
+  },
+  {
+    q: 'Avez-vous une boutique physique ?',
+    a: 'Non : Maefa est une boutique 100 % en ligne. Commandez sur le site, sur WhatsApp ou par téléphone, et nous livrons partout au Sénégal.',
+  },
 ];

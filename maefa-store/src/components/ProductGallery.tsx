@@ -13,13 +13,19 @@ const ZoomImage: React.FC<{ src?: string; alt: string }> = ({ src, alt }) => {
   const [origin, setOrigin] = useState('50% 50%');
   const [zoom, setZoom] = useState(false);
   return (
-    <div className="relative w-full h-full overflow-hidden"
-      onMouseEnter={() => setZoom(true)} onMouseLeave={() => setZoom(false)}
+    <div
+      className="relative w-full h-full overflow-hidden"
+      onMouseEnter={() => setZoom(true)}
+      onMouseLeave={() => setZoom(false)}
       onMouseMove={e => {
         const r = e.currentTarget.getBoundingClientRect();
         setOrigin(`${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`);
-      }}>
-      <div className="w-full h-full transition-transform duration-300 ease-out" style={{ transform: zoom ? 'scale(1.8)' : 'scale(1)', transformOrigin: origin }}>
+      }}
+    >
+      <div
+        className="w-full h-full transition-transform duration-300 ease-out"
+        style={{ transform: zoom ? 'scale(1.8)' : 'scale(1)', transformOrigin: origin }}
+      >
         <ProductImage src={src} alt={alt} className="w-full h-full" sizes="(min-width: 1024px) 50vw, 100vw" priority />
       </div>
     </div>
@@ -33,7 +39,12 @@ const ZoomImage: React.FC<{ src?: string; alt: string }> = ({ src, alt }) => {
  * - partout : un toucher ouvre la visionneuse plein écran (flèches, clavier, glissement)
  * - la vidéo de la pièce, s'il y en a une, passe en premier et se lit en boucle, sans le son
  */
-export const ProductGallery: React.FC<{ images: string[]; video?: string; name: string; badges?: React.ReactNode }> = ({ images, video, name, badges }) => {
+export const ProductGallery: React.FC<{ images: string[]; video?: string; name: string; badges?: React.ReactNode }> = ({
+  images,
+  video,
+  name,
+  badges,
+}) => {
   const [idx, setIdx] = useState(0);
   const [viewer, setViewer] = useState<number | null>(null);
   const strip = useRef<HTMLDivElement>(null);
@@ -41,12 +52,18 @@ export const ProductGallery: React.FC<{ images: string[]; video?: string; name: 
   const poster = images[0];
   const many = media.length > 1;
 
-  useEffect(() => { setIdx(0); strip.current?.scrollTo({ left: 0 }); }, [images, video]);
+  useEffect(() => {
+    setIdx(0);
+    strip.current?.scrollTo({ left: 0 });
+  }, [images, video]);
   const onStripScroll = () => {
     const el = strip.current;
     if (el) setIdx(Math.round(el.scrollLeft / el.clientWidth));
   };
-  const goTo = (i: number) => { setIdx(i); strip.current?.scrollTo({ left: i * strip.current.clientWidth, behavior: 'smooth' }); };
+  const goTo = (i: number) => {
+    setIdx(i);
+    strip.current?.scrollTo({ left: i * strip.current.clientWidth, behavior: 'smooth' });
+  };
 
   return (
     <div className="lg:sticky lg:top-32 lg:self-start min-w-0">
@@ -54,10 +71,21 @@ export const ProductGallery: React.FC<{ images: string[]; video?: string; name: 
         {many && (
           <div className="hidden lg:flex flex-col gap-3 w-20 shrink-0">
             {media.map((m, i) => (
-              <button key={m.src} onClick={() => setIdx(i)} aria-label={m.video ? 'Vidéo' : `Image ${i + 1 - (video ? 1 : 0)}`} aria-current={i === idx}
-                className={`relative aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-300 ${i === idx ? 'ring-1 ring-ink ring-offset-2 ring-offset-ivory' : 'opacity-50 hover:opacity-100'}`}>
+              <button
+                key={m.src}
+                onClick={() => setIdx(i)}
+                aria-label={m.video ? 'Vidéo' : `Image ${i + 1 - (video ? 1 : 0)}`}
+                aria-current={i === idx}
+                className={`relative aspect-[3/4] overflow-hidden rounded-2xl transition-all duration-300 ${i === idx ? 'ring-1 ring-ink ring-offset-2 ring-offset-ivory' : 'opacity-50 hover:opacity-100'}`}
+              >
                 <ProductImage src={m.video ? poster : m.src} alt="" className="w-full h-full" sizes="200px" />
-                {m.video && <span className="absolute inset-0 grid place-items-center bg-ink/20"><span className="w-8 h-8 rounded-full bg-ivory/90 grid place-items-center"><Play className="w-3.5 h-3.5 fill-ink ml-0.5" /></span></span>}
+                {m.video && (
+                  <span className="absolute inset-0 grid place-items-center bg-ink/20">
+                    <span className="w-8 h-8 rounded-full bg-ivory/90 grid place-items-center">
+                      <Play className="w-3.5 h-3.5 fill-ink ml-0.5" />
+                    </span>
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -65,35 +93,81 @@ export const ProductGallery: React.FC<{ images: string[]; video?: string; name: 
 
         <div className="relative flex-1 min-w-0">
           {/* Téléphone : bande de photos à faire glisser */}
-          <div ref={strip} onScroll={onStripScroll} className="lg:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar rounded-[2rem] bg-ivory-deep" data-testid="gallery-strip">
+          <div
+            ref={strip}
+            onScroll={onStripScroll}
+            className="lg:hidden flex overflow-x-auto snap-x snap-mandatory no-scrollbar rounded-[2rem] bg-ivory-deep"
+            data-testid="gallery-strip"
+          >
             {media.map((m, i) => (
-              <button key={m.src} onClick={() => setViewer(i)} className="relative shrink-0 w-full aspect-[4/5] snap-center" aria-label={m.video ? 'Agrandir la vidéo' : `Agrandir la photo ${i + 1 - (video ? 1 : 0)}`}>
-                <ProductImage src={m.video ? poster : m.src} alt={i === 0 ? name : ''} className="w-full h-full" sizes="100vw" priority={i === 0} />
+              <button
+                key={m.src}
+                onClick={() => setViewer(i)}
+                className="relative shrink-0 w-full aspect-[4/5] snap-center"
+                aria-label={m.video ? 'Agrandir la vidéo' : `Agrandir la photo ${i + 1 - (video ? 1 : 0)}`}
+              >
+                <ProductImage
+                  src={m.video ? poster : m.src}
+                  alt={i === 0 ? name : ''}
+                  className="w-full h-full"
+                  sizes="100vw"
+                  priority={i === 0}
+                />
                 {m.video && <ProductVideo src={m.src} active={idx === i} className="absolute inset-0 w-full h-full" />}
               </button>
             ))}
           </div>
           {/* Ordinateur : grande photo avec zoom */}
-          <button onClick={() => setViewer(idx)} className="hidden lg:block relative w-full aspect-[4/5] bg-ivory-deep rounded-[2.5rem] overflow-hidden cursor-zoom-in" aria-label={media[idx]?.video ? 'Agrandir la vidéo' : 'Agrandir la photo'}>
+          <button
+            onClick={() => setViewer(idx)}
+            className="hidden lg:block relative w-full aspect-[4/5] bg-ivory-deep rounded-[2.5rem] overflow-hidden cursor-zoom-in"
+            aria-label={media[idx]?.video ? 'Agrandir la vidéo' : 'Agrandir la photo'}
+          >
             <div key={idx} className="absolute inset-0 animate-fade-in">
               {media[idx]?.video ? (
                 <>
-                  <ProductImage src={poster} alt={name} className="w-full h-full" sizes="(min-width: 1024px) 50vw, 100vw" priority />
+                  <ProductImage
+                    src={poster}
+                    alt={name}
+                    className="w-full h-full"
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    priority
+                  />
                   <ProductVideo src={media[idx].src} className="absolute inset-0 w-full h-full" />
                 </>
-              ) : <ZoomImage src={media[idx]?.src} alt={name} />}
+              ) : (
+                <ZoomImage src={media[idx]?.src} alt={name} />
+              )}
             </div>
           </button>
 
           <div className="absolute top-4 left-4 flex flex-col gap-1.5 pointer-events-none">{badges}</div>
-          <span className="absolute top-4 right-4 w-10 h-10 rounded-full bg-ivory/85 backdrop-blur grid place-items-center pointer-events-none shadow-soft" aria-hidden><Maximize2 className="w-4 h-4" strokeWidth={1.6} /></span>
+          <span
+            className="absolute top-4 right-4 w-10 h-10 rounded-full bg-ivory/85 backdrop-blur grid place-items-center pointer-events-none shadow-soft"
+            aria-hidden
+          >
+            <Maximize2 className="w-4 h-4" strokeWidth={1.6} />
+          </span>
           {many && (
             <>
-              <span className="absolute bottom-4 right-4 px-3 h-7 rounded-full bg-ink/70 backdrop-blur text-ivory text-[11px] font-semibold tabular-nums grid place-items-center pointer-events-none" aria-hidden>{idx + 1} / {media.length}</span>
+              <span
+                className="absolute bottom-4 right-4 px-3 h-7 rounded-full bg-ink/70 backdrop-blur text-ivory text-[11px] font-semibold tabular-nums grid place-items-center pointer-events-none"
+                aria-hidden
+              >
+                {idx + 1} / {media.length}
+              </span>
               <div className="lg:hidden flex justify-center mt-3">
                 {media.map((m, i) => (
-                  <button key={m.src} onClick={() => goTo(i)} aria-label={m.video ? 'Vidéo' : `Image ${i + 1 - (video ? 1 : 0)}`} aria-current={i === idx} className="h-6 min-w-6 px-1 grid place-items-center">
-                    <span className={`block h-1.5 rounded-full transition-all duration-500 ${i === idx ? 'w-6 bg-ink' : 'w-1.5 bg-ink/25'}`} />
+                  <button
+                    key={m.src}
+                    onClick={() => goTo(i)}
+                    aria-label={m.video ? 'Vidéo' : `Image ${i + 1 - (video ? 1 : 0)}`}
+                    aria-current={i === idx}
+                    className="h-6 min-w-6 px-1 grid place-items-center"
+                  >
+                    <span
+                      className={`block h-1.5 rounded-full transition-all duration-500 ${i === idx ? 'w-6 bg-ink' : 'w-1.5 bg-ink/25'}`}
+                    />
                   </button>
                 ))}
               </div>
@@ -101,49 +175,116 @@ export const ProductGallery: React.FC<{ images: string[]; video?: string; name: 
           )}
         </div>
       </div>
-      {viewer !== null && <Lightbox media={media} poster={poster} name={name} start={viewer} onClose={i => { setViewer(null); setIdx(i); if (strip.current) strip.current.scrollLeft = i * strip.current.clientWidth; }} />}
+      {viewer !== null && (
+        <Lightbox
+          media={media}
+          poster={poster}
+          name={name}
+          start={viewer}
+          onClose={i => {
+            setViewer(null);
+            setIdx(i);
+            if (strip.current) strip.current.scrollLeft = i * strip.current.clientWidth;
+          }}
+        />
+      )}
     </div>
   );
 };
 
 /** Visionneuse plein écran : glissement, flèches, touches ← → et Échap. */
-const Lightbox: React.FC<{ media: Media[]; poster?: string; name: string; start: number; onClose: (i: number) => void }> = ({ media, poster, name, start, onClose }) => {
+const Lightbox: React.FC<{
+  media: Media[];
+  poster?: string;
+  name: string;
+  start: number;
+  onClose: (i: number) => void;
+}> = ({ media, poster, name, start, onClose }) => {
   const [i, setI] = useState(start);
   const track = useRef<HTMLDivElement>(null);
   useLockBody(true);
   useEscape(true, () => onClose(i));
-  useEffect(() => { if (track.current) track.current.scrollLeft = start * track.current.clientWidth; }, [start]);
-  const go = (n: number) => { const k = (n + media.length) % media.length; setI(k); track.current?.scrollTo({ left: k * track.current.clientWidth, behavior: 'smooth' }); };
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'ArrowRight') go(i + 1); if (e.key === 'ArrowLeft') go(i - 1); };
+    if (track.current) track.current.scrollLeft = start * track.current.clientWidth;
+  }, [start]);
+  const go = (n: number) => {
+    const k = (n + media.length) % media.length;
+    setI(k);
+    track.current?.scrollTo({ left: k * track.current.clientWidth, behavior: 'smooth' });
+  };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') go(i + 1);
+      if (e.key === 'ArrowLeft') go(i - 1);
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
   return createPortal(
-    <div className="fixed inset-0 z-[95] bg-ink/95 backdrop-blur-sm animate-fade-in flex flex-col" role="dialog" aria-modal="true" aria-label={`Photos — ${name}`}>
+    <div
+      className="fixed inset-0 z-[95] bg-ink/95 backdrop-blur-sm animate-fade-in flex flex-col"
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Photos — ${name}`}
+    >
       <div className="flex items-center justify-between px-5 h-16 text-ivory shrink-0">
-        <span className="text-sm tabular-nums">{i + 1} / {media.length}</span>
+        <span className="text-sm tabular-nums">
+          {i + 1} / {media.length}
+        </span>
         <p className="hidden sm:block font-display text-xl truncate px-6">{name}</p>
-        <button onClick={() => onClose(i)} aria-label="Fermer" className="w-11 h-11 rounded-full bg-ivory/10 hover:bg-ivory/20 grid place-items-center"><X className="w-5 h-5" /></button>
+        <button
+          onClick={() => onClose(i)}
+          aria-label="Fermer"
+          className="w-11 h-11 rounded-full bg-ivory/10 hover:bg-ivory/20 grid place-items-center"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
-      <div ref={track} onScroll={e => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))} className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar">
+      <div
+        ref={track}
+        onScroll={e => setI(Math.round(e.currentTarget.scrollLeft / e.currentTarget.clientWidth))}
+        className="flex-1 flex overflow-x-auto snap-x snap-mandatory no-scrollbar"
+      >
         {media.map((m, k) => (
           <div key={m.src} className="shrink-0 w-full h-full snap-center flex items-center justify-center p-4 sm:p-10">
             {m.video ? (
               <div className="relative h-full max-h-[calc(100svh-7rem)] aspect-[9/16] max-w-full rounded-[1.5rem] overflow-hidden bg-ink">
                 <ProductImage src={poster} alt="" className="absolute inset-0 w-full h-full" />
-                <ProductVideo src={m.src} active={k === i} controls label={`Vidéo — ${name}`} className="absolute inset-0 w-full h-full !object-contain bg-ink" />
+                <ProductVideo
+                  src={m.src}
+                  active={k === i}
+                  controls
+                  label={`Vidéo — ${name}`}
+                  className="absolute inset-0 w-full h-full !object-contain bg-ink"
+                />
               </div>
             ) : (
-              <ProductImage src={m.src} alt={k === i ? name : ''} className="max-w-full max-h-[calc(100svh-7rem)] w-auto h-auto !object-contain rounded-[1.5rem]" sizes="100vw" />
+              <ProductImage
+                src={m.src}
+                alt={k === i ? name : ''}
+                className="max-w-full max-h-[calc(100svh-7rem)] w-auto h-auto !object-contain rounded-[1.5rem]"
+                sizes="100vw"
+              />
             )}
           </div>
         ))}
       </div>
       {media.length > 1 && (
         <div className="hidden sm:flex absolute inset-y-0 inset-x-4 items-center justify-between pointer-events-none">
-          <button onClick={() => go(i - 1)} aria-label="Photo précédente" className="pointer-events-auto w-12 h-12 rounded-full bg-ivory/10 hover:bg-ivory/20 text-ivory grid place-items-center"><ChevronLeft className="w-6 h-6" /></button>
-          <button onClick={() => go(i + 1)} aria-label="Photo suivante" className="pointer-events-auto w-12 h-12 rounded-full bg-ivory/10 hover:bg-ivory/20 text-ivory grid place-items-center"><ChevronRight className="w-6 h-6" /></button>
+          <button
+            onClick={() => go(i - 1)}
+            aria-label="Photo précédente"
+            className="pointer-events-auto w-12 h-12 rounded-full bg-ivory/10 hover:bg-ivory/20 text-ivory grid place-items-center"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={() => go(i + 1)}
+            aria-label="Photo suivante"
+            className="pointer-events-auto w-12 h-12 rounded-full bg-ivory/10 hover:bg-ivory/20 text-ivory grid place-items-center"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
         </div>
       )}
     </div>,

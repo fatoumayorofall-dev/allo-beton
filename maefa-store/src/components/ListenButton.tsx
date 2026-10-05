@@ -11,7 +11,11 @@ const knownVoices = () => (voicesPromise ??= listVoices());
  * « Écouter » : joue la note vocale enregistrée par la gérante (en wolof, par exemple)
  * ou, à défaut, lit la fiche à voix haute avec la synthèse vocale du téléphone.
  */
-export const ListenButton: React.FC<{ product: Product; big?: boolean; className?: string }> = ({ product, big, className = '' }) => {
+export const ListenButton: React.FC<{ product: Product; big?: boolean; className?: string }> = ({
+  product,
+  big,
+  className = '',
+}) => {
   const [hasVoice, setHasVoice] = useState(false);
   const [playing, setPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -48,13 +52,21 @@ export const ListenButton: React.FC<{ product: Product; big?: boolean; className
   };
 
   const play = () => {
-    if (playing) { stop(); return; }
+    if (playing) {
+      stop();
+      return;
+    }
     if (hasVoice) {
       const a = new Audio(voiceUrl(product.slug));
       audioRef.current = a;
       a.onended = () => setPlaying(false);
-      a.onerror = () => { setPlaying(false); speak(); };
-      a.play().then(() => setPlaying(true)).catch(speak);
+      a.onerror = () => {
+        setPlaying(false);
+        speak();
+      };
+      a.play()
+        .then(() => setPlaying(true))
+        .catch(speak);
     } else speak();
   };
 
@@ -63,19 +75,28 @@ export const ListenButton: React.FC<{ product: Product; big?: boolean; className
 
   if (big) {
     return (
-      <button onClick={play} aria-label={playing ? 'Arrêter' : 'Écouter la description'}
-        className={`flex flex-col items-center gap-1 ${className || 'relative'}`}>
+      <button
+        onClick={play}
+        aria-label={playing ? 'Arrêter' : 'Écouter la description'}
+        className={`flex flex-col items-center gap-1 ${className || 'relative'}`}
+      >
         <span className="relative w-16 h-16 rounded-full bg-white shadow-luxe grid place-items-center text-wine">
           {!playing && <span className="absolute inset-0 rounded-full bg-white/70 animate-ping" />}
           <Icon className="relative w-7 h-7" strokeWidth={2} fill={playing ? 'currentColor' : 'none'} />
         </span>
-        <span className="px-2 py-0.5 rounded-full bg-ink/75 text-[11px] font-bold text-white">{playing ? 'Stop' : hasVoice ? 'Écouter 🎙' : 'Écouter'}</span>
+        <span className="px-2 py-0.5 rounded-full bg-ink/75 text-[11px] font-bold text-white">
+          {playing ? 'Stop' : hasVoice ? 'Écouter 🎙' : 'Écouter'}
+        </span>
       </button>
     );
   }
   return (
-    <button onClick={play} className={`tap inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold text-ink/70 hover:text-ink transition-colors ${className}`}>
-      <Icon className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> {playing ? 'Arrêter' : hasVoice ? 'Écouter la présentation' : 'Écouter la fiche'}
+    <button
+      onClick={play}
+      className={`tap inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.2em] font-semibold text-ink/70 hover:text-ink transition-colors ${className}`}
+    >
+      <Icon className="w-4 h-4 text-gold-dark" strokeWidth={1.5} />{' '}
+      {playing ? 'Arrêter' : hasVoice ? 'Écouter la présentation' : 'Écouter la fiche'}
     </button>
   );
 };

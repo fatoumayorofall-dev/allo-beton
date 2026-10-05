@@ -5,12 +5,12 @@ export default {
     extend: {
       colors: {
         // Thème féminin : les noms de jetons sont conservés, seules les teintes changent.
-        ink: { DEFAULT: '#3a1f2d', soft: '#54304a', muted: '#86677a' },     // prune profond (texte, boutons)
-        ivory: { DEFAULT: '#fdf7f5', deep: '#f9e9e6', warm: '#f3d9d5' },   // crème rosée (fonds)
+        ink: { DEFAULT: '#3a1f2d', soft: '#54304a', muted: '#86677a' }, // prune profond (texte, boutons)
+        ivory: { DEFAULT: '#fdf7f5', deep: '#f9e9e6', warm: '#f3d9d5' }, // crème rosée (fonds)
         gold: { DEFAULT: '#c48a82', light: '#f0c9c1', dark: '#8f544e', pale: '#fbeeea' }, // rose doré (accents) ; dark lisible sur fond clair (5,6:1)
         blush: '#f5d5d6',
         mauve: '#b996b8',
-        wine: '#b03a64',                                                    // framboise (promos)
+        wine: '#b03a64', // framboise (promos)
       },
       fontFamily: {
         display: ['"Bodoni Moda"', 'Didot', 'Georgia', 'serif'],
@@ -25,20 +25,38 @@ export default {
       },
       transitionTimingFunction: { luxe: 'cubic-bezier(.22,1,.36,1)' },
       keyframes: {
-        'fade-up': { '0%': { opacity: '0', transform: 'translateY(16px)' }, '100%': { opacity: '1', transform: 'none' } },
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'none' },
+        },
         'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         'slide-in': { '0%': { transform: 'translateX(100%)' }, '100%': { transform: 'none' } },
         'slide-in-left': { '0%': { transform: 'translateX(-100%)' }, '100%': { transform: 'none' } },
         marquee: { '0%': { transform: 'translateX(0)' }, '100%': { transform: 'translateX(-50%)' } },
         kenburns: { '0%': { transform: 'scale(1.08)' }, '100%': { transform: 'scale(1)' } },
         progress: { '0%': { transform: 'scaleX(0)' }, '100%': { transform: 'scaleX(1)' } },
-        floaty: { '0%, 100%': { transform: 'translateY(0) rotate(0deg)' }, '50%': { transform: 'translateY(-10px) rotate(6deg)' } },
-        twinkle: { '0%, 100%': { opacity: '.25', transform: 'scale(.8)' }, '50%': { opacity: '1', transform: 'scale(1)' } },
+        floaty: {
+          '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+          '50%': { transform: 'translateY(-10px) rotate(6deg)' },
+        },
+        twinkle: {
+          '0%, 100%': { opacity: '.25', transform: 'scale(.8)' },
+          '50%': { opacity: '1', transform: 'scale(1)' },
+        },
         hover: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-8px)' } },
-        'heart-pop': { '0%': { transform: 'scale(1)' }, '40%': { transform: 'scale(1.35)' }, '100%': { transform: 'scale(1)' } },
+        'heart-pop': {
+          '0%': { transform: 'scale(1)' },
+          '40%': { transform: 'scale(1.35)' },
+          '100%': { transform: 'scale(1)' },
+        },
         'page-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
         'img-in': { '0%': { opacity: '0', filter: 'blur(8px)' }, '100%': { opacity: '1', filter: 'blur(0)' } },
-        'scroll-cue': { '0%': { transform: 'scaleY(0)', transformOrigin: 'top' }, '45%': { transform: 'scaleY(1)', transformOrigin: 'top' }, '55%': { transform: 'scaleY(1)', transformOrigin: 'bottom' }, '100%': { transform: 'scaleY(0)', transformOrigin: 'bottom' } },
+        'scroll-cue': {
+          '0%': { transform: 'scaleY(0)', transformOrigin: 'top' },
+          '45%': { transform: 'scaleY(1)', transformOrigin: 'top' },
+          '55%': { transform: 'scaleY(1)', transformOrigin: 'bottom' },
+          '100%': { transform: 'scaleY(0)', transformOrigin: 'bottom' },
+        },
       },
       animation: {
         'fade-up': 'fade-up .7s cubic-bezier(.22,1,.36,1) both',

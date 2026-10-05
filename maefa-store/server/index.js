@@ -12,7 +12,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-try { process.loadEnvFile(path.join(here, '.env')); } catch { /* pas de fichier .env : variables d'environnement du système */ }
+try {
+  process.loadEnvFile(path.join(here, '.env'));
+} catch {
+  /* pas de fichier .env : variables d'environnement du système */
+}
 // Hébergement Render : l'adresse publique du site est fournie automatiquement
 if (!process.env.SITE_URL && process.env.RENDER_EXTERNAL_URL) process.env.SITE_URL = process.env.RENDER_EXTERNAL_URL;
 
@@ -83,10 +87,19 @@ registerAdminLogin(app);
 
 /** Validation minimale d'une commande reçue du navigateur. */
 function validOrder(o) {
-  return o && typeof o.id === 'string' && /^(MAE|EFA|FB)-[A-Z0-9]{4,12}$/.test(o.id)
-    && o.customer && typeof o.customer.firstName === 'string' && wa.toE164(o.customer.phone)
-    && Array.isArray(o.items) && o.items.length > 0 && o.items.length <= 50 && Number.isFinite(o.total)
-    && coherentTotals(o);
+  return (
+    o &&
+    typeof o.id === 'string' &&
+    /^(MAE|EFA|FB)-[A-Z0-9]{4,12}$/.test(o.id) &&
+    o.customer &&
+    typeof o.customer.firstName === 'string' &&
+    wa.toE164(o.customer.phone) &&
+    Array.isArray(o.items) &&
+    o.items.length > 0 &&
+    o.items.length <= 50 &&
+    Number.isFinite(o.total) &&
+    coherentTotals(o)
+  );
 }
 
 /**
@@ -98,34 +111,73 @@ function validOrder(o) {
 function coherentTotals(o) {
   const n = v => (v === undefined || v === null ? 0 : Number(v));
   const sub = o.items.reduce((s, i) => s + Number(i.price) * Number(i.quantity), 0);
-  const [subtotal, discount, deliveryFee, giftFee] = [n(o.subtotal ?? sub), n(o.discount), n(o.deliveryFee), n(o.giftFee)];
+  const [subtotal, discount, deliveryFee, giftFee] = [
+    n(o.subtotal ?? sub),
+    n(o.discount),
+    n(o.deliveryFee),
+    n(o.giftFee),
+  ];
   if (![sub, subtotal, discount, deliveryFee, giftFee].every(Number.isFinite)) return false;
   if (o.items.some(i => !(Number(i.quantity) >= 1 && Number(i.quantity) <= 100 && Number(i.price) >= 0))) return false;
   const maxDiscount = Math.max(Math.round(sub * 0.1), sub >= 40000 ? 5000 : 0);
-  return Math.abs(subtotal - sub) < 1 && discount >= 0 && discount <= maxDiscount
-    && deliveryFee >= 1500 && deliveryFee <= 5000 && (giftFee === 0 || giftFee === 2000)
-    && Math.abs(o.total - Math.max(0, subtotal - discount + deliveryFee + giftFee)) < 1;
+  return (
+    Math.abs(subtotal - sub) < 1 &&
+    discount >= 0 &&
+    discount <= maxDiscount &&
+    deliveryFee >= 1500 &&
+    deliveryFee <= 5000 &&
+    (giftFee === 0 || giftFee === 2000) &&
+    Math.abs(o.total - Math.max(0, subtotal - discount + deliveryFee + giftFee)) < 1
+  );
 }
 
 /* ---------- État des services ---------- */
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, storage: true, accounts: true, orders: true, maps: true, market: true, catalog: true, assistant: assistantEnabled(), whatsapp: wa.whatsappEnabled(), ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(), adminApi: !!ADMIN_PIN });
+  res.json({
+    ok: true,
+    storage: true,
+    accounts: true,
+    orders: true,
+    maps: true,
+    market: true,
+    catalog: true,
+    assistant: assistantEnabled(),
+    whatsapp: wa.whatsappEnabled(),
+    ownerNotifications: wa.whatsappEnabled() && wa.ownerConfigured(),
+    adminApi: !!ADMIN_PIN,
+  });
 });
 
 /* ---------- Assistant IA ---------- */
 app.post('/api/chat', async (req, res) => {
   if (!assistantEnabled()) return res.status(503).json({ error: 'assistant_disabled' });
-  if (!limit(`chat:${req.ip}`, 120, 10 * 60e3)) return res.status(429).json({ error: 'Trop de messages, réessayez dans quelques minutes.' });
+  if (!limit(`chat:${req.ip}`, 120, 10 * 60e3))
+    return res.status(429).json({ error: 'Trop de messages, réessayez dans quelques minutes.' });
   const messages = sanitizeMessages(req.body?.messages);
   if (!messages) return res.status(400).json({ error: 'Conversation invalide' });
 
-  res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
   const send = ev => res.write(`data: ${JSON.stringify(ev)}\n\n`);
   try {
-    await streamAssistant({ messages, shop: req.body.shop, products: req.body.products, visitor: req.body.visitor, lang: req.body.lang === 'wo' ? 'wo' : 'fr' }, send);
+    await streamAssistant(
+      {
+        messages,
+        shop: req.body.shop,
+        products: req.body.products,
+        visitor: req.body.visitor,
+        lang: req.body.lang === 'wo' ? 'wo' : 'fr',
+      },
+      send,
+    );
   } catch (err) {
-    let message = 'L\'assistante est momentanément indisponible.';
-    if (err instanceof Anthropic.RateLimitError) message = 'Beaucoup de demandes en ce moment, réessayez dans un instant.';
+    let message = "L'assistante est momentanément indisponible.";
+    if (err instanceof Anthropic.RateLimitError)
+      message = 'Beaucoup de demandes en ce moment, réessayez dans un instant.';
     else if (err instanceof Anthropic.AuthenticationError) message = 'Assistant mal configuré (clé API).';
     else if (err instanceof Anthropic.APIError) console.error('Claude API', err.status ?? '(connexion)', err.message);
     else console.error('Assistant :', err);
@@ -139,7 +191,11 @@ app.post('/api/notify/order', async (req, res) => {
   const order = req.body?.order;
   if (!validOrder(order)) return res.status(400).json({ error: 'Commande invalide' });
   const phone = wa.toE164(order.customer.phone);
-  if (!limit(`order-ip:${req.ip}`, 40, 3600e3) || !limit(`order-phone:${phone}`, 4, 3600e3) || !limit(`order-id:${order.id}`, 1, 24 * 3600e3)) {
+  if (
+    !limit(`order-ip:${req.ip}`, 40, 3600e3) ||
+    !limit(`order-phone:${phone}`, 4, 3600e3) ||
+    !limit(`order-id:${order.id}`, 1, 24 * 3600e3)
+  ) {
     return res.status(429).json({ error: 'Trop de notifications' });
   }
   res.json(await wa.notifyNewOrder(order));
@@ -157,7 +213,8 @@ app.post('/api/notify/status', async (req, res) => {
 app.post('/api/notify/restock', async (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
   const { product, contacts } = req.body || {};
-  if (!product?.name || !product?.slug || !Array.isArray(contacts)) return res.status(400).json({ error: 'Requête invalide' });
+  if (!product?.name || !product?.slug || !Array.isArray(contacts))
+    return res.status(400).json({ error: 'Requête invalide' });
   const phones = [...new Set(contacts.map(wa.toE164).filter(Boolean))].slice(0, 50);
   const results = await Promise.all(phones.map(p => wa.sendWhatsApp(p, wa.buildRestockMessage(product))));
   res.json({ sent: results.filter(r => r.ok).length, total: phones.length });
@@ -169,7 +226,8 @@ app.post('/api/showcase', (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
   const { slug, action } = req.body || {};
   if (!store.validSlug(slug)) return res.status(400).json({ error: 'Produit invalide' });
-  if (action === 'remove') store.removeFromShowcase(slug); else store.addToShowcase(slug);
+  if (action === 'remove') store.removeFromShowcase(slug);
+  else store.addToShowcase(slug);
   res.json({ items: store.getShowcase() });
 });
 
@@ -195,8 +253,10 @@ app.get('/api/voice/:slug', (req, res) => {
 });
 app.put('/api/voice/:slug', express.raw({ type: 'audio/*', limit: '4mb' }), (req, res) => {
   if (!isAdmin(req)) return res.status(403).json({ error: 'Accès gérante requis' });
-  if (!store.validSlug(req.params.slug) || !Buffer.isBuffer(req.body) || req.body.length < 500) return res.status(400).json({ error: 'Enregistrement invalide' });
-  if (!store.saveVoice(req.params.slug, req.get('content-type'), req.body)) return res.status(415).json({ error: 'Format audio non pris en charge' });
+  if (!store.validSlug(req.params.slug) || !Buffer.isBuffer(req.body) || req.body.length < 500)
+    return res.status(400).json({ error: 'Enregistrement invalide' });
+  if (!store.saveVoice(req.params.slug, req.get('content-type'), req.body))
+    return res.status(415).json({ error: 'Format audio non pris en charge' });
   res.json({ ok: true });
 });
 app.delete('/api/voice/:slug', (req, res) => {
@@ -232,7 +292,9 @@ const dist = path.join(here, '..', 'dist');
 const sendPage = registerSeoRoutes(app, { store, dist });
 registerBrandSecurityRoutes(app, { isAdmin, dist });
 // Fichiers au nom versionné (assets/…-hash.js) : gardés un an par le navigateur
-app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '1y' }), (_req, res) => res.status(404).end());
+app.use('/assets', express.static(path.join(dist, 'assets'), { immutable: true, maxAge: '1y' }), (_req, res) =>
+  res.status(404).end(),
+);
 app.use('/fonts', express.static(path.join(dist, 'fonts'), { immutable: true, maxAge: '30d' }));
 app.use(express.static(dist, { index: false, maxAge: '1h' }));
 app.get(/^(?!\/api\/).*/, sendPage);
@@ -240,9 +302,15 @@ app.get(/^(?!\/api\/).*/, sendPage);
 const PORT = Number(process.env.PORT) || 8787;
 app.listen(PORT, () => {
   console.log(`Maefa Store — serveur sur http://localhost:${PORT}`);
-  console.log(`  Assistant IA : ${assistantEnabled() ? 'activé' : 'désactivé (ANTHROPIC_API_KEY manquante → mode hors ligne côté site)'}`);
+  console.log(
+    `  Assistant IA : ${assistantEnabled() ? 'activé' : 'désactivé (ANTHROPIC_API_KEY manquante → mode hors ligne côté site)'}`,
+  );
   console.log(`  WhatsApp     : ${wa.whatsappEnabled() ? 'activé' : 'simulé (identifiants Twilio manquants)'}`);
 });
 
 // Arrêt demandé (mise à jour ou redémarrage sur Render) : dernières données écrites avant de quitter
-for (const sig of ['SIGTERM', 'SIGINT']) process.once(sig, () => { store.flushSync(); process.exit(0); });
+for (const sig of ['SIGTERM', 'SIGINT'])
+  process.once(sig, () => {
+    store.flushSync();
+    process.exit(0);
+  });

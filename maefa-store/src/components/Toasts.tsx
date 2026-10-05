@@ -6,14 +6,24 @@ import { Sparkle } from './Decor';
 export const Toasts: React.FC = () => {
   const { toasts } = useStore();
   return (
-    <div className="fixed bottom-24 left-4 right-4 lg:bottom-6 sm:left-6 sm:right-auto z-[100] flex flex-col gap-2 sm:w-[360px]" aria-live="polite">
+    <div
+      className="fixed bottom-24 left-4 right-4 lg:bottom-6 sm:left-6 sm:right-auto z-[100] flex flex-col gap-2 sm:w-[360px]"
+      aria-live="polite"
+    >
       {toasts.map(t => {
         const Icon = t.type === 'error' ? X : t.type === 'info' ? Info : Check;
         return (
-          <div key={t.id} className="flex items-center gap-4 pl-4 pr-5 py-4 rounded-2xl bg-ink text-ivory shadow-luxe animate-fade-up text-[13px]">
-            <span className={`relative w-7 h-7 rounded-full grid place-items-center shrink-0 ${t.type === 'error' ? 'bg-wine' : 'border border-gold-light/50'}`}>
+          <div
+            key={t.id}
+            className="flex items-center gap-4 pl-4 pr-5 py-4 rounded-2xl bg-ink text-ivory shadow-luxe animate-fade-up text-[13px]"
+          >
+            <span
+              className={`relative w-7 h-7 rounded-full grid place-items-center shrink-0 ${t.type === 'error' ? 'bg-wine' : 'border border-gold-light/50'}`}
+            >
               <Icon className="w-3.5 h-3.5 text-gold-light" />
-              {t.type === 'success' && <Sparkle className="absolute -top-1.5 -right-1.5 w-3 h-3 text-gold-light animate-twinkle" />}
+              {t.type === 'success' && (
+                <Sparkle className="absolute -top-1.5 -right-1.5 w-3 h-3 text-gold-light animate-twinkle" />
+              )}
             </span>
             <span className="leading-snug">{t.message}</span>
           </div>

@@ -9,23 +9,33 @@
 
 /** Longueur d'un parcours : départ (index 0 de la matrice) puis les arrêts dans l'ordre donné. */
 export function pathLength(m, order) {
-  let total = 0, prev = 0;
-  for (const k of order) { total += m[prev][k]; prev = k; }
+  let total = 0,
+    prev = 0;
+  for (const k of order) {
+    total += m[prev][k];
+    prev = k;
+  }
   return total;
 }
 
 function permutations(arr) {
   if (arr.length <= 1) return [arr.slice()];
   const out = [];
-  arr.forEach((x, i) => { for (const p of permutations([...arr.slice(0, i), ...arr.slice(i + 1)])) out.push([x, ...p]); });
+  arr.forEach((x, i) => {
+    for (const p of permutations([...arr.slice(0, i), ...arr.slice(i + 1)])) out.push([x, ...p]);
+  });
   return out;
 }
 
 function exact(m, stops) {
-  let best = null, bestLen = Infinity;
+  let best = null,
+    bestLen = Infinity;
   for (const p of permutations(stops)) {
     const len = pathLength(m, p);
-    if (len < bestLen) { bestLen = len; best = p; }
+    if (len < bestLen) {
+      bestLen = len;
+      best = p;
+    }
   }
   return best;
 }
@@ -37,13 +47,18 @@ function nearestFirst(m, stops) {
   while (left.size) {
     let pick = null;
     for (const k of left) if (pick === null || m[cur][k] < m[cur][pick]) pick = k;
-    order.push(pick); left.delete(pick); cur = pick;
+    order.push(pick);
+    left.delete(pick);
+    cur = pick;
   }
   return order;
 }
 
 function improve(m, order) {
-  let best = order.slice(), bestLen = pathLength(m, best), better = true, guard = 0;
+  let best = order.slice(),
+    bestLen = pathLength(m, best),
+    better = true,
+    guard = 0;
   while (better && guard++ < 200) {
     better = false;
     // 2-opt : inverser un morceau du parcours
@@ -51,7 +66,11 @@ function improve(m, order) {
       for (let j = i + 1; j < best.length; j++) {
         const cand = [...best.slice(0, i), ...best.slice(i, j + 1).reverse(), ...best.slice(j + 1)];
         const len = pathLength(m, cand);
-        if (len + 1e-6 < bestLen) { best = cand; bestLen = len; better = true; }
+        if (len + 1e-6 < bestLen) {
+          best = cand;
+          bestLen = len;
+          better = true;
+        }
       }
     }
     // Déplacement : sortir une adresse et la remettre ailleurs
@@ -61,7 +80,11 @@ function improve(m, order) {
         const rest = best.filter((_, k) => k !== i);
         const cand = [...rest.slice(0, j), best[i], ...rest.slice(j)];
         const len = pathLength(m, cand);
-        if (len + 1e-6 < bestLen) { best = cand; bestLen = len; better = true; }
+        if (len + 1e-6 < bestLen) {
+          best = cand;
+          bestLen = len;
+          better = true;
+        }
       }
     }
   }
@@ -81,11 +104,15 @@ export function bestOrder(m) {
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const starts = [nearestFirst(m, stops)];
   for (let t = 0; t < (stops.length <= 20 ? 12 : 4); t++) starts.push(stops.slice().sort(() => rnd() - 0.5));
-  let best = null, bestLen = Infinity;
+  let best = null,
+    bestLen = Infinity;
   for (const s of starts) {
     const o = improve(m, s);
     const len = pathLength(m, o);
-    if (len < bestLen) { bestLen = len; best = o; }
+    if (len < bestLen) {
+      bestLen = len;
+      best = o;
+    }
   }
   return best;
 }

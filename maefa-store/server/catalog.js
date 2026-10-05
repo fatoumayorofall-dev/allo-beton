@@ -11,11 +11,25 @@ export const PAUSED_SLUG_PREFIXES = ['tongs-adja-', 'sac-aminata-'];
 export const isPaused = p => PAUSED_SLUG_PREFIXES.some(pre => String(p?.slug ?? '').startsWith(pre));
 const CATEGORY_IDS = new Set(['chaussures', 'sacs', 'accessoires', 'bijoux', 'vetements']);
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : '');
-const int = (v, min, max, dflt = min) => { const n = Math.round(Number(v)); return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt; };
+const int = (v, min, max, dflt = min) => {
+  const n = Math.round(Number(v));
+  return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : dflt;
+};
 const isMarketId = id => typeof id === 'string' && id.startsWith('MK-');
 /** Vidéo d'une pièce : envoyée par la gérante (/media/…), du site (/videos/…) ou hébergée ailleurs en https. */
-const videoUrl = v => { const u = clip(v, 600); return /^\/media\/[a-f0-9]{16}\.(mp4|webm)$|^\/videos\/[\w.-]+\.(mp4|webm|mov)$|^https:\/\/\S+$/.test(u) ? u : undefined; };
-const strList = (a, n, len) => (Array.isArray(a) ? a.map(x => clip(x, len)).filter(Boolean).slice(0, n) : []);
+const videoUrl = v => {
+  const u = clip(v, 600);
+  return /^\/media\/[a-f0-9]{16}\.(mp4|webm)$|^\/videos\/[\w.-]+\.(mp4|webm|mov)$|^https:\/\/\S+$/.test(u)
+    ? u
+    : undefined;
+};
+const strList = (a, n, len) =>
+  Array.isArray(a)
+    ? a
+        .map(x => clip(x, len))
+        .filter(Boolean)
+        .slice(0, n)
+    : [];
 
 /** Produit envoyé par l'espace gérant, nettoyé. Les avis restent ceux du serveur. */
 export function cleanCatalogProduct(p, existing) {
@@ -29,7 +43,10 @@ export function cleanCatalogProduct(p, existing) {
   if (!price) return { error: 'Prix requis' };
   const product = {
     id,
-    slug: clip(p.slug, 90).toLowerCase().replace(/[^a-z0-9-]/g, '-') || id.toLowerCase(),
+    slug:
+      clip(p.slug, 90)
+        .toLowerCase()
+        .replace(/[^a-z0-9-]/g, '-') || id.toLowerCase(),
     name,
     category: p.category,
     subcategory: clip(p.subcategory, 60),
@@ -41,7 +58,10 @@ export function cleanCatalogProduct(p, existing) {
     oldPrice: Number(p.oldPrice) > price ? int(p.oldPrice, 0, 50_000_000) : undefined,
     images: strList(p.images, 8, 600).filter(u => /^(https?:)?\/\//.test(u) || u.startsWith('/')),
     video: videoUrl(p.video),
-    colors: (Array.isArray(p.colors) ? p.colors : []).slice(0, 12).map(c => ({ name: clip(c?.name, 30), hex: /^#[0-9a-f]{3,8}$/i.test(c?.hex || '') ? c.hex : '#999999' })).filter(c => c.name),
+    colors: (Array.isArray(p.colors) ? p.colors : [])
+      .slice(0, 12)
+      .map(c => ({ name: clip(c?.name, 30), hex: /^#[0-9a-f]{3,8}$/i.test(c?.hex || '') ? c.hex : '#999999' }))
+      .filter(c => c.name),
     sizes: strList(p.sizes, 20, 12),
     stock: int(p.stock, 0, 100_000, 0),
     preorderDays: int(p.preorderDays, 0, 90, 0) || undefined,
@@ -49,7 +69,7 @@ export function cleanCatalogProduct(p, existing) {
     details: strList(p.details, 12, 200),
     rating: existing ? existing.rating : Math.min(5, Math.max(0, Number(p.rating) || 0)),
     reviewCount: existing ? existing.reviewCount : int(p.reviewCount, 0, 100_000, 0),
-    reviews: existing ? existing.reviews : (Array.isArray(p.reviews) ? p.reviews.slice(0, 50) : undefined),
+    reviews: existing ? existing.reviews : Array.isArray(p.reviews) ? p.reviews.slice(0, 50) : undefined,
     isNew: !!p.isNew || undefined,
     isBestseller: !!p.isBestseller || undefined,
     createdAt: clip(p.createdAt, 40) || new Date().toISOString(),
@@ -72,17 +92,27 @@ export function checkStock(order, store, agreed = new Map()) {
     const p = catalog.find(x => x.id === it.productId);
     if (!p) return { error: `« ${it.name} » n'est plus disponible` };
     const deal = agreed.get(`${it.productId}|${it.size ?? ''}|${it.color ?? ''}`);
-    if (Math.round(it.price) !== p.price && Math.round(it.price) !== deal) return { error: `Le prix de « ${p.name} » a changé : rechargez la page` };
+    if (Math.round(it.price) !== p.price && Math.round(it.price) !== deal)
+      return { error: `Le prix de « ${p.name} » a changé : rechargez la page` };
     qty.set(p.id, (qty.get(p.id) || 0) + (Number(it.quantity) || 0));
   }
   for (const [id, n] of qty) {
     const p = catalog.find(x => x.id === id);
     if (n <= p.stock) continue;
-    if (p.preorderDays) { preorder.set(id, p.preorderDays); continue; }
+    if (p.preorderDays) {
+      preorder.set(id, p.preorderDays);
+      continue;
+    }
     // Le stock n'est jamais montré aux clientes : on demande seulement de réduire la quantité
-    return { error: p.stock > 0 ? `Quantité indisponible pour « ${p.name} » : réduisez la quantité ou écrivez-nous sur WhatsApp` : `« ${p.name} » vient d'être épuisé` };
+    return {
+      error:
+        p.stock > 0
+          ? `Quantité indisponible pour « ${p.name} » : réduisez la quantité ou écrivez-nous sur WhatsApp`
+          : `« ${p.name} » vient d'être épuisé`,
+    };
   }
-  if (preorder.size && order.paymentMethod === 'cash') return { error: 'Les pièces sur commande se règlent à la commande (Wave, Orange Money ou carte)' };
+  if (preorder.size && order.paymentMethod === 'cash')
+    return { error: 'Les pièces sur commande se règlent à la commande (Wave, Orange Money ou carte)' };
   return { preorder };
 }
 
@@ -105,7 +135,10 @@ export function applyStock(order, store, direction) {
 export function registerCatalogRoutes(app, { limit, isAdmin, store }) {
   app.get('/api/catalog', (_req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.json({ products: store.getCatalog()?.filter(p => !isPaused(p)) ?? null, updatedAt: store.getCatalogUpdatedAt() });
+    res.json({
+      products: store.getCatalog()?.filter(p => !isPaused(p)) ?? null,
+      updatedAt: store.getCatalogUpdatedAt(),
+    });
   });
 
   /* Gérante : publier tout le catalogue (première fois, ou « restaurer le catalogue ») */
@@ -116,7 +149,10 @@ export function registerCatalogRoutes(app, { limit, isAdmin, store }) {
     const old = store.getCatalog() || [];
     const out = [];
     for (const p of list) {
-      const r = cleanCatalogProduct(p, old.find(x => x.id === p?.id));
+      const r = cleanCatalogProduct(
+        p,
+        old.find(x => x.id === p?.id),
+      );
       if (r.error) return res.status(400).json({ error: `${p?.name || p?.id || 'Produit'} : ${r.error}` });
       out.push(r.product);
     }
@@ -130,7 +166,8 @@ export function registerCatalogRoutes(app, { limit, isAdmin, store }) {
     const existing = catalog.find(p => p.id === req.params.id);
     const r = cleanCatalogProduct({ ...req.body, id: req.params.id }, existing);
     if (r.error) return res.status(400).json({ error: r.error });
-    if (catalog.some(p => p.slug === r.product.slug && p.id !== r.product.id)) r.product.slug = `${r.product.slug}-${r.product.id.toLowerCase()}`;
+    if (catalog.some(p => p.slug === r.product.slug && p.id !== r.product.id))
+      r.product.slug = `${r.product.slug}-${r.product.id.toLowerCase()}`;
     const next = existing ? catalog.map(p => (p.id === r.product.id ? r.product : p)) : [r.product, ...catalog];
     store.saveCatalog(next);
     res.json({ product: r.product });
@@ -148,7 +185,8 @@ export function registerCatalogRoutes(app, { limit, isAdmin, store }) {
     const catalog = store.getCatalog();
     const p = catalog?.find(x => x.id === req.params.id);
     if (!p) return res.status(404).json({ error: 'Produit introuvable' });
-    if (!limit(`review:${req.ip}`, 5, 3600e3) || !limit(`review:${req.ip}:${p.id}`, 1, 24 * 3600e3)) return res.status(429).json({ error: 'Merci, votre avis est déjà enregistré' });
+    if (!limit(`review:${req.ip}`, 5, 3600e3) || !limit(`review:${req.ip}:${p.id}`, 1, 24 * 3600e3))
+      return res.status(429).json({ error: 'Merci, votre avis est déjà enregistré' });
     const author = clip(req.body?.author, 40);
     const comment = clip(req.body?.comment, 600);
     const rating = int(req.body?.rating, 1, 5, 5);
@@ -156,7 +194,10 @@ export function registerCatalogRoutes(app, { limit, isAdmin, store }) {
     const reviewCount = p.reviewCount + 1;
     p.rating = Math.round(((p.rating * p.reviewCount + rating) / reviewCount) * 10) / 10;
     p.reviewCount = reviewCount;
-    p.reviews = [{ author, rating, comment, date: new Date().toISOString().slice(0, 10) }, ...(p.reviews || [])].slice(0, 50);
+    p.reviews = [{ author, rating, comment, date: new Date().toISOString().slice(0, 10) }, ...(p.reviews || [])].slice(
+      0,
+      50,
+    );
     store.saveCatalog(catalog);
     res.status(201).json({ product: p });
   });
@@ -179,5 +220,4 @@ export function registerCatalogRoutes(app, { limit, isAdmin, store }) {
     store.removeStockAlerts(req.params.productId);
     res.status(204).end();
   });
-
 }

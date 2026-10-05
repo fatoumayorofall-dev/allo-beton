@@ -1,6 +1,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, ArrowUpRight, Fingerprint, Globe2, MapPin, QrCode, ScanSearch, ShieldCheck, Smartphone, Truck, PackageCheck } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Fingerprint,
+  Globe2,
+  MapPin,
+  QrCode,
+  ScanSearch,
+  ShieldCheck,
+  Smartphone,
+  Truck,
+  PackageCheck,
+} from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES } from '../data/catalog';
 import { FEATURES } from '../config/site';
@@ -23,8 +35,14 @@ import { Sparkle } from '../components/Decor';
  * (`image` sert alors d'affiche le temps qu'il démarre). Plusieurs formats du même film : le navigateur prend le premier qu'il sait lire.
  */
 type HeroSlide = {
-  kicker: string; title: string[]; accent: number; text: string;
-  cta: { label: string; to: string }; image: string; video?: string[]; featured: string;
+  kicker: string;
+  title: string[];
+  accent: number;
+  text: string;
+  cta: { label: string; to: string };
+  image: string;
+  video?: string[];
+  featured: string;
 };
 
 const HERO_SLIDES: HeroSlide[] = [
@@ -40,7 +58,7 @@ const HERO_SLIDES: HeroSlide[] = [
   },
   {
     kicker: 'Nouveauté · Sandales',
-    title: ['L\'or', 'à vos', 'pieds'],
+    title: ["L'or", 'à vos', 'pieds'],
     accent: 1,
     text: 'Les tongs plates Zara au grand anneau doré sculpté, en doré, noir, blanc et bordeaux : confort le jour, élégance le soir.',
     cta: { label: 'Voir les tongs', to: '/boutique/chaussures' },
@@ -71,7 +89,10 @@ export const Home: React.FC = () => {
     return products.filter(p => p.isBestseller).slice(0, 8);
   }, [tab, products]);
 
-  const recent = recentlyViewed.map(getProduct).filter((p): p is NonNullable<typeof p> => !!p).slice(0, 4);
+  const recent = recentlyViewed
+    .map(getProduct)
+    .filter((p): p is NonNullable<typeof p> => !!p)
+    .slice(0, 4);
   const current = HERO_SLIDES[slide];
   const featured = getProduct(current.featured);
   const market = useMarket().products ?? [];
@@ -79,22 +100,49 @@ export const Home: React.FC = () => {
   return (
     <div className="overflow-x-clip">
       {/* ───────────── HÉROS : texte à gauche, photo en arche à droite ───────────── */}
-      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-4 sm:pt-8 lg:pt-10" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}
-        aria-roledescription="carrousel" aria-label="À la une">
+      <section
+        className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-4 sm:pt-8 lg:pt-10"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        aria-roledescription="carrousel"
+        aria-label="À la une"
+      >
         <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_1fr] gap-8 lg:gap-14 items-center">
           <div key={slide} className="order-2 lg:order-1">
             <p className="eyebrow animate-fade-up">{current.kicker}</p>
             <h1 className="font-display font-medium text-[3.6rem] sm:text-7xl xl:text-[7.4rem] leading-[0.9] mt-4 sm:mt-6">
               {current.title.map((line, i) => (
-                <span key={i} className={`block animate-fade-up ${i === current.accent ? 'italic text-gold-dark' : ''}`} style={{ animationDelay: `${80 + i * 90}ms` }}>
-                  {i === current.accent ? <span className="text-magic" style={{ animationDelay: '-3.2s' }}>{line}</span> : line}{' '}
+                <span
+                  key={i}
+                  className={`block animate-fade-up ${i === current.accent ? 'italic text-gold-dark' : ''}`}
+                  style={{ animationDelay: `${80 + i * 90}ms` }}
+                >
+                  {i === current.accent ? (
+                    <span className="text-magic" style={{ animationDelay: '-3.2s' }}>
+                      {line}
+                    </span>
+                  ) : (
+                    line
+                  )}{' '}
                 </span>
               ))}
             </h1>
-            <p className="mt-6 text-ink/75 text-base sm:text-lg leading-relaxed max-w-lg animate-fade-up" style={{ animationDelay: '360ms' }}>{current.text}</p>
+            <p
+              className="mt-6 text-ink/75 text-base sm:text-lg leading-relaxed max-w-lg animate-fade-up"
+              style={{ animationDelay: '360ms' }}
+            >
+              {current.text}
+            </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-3 animate-fade-up" style={{ animationDelay: '440ms' }}>
-              <Link to={current.cta.to} className="btn-dark">{current.cta.label} <ArrowRight className="w-4 h-4" /></Link>
-              <Link to={current.cta.to === '/boutique/sacs' ? '/boutique/chaussures' : '/boutique/sacs'} className="btn-outline">{current.cta.to === '/boutique/sacs' ? 'Voir les chaussures' : 'Voir les sacs'}</Link>
+              <Link to={current.cta.to} className="btn-dark">
+                {current.cta.label} <ArrowRight className="w-4 h-4" />
+              </Link>
+              <Link
+                to={current.cta.to === '/boutique/sacs' ? '/boutique/chaussures' : '/boutique/sacs'}
+                className="btn-outline"
+              >
+                {current.cta.to === '/boutique/sacs' ? 'Voir les chaussures' : 'Voir les sacs'}
+              </Link>
             </div>
             <p className="mt-8 flex items-center gap-4 text-[10px] uppercase tracking-luxe text-ink/65">
               <span className="w-10 h-px bg-gold" aria-hidden />
@@ -105,10 +153,22 @@ export const Home: React.FC = () => {
               <span className="font-display text-lg tabular-nums">0{slide + 1}</span>
               <div className="flex gap-2 flex-1">
                 {HERO_SLIDES.map((_, i) => (
-                  <button key={i} onClick={() => setSlide(i)} aria-label={`Afficher la diapositive ${i + 1}`} aria-current={i === slide} className="h-6 flex-1 flex items-center">
+                  <button
+                    key={i}
+                    onClick={() => setSlide(i)}
+                    aria-label={`Afficher la diapositive ${i + 1}`}
+                    aria-current={i === slide}
+                    className="h-6 flex-1 flex items-center"
+                  >
                     <span className="relative block w-full h-[2px] bg-ink/15 overflow-hidden">
                       {i < slide && <span className="absolute inset-0 bg-ink" />}
-                      {i === slide && <span key={`${slide}-${paused}`} className={`absolute inset-0 bg-ink origin-left ${paused || reduced ? '' : 'animate-progress'}`} style={{ animationDuration: `${DURATION}ms` }} />}
+                      {i === slide && (
+                        <span
+                          key={`${slide}-${paused}`}
+                          className={`absolute inset-0 bg-ink origin-left ${paused || reduced ? '' : 'animate-progress'}`}
+                          style={{ animationDuration: `${DURATION}ms` }}
+                        />
+                      )}
                     </span>
                   </button>
                 ))}
@@ -124,10 +184,22 @@ export const Home: React.FC = () => {
             </div>
             <div className="relative aspect-square sm:aspect-[5/6] lg:aspect-[4/5] max-h-[50svh] sm:max-h-[78svh] mx-auto overflow-hidden rounded-t-[999px] rounded-b-[2.25rem] bg-ivory-deep shadow-luxe">
               {HERO_SLIDES.map((s, i) => (
-                <div key={i} className={`absolute inset-0 transition-opacity duration-[1.2s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`} aria-hidden={i !== slide}>
+                <div
+                  key={i}
+                  className={`absolute inset-0 transition-opacity duration-[1.2s] ease-luxe ${i === slide ? 'opacity-100' : 'opacity-0'}`}
+                  aria-hidden={i !== slide}
+                >
                   <div className={`absolute inset-0 ${i === slide && !s.video ? 'animate-kenburns' : ''}`}>
-                    <ProductImage src={s.image} alt="" className="w-full h-full" sizes="(min-width: 1024px) 45vw, 100vw" priority={i === 0} />
-                    {s.video && <ProductVideo src={s.video} active={i === slide} className="absolute inset-0 w-full h-full" />}
+                    <ProductImage
+                      src={s.image}
+                      alt=""
+                      className="w-full h-full"
+                      sizes="(min-width: 1024px) 45vw, 100vw"
+                      priority={i === 0}
+                    />
+                    {s.video && (
+                      <ProductVideo src={s.video} active={i === slide} className="absolute inset-0 w-full h-full" />
+                    )}
                   </div>
                 </div>
               ))}
@@ -136,21 +208,41 @@ export const Home: React.FC = () => {
               <GoldDust className="mix-blend-screen" />
             </div>
             <Sparkle className="absolute -top-3 right-[14%] w-7 h-7 text-gold animate-twinkle pointer-events-none" />
-            <Sparkle className="absolute top-[9%] right-[6%] w-3.5 h-3.5 text-gold-dark animate-twinkle pointer-events-none" style={{ animationDelay: '1.4s' }} />
-            <Sparkle className="absolute top-[30%] left-2 lg:left-12 w-4 h-4 text-mauve animate-twinkle pointer-events-none" style={{ animationDelay: '2.3s' }} />
-            <p className="hidden lg:block absolute left-0 top-[16%] -rotate-6 font-script text-5xl text-gold-dark text-magic pointer-events-none drop-shadow-[0_0_10px_rgba(253,247,245,.95)]" aria-hidden>le coup de cœur</p>
+            <Sparkle
+              className="absolute top-[9%] right-[6%] w-3.5 h-3.5 text-gold-dark animate-twinkle pointer-events-none"
+              style={{ animationDelay: '1.4s' }}
+            />
+            <Sparkle
+              className="absolute top-[30%] left-2 lg:left-12 w-4 h-4 text-mauve animate-twinkle pointer-events-none"
+              style={{ animationDelay: '2.3s' }}
+            />
+            <p
+              className="hidden lg:block absolute left-0 top-[16%] -rotate-6 font-script text-5xl text-gold-dark text-magic pointer-events-none drop-shadow-[0_0_10px_rgba(253,247,245,.95)]"
+              aria-hidden
+            >
+              le coup de cœur
+            </p>
             {/* La pièce du moment */}
             {featured && (
-              <Link key={`f-${slide}`} to={`/produit/${featured.slug}`} data-testid="hero-featured"
+              <Link
+                key={`f-${slide}`}
+                to={`/produit/${featured.slug}`}
+                data-testid="hero-featured"
                 className="absolute left-3 bottom-3 sm:left-0 sm:bottom-10 flex items-center gap-3 sm:gap-4 p-2.5 pr-4 sm:p-3 sm:pr-5 rounded-[1.5rem] bg-white/95 backdrop-blur shadow-luxe animate-fade-up group max-w-[calc(100%-1.5rem)] sm:max-w-[320px]"
-                style={{ animationDelay: '500ms' }}>
+                style={{ animationDelay: '500ms' }}
+              >
                 <span className="block w-14 h-16 sm:w-20 sm:h-24 rounded-2xl overflow-hidden shrink-0">
                   <ProductImage src={featured.images[0]} alt="" label="" className="w-full h-full" sizes="80px" />
                 </span>
                 <span className="min-w-0">
                   <span className="eyebrow block">Pièce du moment</span>
-                  <span className="block font-display text-lg sm:text-xl leading-tight mt-1 line-clamp-2">{featured.name}</span>
-                  <span className="flex items-center gap-2 mt-1 text-sm font-semibold text-wine">{shownPrice(featured.price)} <ArrowUpRight className="w-4 h-4 text-ink transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" /></span>
+                  <span className="block font-display text-lg sm:text-xl leading-tight mt-1 line-clamp-2">
+                    {featured.name}
+                  </span>
+                  <span className="flex items-center gap-2 mt-1 text-sm font-semibold text-wine">
+                    {shownPrice(featured.price)}{' '}
+                    <ArrowUpRight className="w-4 h-4 text-ink transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                  </span>
                 </span>
               </Link>
             )}
@@ -167,9 +259,15 @@ export const Home: React.FC = () => {
             { Icon: Smartphone, t: 'Wave · Orange Money', d: 'ou espèces à la livraison' },
             { Icon: PackageCheck, t: 'Contrôlée avant envoi', d: 'À vérifier à la réception' },
           ].map(({ Icon, t, d }) => (
-            <li key={t} className="flex flex-col items-start sm:flex-row sm:items-center gap-2.5 sm:gap-4 p-4 lg:px-7 rounded-[1.25rem] bg-white lg:bg-transparent border border-ink/[0.06] lg:border-0">
+            <li
+              key={t}
+              className="flex flex-col items-start sm:flex-row sm:items-center gap-2.5 sm:gap-4 p-4 lg:px-7 rounded-[1.25rem] bg-white lg:bg-transparent border border-ink/[0.06] lg:border-0"
+            >
               <Icon className="w-6 h-6 text-gold-dark shrink-0" strokeWidth={1.1} />
-              <span className="min-w-0"><span className="block font-display text-lg sm:text-xl leading-tight">{t}</span><span className="block text-[12px] text-ink/70 leading-snug">{d}</span></span>
+              <span className="min-w-0">
+                <span className="block font-display text-lg sm:text-xl leading-tight">{t}</span>
+                <span className="block text-[12px] text-ink/70 leading-snug">{d}</span>
+              </span>
             </li>
           ))}
         </ul>
@@ -183,21 +281,40 @@ export const Home: React.FC = () => {
 
       {/* ───────────── UNIVERS (bento) ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">
-        <SectionHead eyebrow="Nos univers" title="Chaque pas," accent="chaque sac" link={{ to: '/boutique', label: 'Toute la boutique' }} />
+        <SectionHead
+          eyebrow="Nos univers"
+          title="Chaque pas,"
+          accent="chaque sac"
+          link={{ to: '/boutique', label: 'Toute la boutique' }}
+        />
         <div className="grid grid-cols-2 lg:grid-cols-[1.25fr_1fr_0.62fr] gap-3 sm:gap-4">
           {CATEGORIES.slice(0, 2).map((c, i) => (
-            <Reveal key={c.id} delay={i * 90}><CategoryTile id={c.id} name={c.name} description={c.description} image={c.image} tall /></Reveal>
+            <Reveal key={c.id} delay={i * 90}>
+              <CategoryTile id={c.id} name={c.name} description={c.description} image={c.image} tall />
+            </Reveal>
           ))}
           <div className="col-span-2 lg:col-span-1 grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
-            <Link to="/boutique?tri=nouveautes" className="group relative overflow-hidden rounded-[2rem] min-h-[190px] bg-ink-soft p-6 flex flex-col justify-end text-ivory">
+            <Link
+              to="/boutique?tri=nouveautes"
+              className="group relative overflow-hidden rounded-[2rem] min-h-[190px] bg-ink-soft p-6 flex flex-col justify-end text-ivory"
+            >
               <span className="absolute inset-0 bg-gradient-to-t from-ink/70 to-ink/20" />
               <span className="relative font-display text-3xl sm:text-4xl leading-none">Nouveautés</span>
-              <span className="relative text-xs mt-2 text-ivory/85 inline-flex items-center gap-1.5">Arrivées de la saison <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
+              <span className="relative text-xs mt-2 text-ivory/85 inline-flex items-center gap-1.5">
+                Arrivées de la saison{' '}
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </span>
             </Link>
-            <Link to="/boutique?prix=lt20&tri=note" className="group relative overflow-hidden rounded-[2rem] min-h-[190px] bg-ink p-6 flex flex-col justify-end text-ivory">
+            <Link
+              to="/boutique?prix=lt20&tri=note"
+              className="group relative overflow-hidden rounded-[2rem] min-h-[190px] bg-ink p-6 flex flex-col justify-end text-ivory"
+            >
               <span className="eyebrow !text-gold-light">L'essentiel</span>
               <span className="font-display text-3xl sm:text-4xl leading-[1.02] mt-2">Les petites attentions</span>
-              <span className="text-xs mt-2 text-gold-light inline-flex items-center gap-1.5">Moins de 20 000 FCFA <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></span>
+              <span className="text-xs mt-2 text-gold-light inline-flex items-center gap-1.5">
+                Moins de 20 000 FCFA{' '}
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+              </span>
             </Link>
           </div>
         </div>
@@ -205,37 +322,81 @@ export const Home: React.FC = () => {
 
       {/* ───────────── SÉLECTION ───────────── */}
       <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">
-        <SectionHead eyebrow="La sélection" title="Nos coups" accent="de cœur" link={{ to: '/boutique', label: 'Voir tout' }} />
-        <div className="-mt-4 mb-8 flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0" role="tablist" aria-label="Sélection">
-          {([['bestsellers', 'Coups de cœur'], ['nouveautes', 'Nouveautés'], ...(FEATURES.offres ? [['promos', 'L\'essentiel']] as const : [])] as const).map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={tab === id} onClick={() => setTab(id)}
-              className={`shrink-0 px-5 h-10 rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold border transition-colors ${tab === id ? 'bg-ink text-ivory border-ink' : 'border-ink/15 text-ink/75 hover:border-ink/40'}`}>{label}</button>
+        <SectionHead
+          eyebrow="La sélection"
+          title="Nos coups"
+          accent="de cœur"
+          link={{ to: '/boutique', label: 'Voir tout' }}
+        />
+        <div
+          className="-mt-4 mb-8 flex gap-2 overflow-x-auto no-scrollbar -mx-5 px-5 sm:mx-0 sm:px-0"
+          role="tablist"
+          aria-label="Sélection"
+        >
+          {(
+            [
+              ['bestsellers', 'Coups de cœur'],
+              ['nouveautes', 'Nouveautés'],
+              ...(FEATURES.offres ? ([['promos', "L'essentiel"]] as const) : []),
+            ] as const
+          ).map(([id, label]) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={tab === id}
+              onClick={() => setTab(id)}
+              className={`shrink-0 px-5 h-10 rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold border transition-colors ${tab === id ? 'bg-ink text-ivory border-ink' : 'border-ink/15 text-ink/75 hover:border-ink/40'}`}
+            >
+              {label}
+            </button>
           ))}
         </div>
         <div key={tab} className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12 animate-fade-in">
-          {tabProducts.map(p => <ProductCard key={p.id} product={p} />)}
+          {tabProducts.map(p => (
+            <ProductCard key={p.id} product={p} />
+          ))}
         </div>
       </section>
 
       {/* ───────────── AUTHENTICITÉ GARANTIE ───────────── */}
-      <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28" aria-labelledby="authentique-titre" data-testid="home-authentic">
+      <section
+        className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28"
+        aria-labelledby="authentique-titre"
+        data-testid="home-authentic"
+      >
         <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-16 items-center">
           <Reveal className="relative mx-auto w-full max-w-[420px]">
-            <img src="/brand/maefa-securite.png" alt="L'écrin sécurisé Maefa : guilloché, micro-texte et clé de voûte" width={322} height={436}
-              loading="lazy" className="w-full h-auto drop-shadow-[0_30px_40px_rgba(58,31,45,.35)]" />
+            <img
+              src="/brand/maefa-securite.png"
+              alt="L'écrin sécurisé Maefa : guilloché, micro-texte et clé de voûte"
+              width={322}
+              height={436}
+              loading="lazy"
+              className="w-full h-auto drop-shadow-[0_30px_40px_rgba(58,31,45,.35)]"
+            />
             {/* Loupe : le micro-texte n'est lisible que de très près */}
-            <span className="absolute -right-2 sm:-right-8 bottom-6 w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden ring-4 ring-ivory shadow-luxe" aria-hidden>
+            <span
+              className="absolute -right-2 sm:-right-8 bottom-6 w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden ring-4 ring-ivory shadow-luxe"
+              aria-hidden
+            >
               <img src="/brand/maefa-securite-loupe.jpg" alt="" loading="lazy" className="w-full h-full object-cover" />
               <span className="absolute inset-0 rounded-full ring-1 ring-inset ring-gold-light/60" />
             </span>
-            <span className="absolute -right-2 sm:-right-8 bottom-1 translate-y-full pt-3 w-36 sm:w-44 text-center text-[10px] uppercase tracking-[0.2em] text-ink/60" aria-hidden>Micro-texte · à la loupe</span>
+            <span
+              className="absolute -right-2 sm:-right-8 bottom-1 translate-y-full pt-3 w-36 sm:w-44 text-center text-[10px] uppercase tracking-[0.2em] text-ink/60"
+              aria-hidden
+            >
+              Micro-texte · à la loupe
+            </span>
           </Reveal>
           <Reveal delay={120}>
             <p className="eyebrow">Pièces authentiques</p>
-            <h2 id="authentique-titre" className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">Authentique, <em className="text-gold-dark text-magic">garanti</em></h2>
+            <h2 id="authentique-titre" className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">
+              Authentique, <em className="text-gold-dark text-magic">garanti</em>
+            </h2>
             <p className="mt-5 text-ink/75 leading-relaxed max-w-lg">
-              Chaque pièce Maefa est livrée avec une étiquette numérotée. Scannez son QR code : le site vous confirme en une seconde
-              qu'elle sort bien de notre maison. Une copie, elle, ne passe pas.
+              Chaque pièce Maefa est livrée avec une étiquette numérotée. Scannez son QR code : le site vous confirme en
+              une seconde qu'elle sort bien de notre maison. Une copie, elle, ne passe pas.
             </p>
             <ul className="mt-8 grid sm:grid-cols-3 gap-3">
               {[
@@ -251,8 +412,12 @@ export const Home: React.FC = () => {
               ))}
             </ul>
             <div className="mt-8 flex flex-wrap items-center gap-4">
-              <Link to="/authentique" className="btn-dark"><ShieldCheck className="w-4 h-4" strokeWidth={1.6} /> Vérifier une pièce</Link>
-              <span className="text-xs text-ink/70 max-w-[16rem]">Le code figure sur l'étiquette glissée dans votre sac ou collée sur la boîte.</span>
+              <Link to="/authentique" className="btn-dark">
+                <ShieldCheck className="w-4 h-4" strokeWidth={1.6} /> Vérifier une pièce
+              </Link>
+              <span className="text-xs text-ink/70 max-w-[16rem]">
+                Le code figure sur l'étiquette glissée dans votre sac ou collée sur la boîte.
+              </span>
             </div>
           </Reveal>
         </div>
@@ -260,18 +425,36 @@ export const Home: React.FC = () => {
 
       {/* ───────────── LE MARCHÉ (dropshipping) ───────────── */}
       {market.length > 0 && (
-        <section className="relative mt-20 sm:mt-28 mx-3 sm:mx-6 rounded-[3rem] overflow-hidden bg-ink text-ivory" data-testid="home-market">
-          <span className="pointer-events-none absolute -top-32 -left-24 w-[30rem] h-[30rem] rounded-full bg-wine/40 blur-[110px]" aria-hidden />
+        <section
+          className="relative mt-20 sm:mt-28 mx-3 sm:mx-6 rounded-[3rem] overflow-hidden bg-ink text-ivory"
+          data-testid="home-market"
+        >
+          <span
+            className="pointer-events-none absolute -top-32 -left-24 w-[30rem] h-[30rem] rounded-full bg-wine/40 blur-[110px]"
+            aria-hidden
+          />
           <Twinkles count={26} seed={11} />
           <div className="relative max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 py-14 sm:py-16 grid lg:grid-cols-[0.8fr_1.2fr] gap-10 items-center">
             <Reveal>
-              <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light"><Globe2 className="w-4 h-4" /> Nouveau · Le Marché</p>
-              <h2 className="font-display text-4xl sm:text-5xl mt-4 leading-[1.02]">Encore plus de modèles, <em className="text-gold-light text-magic-light">livrés du monde entier</em></h2>
-              <p className="mt-5 text-ivory/70 max-w-md leading-relaxed">Commandés pour vous chez nos partenaires et suivis à chaque étape jusqu'à votre porte.</p>
-              <Link to="/marche" className="btn-light mt-8">Découvrir le Marché <ArrowRight className="w-4 h-4" /></Link>
+              <p className="inline-flex items-center gap-2 text-[10px] sm:text-[11px] uppercase tracking-luxe text-gold-light">
+                <Globe2 className="w-4 h-4" /> Nouveau · Le Marché
+              </p>
+              <h2 className="font-display text-4xl sm:text-5xl mt-4 leading-[1.02]">
+                Encore plus de modèles, <em className="text-gold-light text-magic-light">livrés du monde entier</em>
+              </h2>
+              <p className="mt-5 text-ivory/70 max-w-md leading-relaxed">
+                Commandés pour vous chez nos partenaires et suivis à chaque étape jusqu'à votre porte.
+              </p>
+              <Link to="/marche" className="btn-light mt-8">
+                Découvrir le Marché <ArrowRight className="w-4 h-4" />
+              </Link>
             </Reveal>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 [&_p]:text-ivory [&_.text-ink\/45]:!text-ivory/50">
-              {market.slice(0, 4).map((p, i) => <Reveal key={p.id} delay={i * 80}><MarketCard product={p} /></Reveal>)}
+              {market.slice(0, 4).map((p, i) => (
+                <Reveal key={p.id} delay={i * 80}>
+                  <MarketCard product={p} />
+                </Reveal>
+              ))}
             </div>
           </div>
         </section>
@@ -281,7 +464,9 @@ export const Home: React.FC = () => {
         <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-20 sm:pt-28">
           <SectionHead eyebrow="Pour vous" title="Récemment" accent="consultés" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12">
-            {recent.map(p => <ProductCard key={p.id} product={p} />)}
+            {recent.map(p => (
+              <ProductCard key={p.id} product={p} />
+            ))}
           </div>
         </section>
       )}
@@ -290,20 +475,56 @@ export const Home: React.FC = () => {
 };
 
 /** En-tête de section : sur-titre, titre (fin en italique) et lien « voir tout ». */
-const SectionHead: React.FC<{ eyebrow: string; title: string; accent: string; link?: { to: string; label: string } }> = ({ eyebrow, title, accent, link }) => (
+const SectionHead: React.FC<{
+  eyebrow: string;
+  title: string;
+  accent: string;
+  link?: { to: string; label: string };
+}> = ({ eyebrow, title, accent, link }) => (
   <Reveal className="flex items-end justify-between gap-6 mb-10">
-    <div><p className="eyebrow">{eyebrow}</p><h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">{title} <em className="text-gold-dark text-magic">{accent}</em></h2></div>
-    {link && <Link to={link.to} className="hidden sm:inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe shrink-0">{link.label} <ArrowRight className="w-3.5 h-3.5" /></Link>}
+    <div>
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="font-display text-5xl sm:text-6xl mt-3 leading-[1]">
+        {title} <em className="text-gold-dark text-magic">{accent}</em>
+      </h2>
+    </div>
+    {link && (
+      <Link
+        to={link.to}
+        className="hidden sm:inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] font-semibold link-luxe shrink-0"
+      >
+        {link.label} <ArrowRight className="w-3.5 h-3.5" />
+      </Link>
+    )}
   </Reveal>
 );
 
-const CategoryTile: React.FC<{ id: string; name: string; description: string; image: string; tall?: boolean }> = ({ id, name, description, image, tall }) => (
-  <Link to={`/boutique/${id}`} className={`group relative block overflow-hidden ${tall ? 'rounded-[2rem] sm:rounded-[2.5rem] aspect-[3/4] lg:aspect-auto lg:h-full lg:min-h-[560px]' : 'arch aspect-[3/4]'}`}>
-    <ProductImage src={image} alt="" label="" sizes={tall ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, calc(50vw - 24px)'} className="absolute inset-0 w-full h-full transition-transform duration-[1.6s] ease-luxe group-hover:scale-[1.07]" />
+const CategoryTile: React.FC<{ id: string; name: string; description: string; image: string; tall?: boolean }> = ({
+  id,
+  name,
+  description,
+  image,
+  tall,
+}) => (
+  <Link
+    to={`/boutique/${id}`}
+    className={`group relative block overflow-hidden ${tall ? 'rounded-[2rem] sm:rounded-[2.5rem] aspect-[3/4] lg:aspect-auto lg:h-full lg:min-h-[560px]' : 'arch aspect-[3/4]'}`}
+  >
+    <ProductImage
+      src={image}
+      alt=""
+      label=""
+      sizes={tall ? '(min-width: 1024px) 50vw, 100vw' : '(min-width: 1024px) 25vw, calc(50vw - 24px)'}
+      className="absolute inset-0 w-full h-full transition-transform duration-[1.6s] ease-luxe group-hover:scale-[1.07]"
+    />
     <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-wine/5 to-transparent" />
     <div className="absolute inset-x-0 bottom-0 p-5 sm:p-8 text-ivory flex items-end justify-between gap-4">
       <div>
-        <h3 className={`font-display leading-none ${tall ? 'text-3xl sm:text-5xl lg:text-6xl' : 'text-[1.4rem] sm:text-4xl whitespace-nowrap'}`}>{name}</h3>
+        <h3
+          className={`font-display leading-none ${tall ? 'text-3xl sm:text-5xl lg:text-6xl' : 'text-[1.4rem] sm:text-4xl whitespace-nowrap'}`}
+        >
+          {name}
+        </h3>
         <p className="text-xs text-ivory/70 mt-2 hidden sm:block">{description}</p>
       </div>
       <span className="hidden sm:grid w-11 h-11 rounded-full border border-ivory/50 place-items-center shrink-0 group-hover:bg-ivory group-hover:text-ink transition-colors duration-500">
@@ -312,4 +533,3 @@ const CategoryTile: React.FC<{ id: string; name: string; description: string; im
     </div>
   </Link>
 );
-

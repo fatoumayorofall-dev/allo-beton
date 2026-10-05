@@ -13,21 +13,38 @@ export const Wishlist: React.FC = () => {
   return (
     <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-14">
       <div className="text-center pb-10 border-b border-ink/10">
-        <p className="eyebrow">{items.length} pièce{items.length > 1 ? 's' : ''} mise{items.length > 1 ? 's' : ''} de côté</p>
+        <p className="eyebrow">
+          {items.length} pièce{items.length > 1 ? 's' : ''} mise{items.length > 1 ? 's' : ''} de côté
+        </p>
         <h1 className="font-display text-5xl sm:text-6xl mt-4">Vos favoris</h1>
       </div>
       {items.length === 0 ? (
         <div className="text-center py-28">
           <p className="font-display text-3xl">Votre liste d'envies est vide</p>
           <p className="text-ink/75 mt-3 text-sm">Touchez le cœur d'une pièce pour la retrouver ici, à tout moment.</p>
-          <Link to="/boutique" className="btn-dark mt-10">Explorer la boutique</Link>
+          <Link to="/boutique" className="btn-dark mt-10">
+            Explorer la boutique
+          </Link>
         </div>
       ) : (
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12" data-testid="wishlist-grid">
-          {items.map(p => <ProductCard key={p.id} product={p} />)}
+        <div
+          className="mt-12 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12"
+          data-testid="wishlist-grid"
+        >
+          {items.map(p => (
+            <ProductCard key={p.id} product={p} />
+          ))}
         </div>
       )}
-      <ForYou className="mt-24 pt-14 border-t border-ink/10" eyebrow={items.length ? 'Pour compléter vos envies' : 'Pour commencer'} title={<>Vous aimerez <em className="text-gold-dark">aussi</em></>} />
+      <ForYou
+        className="mt-24 pt-14 border-t border-ink/10"
+        eyebrow={items.length ? 'Pour compléter vos envies' : 'Pour commencer'}
+        title={
+          <>
+            Vous aimerez <em className="text-gold-dark">aussi</em>
+          </>
+        }
+      />
     </div>
   );
 };

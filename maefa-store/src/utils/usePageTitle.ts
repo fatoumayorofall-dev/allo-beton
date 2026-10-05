@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { SITE_CONFIG } from '../config/site';
 
-const DEFAULT_DESCRIPTION = 'Maefa Store, la boutique de mode au féminin à Dakar : chaussures et sacs pour femme. Livraison 24h, paiement Wave, Orange Money ou à la livraison.';
+const DEFAULT_DESCRIPTION =
+  'Maefa Store, la boutique de mode au féminin à Dakar : chaussures et sacs pour femme. Livraison 24h, paiement Wave, Orange Money ou à la livraison.';
 
 function setMeta(attr: 'name' | 'property', key: string, content: string) {
   let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
@@ -28,7 +29,11 @@ function setCanonical(href: string) {
  * (moteurs de recherche et aperçus WhatsApp / réseaux sociaux).
  * `canonicalPath` : adresse principale de la page quand elle en a plusieurs (ex. /p/… → /produit/…).
  */
-export function usePageTitle(title?: string, description?: string, opts: { image?: string; canonicalPath?: string } = {}) {
+export function usePageTitle(
+  title?: string,
+  description?: string,
+  opts: { image?: string; canonicalPath?: string } = {},
+) {
   const { image, canonicalPath } = opts;
   useEffect(() => {
     const fullTitle = title ? `${title} · ${SITE_CONFIG.name}` : `${SITE_CONFIG.name} — ${SITE_CONFIG.tagline}`;

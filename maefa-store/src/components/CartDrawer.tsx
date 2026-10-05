@@ -19,15 +19,27 @@ export const GiftWrapOption: React.FC = () => {
   return (
     <div className="border border-ink/10 bg-white rounded-2xl">
       <label className="flex items-center gap-3 p-4 cursor-pointer">
-        <input type="checkbox" checked={giftWrap.enabled} onChange={e => setGiftWrap({ ...giftWrap, enabled: e.target.checked })} className="accent-ink w-4 h-4" />
+        <input
+          type="checkbox"
+          checked={giftWrap.enabled}
+          onChange={e => setGiftWrap({ ...giftWrap, enabled: e.target.checked })}
+          className="accent-ink w-4 h-4"
+        />
         <Gift className="w-4 h-4 text-gold-dark" strokeWidth={1.5} />
         <span className="flex-1 text-sm">Emballage cadeau signature</span>
         <span className="text-xs text-ink/70">+{formatPrice(SITE_CONFIG.giftWrapFee)}</span>
       </label>
       {giftWrap.enabled && (
         <div className="px-4 pb-4 animate-fade-in">
-          <textarea value={giftWrap.message} maxLength={180} rows={2} onChange={e => setGiftWrap({ ...giftWrap, message: e.target.value })}
-            placeholder="Votre mot doux (facultatif), écrit à la main sur une carte" aria-label="Message cadeau" className="field text-sm resize-none" />
+          <textarea
+            value={giftWrap.message}
+            maxLength={180}
+            rows={2}
+            onChange={e => setGiftWrap({ ...giftWrap, message: e.target.value })}
+            placeholder="Votre mot doux (facultatif), écrit à la main sur une carte"
+            aria-label="Message cadeau"
+            className="field text-sm resize-none"
+          />
           <p className="text-[10px] text-ink/70 text-right mt-1">{giftWrap.message.length}/180</p>
         </div>
       )}
@@ -36,7 +48,17 @@ export const GiftWrapOption: React.FC = () => {
 };
 
 export const CartDrawer: React.FC = () => {
-  const { cart, cartOpen, setCartOpen, updateQuantity, removeFromCart, computeTotals, products, addToCart, savedCustomer } = useStore();
+  const {
+    cart,
+    cartOpen,
+    setCartOpen,
+    updateQuantity,
+    removeFromCart,
+    computeTotals,
+    products,
+    addToCart,
+    savedCustomer,
+  } = useStore();
   const navigate = useNavigate();
   const close = () => setCartOpen(false);
   useLockBody(cartOpen);
@@ -50,7 +72,11 @@ export const CartDrawer: React.FC = () => {
     const cats = new Set(cart.map(i => products.find(p => p.id === i.productId)?.category));
     return products
       .filter(p => !inCart.has(p.id) && p.stock > 0)
-      .sort((a, b) => Number(cats.has(a.category)) - Number(cats.has(b.category)) || Number(!!b.isBestseller) - Number(!!a.isBestseller))
+      .sort(
+        (a, b) =>
+          Number(cats.has(a.category)) - Number(cats.has(b.category)) ||
+          Number(!!b.isBestseller) - Number(!!a.isBestseller),
+      )
       .slice(0, 4);
   }, [cart, products]);
 
@@ -59,10 +85,23 @@ export const CartDrawer: React.FC = () => {
   return (
     <div className="fixed inset-0 z-[80]">
       <div className="absolute inset-0 bg-ink/50 backdrop-blur-[2px] animate-fade-in" onClick={close} />
-      <aside role="dialog" aria-modal="true" aria-label="Panier" className="absolute right-0 top-0 h-full w-full max-w-[460px] bg-ivory sm:rounded-l-[2rem] overflow-hidden flex flex-col animate-slide-in shadow-luxe">
+      <aside
+        role="dialog"
+        aria-modal="true"
+        aria-label="Panier"
+        className="absolute right-0 top-0 h-full w-full max-w-[460px] bg-ivory sm:rounded-l-[2rem] overflow-hidden flex flex-col animate-slide-in shadow-luxe"
+      >
         <header className="flex items-center justify-between px-6 sm:px-8 h-20 border-b border-ink/10 shrink-0">
-          <h2 className="font-display text-3xl">Votre panier <sup className="text-sm font-sans text-ink/70">{t.itemCount}</sup></h2>
-          <button onClick={close} aria-label="Fermer le panier" className="w-10 h-10 grid place-items-center hover:rotate-90 transition-transform duration-500"><X className="w-5 h-5" strokeWidth={1.5} /></button>
+          <h2 className="font-display text-3xl">
+            Votre panier <sup className="text-sm font-sans text-ink/70">{t.itemCount}</sup>
+          </h2>
+          <button
+            onClick={close}
+            aria-label="Fermer le panier"
+            className="w-10 h-10 grid place-items-center hover:rotate-90 transition-transform duration-500"
+          >
+            <X className="w-5 h-5" strokeWidth={1.5} />
+          </button>
         </header>
 
         {cart.length === 0 ? (
@@ -70,36 +109,87 @@ export const CartDrawer: React.FC = () => {
             <BrandMark shine className="h-24 w-auto motion-safe:animate-hover" />
             <p className="font-display text-2xl">Votre panier attend sa première pièce</p>
             <p className="text-sm text-ink/75">Laissez-vous inspirer par nos nouveautés de la saison.</p>
-            <button onClick={() => { close(); navigate('/boutique?tri=nouveautes'); }} className="btn-dark mt-2">Découvrir les nouveautés</button>
+            <button
+              onClick={() => {
+                close();
+                navigate('/boutique?tri=nouveautes');
+              }}
+              className="btn-dark mt-2"
+            >
+              Découvrir les nouveautés
+            </button>
           </div>
         ) : (
           <>
-
             <div className="flex-1 overflow-y-auto">
               <ul className="px-6 sm:px-8 divide-y divide-ink/10">
                 {cart.map(item => {
                   const product = products.find(p => p.id === item.productId);
-                  const stock = item.market || item.preorder ? PREORDER_MAX : product?.stock ?? item.quantity;
+                  const stock = item.market || item.preorder ? PREORDER_MAX : (product?.stock ?? item.quantity);
                   return (
                     <li key={item.key} className="flex gap-4 py-5">
                       <Link to={product ? `/produit/${product.slug}` : '#'} onClick={close} className="shrink-0">
-                        <ProductImage src={item.image} alt={item.name} label="" className="w-[84px] h-[112px] rounded-2xl" sizes="84px" />
+                        <ProductImage
+                          src={item.image}
+                          alt={item.name}
+                          label=""
+                          className="w-[84px] h-[112px] rounded-2xl"
+                          sizes="84px"
+                        />
                       </Link>
                       <div className="flex-1 min-w-0 flex flex-col">
                         <div className="flex justify-between gap-3">
                           <p className="font-display text-lg leading-tight line-clamp-2">{item.name}</p>
-                          <span className="text-sm font-semibold whitespace-nowrap">{pricesHidden() ? shownPrice(item.price) : formatPrice(item.price * item.quantity)}</span>
+                          <span className="text-sm font-semibold whitespace-nowrap">
+                            {pricesHidden() ? shownPrice(item.price) : formatPrice(item.price * item.quantity)}
+                          </span>
                         </div>
-                        <p className="text-xs text-ink/70 mt-1">{[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}</p>
-{item.market && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-market">Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}</p>}
-{item.preorder && <p className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1" data-testid="cart-preorder">Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}</p>}
+                        <p className="text-xs text-ink/70 mt-1">
+                          {[item.color, item.size && `Taille ${item.size}`].filter(Boolean).join(' · ')}
+                        </p>
+                        {item.market && (
+                          <p
+                            className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1"
+                            data-testid="cart-market"
+                          >
+                            Le Marché · livré en {delayLabel(item.market.delayMin, item.market.delayMax)}
+                          </p>
+                        )}
+                        {item.preorder && (
+                          <p
+                            className="text-[10px] uppercase tracking-[0.14em] text-gold-dark mt-1"
+                            data-testid="cart-preorder"
+                          >
+                            Sur commande · livré en {delayLabel(item.preorder.days, item.preorder.days)}
+                          </p>
+                        )}
                         <div className="mt-auto flex items-center justify-between pt-3">
                           <div className="flex items-center border border-ink/15 h-9 rounded-full overflow-hidden">
-                            <button onClick={() => updateQuantity(item.key, item.quantity - 1)} aria-label="Diminuer" className="w-9 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3 h-3" /></button>
-                            <span className="w-7 text-center text-sm" aria-live="polite">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.key, item.quantity + 1)} disabled={item.quantity >= stock} aria-label="Augmenter" className="w-9 h-full grid place-items-center hover:bg-ink/5 disabled:opacity-25"><Plus className="w-3 h-3" /></button>
+                            <button
+                              onClick={() => updateQuantity(item.key, item.quantity - 1)}
+                              aria-label="Diminuer"
+                              className="w-9 h-full grid place-items-center hover:bg-ink/5"
+                            >
+                              <Minus className="w-3 h-3" />
+                            </button>
+                            <span className="w-7 text-center text-sm" aria-live="polite">
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.key, item.quantity + 1)}
+                              disabled={item.quantity >= stock}
+                              aria-label="Augmenter"
+                              className="w-9 h-full grid place-items-center hover:bg-ink/5 disabled:opacity-25"
+                            >
+                              <Plus className="w-3 h-3" />
+                            </button>
                           </div>
-                          <button onClick={() => removeFromCart(item.key)} className="tap text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe">Retirer</button>
+                          <button
+                            onClick={() => removeFromCart(item.key)}
+                            className="tap text-[10px] uppercase tracking-[0.2em] text-ink/70 hover:text-wine link-luxe"
+                          >
+                            Retirer
+                          </button>
                         </div>
                       </div>
                     </li>
@@ -112,16 +202,43 @@ export const CartDrawer: React.FC = () => {
                   <p className="eyebrow mb-4">Complétez votre look</p>
                   <ul className="grid grid-cols-2 gap-3">
                     {suggestions.map(p => (
-                      <li key={p.id} className="group flex gap-3 items-center p-2 rounded-2xl bg-white border border-ink/[0.05]">
-                        <Link to={`/produit/${p.slug}`} onClick={close} className="w-14 h-[72px] shrink-0 overflow-hidden rounded-xl">
-                          <ProductImage src={p.images[0]} alt="" label="" className="w-full h-full group-hover:scale-105 transition-transform duration-700" sizes="200px" />
+                      <li
+                        key={p.id}
+                        className="group flex gap-3 items-center p-2 rounded-2xl bg-white border border-ink/[0.05]"
+                      >
+                        <Link
+                          to={`/produit/${p.slug}`}
+                          onClick={close}
+                          className="w-14 h-[72px] shrink-0 overflow-hidden rounded-xl"
+                        >
+                          <ProductImage
+                            src={p.images[0]}
+                            alt=""
+                            label=""
+                            className="w-full h-full group-hover:scale-105 transition-transform duration-700"
+                            sizes="200px"
+                          />
                         </Link>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs leading-tight line-clamp-2">{p.name}</p>
                           <p className="text-[11px] text-ink/70 mt-0.5">{shownPrice(p.price)}</p>
-                          {p.sizes.length === 0
-                            ? <button onClick={() => addToCart(p, { color: p.colors[0]?.name })} className="mt-1 text-[11px] font-semibold text-wine inline-flex items-center gap-1" aria-label={`Ajouter ${p.name}`}><Plus className="w-3 h-3" /> Ajouter</button>
-                            : <Link to={`/produit/${p.slug}`} onClick={close} className="mt-1 text-[11px] font-semibold text-ink/75 underline underline-offset-4 decoration-ink/20 inline-block">Choisir la taille</Link>}
+                          {p.sizes.length === 0 ? (
+                            <button
+                              onClick={() => addToCart(p, { color: p.colors[0]?.name })}
+                              className="mt-1 text-[11px] font-semibold text-wine inline-flex items-center gap-1"
+                              aria-label={`Ajouter ${p.name}`}
+                            >
+                              <Plus className="w-3 h-3" /> Ajouter
+                            </button>
+                          ) : (
+                            <Link
+                              to={`/produit/${p.slug}`}
+                              onClick={close}
+                              className="mt-1 text-[11px] font-semibold text-ink/75 underline underline-offset-4 decoration-ink/20 inline-block"
+                            >
+                              Choisir la taille
+                            </Link>
+                          )}
                         </div>
                       </li>
                     ))}
@@ -132,15 +249,65 @@ export const CartDrawer: React.FC = () => {
 
             <footer className="border-t border-ink/10 px-6 sm:px-8 py-5 space-y-4 bg-ivory shrink-0">
               <GiftWrapOption />
-              {pricesHidden() ? <p className="text-xs text-ink/75 text-center"><strong className="text-ink">Prix exact et total sur WhatsApp</strong>, après vérification de chaque pièce.</p> : <div className="flex justify-between items-baseline">
-                <span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Sous-total</span>
-                <span className="text-right"><span className="block font-display text-3xl">{formatPrice(t.subtotal - t.discount + t.giftFee)}</span><ForeignPrice amount={t.subtotal - t.discount + t.giftFee} className="block text-[11px] text-ink/65" /></span>
-              </div>}
-              <button onClick={() => { close(); startWhatsAppOrder(cart.map(i => ({ productId: i.productId, name: i.name, price: i.price, image: i.image, size: i.size, color: i.color, quantity: i.quantity })), savedCustomer); }} data-testid="drawer-whatsapp" className="w-full h-[52px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Commander sur WhatsApp</button>
-              <p className="text-[11px] text-ink/70 text-center -mt-1">Disponibilité confirmée sur WhatsApp, puis lien pour finaliser.</p>
-              <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70"><ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave · Orange Money · à la livraison</p>
-              {SITE_CONFIG.cardPayments && <div className="flex justify-center -mt-1"><CardLogos /></div>}
-              <Link to="/panier" onClick={close} className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink">Voir le panier détaillé</Link>
+              {pricesHidden() ? (
+                <p className="text-xs text-ink/75 text-center">
+                  <strong className="text-ink">Prix exact et total sur WhatsApp</strong>, après vérification de chaque
+                  pièce.
+                </p>
+              ) : (
+                <div className="flex justify-between items-baseline">
+                  <span className="text-[11px] uppercase tracking-[0.22em] font-semibold">Sous-total</span>
+                  <span className="text-right">
+                    <span className="block font-display text-3xl">
+                      {formatPrice(t.subtotal - t.discount + t.giftFee)}
+                    </span>
+                    <ForeignPrice
+                      amount={t.subtotal - t.discount + t.giftFee}
+                      className="block text-[11px] text-ink/65"
+                    />
+                  </span>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  close();
+                  startWhatsAppOrder(
+                    cart.map(i => ({
+                      productId: i.productId,
+                      name: i.name,
+                      price: i.price,
+                      image: i.image,
+                      size: i.size,
+                      color: i.color,
+                      quantity: i.quantity,
+                    })),
+                    savedCustomer,
+                  );
+                }}
+                data-testid="drawer-whatsapp"
+                className="w-full h-[52px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"
+              >
+                <WhatsAppGlyph className="w-5 h-5" /> Commander sur WhatsApp
+              </button>
+              <p className="text-[11px] text-ink/70 text-center -mt-1">
+                Disponibilité confirmée sur WhatsApp, puis lien pour finaliser.
+              </p>
+              <p className="flex items-center justify-center gap-1.5 text-[11px] text-ink/70">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" strokeWidth={1.8} /> Paiement sécurisé · Wave ·
+                Orange Money · à la livraison
+              </p>
+              {SITE_CONFIG.cardPayments && (
+                <div className="flex justify-center -mt-1">
+                  <CardLogos />
+                </div>
+              )}
+              <Link
+                to="/panier"
+                onClick={close}
+                className="block text-center text-[11px] uppercase tracking-[0.2em] text-ink/75 hover:text-ink"
+              >
+                Voir le panier détaillé
+              </Link>
             </footer>
           </>
         )}

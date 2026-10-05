@@ -7,13 +7,26 @@
  * moyenne des meilleures (chacune pèse selon sa précision).
  */
 
-export interface Fix { lat: number; lng: number; accuracy: number; at: number }
-export interface PreciseResult { lat: number; lng: number; accuracy: number; samples: number }
+export interface Fix {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  at: number;
+}
+export interface PreciseResult {
+  lat: number;
+  lng: number;
+  accuracy: number;
+  samples: number;
+}
 
 /** Distance en mètres entre deux points. */
 export function meters(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
-  const R = 6371000, toRad = (x: number) => (x * Math.PI) / 180;
-  const h = Math.sin(toRad(b.lat - a.lat) / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(toRad(b.lng - a.lng) / 2) ** 2;
+  const R = 6371000,
+    toRad = (x: number) => (x * Math.PI) / 180;
+  const h =
+    Math.sin(toRad(b.lat - a.lat) / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(toRad(b.lng - a.lng) / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
@@ -24,9 +37,20 @@ export function meters(a: { lat: number; lng: number }, b: { lat: number; lng: n
 export function combine(fixes: Fix[]): PreciseResult | null {
   if (!fixes.length) return null;
   const best = fixes.reduce((a, b) => (b.accuracy < a.accuracy ? b : a));
-  const good = fixes.filter(f => f.accuracy <= Math.max(best.accuracy * 1.6, best.accuracy + 8) && meters(f, best) <= Math.max(best.accuracy * 1.5, 12));
-  let w = 0, lat = 0, lng = 0;
-  for (const f of good) { const k = 1 / (f.accuracy * f.accuracy); w += k; lat += f.lat * k; lng += f.lng * k; }
+  const good = fixes.filter(
+    f =>
+      f.accuracy <= Math.max(best.accuracy * 1.6, best.accuracy + 8) &&
+      meters(f, best) <= Math.max(best.accuracy * 1.5, 12),
+  );
+  let w = 0,
+    lat = 0,
+    lng = 0;
+  for (const f of good) {
+    const k = 1 / (f.accuracy * f.accuracy);
+    w += k;
+    lat += f.lat * k;
+    lng += f.lng * k;
+  }
   // Plusieurs bonnes mesures concordantes : l'incertitude de la moyenne baisse (sans descendre sous 3 m)
   const acc = Math.max(3, best.accuracy / Math.sqrt(Math.min(good.length, 4)));
   return { lat: lat / w, lng: lng / w, accuracy: Math.round(acc), samples: good.length };
@@ -52,20 +76,34 @@ export function locatePrecisely({ target = 12, maxMs = 25000, onProgress }: Loca
   let finish = () => {};
   let cancel = () => {};
   const promise = new Promise<PreciseResult>((resolve, reject) => {
-    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) { reject(Object.assign(new Error('unsupported'), { code: 2 })); return; }
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      reject(Object.assign(new Error('unsupported'), { code: 2 }));
+      return;
+    }
     const start = Date.now();
     const fixes: Fix[] = [];
     let goodInARow = 0;
     let firstGoodAt = 0;
     let done = false;
-    const stop = () => { done = true; navigator.geolocation.clearWatch(id); clearTimeout(timer); clearInterval(check); };
+    const stop = () => {
+      done = true;
+      navigator.geolocation.clearWatch(id);
+      clearTimeout(timer);
+      clearInterval(check);
+    };
     finish = () => {
       if (done) return;
       const r = combine(fixes);
       stop();
-      if (r) resolve(r); else reject(Object.assign(new Error('timeout'), { code: 3 }));
+      if (r) resolve(r);
+      else reject(Object.assign(new Error('timeout'), { code: 3 }));
     };
-    cancel = () => { if (!done) { stop(); reject(Object.assign(new Error('cancelled'), { code: 0 })); } };
+    cancel = () => {
+      if (!done) {
+        stop();
+        reject(Object.assign(new Error('cancelled'), { code: 0 }));
+      }
+    };
     const id = navigator.geolocation.watchPosition(
       pos => {
         if (done) return;
@@ -114,12 +152,17 @@ export function makeTrackFilter({ maxSpeed = 40, maxAccuracy = 80 } = {}) {
   // Mesures écartées d'affilée : si le GPS insiste, c'est que le livreur est vraiment ailleurs
   // (première position fausse, GPS coupé un moment…) : on le croit plutôt que de le perdre.
   let rejected = 0;
-  const reject = () => { rejected += 1; return null; };
+  const reject = () => {
+    rejected += 1;
+    return null;
+  };
   return (f: Fix): Fix | null => {
     if (!(f.accuracy > 0)) f = { ...f, accuracy: 30 };
     if (!last || (rejected >= 2 && f.accuracy <= maxAccuracy)) {
       if (!last && f.accuracy > maxAccuracy * 3) return null;
-      last = f; rejected = 0; return f;
+      last = f;
+      rejected = 0;
+      return f;
     }
     const dt = Math.max(0.5, (f.at - last.at) / 1000);
     const d = meters(last, f);
@@ -132,7 +175,12 @@ export function makeTrackFilter({ maxSpeed = 40, maxAccuracy = 80 } = {}) {
     const k = (last.accuracy * last.accuracy) / (last.accuracy * last.accuracy + f.accuracy * f.accuracy);
     const moving = d > Math.max(f.accuracy, 15);
     const w = moving ? Math.max(k, 0.7) : k; // en mouvement on suit vite la nouvelle position
-    const out: Fix = { lat: last.lat + (f.lat - last.lat) * w, lng: last.lng + (f.lng - last.lng) * w, accuracy: Math.min(f.accuracy, Math.round(Math.sqrt((1 - w) * last.accuracy ** 2 + w * f.accuracy ** 2))), at: f.at };
+    const out: Fix = {
+      lat: last.lat + (f.lat - last.lat) * w,
+      lng: last.lng + (f.lng - last.lng) * w,
+      accuracy: Math.min(f.accuracy, Math.round(Math.sqrt((1 - w) * last.accuracy ** 2 + w * f.accuracy ** 2))),
+      at: f.at,
+    };
     last = out;
     return out;
   };

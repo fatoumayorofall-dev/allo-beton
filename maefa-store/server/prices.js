@@ -15,4 +15,4 @@ export const priceBandLabel = n => (BANDS.find(([max]) => Number(n) < max) ?? BA
 const fcfa = n => `${Math.round(n).toLocaleString('fr-FR').replace(/ | /g, ' ')} FCFA`;
 
 /** Prix montré au public : la classe de prix si les prix sont confidentiels. */
-export const publicPrice = p => (CONFIDENTIAL_PRICES ? p.priceLabel ?? priceBandLabel(p.price) : fcfa(p.price));
+export const publicPrice = p => (CONFIDENTIAL_PRICES ? (p.priceLabel ?? priceBandLabel(p.price)) : fcfa(p.price));

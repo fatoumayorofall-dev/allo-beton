@@ -3,7 +3,8 @@
  * Dans l'aperçu sans serveur (WAMP, dossier quelconque), « /videos/… » devient « ./videos/… »
  * pour être cherché à côté de la page, et non à la racine du serveur web.
  */
-export const mediaUrl = (src: string) => (import.meta.env.VITE_ROUTER === 'hash' && src.startsWith('/') && !src.startsWith('//') ? `.${src}` : src);
+export const mediaUrl = (src: string) =>
+  import.meta.env.VITE_ROUTER === 'hash' && src.startsWith('/') && !src.startsWith('//') ? `.${src}` : src;
 
 /** Vrai quand le site tourne sans le serveur Maefa (version WAMP / aperçu). */
 export const staticMode = import.meta.env.VITE_ROUTER === 'hash';

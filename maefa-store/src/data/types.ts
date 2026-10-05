@@ -105,7 +105,11 @@ export interface DeliveryLocation {
 export type Vehicle = 'moto' | 'voiture' | 'car';
 
 /** Point de relais (gare routière, station…) où un livreur passe le colis au suivant */
-export interface RelayPoint { label: string; lat?: number; lng?: number }
+export interface RelayPoint {
+  label: string;
+  lat?: number;
+  lng?: number;
+}
 
 /** Une étape de la livraison, avec son livreur */
 export interface DeliveryLeg {
@@ -130,7 +134,15 @@ export interface DeliveryInfo {
   assignedAt: string;
   startedAt: string | null;
   deliveredAt: string | null;
-  position: { lat: number; lng: number; accuracy: number | null; heading: number | null; speed: number | null; at: string; stale: boolean } | null;
+  position: {
+    lat: number;
+    lng: number;
+    accuracy: number | null;
+    heading: number | null;
+    speed: number | null;
+    at: string;
+    stale: boolean;
+  } | null;
   distanceM: number | null;
   etaMin: number | null;
   /** Lien secret du livreur de l'étape en cours (vue gérante uniquement) */
@@ -219,7 +231,15 @@ export interface OrderSupplier {
   /** Coût d'achat estimé en FCFA (gérante uniquement) */
   cost?: number;
   /** Ce qu'il faut commander chez chaque fournisseur (gérante uniquement) */
-  lines?: { productId: string; name: string; variant: string; quantity: number; supplierName: string; supplierUrl: string; unitCost: number }[];
+  lines?: {
+    productId: string;
+    name: string;
+    variant: string;
+    quantity: number;
+    supplierName: string;
+    supplierUrl: string;
+    unitCost: number;
+  }[];
 }
 
 export interface MarketProduct {
@@ -265,34 +285,115 @@ export interface OrderNotification {
 /* ---------- Tournées de livraison ---------- */
 
 export type TourStopState = 'attente' | 'en_route' | 'livree' | 'reportee' | 'annulee';
-export interface TourPlanStop { orderId: string; firstName: string; label: string; zone: string; lat: number; lng: number; legM: number; cumM: number; etaMin: number }
-export interface TourPlan { stops: TourPlanStop[]; totalM: number; arrivalOrderM: number; roundTripsM: number; routed: boolean; shop: { lat: number; lng: number } }
+export interface TourPlanStop {
+  orderId: string;
+  firstName: string;
+  label: string;
+  zone: string;
+  lat: number;
+  lng: number;
+  legM: number;
+  cumM: number;
+  etaMin: number;
+}
+export interface TourPlan {
+  stops: TourPlanStop[];
+  totalM: number;
+  arrivalOrderM: number;
+  roundTripsM: number;
+  routed: boolean;
+  shop: { lat: number; lng: number };
+}
 export interface AdminTour {
-  id: string; link: string; driverName: string; driverPhone: string; vehicle: Vehicle;
-  createdAt: string; startedAt: string | null; doneAt: string | null; cancelledAt?: string;
-  totalM: number; roundTripsM: number;
-  stops: { orderId: string; state: TourStopState; firstName?: string; label?: string; total?: number; skipped?: boolean }[];
+  id: string;
+  link: string;
+  driverName: string;
+  driverPhone: string;
+  vehicle: Vehicle;
+  createdAt: string;
+  startedAt: string | null;
+  doneAt: string | null;
+  cancelledAt?: string;
+  totalM: number;
+  roundTripsM: number;
+  stops: {
+    orderId: string;
+    state: TourStopState;
+    firstName?: string;
+    label?: string;
+    total?: number;
+    skipped?: boolean;
+  }[];
 }
 export interface DriverTourStop {
-  index: number; orderId: string; state: TourStopState; legToken: string | null;
-  customer: { firstName: string; lastName: string; phone: string; zone: string; address?: string; notes?: string; location: DeliveryLocation | null };
-  total: number; paymentStatus: 'en_attente' | 'paye'; items: number; needsCode: boolean;
+  index: number;
+  orderId: string;
+  state: TourStopState;
+  legToken: string | null;
+  customer: {
+    firstName: string;
+    lastName: string;
+    phone: string;
+    zone: string;
+    address?: string;
+    notes?: string;
+    location: DeliveryLocation | null;
+  };
+  total: number;
+  paymentStatus: 'en_attente' | 'paye';
+  items: number;
+  needsCode: boolean;
 }
 export interface DriverTour {
-  id: string; driverName: string; vehicle: Vehicle; startedAt: string | null; doneAt: string | null; cancelled: boolean;
-  totalM: number; roundTripsM: number; shop: { lat: number; lng: number }; current: number; stops: DriverTourStop[];
+  id: string;
+  driverName: string;
+  vehicle: Vehicle;
+  startedAt: string | null;
+  doneAt: string | null;
+  cancelled: boolean;
+  totalM: number;
+  roundTripsM: number;
+  shop: { lat: number; lng: number };
+  current: number;
+  stops: DriverTourStop[];
 }
 
 /* ---------- Demandes WhatsApp (« Acheter » → vérification chez le fournisseur) ---------- */
 export type RequestStatus = 'nouvelle' | 'disponible' | 'indisponible' | 'commandee';
-export interface RequestItem { productId: string; name: string; price: number; /** Prix du catalogue, si la gérante a convenu d'un autre prix */ catalogPrice?: number; image?: string; size?: string; color?: string; quantity: number }
+export interface RequestItem {
+  productId: string;
+  name: string;
+  price: number;
+  /** Prix du catalogue, si la gérante a convenu d'un autre prix */ catalogPrice?: number;
+  image?: string;
+  size?: string;
+  color?: string;
+  quantity: number;
+}
 export interface PurchaseRequest {
-  id: string; status: RequestStatus; createdAt: string; items: RequestItem[]; total: number; note?: string; orderId?: string;
+  id: string;
+  status: RequestStatus;
+  createdAt: string;
+  items: RequestItem[];
+  total: number;
+  note?: string;
+  orderId?: string;
   customer?: { firstName?: string; phone?: string; zone?: string };
   history?: { status: RequestStatus; date: string }[];
 }
 
 /* ---------- Adresses enregistrées par la cliente (Maison, Bureau, Chez maman…) ---------- */
-export interface SavedAddress extends DeliveryLocation { id: string; name: string; icon: string }
+export interface SavedAddress extends DeliveryLocation {
+  id: string;
+  name: string;
+  icon: string;
+}
 /** Lieu connu près d'un point : repère pour la cliente et le livreur */
-export interface NearbyPlace { name: string; kind: string; icon: string; lat: number; lng: number; distanceM: number }
+export interface NearbyPlace {
+  name: string;
+  kind: string;
+  icon: string;
+  lat: number;
+  lng: number;
+  distanceM: number;
+}

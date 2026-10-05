@@ -28,7 +28,32 @@ const words = (...list: string[]) => new RegExp(`\\b(${[...new Set(list.map(w =>
 
 const KIND: [Exclude<Kind, 'tout'>, RegExp][] = [
   ['sacs', words('sac', 'sacs', 'pochette', 'pochettes', 'cabas', 'sacoche', 'besace', 'mbuus', 'mbus')],
-  ['chaussures', words('chausure', 'chausures', 'chaussure', 'chaussures', 'sandale', 'sandales', 'mule', 'mules', 'tong', 'tongs', 'talon', 'talons', 'escarpin', 'escarpins', 'claquette', 'claquettes', 'dal', 'dall', 'dalu', 'pied', 'pieds')],
+  [
+    'chaussures',
+    words(
+      'chausure',
+      'chausures',
+      'chaussure',
+      'chaussures',
+      'sandale',
+      'sandales',
+      'mule',
+      'mules',
+      'tong',
+      'tongs',
+      'talon',
+      'talons',
+      'escarpin',
+      'escarpins',
+      'claquette',
+      'claquettes',
+      'dal',
+      'dall',
+      'dalu',
+      'pied',
+      'pieds',
+    ),
+  ],
 ];
 const SUB: [string, RegExp][] = [
   ['pochette', /\bpochet/],
@@ -39,7 +64,23 @@ const SUB: [string, RegExp][] = [
 ];
 const OCC: [OccasionId, RegExp][] = [
   ['mariage', words('mariage', 'mariages', 'bapteme', 'baptemes', 'ngente', 'ngentee', 'takk', 'nikah', 'wedding')],
-  ['ceremonie', words('tabaski', 'korite', 'kori', 'fete', 'fetes', 'ceremonie', 'ceremonies', 'gamu', 'gamou', 'magal', 'tamkharit', 'tamxarit')],
+  [
+    'ceremonie',
+    words(
+      'tabaski',
+      'korite',
+      'kori',
+      'fete',
+      'fetes',
+      'ceremonie',
+      'ceremonies',
+      'gamu',
+      'gamou',
+      'magal',
+      'tamkharit',
+      'tamxarit',
+    ),
+  ],
   ['soiree', words('soiree', 'soirees', 'gala', 'diner', 'sortie', 'anniversaire', 'boite', 'concert')],
   ['bureau', words('bureau', 'travail', 'taf', 'liger', 'ligey', 'ligeey', 'reunion', 'office')],
   ['quotidien', words('quotidien', 'tous les jours', 'tus les jurs', 'bes bu nek', 'chaque jour', 'casual')],
@@ -47,22 +88,61 @@ const OCC: [OccasionId, RegExp][] = [
 ];
 const COLOR: [Exclude<ColorFamily, 'tout'>, RegExp][] = [
   ['noir', words('noir', 'noire', 'noirs', 'nul', 'nuul', 'black')],
-  ['marron', words('maron', 'marron', 'camel', 'chocolat', 'cognac', 'taupe', 'bronze', 'beige fonce', 'caramel', 'brun')],
+  [
+    'marron',
+    words('maron', 'marron', 'camel', 'chocolat', 'cognac', 'taupe', 'bronze', 'beige fonce', 'caramel', 'brun'),
+  ],
   ['clair', words('blanc', 'blanche', 'blancs', 'weex', 'wex', 'creme', 'beige', 'gris', 'grise', 'nude', 'ivoire')],
-  ['rouge', words('rouge', 'rouges', 'xonq', 'xonx', 'bordeaux', 'bordo', 'rose', 'roses', 'fuchsia', 'framboise', 'prune')],
+  [
+    'rouge',
+    words('rouge', 'rouges', 'xonq', 'xonx', 'bordeaux', 'bordo', 'rose', 'roses', 'fuchsia', 'framboise', 'prune'),
+  ],
   ['dore', words('dore', 'doree', 'dores', 'or', 'gold')],
-  ['vif', words('vert', 'verte', 'wert', 'bleu', 'bleue', 'bulo', 'violet', 'violette', 'orange', 'jaune', 'mbulu', 'olive', 'emeraude')],
+  [
+    'vif',
+    words(
+      'vert',
+      'verte',
+      'wert',
+      'bleu',
+      'bleue',
+      'bulo',
+      'violet',
+      'violette',
+      'orange',
+      'jaune',
+      'mbulu',
+      'olive',
+      'emeraude',
+    ),
+  ],
 ];
 
 /* ---------- Nombres et argent en wolof ---------- */
 
 const W_UNITS: Record<string, number> = {};
-[['benn', 1], ['ñaar', 2], ['ñaari', 2], ['ñett', 3], ['ñetti', 3], ['ñeent', 4], ['ñeenti', 4], ['juróom', 5], ['juróomi', 5]]
-  .forEach(([w, n]) => { W_UNITS[normalize(w as string)] = n as number; });
+[
+  ['benn', 1],
+  ['ñaar', 2],
+  ['ñaari', 2],
+  ['ñett', 3],
+  ['ñetti', 3],
+  ['ñeent', 4],
+  ['ñeenti', 4],
+  ['juróom', 5],
+  ['juróomi', 5],
+].forEach(([w, n]) => {
+  W_UNITS[normalize(w as string)] = n as number;
+});
 const W_TEN = new Set(['fukk', 'fukki'].map(normalize));
 const W_HUNDRED = new Set(['téeméer', 'téeméeri', 'teemeer'].map(normalize));
 /** Unités de monnaie : junni = 1 000 dërëm = 5 000 F ; dërëm = 5 F ; mille = 1 000 F. */
-const W_MONEY: Record<string, number> = { [normalize('junni')]: 5000, [normalize('dërëm')]: 5, [normalize('mille')]: 1000, mil: 1000 };
+const W_MONEY: Record<string, number> = {
+  [normalize('junni')]: 5000,
+  [normalize('dërëm')]: 5,
+  [normalize('mille')]: 1000,
+  mil: 1000,
+};
 
 /** « ñetti junni » → 15 000 ; « fukk ak juróom mille » → 15 000 ; « ñaar fukk mille » → 20 000. */
 export function wolofAmount(t: string): number | undefined {
@@ -70,13 +150,21 @@ export function wolofAmount(t: string): number | undefined {
   const i = words.findIndex(w => W_MONEY[w] !== undefined);
   if (i < 1) return undefined;
   let j = i - 1;
-  while (j >= 0 && (W_UNITS[words[j]] !== undefined || W_TEN.has(words[j]) || W_HUNDRED.has(words[j]) || words[j] === 'ak')) j--;
+  while (
+    j >= 0 &&
+    (W_UNITS[words[j]] !== undefined || W_TEN.has(words[j]) || W_HUNDRED.has(words[j]) || words[j] === 'ak')
+  )
+    j--;
   const nums = words.slice(j + 1, i);
   if (!nums.length) return undefined;
-  let total = 0, cur = 0;
+  let total = 0,
+    cur = 0;
   for (const w of nums) {
-    if (w === 'ak') { total += cur; cur = 0; }
-    else if (W_TEN.has(w)) cur = (cur || 1) * 10; // ñaar fukk = 20
+    if (w === 'ak') {
+      total += cur;
+      cur = 0;
+    } else if (W_TEN.has(w))
+      cur = (cur || 1) * 10; // ñaar fukk = 20
     else if (W_HUNDRED.has(w)) cur = (cur || 1) * 100;
     else cur += W_UNITS[w]; // juróom ñaar = 7
   }
@@ -88,7 +176,9 @@ export function wolofAmount(t: string): number | undefined {
 function budget(t: string, raw: string): number | undefined {
   const wo = wolofAmount(t);
   if (wo && wo >= 1000) return wo;
-  const m = raw.replace(/ | /g, ' ').match(/(\d{1,3}(?:[ .]\d{3})+|\d{4,6}|\d{1,3})\s*(k|mille|mil|000|f\b|fcfa|francs?)?/i);
+  const m = raw
+    .replace(/ | /g, ' ')
+    .match(/(\d{1,3}(?:[ .]\d{3})+|\d{4,6}|\d{1,3})\s*(k|mille|mil|000|f\b|fcfa|francs?)?/i);
   if (!m) return undefined;
   let n = Number(m[1].replace(/[ .]/g, ''));
   const unit = (m[2] || '').toLowerCase();
@@ -98,8 +188,36 @@ function budget(t: string, raw: string): number | undefined {
   return n;
 }
 
-const BUDGET_WORDS = nre(['moins', 'moins de', 'max', 'maximum', 'budget', 'jusqu', 'jusque', 'pas plus', 'à peu près', 'environ', 'autour', 'njëg', 'njëgam', 'prix', 'coûte', 'coût', 'fcfa', 'f', 'francs', 'mille', 'yomb', 'ba', 'dërëm', 'junni']);
-const SIZE_BEFORE = nre(['pointure', 'taille', 'je fais du', 'je chausse du', 'chausse', 'fais du', 'sama pointure', 'du', 'en'], { suffix: '\\s*(3[5-9]|4[0-4])\\b' });
+const BUDGET_WORDS = nre([
+  'moins',
+  'moins de',
+  'max',
+  'maximum',
+  'budget',
+  'jusqu',
+  'jusque',
+  'pas plus',
+  'à peu près',
+  'environ',
+  'autour',
+  'njëg',
+  'njëgam',
+  'prix',
+  'coûte',
+  'coût',
+  'fcfa',
+  'f',
+  'francs',
+  'mille',
+  'yomb',
+  'ba',
+  'dërëm',
+  'junni',
+]);
+const SIZE_BEFORE = nre(
+  ['pointure', 'taille', 'je fais du', 'je chausse du', 'chausse', 'fais du', 'sama pointure', 'du', 'en'],
+  { suffix: '\\s*(3[5-9]|4[0-4])\\b' },
+);
 
 function size(t: string, kindShoes: boolean): string | undefined {
   const m = t.match(SIZE_BEFORE) || (kindShoes ? t.match(/\b(3[5-9]|4[0-4])\b/) : null);
@@ -108,7 +226,33 @@ function size(t: string, kindShoes: boolean): string | undefined {
 
 /** Index des modèles du catalogue : mots distinctifs → nom du modèle. */
 export function modelIndex(products: Product[]) {
-  const generic = new Set<string>(['sac', 'sacs', 'a', 'de', 'en', 'et', 'la', 'le', 'dore', 'tongs', 'mules', 'zara', 'pochette', 'fermoir', 'breloque', 'coeur', 'anneau', 'talon', 'croisees', 'strass', 'papillon', 'orteil', 'anse'].map(normalize));
+  const generic = new Set<string>(
+    [
+      'sac',
+      'sacs',
+      'a',
+      'de',
+      'en',
+      'et',
+      'la',
+      'le',
+      'dore',
+      'tongs',
+      'mules',
+      'zara',
+      'pochette',
+      'fermoir',
+      'breloque',
+      'coeur',
+      'anneau',
+      'talon',
+      'croisees',
+      'strass',
+      'papillon',
+      'orteil',
+      'anse',
+    ].map(normalize),
+  );
   const idx = new Map<string, string>();
   for (const p of products) {
     const model = modelOf(p);
@@ -118,28 +262,74 @@ export function modelIndex(products: Product[]) {
   }
   // Modèles Zara sans prénom : mots clés dédiés
   for (const p of products) {
-    const m = modelOf(p), n = normalize(m);
+    const m = modelOf(p),
+      n = normalize(m);
     if (/orteil/.test(n)) idx.set('orteil', m);
     if (/talon/.test(n)) idx.set('talon', m);
-    if (/strass|croise/.test(n)) { idx.set('strass', m); idx.set('croisees', m); }
+    if (/strass|croise/.test(n)) {
+      idx.set('strass', m);
+      idx.set('croisees', m);
+    }
     if (/anneau dore/.test(n) && !/orteil/.test(n)) idx.set('anneau', m);
     if (/papillon/.test(n)) idx.set('papillon', m);
-    if (/breloque|coeur/.test(n)) { idx.set('breloque', m); idx.set('coeur', m); }
+    if (/breloque|coeur/.test(n)) {
+      idx.set('breloque', m);
+      idx.set('coeur', m);
+    }
   }
   return idx;
 }
 
-const OTHER_TOWNS = nre(['ziguinchor', 'kolda', 'tambacounda', 'tamba', 'matam', 'louga', 'fatick', 'kédougou', 'sédhiou', 'kaffrine', 'diourbel', 'podor', 'richard toll', 'dagana', 'casamance', 'bignona', 'vélingara', 'linguère', 'mbacké', 'tivaouane', 'joal', 'nioro']);
+const OTHER_TOWNS = nre([
+  'ziguinchor',
+  'kolda',
+  'tambacounda',
+  'tamba',
+  'matam',
+  'louga',
+  'fatick',
+  'kédougou',
+  'sédhiou',
+  'kaffrine',
+  'diourbel',
+  'podor',
+  'richard toll',
+  'dagana',
+  'casamance',
+  'bignona',
+  'vélingara',
+  'linguère',
+  'mbacké',
+  'tivaouane',
+  'joal',
+  'nioro',
+]);
 
 export function extractSlots(raw: string, products: Product[] = []): Slots {
   const t = normalize(raw);
   const s: Slots = {};
-  for (const [k, re] of KIND) if (has(t, re)) { s.kind = k; break; }
-  for (const [k, re] of SUB) if (has(t, re)) { s.sub = k; break; }
-  for (const [k, re] of OCC) if (has(t, re)) { s.occasion = k; break; }
+  for (const [k, re] of KIND)
+    if (has(t, re)) {
+      s.kind = k;
+      break;
+    }
+  for (const [k, re] of SUB)
+    if (has(t, re)) {
+      s.sub = k;
+      break;
+    }
+  for (const [k, re] of OCC)
+    if (has(t, re)) {
+      s.occasion = k;
+      break;
+    }
   // « céet » (mariage) : repéré avant normalisation, qui le confondrait avec « cet »
   if (!s.occasion && /\bc[ée]{2}t\b/i.test(raw)) s.occasion = 'mariage';
-  for (const [k, re] of COLOR) if (has(t, re)) { s.color = k; break; }
+  for (const [k, re] of COLOR)
+    if (has(t, re)) {
+      s.color = k;
+      break;
+    }
   s.budget = budget(t, raw);
   s.size = size(t, s.kind === 'chaussures');
   if (s.size && !s.kind) s.kind = 'chaussures';
@@ -148,7 +338,10 @@ export function extractSlots(raw: string, products: Product[] = []): Slots {
   for (const z of DELIVERY_ZONES) {
     const full = normalize(z.name).replace(/ \/ .*/, '');
     const first = full.split(' ')[0];
-    if (new RegExp(`\\b${full}\\b`).test(t) || (first.length > 3 && new RegExp(`\\b${first}`).test(t))) { s.zone = z.name; break; }
+    if (new RegExp(`\\b${full}\\b`).test(t) || (first.length > 3 && new RegExp(`\\b${first}`).test(t))) {
+      s.zone = z.name;
+      break;
+    }
   }
   // Villes hors des zones listées : tarif « Autres régions »
   if (!s.zone && OTHER_TOWNS.test(t)) s.zone = 'Autres régions';
@@ -156,7 +349,11 @@ export function extractSlots(raw: string, products: Product[] = []): Slots {
   if (!s.zone && nre(['dakar', 'ndakaaru']).test(t)) s.zone = 'Dakar';
   if (products.length) {
     const idx = modelIndex(products);
-    for (const w of t.split(' ')) if (idx.has(w)) { s.model = idx.get(w); break; }
+    for (const w of t.split(' '))
+      if (idx.has(w)) {
+        s.model = idx.get(w);
+        break;
+      }
     if (s.model) {
       const p = products.find(x => modelOf(x) === s.model);
       if (p && !s.kind) s.kind = p.category as Slots['kind'];

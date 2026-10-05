@@ -11,8 +11,17 @@ import path from 'node:path';
 import { isPaused } from './catalog.js';
 import { CONFIDENTIAL_PRICES, publicPrice } from './prices.js';
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const clip = (s, n = 160) => { const t = String(s ?? '').replace(/\s+/g, ' ').trim(); return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t; };
+const esc = s =>
+  String(s ?? '').replace(
+    /[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c],
+  );
+const clip = (s, n = 160) => {
+  const t = String(s ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t.length > n ? `${t.slice(0, n - 1).trimEnd()}…` : t;
+};
 
 /** Pages privées : jamais dans les résultats de recherche. */
 const PRIVATE = /^\/(admin|livreur\/|commande|compte|confirmation\/|mes-commandes|panier|favoris)/;
@@ -29,12 +38,19 @@ const STATIC_PAGES = [
 
 /** Lit un fichier et le garde en mémoire tant qu'il ne change pas. */
 function cachedFile(file, parse) {
-  let mtime = -1, value = null;
+  let mtime = -1,
+    value = null;
   return () => {
     try {
       const m = fs.statSync(file).mtimeMs;
-      if (m !== mtime) { value = parse(fs.readFileSync(file, 'utf8')); mtime = m; }
-    } catch { mtime = -1; value = null; }
+      if (m !== mtime) {
+        value = parse(fs.readFileSync(file, 'utf8'));
+        mtime = m;
+      }
+    } catch {
+      mtime = -1;
+      value = null;
+    }
     return value;
   };
 }
@@ -45,7 +61,8 @@ export function registerSeoRoutes(app, { store, dist }) {
   const data = () => seoData() ?? { site: { name: 'Maefa Store' }, categories: [], products: [], articles: [] };
 
   const originOf = req => (process.env.SITE_URL || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
-  const abs = (origin, u) => (!u ? `${origin}/og-image.jpg` : /^https?:\/\//.test(u) ? u : `${origin}${u.startsWith('/') ? '' : '/'}${u}`);
+  const abs = (origin, u) =>
+    !u ? `${origin}/og-image.jpg` : /^https?:\/\//.test(u) ? u : `${origin}${u.startsWith('/') ? '' : '/'}${u}`;
 
   /** Pièces de la boutique en vente (catalogue publié par la gérante, sinon celui du site). */
   const shopProducts = () => {
@@ -53,7 +70,17 @@ export function registerSeoRoutes(app, { store, dist }) {
     const onSale = new Set(d.categories.map(c => c.id));
     const catalog = store.getCatalog();
     if (!catalog) return d.products;
-    return catalog.filter(p => onSale.has(p.category) && !isPaused(p)).map(p => ({ id: p.id, slug: p.slug, name: p.name, category: p.category, price: p.price, image: p.images?.[0], description: p.description }));
+    return catalog
+      .filter(p => onSale.has(p.category) && !isPaused(p))
+      .map(p => ({
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        category: p.category,
+        price: p.price,
+        image: p.images?.[0],
+        description: p.description,
+      }));
   };
   const marketProducts = () => {
     const names = new Set(data().categories.map(c => c.name.toLowerCase()));
@@ -64,27 +91,69 @@ export function registerSeoRoutes(app, { store, dist }) {
   function pageMeta(pathname) {
     const d = data();
     const site = d.site?.name || 'Maefa Store';
-    const base = { title: `${site} — Chaussures & sacs pour elle · Sénégal`, description: 'Maefa Store, votre boutique de mode en ligne : chaussures et sacs pour femme. Livraison rapide à Dakar, paiement Wave, Orange Money ou à la livraison.', image: null, type: 'website', canonical: pathname };
+    const base = {
+      title: `${site} — Chaussures & sacs pour elle · Sénégal`,
+      description:
+        'Maefa Store, votre boutique de mode en ligne : chaussures et sacs pour femme. Livraison rapide à Dakar, paiement Wave, Orange Money ou à la livraison.',
+      image: null,
+      type: 'website',
+      canonical: pathname,
+    };
     const titled = (t, description = base.description) => ({ ...base, title: `${t} · ${site}`, description });
     let m;
     if (pathname === '/') return base;
-    if (pathname === '/boutique') return titled('La boutique', 'Toutes nos chaussures et nos sacs pour femme : nouveautés, best-sellers et promotions. Livraison à Dakar et dans tout le Sénégal.');
+    if (pathname === '/boutique')
+      return titled(
+        'La boutique',
+        'Toutes nos chaussures et nos sacs pour femme : nouveautés, best-sellers et promotions. Livraison à Dakar et dans tout le Sénégal.',
+      );
     if ((m = /^\/boutique\/([^/]+)$/.exec(pathname))) {
       const c = d.categories.find(x => x.id === m[1]);
-      return c ? titled(`${c.name} pour femme`, `${c.name} pour femme chez ${site} : pièces choisies à Dakar, livraison 24h, paiement Wave, Orange Money ou à la livraison.`) : base;
+      return c
+        ? titled(
+            `${c.name} pour femme`,
+            `${c.name} pour femme chez ${site} : pièces choisies à Dakar, livraison 24h, paiement Wave, Orange Money ou à la livraison.`,
+          )
+        : base;
     }
     if ((m = /^\/(produit\/([^/]+)|p\/([^/]+))$/.exec(pathname))) {
       const list = shopProducts();
-      const p = m[2] ? list.find(x => x.slug === m[2]) : list.find(x => x.id.replace(/^(MAE|EFA|FAB)-/, '').toLowerCase() === m[3]);
+      const p = m[2]
+        ? list.find(x => x.slug === m[2])
+        : list.find(x => x.id.replace(/^(MAE|EFA|FAB)-/, '').toLowerCase() === m[3]);
       if (!p) return base;
-      return { ...titled(p.name, clip(`${p.name} — ${publicPrice(p)}. ${p.description || ''}`)), image: p.image, type: 'product', price: CONFIDENTIAL_PRICES ? undefined : p.price, canonical: `/produit/${p.slug}` };
+      return {
+        ...titled(p.name, clip(`${p.name} — ${publicPrice(p)}. ${p.description || ''}`)),
+        image: p.image,
+        type: 'product',
+        price: CONFIDENTIAL_PRICES ? undefined : p.price,
+        canonical: `/produit/${p.slug}`,
+      };
     }
-    if (pathname === '/marche') return titled('Le Marché', `Le Marché ${site} : encore plus de chaussures et de sacs, commandés pour vous chez nos partenaires et livrés chez vous au Sénégal.`);
+    if (pathname === '/marche')
+      return titled(
+        'Le Marché',
+        `Le Marché ${site} : encore plus de chaussures et de sacs, commandés pour vous chez nos partenaires et livrés chez vous au Sénégal.`,
+      );
     if ((m = /^\/marche\/([^/]+)$/.exec(pathname))) {
       const p = marketProducts().find(x => x.slug === m[1]);
-      return p ? { ...titled(p.name, clip(`${p.name} — ${publicPrice(p)}, livré chez vous au Sénégal. ${p.description || ''}`)), image: p.images?.[0], type: 'product', price: CONFIDENTIAL_PRICES ? undefined : p.price } : base;
+      return p
+        ? {
+            ...titled(
+              p.name,
+              clip(`${p.name} — ${publicPrice(p)}, livré chez vous au Sénégal. ${p.description || ''}`),
+            ),
+            image: p.images?.[0],
+            type: 'product',
+            price: CONFIDENTIAL_PRICES ? undefined : p.price,
+          }
+        : base;
     }
-    if (pathname === '/journal') return titled('Le journal', 'Conseils de style, guides d\'occasion et astuces d\'entretien par l\'équipe Maefa Store.');
+    if (pathname === '/journal')
+      return titled(
+        'Le journal',
+        "Conseils de style, guides d'occasion et astuces d'entretien par l'équipe Maefa Store.",
+      );
     if ((m = /^\/journal\/([^/]+)$/.exec(pathname))) {
       const a = d.articles.find(x => x.slug === m[1]);
       return a ? { ...titled(a.title, a.excerpt), image: a.image, type: 'article' } : base;
@@ -92,7 +161,14 @@ export function registerSeoRoutes(app, { store, dist }) {
     if (pathname === '/a-propos') return titled('Notre maison');
     if (pathname === '/faq') return titled('Aide & FAQ');
     if (pathname === '/suivi') return titled('Suivre ma commande');
-    if (pathname.startsWith('/authentique')) return { ...titled('Vérifier l\'authenticité', 'Scannez l\'étiquette de votre pièce Maefa ou saisissez son code : nous vous confirmons qu\'elle est authentique.'), canonical: '/authentique' };
+    if (pathname.startsWith('/authentique'))
+      return {
+        ...titled(
+          "Vérifier l'authenticité",
+          "Scannez l'étiquette de votre pièce Maefa ou saisissez son code : nous vous confirmons qu'elle est authentique.",
+        ),
+        canonical: '/authentique',
+      };
     return base;
   }
 
@@ -110,10 +186,17 @@ export function registerSeoRoutes(app, { store, dist }) {
       `<meta property="og:title" content="${esc(meta.title)}" />`,
       `<meta property="og:description" content="${esc(meta.description)}" />`,
       `<meta property="og:image" content="${esc(image)}" />`,
-      ...(meta.image ? [] : ['<meta property="og:image:width" content="1200" />', '<meta property="og:image:height" content="630" />']),
+      ...(meta.image
+        ? []
+        : ['<meta property="og:image:width" content="1200" />', '<meta property="og:image:height" content="630" />']),
       `<meta property="og:image:alt" content="${esc(meta.title)}" />`,
       '<meta name="twitter:card" content="summary_large_image" />',
-      ...(meta.price ? [`<meta property="product:price:amount" content="${meta.price}" />`, '<meta property="product:price:currency" content="XOF" />'] : []),
+      ...(meta.price
+        ? [
+            `<meta property="product:price:amount" content="${meta.price}" />`,
+            '<meta property="product:price:currency" content="XOF" />',
+          ]
+        : []),
       ...(PRIVATE.test(req.path) || HIDDEN ? ['<meta name="robots" content="noindex, nofollow" />'] : []),
     ];
     return tags.join('\n    ');
@@ -125,14 +208,25 @@ export function registerSeoRoutes(app, { store, dist }) {
   /* robots.txt : tout est ouvert sauf les espaces privés */
   app.get('/robots.txt', (req, res) => {
     if (HIDDEN) return res.type('text/plain').send('User-agent: *\nDisallow: /\n');
-    res.type('text/plain').set('Cache-Control', 'public, max-age=3600').send([
-      'User-agent: *',
-      'Allow: /',
-      'Disallow: /admin', 'Disallow: /livreur/', 'Disallow: /commande', 'Disallow: /compte', 'Disallow: /confirmation/', 'Disallow: /mes-commandes', 'Disallow: /api/',
-      '',
-      `Sitemap: ${originOf(req)}/sitemap.xml`,
-      '',
-    ].join('\n'));
+    res
+      .type('text/plain')
+      .set('Cache-Control', 'public, max-age=3600')
+      .send(
+        [
+          'User-agent: *',
+          'Allow: /',
+          'Disallow: /admin',
+          'Disallow: /livreur/',
+          'Disallow: /commande',
+          'Disallow: /compte',
+          'Disallow: /confirmation/',
+          'Disallow: /mes-commandes',
+          'Disallow: /api/',
+          '',
+          `Sitemap: ${originOf(req)}/sitemap.xml`,
+          '',
+        ].join('\n'),
+      );
   });
 
   /* sitemap.xml : pages, univers, pièces (avec photo), Marché et articles */
@@ -140,25 +234,56 @@ export function registerSeoRoutes(app, { store, dist }) {
     const origin = originOf(req);
     const d = data();
     const updated = (store.getCatalogUpdatedAt() || new Date().toISOString()).slice(0, 10);
-    const url = (loc, { lastmod, freq, priority, image, title } = {}) => [
-      '  <url>',
-      `    <loc>${esc(origin + loc)}</loc>`,
-      lastmod && `    <lastmod>${lastmod}</lastmod>`,
-      freq && `    <changefreq>${freq}</changefreq>`,
-      priority && `    <priority>${priority}</priority>`,
-      image && `    <image:image><image:loc>${esc(abs(origin, image))}</image:loc>${title ? `<image:title>${esc(title)}</image:title>` : ''}</image:image>`,
-      '  </url>',
-    ].filter(Boolean).join('\n');
+    const url = (loc, { lastmod, freq, priority, image, title } = {}) =>
+      [
+        '  <url>',
+        `    <loc>${esc(origin + loc)}</loc>`,
+        lastmod && `    <lastmod>${lastmod}</lastmod>`,
+        freq && `    <changefreq>${freq}</changefreq>`,
+        priority && `    <priority>${priority}</priority>`,
+        image &&
+          `    <image:image><image:loc>${esc(abs(origin, image))}</image:loc>${title ? `<image:title>${esc(title)}</image:title>` : ''}</image:image>`,
+        '  </url>',
+      ]
+        .filter(Boolean)
+        .join('\n');
     const urls = [
-      ...STATIC_PAGES.map(p => url(p.path, { freq: p.freq, priority: p.priority, lastmod: p.path === '/' || p.path === '/boutique' ? updated : undefined })),
+      ...STATIC_PAGES.map(p =>
+        url(p.path, {
+          freq: p.freq,
+          priority: p.priority,
+          lastmod: p.path === '/' || p.path === '/boutique' ? updated : undefined,
+        }),
+      ),
       ...d.categories.map(c => url(`/boutique/${c.id}`, { freq: 'daily', priority: '0.8', lastmod: updated })),
-      ...shopProducts().map(p => url(`/produit/${p.slug}`, { freq: 'weekly', priority: '0.8', lastmod: updated, image: p.image, title: p.name })),
-      ...marketProducts().map(p => url(`/marche/${p.slug}`, { freq: 'weekly', priority: '0.5', lastmod: String(p.updatedAt || p.createdAt || '').slice(0, 10) || undefined, image: p.images?.[0], title: p.name })),
-      ...d.articles.map(a => url(`/journal/${a.slug}`, { freq: 'monthly', priority: '0.5', lastmod: a.date, image: a.image, title: a.title })),
+      ...shopProducts().map(p =>
+        url(`/produit/${p.slug}`, { freq: 'weekly', priority: '0.8', lastmod: updated, image: p.image, title: p.name }),
+      ),
+      ...marketProducts().map(p =>
+        url(`/marche/${p.slug}`, {
+          freq: 'weekly',
+          priority: '0.5',
+          lastmod: String(p.updatedAt || p.createdAt || '').slice(0, 10) || undefined,
+          image: p.images?.[0],
+          title: p.name,
+        }),
+      ),
+      ...d.articles.map(a =>
+        url(`/journal/${a.slug}`, {
+          freq: 'monthly',
+          priority: '0.5',
+          lastmod: a.date,
+          image: a.image,
+          title: a.title,
+        }),
+      ),
     ];
-    res.type('application/xml').set('Cache-Control', 'public, max-age=900').send(
-      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls.join('\n')}\n</urlset>\n`,
-    );
+    res
+      .type('application/xml')
+      .set('Cache-Control', 'public, max-age=900')
+      .send(
+        `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls.join('\n')}\n</urlset>\n`,
+      );
   });
 
   /** Page HTML du site, avec les balises de partage de la page demandée. */
@@ -169,7 +294,9 @@ export function registerSeoRoutes(app, { store, dist }) {
     const page = html
       .replace(/<!--seo-->[\s\S]*?<!--\/seo-->/, headTags(req))
       // Données structurées (boutique, recherche) : adresses complètes
-      .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, block => block.replace(/": "\//g, `": "${origin}/`));
+      .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/, block =>
+        block.replace(/": "\//g, `": "${origin}/`),
+      );
     res.type('html').set('Cache-Control', 'no-cache').send(page);
   };
 }

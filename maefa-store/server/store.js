@@ -16,11 +16,30 @@ fs.mkdirSync(VOICE_DIR, { recursive: true });
 const SLUG_RE = /^[a-z0-9-]{2,80}$/;
 export const validSlug = s => typeof s === 'string' && SLUG_RE.test(s);
 
-let state = { showcase: [], visits: {}, users: {}, sessions: {}, orders: {}, shopOrders: {}, deliveries: {}, tours: {}, requests: {}, market: { products: {}, settings: null }, catalog: null, catalogUpdatedAt: null, stockAlerts: [], authCodes: {} };
+let state = {
+  showcase: [],
+  visits: {},
+  users: {},
+  sessions: {},
+  orders: {},
+  shopOrders: {},
+  deliveries: {},
+  tours: {},
+  requests: {},
+  market: { products: {}, settings: null },
+  catalog: null,
+  catalogUpdatedAt: null,
+  stockAlerts: [],
+  authCodes: {},
+};
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
 const renameRefs = raw => raw.replace(/"(?:FAB|EFA)-([A-Z0-9]+)/g, '"MAE-$1');
-try { state = { ...state, ...JSON.parse(renameRefs(fs.readFileSync(FILE, 'utf8'))) }; } catch { /* premier démarrage */ }
+try {
+  state = { ...state, ...JSON.parse(renameRefs(fs.readFileSync(FILE, 'utf8'))) };
+} catch {
+  /* premier démarrage */
+}
 
 /*
  * Sauvegarde sur disque : au plus une écriture toutes les 300 ms, même quand les visites s'enchaînent
@@ -32,13 +51,28 @@ let writing = false;
 let again = false;
 function writeNow() {
   timer = null;
-  if (writing) { again = true; return; }
+  if (writing) {
+    again = true;
+    return;
+  }
   writing = true;
   const tmp = `${FILE}.tmp`;
   fs.writeFile(tmp, JSON.stringify(state), err => {
-    const done = () => { writing = false; if (again) { again = false; persist(); } };
-    if (err) { console.error('Sauvegarde :', err.message); return done(); }
-    fs.rename(tmp, FILE, e => { if (e) console.error('Sauvegarde :', e.message); done(); });
+    const done = () => {
+      writing = false;
+      if (again) {
+        again = false;
+        persist();
+      }
+    };
+    if (err) {
+      console.error('Sauvegarde :', err.message);
+      return done();
+    }
+    fs.rename(tmp, FILE, e => {
+      if (e) console.error('Sauvegarde :', e.message);
+      done();
+    });
   });
 }
 function persist() {
@@ -48,13 +82,21 @@ function persist() {
 export function flushSync() {
   clearTimeout(timer);
   timer = null;
-  try { fs.writeFileSync(`${FILE}.tmp`, JSON.stringify(state)); fs.renameSync(`${FILE}.tmp`, FILE); } catch (e) { console.error('Sauvegarde :', e.message); }
+  try {
+    fs.writeFileSync(`${FILE}.tmp`, JSON.stringify(state));
+    fs.renameSync(`${FILE}.tmp`, FILE);
+  } catch (e) {
+    console.error('Sauvegarde :', e.message);
+  }
 }
 
 /* ---------- Vitrine du statut ---------- */
 export const getShowcase = () => state.showcase;
 export function addToShowcase(slug) {
-  state.showcase = [{ slug, addedAt: new Date().toISOString() }, ...state.showcase.filter(s => s.slug !== slug)].slice(0, 40);
+  state.showcase = [{ slug, addedAt: new Date().toISOString() }, ...state.showcase.filter(s => s.slug !== slug)].slice(
+    0,
+    40,
+  );
   persist();
 }
 export function removeFromShowcase(slug) {
@@ -74,15 +116,27 @@ export function recordVisit(slug, source) {
 export const getVisits = () => state.visits;
 
 /* ---------- Notes vocales ---------- */
-const EXT = { 'audio/webm': 'webm', 'audio/ogg': 'ogg', 'audio/mp4': 'm4a', 'audio/mpeg': 'mp3', 'audio/aac': 'aac', 'audio/wav': 'wav' };
+const EXT = {
+  'audio/webm': 'webm',
+  'audio/ogg': 'ogg',
+  'audio/mp4': 'm4a',
+  'audio/mpeg': 'mp3',
+  'audio/aac': 'aac',
+  'audio/wav': 'wav',
+};
 export const CONTENT_TYPES = Object.fromEntries(Object.entries(EXT).map(([k, v]) => [v, k]));
 
 export function listVoices() {
-  return fs.readdirSync(VOICE_DIR).map(f => f.replace(/\.[a-z0-9]+$/, '')).filter(validSlug);
+  return fs
+    .readdirSync(VOICE_DIR)
+    .map(f => f.replace(/\.[a-z0-9]+$/, ''))
+    .filter(validSlug);
 }
 export function findVoice(slug) {
   const f = fs.readdirSync(VOICE_DIR).find(x => x.startsWith(`${slug}.`));
-  return f ? { path: path.join(VOICE_DIR, f), type: CONTENT_TYPES[f.split('.').pop()] || 'application/octet-stream' } : null;
+  return f
+    ? { path: path.join(VOICE_DIR, f), type: CONTENT_TYPES[f.split('.').pop()] || 'application/octet-stream' }
+    : null;
 }
 export function saveVoice(slug, contentType, buffer) {
   const ext = EXT[String(contentType).split(';')[0].trim()];
@@ -127,7 +181,8 @@ export function saveOrder(phone, order) {
 
 /* ---------- Commandes de la boutique (toutes les clientes) ---------- */
 export const getShopOrder = id => state.shopOrders[id] ?? null;
-export const listShopOrders = () => Object.values(state.shopOrders).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export const listShopOrders = () =>
+  Object.values(state.shopOrders).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 export function saveShopOrder(order) {
   state.shopOrders[order.id] = order;
   // met aussi à jour la copie rattachée au compte de la cliente, si elle en a un
@@ -143,11 +198,23 @@ export function saveShopOrder(order) {
 /** Anciennes livraisons à un seul livreur → une livraison à une étape. */
 function upgrade(d) {
   if (!d || Array.isArray(d.legs)) return d;
-  const leg = d.driverToken ? [{
-    driverName: d.driverName, driverPhone: d.driverPhone, driverToken: d.driverToken, vehicle: 'moto', to: null,
-    assignedAt: d.assignedAt, startedAt: d.startedAt ?? null, doneAt: d.deliveredAt ?? null, position: d.position ?? null,
-    nearNotified: !!d.nearNotified, customerNotified: !!d.onTheWayNotified,
-  }] : [];
+  const leg = d.driverToken
+    ? [
+        {
+          driverName: d.driverName,
+          driverPhone: d.driverPhone,
+          driverToken: d.driverToken,
+          vehicle: 'moto',
+          to: null,
+          assignedAt: d.assignedAt,
+          startedAt: d.startedAt ?? null,
+          doneAt: d.deliveredAt ?? null,
+          position: d.position ?? null,
+          nearNotified: !!d.nearNotified,
+          customerNotified: !!d.onTheWayNotified,
+        },
+      ]
+    : [];
   return { orderId: d.orderId, legs: leg };
 }
 
@@ -173,7 +240,8 @@ export function saveDelivery(orderId, delivery) {
 /* ---------- Tournées de livraison (un livreur, plusieurs commandes dans l'ordre le plus court) ---------- */
 export const getTour = id => (state.tours ??= {})[id] ?? null;
 export const listTours = () => Object.values(state.tours ?? {}).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-export const findTourByToken = token => (token ? Object.values(state.tours ?? {}).find(t => t.token === token) ?? null : null);
+export const findTourByToken = token =>
+  token ? (Object.values(state.tours ?? {}).find(t => t.token === token) ?? null) : null;
 export function saveTour(tour) {
   (state.tours ??= {})[tour.id] = tour;
   persist();
@@ -182,7 +250,8 @@ export function saveTour(tour) {
 
 /* ---------- Demandes WhatsApp (« Acheter » : la gérante vérifie chez le fournisseur avant de confirmer) ---------- */
 export const getRequest = id => (state.requests ??= {})[id] ?? null;
-export const listRequests = () => Object.values(state.requests ?? {}).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+export const listRequests = () =>
+  Object.values(state.requests ?? {}).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 export function saveRequest(r) {
   (state.requests ??= {})[r.id] = r;
   // On garde les 2 000 dernières demandes
@@ -194,23 +263,45 @@ export function saveRequest(r) {
 
 /* ---------- Le Marché (dropshipping) : produits des fournisseurs + réglages ---------- */
 export const DEFAULT_MARKET_SETTINGS = {
-  margin: 40,            // marge en % ajoutée au coût (produit + port fournisseur)
+  margin: 40, // marge en % ajoutée au coût (produit + port fournisseur)
   rates: { EUR: 655.957, USD: 600, CNY: 85 }, // FCFA pour 1 unité (EUR : parité fixe)
-  roundTo: 500,          // prix arrondi au 500 FCFA supérieur
-  delayMin: 10, delayMax: 20,
+  roundTo: 500, // prix arrondi au 500 FCFA supérieur
+  delayMin: 10,
+  delayMax: 20,
 };
-export const getMarketSettings = () => ({ ...DEFAULT_MARKET_SETTINGS, ...(state.market.settings || {}), rates: { ...DEFAULT_MARKET_SETTINGS.rates, ...(state.market.settings?.rates || {}) } });
-export function saveMarketSettings(patch) { state.market.settings = { ...getMarketSettings(), ...patch }; persist(); return getMarketSettings(); }
-export const listMarketProducts = () => Object.values(state.market.products).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export const getMarketSettings = () => ({
+  ...DEFAULT_MARKET_SETTINGS,
+  ...(state.market.settings || {}),
+  rates: { ...DEFAULT_MARKET_SETTINGS.rates, ...(state.market.settings?.rates || {}) },
+});
+export function saveMarketSettings(patch) {
+  state.market.settings = { ...getMarketSettings(), ...patch };
+  persist();
+  return getMarketSettings();
+}
+export const listMarketProducts = () =>
+  Object.values(state.market.products).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 export const getMarketProduct = id => state.market.products[id] ?? null;
 export const findMarketProductBySlug = slug => Object.values(state.market.products).find(p => p.slug === slug) ?? null;
-export function saveMarketProduct(p) { state.market.products[p.id] = p; persist(); return p; }
-export function deleteMarketProduct(id) { delete state.market.products[id]; persist(); }
+export function saveMarketProduct(p) {
+  state.market.products[p.id] = p;
+  persist();
+  return p;
+}
+export function deleteMarketProduct(id) {
+  delete state.market.products[id];
+  persist();
+}
 
 /* ---------- Catalogue de la boutique (null tant que la gérante ne l'a pas publié) ---------- */
 export const getCatalog = () => state.catalog;
 export const getCatalogUpdatedAt = () => state.catalogUpdatedAt;
-export function saveCatalog(products) { state.catalog = products; state.catalogUpdatedAt = new Date().toISOString(); persist(); return products; }
+export function saveCatalog(products) {
+  state.catalog = products;
+  state.catalogUpdatedAt = new Date().toISOString();
+  persist();
+  return products;
+}
 
 /* ---------- Alertes de retour en stock ---------- */
 export const listStockAlerts = () => state.stockAlerts;
@@ -219,15 +310,27 @@ export function addStockAlert(productId, contact) {
   state.stockAlerts = [...state.stockAlerts, { productId, contact, createdAt: new Date().toISOString() }].slice(-2000);
   persist();
 }
-export function removeStockAlerts(productId) { state.stockAlerts = state.stockAlerts.filter(a => a.productId !== productId); persist(); }
+export function removeStockAlerts(productId) {
+  state.stockAlerts = state.stockAlerts.filter(a => a.productId !== productId);
+  persist();
+}
 
 /* ---------- Étiquettes d'authenticité (un code unique par pièce vendue) ---------- */
 export const getAuthCode = code => state.authCodes[code] ?? null;
-export const listAuthCodes = () => Object.values(state.authCodes).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-export function saveAuthCodes(list) { for (const c of list) state.authCodes[c.code] = c; persist(); return list; }
+export const listAuthCodes = () =>
+  Object.values(state.authCodes).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+export function saveAuthCodes(list) {
+  for (const c of list) state.authCodes[c.code] = c;
+  persist();
+  return list;
+}
 export function recordAuthScan(code) {
-  const c = state.authCodes[code]; if (!c) return null;
+  const c = state.authCodes[code];
+  if (!c) return null;
   const now = new Date().toISOString();
-  c.scans = (c.scans || 0) + 1; c.firstScanAt ||= now; c.lastScanAt = now;
-  persist(); return c;
+  c.scans = (c.scans || 0) + 1;
+  c.firstScanAt ||= now;
+  c.lastScanAt = now;
+  persist();
+  return c;
 }

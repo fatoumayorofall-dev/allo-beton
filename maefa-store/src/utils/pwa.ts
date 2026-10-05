@@ -23,7 +23,11 @@ export function setupPwa() {
   });
   window.addEventListener('appinstalled', () => {
     deferred = null;
-    try { localStorage.setItem('maefa_installed', '1'); } catch { /* ignore */ }
+    try {
+      localStorage.setItem('maefa_installed', '1');
+    } catch {
+      /* ignore */
+    }
     emit();
   });
   if (import.meta.env.PROD && import.meta.env.VITE_ROUTER !== 'hash' && 'serviceWorker' in navigator) {
@@ -32,7 +36,8 @@ export function setupPwa() {
 }
 
 export const isStandalone = () =>
-  window.matchMedia?.('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  window.matchMedia?.('(display-mode: standalone)').matches ||
+  (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
 export const platform = (): 'ios' | 'android' | 'desktop' => {
   const ua = navigator.userAgent;
@@ -46,10 +51,16 @@ export function useInstall() {
   useEffect(() => {
     const l = () => force(n => n + 1);
     listeners.add(l);
-    return () => { listeners.delete(l); };
+    return () => {
+      listeners.delete(l);
+    };
   }, []);
   let installedBefore = false;
-  try { installedBefore = localStorage.getItem('maefa_installed') === '1'; } catch { /* ignore */ }
+  try {
+    installedBefore = localStorage.getItem('maefa_installed') === '1';
+  } catch {
+    /* ignore */
+  }
   return {
     installed: isStandalone(),
     installedBefore,

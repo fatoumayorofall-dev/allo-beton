@@ -1,0 +1,12 @@
+dist
+node_modules
+public
+impression
+marketing
+outils
+tests/e2e/.out
+tests/e2e/fixtures
+scripts/eval-assistant/rapport.md
+maefa-wamp.zip
+package-lock.json
+*.md

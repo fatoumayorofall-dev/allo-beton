@@ -1,6 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Bell, ChevronDown, ChevronRight, Heart, Minus, Plus, Ruler, Share2, ShieldCheck, Truck, PackageCheck } from 'lucide-react';
+import {
+  Bell,
+  ChevronDown,
+  ChevronRight,
+  Heart,
+  Minus,
+  Plus,
+  Ruler,
+  Share2,
+  ShieldCheck,
+  Truck,
+  PackageCheck,
+} from 'lucide-react';
 import { useStore } from '../context/StoreContext';
 import { CATEGORIES, OCCASIONS } from '../data/catalog';
 import { buildProductWhatsAppMessage } from '../config/site';
@@ -24,46 +36,113 @@ import { PaymentLogos, WhatsAppGlyph } from '../components/BrandLogos';
 /** Date de livraison estimée à Dakar : demain si la commande part avant 16 h (le dimanche est sauté). */
 const DeliveryEstimate: React.FC = () => {
   const now = new Date();
-  const d = new Date(now); d.setDate(d.getDate() + (now.getHours() < 16 ? 1 : 2));
+  const d = new Date(now);
+  d.setDate(d.getDate() + (now.getHours() < 16 ? 1 : 2));
   if (d.getDay() === 0) d.setDate(d.getDate() + 1);
   const day = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
   const tomorrow = d.getDate() === new Date(now.getTime() + 864e5).getDate();
   return (
-    <p className="mt-4 flex items-center gap-3 p-4 rounded-2xl border border-ink/10 text-[13px]" data-testid="delivery-estimate">
+    <p
+      className="mt-4 flex items-center gap-3 p-4 rounded-2xl border border-ink/10 text-[13px]"
+      data-testid="delivery-estimate"
+    >
       <Truck className="w-5 h-5 text-gold-dark shrink-0" strokeWidth={1.3} />
-      <span>Livrée à Dakar <strong className="font-semibold">{tomorrow ? 'dès demain' : 'le'} {day}</strong>{now.getHours() < 16 ? ' si vous commandez avant 16 h' : ''}. Partout au Sénégal en 48 à 72 h.</span>
+      <span>
+        Livrée à Dakar{' '}
+        <strong className="font-semibold">
+          {tomorrow ? 'dès demain' : 'le'} {day}
+        </strong>
+        {now.getHours() < 16 ? ' si vous commandez avant 16 h' : ''}. Partout au Sénégal en 48 à 72 h.
+      </span>
     </p>
   );
 };
 
-const Accordion: React.FC<{ title: string; open: boolean; onToggle: () => void; children: React.ReactNode; id?: string }> = ({ title, open, onToggle, children, id }) => (
+const Accordion: React.FC<{
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  id?: string;
+}> = ({ title, open, onToggle, children, id }) => (
   <div className="border-b border-ink/10" id={id}>
-    <button onClick={onToggle} aria-expanded={open} className="w-full flex items-center justify-between py-5 text-[11px] uppercase tracking-[0.22em] font-semibold">
-      {title}<ChevronDown className={`w-4 h-4 transition-transform duration-500 ${open ? 'rotate-180' : ''}`} strokeWidth={1.5} />
+    <button
+      onClick={onToggle}
+      aria-expanded={open}
+      className="w-full flex items-center justify-between py-5 text-[11px] uppercase tracking-[0.22em] font-semibold"
+    >
+      {title}
+      <ChevronDown
+        className={`w-4 h-4 transition-transform duration-500 ${open ? 'rotate-180' : ''}`}
+        strokeWidth={1.5}
+      />
     </button>
-    <div className={`grid transition-all duration-500 ease-luxe ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
-      <div className="overflow-hidden"><div className="pb-6 text-sm text-ink/70 leading-relaxed">{children}</div></div>
+    <div
+      className={`grid transition-all duration-500 ease-luxe ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+    >
+      <div className="overflow-hidden">
+        <div className="pb-6 text-sm text-ink/70 leading-relaxed">{children}</div>
+      </div>
     </div>
   </div>
 );
 
-const ReviewForm: React.FC<{ onSubmit: (r: { author: string; rating: number; comment: string }) => void }> = ({ onSubmit }) => {
+const ReviewForm: React.FC<{ onSubmit: (r: { author: string; rating: number; comment: string }) => void }> = ({
+  onSubmit,
+}) => {
   const [open, setOpen] = useState(false);
   const [author, setAuthor] = useState('');
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
-  if (!open) return <button onClick={() => setOpen(true)} className="btn-outline !h-11 !px-6 mt-2">Donner mon avis</button>;
+  if (!open)
+    return (
+      <button onClick={() => setOpen(true)} className="btn-outline !h-11 !px-6 mt-2">
+        Donner mon avis
+      </button>
+    );
   return (
-    <form className="space-y-4 mt-2 p-6 bg-white border border-ink/[0.07] rounded-3xl shadow-soft" onSubmit={e => {
-      e.preventDefault();
-      if (!author.trim() || comment.trim().length < 10) return;
-      onSubmit({ author: author.trim(), rating, comment: comment.trim() });
-      setOpen(false); setAuthor(''); setComment(''); setRating(5);
-    }}>
-      <div className="flex items-center justify-between"><span className="field-label !mb-0">Votre note</span><Stars rating={rating} size={18} onRate={setRating} /></div>
-      <input required value={author} onChange={e => setAuthor(e.target.value)} placeholder="Prénom et initiale (ex : Awa D.)" aria-label="Votre nom" maxLength={40} className="field" />
-      <textarea required minLength={10} value={comment} onChange={e => setComment(e.target.value)} rows={3} maxLength={400} placeholder="Qualité, taille, confort… (10 caractères minimum)" aria-label="Votre avis" className="field resize-none" />
-      <div className="flex gap-2"><button type="button" onClick={() => setOpen(false)} className="btn-outline !h-11 flex-1">Annuler</button><button className="btn-dark !h-11 flex-1">Publier</button></div>
+    <form
+      className="space-y-4 mt-2 p-6 bg-white border border-ink/[0.07] rounded-3xl shadow-soft"
+      onSubmit={e => {
+        e.preventDefault();
+        if (!author.trim() || comment.trim().length < 10) return;
+        onSubmit({ author: author.trim(), rating, comment: comment.trim() });
+        setOpen(false);
+        setAuthor('');
+        setComment('');
+        setRating(5);
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <span className="field-label !mb-0">Votre note</span>
+        <Stars rating={rating} size={18} onRate={setRating} />
+      </div>
+      <input
+        required
+        value={author}
+        onChange={e => setAuthor(e.target.value)}
+        placeholder="Prénom et initiale (ex : Awa D.)"
+        aria-label="Votre nom"
+        maxLength={40}
+        className="field"
+      />
+      <textarea
+        required
+        minLength={10}
+        value={comment}
+        onChange={e => setComment(e.target.value)}
+        rows={3}
+        maxLength={400}
+        placeholder="Qualité, taille, confort… (10 caractères minimum)"
+        aria-label="Votre avis"
+        className="field resize-none"
+      />
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setOpen(false)} className="btn-outline !h-11 flex-1">
+          Annuler
+        </button>
+        <button className="btn-dark !h-11 flex-1">Publier</button>
+      </div>
     </form>
   );
 };
@@ -73,14 +152,40 @@ const StockAlertForm: React.FC<{ onSubmit: (contact: string) => void }> = ({ onS
   const [contact, setContact] = useState('');
   const [done, setDone] = useState(false);
   const valid = /^\S+@\S+\.\S+$/.test(contact.trim()) || /^(\+?221)?\s?7[05678](\s?\d){7}$/.test(contact.trim());
-  if (done) return <p className="mt-5 p-4 rounded-2xl border border-ink/10 text-sm flex items-center gap-3"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> C'est noté ! Nous vous prévenons dès son retour.</p>;
+  if (done)
+    return (
+      <p className="mt-5 p-4 rounded-2xl border border-ink/10 text-sm flex items-center gap-3">
+        <Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> C'est noté ! Nous vous prévenons dès son retour.
+      </p>
+    );
   return (
-    <form className="mt-5 p-5 rounded-3xl bg-white border border-ink/[0.06]" onSubmit={e => { e.preventDefault(); if (valid) { onSubmit(contact.trim()); setDone(true); } }}>
-      <p className="text-sm font-semibold flex items-center gap-2"><Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Victime de son succès</p>
-      <p className="text-xs text-ink/75 mt-1">Laissez votre WhatsApp ou votre e-mail : nous vous prévenons dès son retour.</p>
+    <form
+      className="mt-5 p-5 rounded-3xl bg-white border border-ink/[0.06]"
+      onSubmit={e => {
+        e.preventDefault();
+        if (valid) {
+          onSubmit(contact.trim());
+          setDone(true);
+        }
+      }}
+    >
+      <p className="text-sm font-semibold flex items-center gap-2">
+        <Bell className="w-4 h-4 text-gold-dark" strokeWidth={1.5} /> Victime de son succès
+      </p>
+      <p className="text-xs text-ink/75 mt-1">
+        Laissez votre WhatsApp ou votre e-mail : nous vous prévenons dès son retour.
+      </p>
       <div className="flex gap-2 mt-4">
-        <input value={contact} onChange={e => setContact(e.target.value)} placeholder="77 123 45 67 ou e-mail" aria-label="Téléphone ou e-mail" className="field !h-11" />
-        <button disabled={!valid} className="btn-dark !h-11 !px-5 shrink-0">M'alerter</button>
+        <input
+          value={contact}
+          onChange={e => setContact(e.target.value)}
+          placeholder="77 123 45 67 ou e-mail"
+          aria-label="Téléphone ou e-mail"
+          className="field !h-11"
+        />
+        <button disabled={!valid} className="btn-dark !h-11 !px-5 shrink-0">
+          M'alerter
+        </button>
       </div>
     </form>
   );
@@ -88,7 +193,19 @@ const StockAlertForm: React.FC<{ onSubmit: (contact: string) => void }> = ({ onS
 
 export const ProductDetail: React.FC = () => {
   const { slug = '' } = useParams();
-  const { getProduct, products, addToCart, toggleWishlist, isInWishlist, markViewed, setCartOpen, notify, addReview, addStockAlert, savedCustomer } = useStore();
+  const {
+    getProduct,
+    products,
+    addToCart,
+    toggleWishlist,
+    isInWishlist,
+    markViewed,
+    setCartOpen,
+    notify,
+    addReview,
+    addStockAlert,
+    savedCustomer,
+  } = useStore();
   const product = getProduct(slug);
 
   const [size, setSize] = useState('');
@@ -100,7 +217,9 @@ export const ProductDetail: React.FC = () => {
   const { ref: buyRef, inView: buyVisible } = useInView<HTMLDivElement>('0px');
   const [pastBuy, setPastBuy] = useState(false);
 
-  usePageTitle(product?.name, product ? `${product.name} — ${product.description}` : undefined, { image: product?.images[0] });
+  usePageTitle(product?.name, product ? `${product.name} — ${product.description}` : undefined, {
+    image: product?.images[0],
+  });
 
   useEffect(() => {
     if (!product) return;
@@ -125,8 +244,10 @@ export const ProductDetail: React.FC = () => {
   const complete = useMemo(() => {
     if (!product) return [];
     const shared = (p: typeof product) => p.occasions.filter(o => product.occasions.includes(o)).length;
-    return products.filter(p => p.category !== product.category && p.stock > 0 && shared(p) > 0)
-      .sort((a, b) => shared(b) - shared(a) || b.rating - a.rating).slice(0, 4);
+    return products
+      .filter(p => p.category !== product.category && p.stock > 0 && shared(p) > 0)
+      .sort((a, b) => shared(b) - shared(a) || b.rating - a.rating)
+      .slice(0, 4);
   }, [products, product]);
 
   // Données structurées schema.org (fiches enrichies dans Google : prix, stock, note)
@@ -135,11 +256,34 @@ export const ProductDetail: React.FC = () => {
     const el = document.createElement('script');
     el.type = 'application/ld+json';
     el.text = JSON.stringify({
-      '@context': 'https://schema.org', '@type': 'Product', name: product.name, description: product.description,
-      image: product.images, sku: product.id, brand: { '@type': 'Brand', name: 'Maefa Store' }, material: product.material,
-      ...(product.reviewCount > 0 ? { aggregateRating: { '@type': 'AggregateRating', ratingValue: product.rating, reviewCount: product.reviewCount } } : {}),
-      offers: { '@type': 'Offer', ...(pricesHidden() ? {} : { priceCurrency: 'XOF', price: product.price }), url: window.location.href,
-        availability: product.stock > 0 ? 'https://schema.org/InStock' : isPreorder(product) ? 'https://schema.org/PreOrder' : 'https://schema.org/OutOfStock' },
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      description: product.description,
+      image: product.images,
+      sku: product.id,
+      brand: { '@type': 'Brand', name: 'Maefa Store' },
+      material: product.material,
+      ...(product.reviewCount > 0
+        ? {
+            aggregateRating: {
+              '@type': 'AggregateRating',
+              ratingValue: product.rating,
+              reviewCount: product.reviewCount,
+            },
+          }
+        : {}),
+      offers: {
+        '@type': 'Offer',
+        ...(pricesHidden() ? {} : { priceCurrency: 'XOF', price: product.price }),
+        url: window.location.href,
+        availability:
+          product.stock > 0
+            ? 'https://schema.org/InStock'
+            : isPreorder(product)
+              ? 'https://schema.org/PreOrder'
+              : 'https://schema.org/OutOfStock',
+      },
     });
     document.head.appendChild(el);
     return () => el.remove();
@@ -151,7 +295,9 @@ export const ProductDetail: React.FC = () => {
         <p className="eyebrow">Article introuvable</p>
         <h1 className="font-display text-5xl mt-4">Cette pièce s'est envolée</h1>
         <p className="text-ink/75 mt-4">Elle n'est plus disponible ou a été retirée de la boutique.</p>
-        <Link to="/boutique" className="btn-dark mt-10">Retour à la boutique</Link>
+        <Link to="/boutique" className="btn-dark mt-10">
+          Retour à la boutique
+        </Link>
       </div>
     );
   }
@@ -180,7 +326,20 @@ export const ProductDetail: React.FC = () => {
   // « Acheter » : WhatsApp s'ouvre avec le détail ; la boutique vérifie chez son fournisseur avant de confirmer
   const handleBuyNow = () => {
     if (!validate()) return;
-    startWhatsAppOrder([{ productId: product.id, name: product.name, price: product.price, image: product.images[0], size: size || undefined, color: color || undefined, quantity: qty }], savedCustomer);
+    startWhatsAppOrder(
+      [
+        {
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.images[0],
+          size: size || undefined,
+          color: color || undefined,
+          quantity: qty,
+        },
+      ],
+      savedCustomer,
+    );
   };
 
   const share = async () => {
@@ -188,48 +347,101 @@ export const ProductDetail: React.FC = () => {
     const data = { title: product.name, text: `${product.name} — ${shownPrice(product.price)} chez Maefa Store`, url };
     try {
       if (navigator.share) await navigator.share(data);
-      else { await navigator.clipboard.writeText(url); notify('Lien copié dans le presse-papiers', 'info'); }
-    } catch { /* partage annulé */ }
+      else {
+        await navigator.clipboard.writeText(url);
+        notify('Lien copié dans le presse-papiers', 'info');
+      }
+    } catch {
+      /* partage annulé */
+    }
   };
 
   const waMessage = buildProductWhatsAppMessage({
-    name: product.name, price: product.price, size: size || undefined, color: color || undefined, url: window.location.href,
+    name: product.name,
+    price: product.price,
+    size: size || undefined,
+    color: color || undefined,
+    url: window.location.href,
   });
   const toggle = (id: string) => setOpenSection(s => (s === id ? null : id));
 
   return (
     <div>
       <div className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-6">
-        <nav className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ink/70 mb-6 flex-wrap" aria-label="Fil d'Ariane">
-          <Link to="/" className="hover:text-ink">Accueil</Link><ChevronRight className="w-3 h-3" />
-          <Link to={`/boutique/${product.category}`} className="hover:text-ink">{category?.name}</Link><ChevronRight className="w-3 h-3" />
+        <nav
+          className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] text-ink/70 mb-6 flex-wrap"
+          aria-label="Fil d'Ariane"
+        >
+          <Link to="/" className="hover:text-ink">
+            Accueil
+          </Link>
+          <ChevronRight className="w-3 h-3" />
+          <Link to={`/boutique/${product.category}`} className="hover:text-ink">
+            {category?.name}
+          </Link>
+          <ChevronRight className="w-3 h-3" />
           <span className="text-ink line-clamp-1">{product.name}</span>
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_1fr] gap-10 lg:gap-20 items-start">
           {/* Galerie */}
-          <ProductGallery images={product.images} video={product.video} name={product.name} badges={<>
-            {off > 0 && <span className="px-2.5 py-1 border border-wine/40 text-wine text-[9px] uppercase tracking-[0.24em] font-semibold">{pricesHidden() ? 'Promo' : `-${off}%`}</span>}
-            {product.isNew && <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">Nouveau</span>}
-          </>} />
+          <ProductGallery
+            images={product.images}
+            video={product.video}
+            name={product.name}
+            badges={
+              <>
+                {off > 0 && (
+                  <span className="px-2.5 py-1 border border-wine/40 text-wine text-[9px] uppercase tracking-[0.24em] font-semibold">
+                    {pricesHidden() ? 'Promo' : `-${off}%`}
+                  </span>
+                )}
+                {product.isNew && (
+                  <span className="px-3 py-1.5 bg-ivory text-ink text-[9px] uppercase tracking-[0.2em] font-semibold rounded-full">
+                    Nouveau
+                  </span>
+                )}
+              </>
+            }
+          />
 
           {/* Informations */}
           <div>
             <div className="flex items-start justify-between gap-4">
-              <p className="eyebrow">{category?.name} · {product.subcategory}</p>
-              <button onClick={share} aria-label="Partager" className="w-9 h-9 -mt-2 grid place-items-center rounded-full hover:bg-ink/5"><Share2 className="w-4 h-4" strokeWidth={1.5} /></button>
+              <p className="eyebrow">
+                {category?.name} · {product.subcategory}
+              </p>
+              <button
+                onClick={share}
+                aria-label="Partager"
+                className="w-9 h-9 -mt-2 grid place-items-center rounded-full hover:bg-ink/5"
+              >
+                <Share2 className="w-4 h-4" strokeWidth={1.5} />
+              </button>
             </div>
             <h1 className="font-display text-5xl sm:text-6xl mt-3 leading-[0.98]">{product.name}</h1>
             {product.reviewCount > 0 && (
-              <button onClick={() => { setOpenSection('avis'); document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}
-                className="tap mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink">
-                <Stars rating={product.rating} /> <span>{product.rating.toFixed(1)} · {product.reviewCount} avis</span>
+              <button
+                onClick={() => {
+                  setOpenSection('avis');
+                  document.getElementById('avis')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }}
+                className="tap mt-4 flex items-center gap-2 text-xs text-ink/70 hover:text-ink"
+              >
+                <Stars rating={product.rating} />{' '}
+                <span>
+                  {product.rating.toFixed(1)} · {product.reviewCount} avis
+                </span>
               </button>
             )}
 
             <div className="mt-7 flex items-baseline gap-4">
-              <span className="text-2xl font-medium tracking-wide" data-testid="detail-price">{shownPrice(product.price)}</span>
-              {product.oldPrice && !pricesHidden() && <span className="text-ink/65 line-through">{formatPrice(product.oldPrice)}</span>}
+              <span className="text-2xl font-medium tracking-wide" data-testid="detail-price">
+                {shownPrice(product.price)}
+              </span>
+              {product.oldPrice && !pricesHidden() && (
+                <span className="text-ink/65 line-through">{formatPrice(product.oldPrice)}</span>
+              )}
               <ForeignPrice amount={product.price} className="text-sm text-ink/60" />
             </div>
             <p className="text-[11px] text-ink/70 mt-1">TTC · ou payez en toute sérénité à la livraison</p>
@@ -240,13 +452,25 @@ export const ProductDetail: React.FC = () => {
             <div className="mt-5 flex flex-wrap gap-2">
               {product.occasions.map(o => {
                 const occ = OCCASIONS.find(x => x.id === o);
-                return occ && <Link key={o} to={`/boutique?occasion=${o}`} className="px-3.5 h-8 inline-flex items-center rounded-full border border-ink/15 text-[11px] text-ink/75 hover:border-ink hover:text-ink transition-colors">{occ.name}</Link>;
+                return (
+                  occ && (
+                    <Link
+                      key={o}
+                      to={`/boutique?occasion=${o}`}
+                      className="px-3.5 h-8 inline-flex items-center rounded-full border border-ink/15 text-[11px] text-ink/75 hover:border-ink hover:text-ink transition-colors"
+                    >
+                      {occ.name}
+                    </Link>
+                  )
+                );
               })}
             </div>
 
             <figure className="mt-7 pl-5 border-l border-gold flex gap-4">
               <div>
-                <figcaption className="font-script text-2xl text-gold-dark leading-none">Le conseil de Maefa</figcaption>
+                <figcaption className="font-script text-2xl text-gold-dark leading-none">
+                  Le conseil de Maefa
+                </figcaption>
                 <blockquote className="mt-2 text-sm text-ink/75 leading-relaxed">{product.styleTip}</blockquote>
               </div>
             </figure>
@@ -255,49 +479,134 @@ export const ProductDetail: React.FC = () => {
 
             {product.colors.length > 0 && (
               <div>
-                <p className="field-label">Couleur — <span className="normal-case tracking-normal font-normal text-ink">{color}</span></p>
-                <div className="flex gap-1.5">{product.colors.map(c => <ColorSwatch key={c.name} color={c} size={28} selected={color === c.name} onClick={() => setColor(c.name)} />)}</div>
+                <p className="field-label">
+                  Couleur — <span className="normal-case tracking-normal font-normal text-ink">{color}</span>
+                </p>
+                <div className="flex gap-1.5">
+                  {product.colors.map(c => (
+                    <ColorSwatch
+                      key={c.name}
+                      color={c}
+                      size={28}
+                      selected={color === c.name}
+                      onClick={() => setColor(c.name)}
+                    />
+                  ))}
+                </div>
               </div>
             )}
 
             {product.sizes.length > 0 && (
               <div className="mt-7" ref={sizeRef}>
                 <div className="flex items-center justify-between mb-2">
-                  <p className={`field-label !mb-0 ${sizeError ? '!text-wine' : ''}`}>{sizeError ? 'Choisissez votre taille' : 'Taille'}</p>
-                  <Link to="/faq#tailles" className="text-[11px] flex items-center gap-1.5 link-luxe text-ink/75"><Ruler className="w-3.5 h-3.5" strokeWidth={1.5} /> Guide des tailles</Link>
+                  <p className={`field-label !mb-0 ${sizeError ? '!text-wine' : ''}`}>
+                    {sizeError ? 'Choisissez votre taille' : 'Taille'}
+                  </p>
+                  <Link to="/faq#tailles" className="text-[11px] flex items-center gap-1.5 link-luxe text-ink/75">
+                    <Ruler className="w-3.5 h-3.5" strokeWidth={1.5} /> Guide des tailles
+                  </Link>
                 </div>
                 <div className="grid grid-cols-6 gap-1.5">
                   {product.sizes.map(s => (
-                    <button key={s} onClick={() => { setSize(s); setSizeError(false); }} aria-pressed={size === s}
+                    <button
+                      key={s}
+                      onClick={() => {
+                        setSize(s);
+                        setSizeError(false);
+                      }}
+                      aria-pressed={size === s}
                       className={`h-12 text-sm border rounded-full transition-colors duration-300 ${
-                        size === s ? 'bg-ink text-ivory border-ink' : sizeError ? 'border-wine/50 hover:border-wine' : 'border-ink/15 hover:border-ink'}`}>{s}</button>
+                        size === s
+                          ? 'bg-ink text-ivory border-ink'
+                          : sizeError
+                            ? 'border-wine/50 hover:border-wine'
+                            : 'border-ink/15 hover:border-ink'
+                      }`}
+                    >
+                      {s}
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <p className={`mt-6 text-xs flex items-center gap-2 ${outOfStock ? 'text-wine' : preorder ? 'text-wine' : 'text-emerald-800'}`} data-testid="stock-line">
+            <p
+              className={`mt-6 text-xs flex items-center gap-2 ${outOfStock ? 'text-wine' : preorder ? 'text-wine' : 'text-emerald-800'}`}
+              data-testid="stock-line"
+            >
               <span className={`w-1.5 h-1.5 rounded-full ${outOfStock || preorder ? 'bg-wine' : 'bg-emerald-600'}`} />
-              {outOfStock ? 'Épuisé — bientôt de retour' : preorder ? `Sur commande — livrée sous ${product.preorderDays} jours (paiement à la commande)` : 'Disponible — expédié sous 24h'}
+              {outOfStock
+                ? 'Épuisé — bientôt de retour'
+                : preorder
+                  ? `Sur commande — livrée sous ${product.preorderDays} jours (paiement à la commande)`
+                  : 'Disponible — expédié sous 24h'}
             </p>
 
             <div ref={buyRef} className="mt-5 flex gap-2">
               <div className="flex items-center border border-ink/15 h-[52px] rounded-full overflow-hidden">
-                <button onClick={() => setQty(q => Math.max(1, q - 1))} aria-label="Diminuer" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Minus className="w-3.5 h-3.5" /></button>
-                <span className="w-8 text-center" aria-live="polite">{qty}</span>
-                <button onClick={() => setQty(q => Math.min(Math.max(1, maxQty(product)), q + 1))} aria-label="Augmenter" className="w-11 h-full grid place-items-center hover:bg-ink/5"><Plus className="w-3.5 h-3.5" /></button>
+                <button
+                  onClick={() => setQty(q => Math.max(1, q - 1))}
+                  aria-label="Diminuer"
+                  className="w-11 h-full grid place-items-center hover:bg-ink/5"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="w-8 text-center" aria-live="polite">
+                  {qty}
+                </span>
+                <button
+                  onClick={() => setQty(q => Math.min(Math.max(1, maxQty(product)), q + 1))}
+                  aria-label="Augmenter"
+                  className="w-11 h-full grid place-items-center hover:bg-ink/5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <button onClick={handleAdd} disabled={outOfStock} className="btn-dark flex-1 min-w-0 whitespace-nowrap !px-4 sm:!px-8 !tracking-[0.12em] sm:!tracking-[0.22em]">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter au panier'}</button>
-              <button onClick={e => { if (!liked) sparkleBurst(e.currentTarget, { hearts: true, count: 12, power: 0.8 }); toggleWishlist(product.id); }} aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-                className="w-[52px] h-[52px] rounded-full border border-ink/15 grid place-items-center hover:border-ink transition-colors shrink-0">
+              <button
+                onClick={handleAdd}
+                disabled={outOfStock}
+                className="btn-dark flex-1 min-w-0 whitespace-nowrap !px-4 sm:!px-8 !tracking-[0.12em] sm:!tracking-[0.22em]"
+              >
+                {outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter au panier'}
+              </button>
+              <button
+                onClick={e => {
+                  if (!liked) sparkleBurst(e.currentTarget, { hearts: true, count: 12, power: 0.8 });
+                  toggleWishlist(product.id);
+                }}
+                aria-label={liked ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                className="w-[52px] h-[52px] rounded-full border border-ink/15 grid place-items-center hover:border-ink transition-colors shrink-0"
+              >
                 <Heart className={`w-4 h-4 ${liked ? 'fill-wine text-wine' : ''}`} strokeWidth={1.5} />
               </button>
             </div>
-            {outOfStock
-              ? <StockAlertForm onSubmit={c => { addStockAlert(product.id, c); notify('Alerte enregistrée'); }} />
-              : <button onClick={handleBuyNow} data-testid="buy-whatsapp" className="mt-2 w-full h-[56px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"><WhatsAppGlyph className="w-5 h-5" /> Acheter maintenant</button>}
-            <p className="mt-2 text-[11px] text-ink/65 text-center leading-relaxed">Vous écrivez à Maefa sur WhatsApp : nous vérifions la disponibilité, puis vous envoyons le lien pour finaliser.</p>
-            <WhatsAppWithPhoto message={waMessage} image={product.images[0]} video={product.video} name={product.name} className="mt-1" />
+            {outOfStock ? (
+              <StockAlertForm
+                onSubmit={c => {
+                  addStockAlert(product.id, c);
+                  notify('Alerte enregistrée');
+                }}
+              />
+            ) : (
+              <button
+                onClick={handleBuyNow}
+                data-testid="buy-whatsapp"
+                className="mt-2 w-full h-[56px] rounded-full bg-[#177a41] hover:bg-[#12663a] text-white text-[12px] uppercase tracking-[0.2em] font-semibold inline-flex items-center justify-center gap-2.5 transition-colors"
+              >
+                <WhatsAppGlyph className="w-5 h-5" /> Acheter maintenant
+              </button>
+            )}
+            <p className="mt-2 text-[11px] text-ink/65 text-center leading-relaxed">
+              Vous écrivez à Maefa sur WhatsApp : nous vérifions la disponibilité, puis vous envoyons le lien pour
+              finaliser.
+            </p>
+            <WhatsAppWithPhoto
+              message={waMessage}
+              image={product.images[0]}
+              video={product.video}
+              name={product.name}
+              className="mt-1"
+            />
             {!outOfStock && !preorder && <DeliveryEstimate />}
 
             <ul className="mt-8 grid grid-cols-3 border border-ink/10 rounded-3xl overflow-hidden divide-x divide-ink/10 text-center text-[11px] text-ink/75">
@@ -306,46 +615,109 @@ export const ProductDetail: React.FC = () => {
                 { Icon: PackageCheck, t: 'Contrôlée avant envoi' },
                 { Icon: ShieldCheck, t: 'Paiement sécurisé' },
               ].map(({ Icon, t }) => (
-                <li key={t} className="py-4 px-2"><Icon className="w-4 h-4 mx-auto text-gold-dark mb-2" strokeWidth={1.4} />{t}</li>
+                <li key={t} className="py-4 px-2">
+                  <Icon className="w-4 h-4 mx-auto text-gold-dark mb-2" strokeWidth={1.4} />
+                  {t}
+                </li>
               ))}
             </ul>
-            <div className="mt-4" aria-label="Moyens de paiement" role="group"><PaymentLogos /></div>
+            <div className="mt-4" aria-label="Moyens de paiement" role="group">
+              <PaymentLogos />
+            </div>
 
             <div className="mt-8 border-t border-ink/10">
-              <Accordion title="Détails & composition" open={openSection === 'details'} onToggle={() => toggle('details')}>
+              <Accordion
+                title="Détails & composition"
+                open={openSection === 'details'}
+                onToggle={() => toggle('details')}
+              >
                 <ul className="space-y-2">
-                  {product.details.map(d => <li key={d} className="flex gap-3"><span className="text-gold">—</span>{d}</li>)}
-                  <li className="flex gap-3 text-ink/70"><span className="text-gold">—</span>Référence {product.id}</li>
+                  {product.details.map(d => (
+                    <li key={d} className="flex gap-3">
+                      <span className="text-gold">—</span>
+                      {d}
+                    </li>
+                  ))}
+                  <li className="flex gap-3 text-ink/70">
+                    <span className="text-gold">—</span>Référence {product.id}
+                  </li>
                 </ul>
               </Accordion>
-              <Accordion title="Matière & entretien" open={openSection === 'matiere'} onToggle={() => toggle('matiere')}>
-                <p><strong className="text-ink">Matière</strong> : {product.material}</p>
-                <p className="mt-2"><strong className="text-ink">Entretien</strong> : {product.care}</p>
+              <Accordion
+                title="Matière & entretien"
+                open={openSection === 'matiere'}
+                onToggle={() => toggle('matiere')}
+              >
+                <p>
+                  <strong className="text-ink">Matière</strong> : {product.material}
+                </p>
+                <p className="mt-2">
+                  <strong className="text-ink">Entretien</strong> : {product.care}
+                </p>
               </Accordion>
-              <Accordion title="Livraison & réception" open={openSection === 'livraison'} onToggle={() => toggle('livraison')}>
-                <p><strong className="text-ink">Dakar</strong> : livraison en 24h, de 1 500 à 2 000 FCFA selon le quartier.</p>
-                <p className="mt-2"><strong className="text-ink">Régions</strong> : de 48h à 5 jours selon la destination.</p>
-                <p className="mt-2">Chaque pièce est contrôlée avant l'envoi. <strong className="text-ink">Vérifiez votre commande à la réception</strong>, en présence du livreur : aucun échange ni retour n'est possible après la livraison.</p>
+              <Accordion
+                title="Livraison & réception"
+                open={openSection === 'livraison'}
+                onToggle={() => toggle('livraison')}
+              >
+                <p>
+                  <strong className="text-ink">Dakar</strong> : livraison en 24h, de 1 500 à 2 000 FCFA selon le
+                  quartier.
+                </p>
+                <p className="mt-2">
+                  <strong className="text-ink">Régions</strong> : de 48h à 5 jours selon la destination.
+                </p>
+                <p className="mt-2">
+                  Chaque pièce est contrôlée avant l'envoi.{' '}
+                  <strong className="text-ink">Vérifiez votre commande à la réception</strong>, en présence du livreur :
+                  aucun échange ni retour n'est possible après la livraison.
+                </p>
               </Accordion>
-              <Accordion id="avis" title={`Avis clientes (${product.reviewCount})`} open={openSection === 'avis'} onToggle={() => toggle('avis')}>
+              <Accordion
+                id="avis"
+                title={`Avis clientes (${product.reviewCount})`}
+                open={openSection === 'avis'}
+                onToggle={() => toggle('avis')}
+              >
                 {product.reviewCount > 0 ? (
                   <div className="flex items-center gap-4 mb-5">
                     <span className="font-display text-5xl text-ink">{product.rating.toFixed(1)}</span>
-                    <span><Stars rating={product.rating} size={15} /><span className="block text-xs mt-1">{product.reviewCount} avis vérifiés</span></span>
+                    <span>
+                      <Stars rating={product.rating} size={15} />
+                      <span className="block text-xs mt-1">{product.reviewCount} avis vérifiés</span>
+                    </span>
                   </div>
-                ) : <p className="mb-5">Pas encore d'avis sur cette pièce : soyez la première à donner le vôtre.</p>}
+                ) : (
+                  <p className="mb-5">Pas encore d'avis sur cette pièce : soyez la première à donner le vôtre.</p>
+                )}
                 {product.reviews?.length ? (
                   <ul className="space-y-5 mb-6">
                     {product.reviews.slice(0, 5).map(r => (
                       <li key={r.author + r.date} className="pb-5 border-b border-ink/5 last:border-0">
-                        <div className="flex items-center justify-between"><strong className="text-ink text-[13px]">{r.author}</strong><Stars rating={r.rating} size={11} /></div>
+                        <div className="flex items-center justify-between">
+                          <strong className="text-ink text-[13px]">{r.author}</strong>
+                          <Stars rating={r.rating} size={11} />
+                        </div>
                         <p className="mt-2">{r.comment}</p>
-                        <p className="text-[11px] text-ink/70 mt-1.5">{new Date(r.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                        <p className="text-[11px] text-ink/70 mt-1.5">
+                          {new Date(r.date).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric',
+                          })}
+                        </p>
                       </li>
                     ))}
                   </ul>
-                ) : <p className="mb-5">Soyez la première personne à partager votre expérience.</p>}
-                <ReviewForm onSubmit={r => { addReview(product.id, r); notify('Merci pour votre avis !'); }} />
+                ) : (
+                  <p className="mb-5">Soyez la première personne à partager votre expérience.</p>
+                )}
+                <ReviewForm
+                  onSubmit={r => {
+                    addReview(product.id, r);
+                    notify('Merci pour votre avis !');
+                  }}
+                />
               </Accordion>
             </div>
           </div>
@@ -354,24 +726,47 @@ export const ProductDetail: React.FC = () => {
 
       {complete.length > 0 && (
         <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-28">
-          <Reveal className="mb-10"><p className="eyebrow">Accordez votre silhouette</p><h2 className="font-display text-4xl sm:text-5xl mt-3">Complétez le <em>look</em></h2></Reveal>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12">{complete.map(p => <ProductCard key={p.id} product={p} />)}</div>
+          <Reveal className="mb-10">
+            <p className="eyebrow">Accordez votre silhouette</p>
+            <h2 className="font-display text-4xl sm:text-5xl mt-3">
+              Complétez le <em>look</em>
+            </h2>
+          </Reveal>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12">
+            {complete.map(p => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
         </section>
       )}
       {related.length > 0 && (
         <section className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-12 pt-24">
-          <Reveal className="mb-10"><p className="eyebrow">{category?.name}</p><h2 className="font-display text-4xl sm:text-5xl mt-3">Vous aimerez aussi</h2></Reveal>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12">{related.map(p => <ProductCard key={p.id} product={p} />)}</div>
+          <Reveal className="mb-10">
+            <p className="eyebrow">{category?.name}</p>
+            <h2 className="font-display text-4xl sm:text-5xl mt-3">Vous aimerez aussi</h2>
+          </Reveal>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-4 sm:gap-x-6 gap-y-12">
+            {related.map(p => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
         </section>
       )}
 
       {/* Barre d'achat collante (mobile) */}
-      <div className={`lg:hidden fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/10 px-4 py-3 flex items-center gap-3 transition-transform duration-500 ease-luxe ${pastBuy && !buyVisible ? 'translate-y-0' : 'translate-y-full'}`}>
+      <div
+        className={`lg:hidden fixed bottom-0 inset-x-0 z-40 bg-ivory/95 backdrop-blur border-t border-ink/10 px-4 py-3 flex items-center gap-3 transition-transform duration-500 ease-luxe ${pastBuy && !buyVisible ? 'translate-y-0' : 'translate-y-full'}`}
+      >
         <div className="flex-1 min-w-0">
           <p className="font-display text-lg leading-tight truncate">{product.name}</p>
-          <p className="text-xs text-ink/75">{shownPrice(product.price)}{size && ` · T. ${size}`}</p>
+          <p className="text-xs text-ink/75">
+            {shownPrice(product.price)}
+            {size && ` · T. ${size}`}
+          </p>
         </div>
-        <button onClick={handleAdd} disabled={outOfStock} className="btn-dark !h-12 !px-5 shrink-0">{outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter'}</button>
+        <button onClick={handleAdd} disabled={outOfStock} className="btn-dark !h-12 !px-5 shrink-0">
+          {outOfStock ? 'Épuisé' : preorder ? 'Commander' : 'Ajouter'}
+        </button>
       </div>
     </div>
   );

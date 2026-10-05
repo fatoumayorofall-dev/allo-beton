@@ -78,28 +78,36 @@ export const SHOP_LOCATION = { lat: 14.7195, lng: -17.4655 };
  * Zones de livraison et frais (FCFA). `center` et `radiusKm` servent à reconnaître la zone
  * automatiquement à partir du point choisi sur la carte.
  */
-export const DELIVERY_ZONES: { name: string; fee: number; delay: string; center?: { lat: number; lng: number }; radiusKm?: number }[] = [
+export const DELIVERY_ZONES: {
+  name: string;
+  fee: number;
+  delay: string;
+  center?: { lat: number; lng: number };
+  radiusKm?: number;
+}[] = [
   { name: 'Dakar Plateau', fee: 1500, delay: '24h', center: { lat: 14.6675, lng: -17.4365 }, radiusKm: 2.2 },
-  { name: 'Médina', fee: 1500, delay: '24h', center: { lat: 14.6860, lng: -17.4520 }, radiusKm: 2.2 },
-  { name: 'Sacré-Cœur / Mermoz', fee: 1500, delay: '24h', center: { lat: 14.7160, lng: -17.4700 }, radiusKm: 3.5 },
-  { name: 'Almadies / Ngor', fee: 2000, delay: '24h', center: { lat: 14.7450, lng: -17.5080 }, radiusKm: 4 },
-  { name: 'Parcelles Assainies', fee: 2000, delay: '24h', center: { lat: 14.7650, lng: -17.4400 }, radiusKm: 3.5 },
-  { name: 'Pikine / Guédiawaye', fee: 2500, delay: '24–48h', center: { lat: 14.7600, lng: -17.3900 }, radiusKm: 5 },
-  { name: 'Rufisque', fee: 3000, delay: '48h', center: { lat: 14.7200, lng: -17.2750 }, radiusKm: 6 },
-  { name: 'Keur Massar', fee: 3000, delay: '48h', center: { lat: 14.7820, lng: -17.3160 }, radiusKm: 4 },
-  { name: 'Diamniadio', fee: 3000, delay: '48h', center: { lat: 14.7230, lng: -17.1830 }, radiusKm: 7 },
-  { name: 'Thiès', fee: 4000, delay: '48–72h', center: { lat: 14.7900, lng: -16.9300 }, radiusKm: 12 },
-  { name: 'Mbour / Saly', fee: 4500, delay: '48–72h', center: { lat: 14.4300, lng: -16.9900 }, radiusKm: 12 },
-  { name: 'Touba', fee: 5000, delay: '48–72h', center: { lat: 14.8600, lng: -15.8800 }, radiusKm: 10 },
-  { name: 'Kaolack', fee: 5000, delay: '48–72h', center: { lat: 14.1500, lng: -16.0700 }, radiusKm: 10 },
-  { name: 'Saint-Louis', fee: 5000, delay: '48–72h', center: { lat: 16.0300, lng: -16.4900 }, radiusKm: 10 },
+  { name: 'Médina', fee: 1500, delay: '24h', center: { lat: 14.686, lng: -17.452 }, radiusKm: 2.2 },
+  { name: 'Sacré-Cœur / Mermoz', fee: 1500, delay: '24h', center: { lat: 14.716, lng: -17.47 }, radiusKm: 3.5 },
+  { name: 'Almadies / Ngor', fee: 2000, delay: '24h', center: { lat: 14.745, lng: -17.508 }, radiusKm: 4 },
+  { name: 'Parcelles Assainies', fee: 2000, delay: '24h', center: { lat: 14.765, lng: -17.44 }, radiusKm: 3.5 },
+  { name: 'Pikine / Guédiawaye', fee: 2500, delay: '24–48h', center: { lat: 14.76, lng: -17.39 }, radiusKm: 5 },
+  { name: 'Rufisque', fee: 3000, delay: '48h', center: { lat: 14.72, lng: -17.275 }, radiusKm: 6 },
+  { name: 'Keur Massar', fee: 3000, delay: '48h', center: { lat: 14.782, lng: -17.316 }, radiusKm: 4 },
+  { name: 'Diamniadio', fee: 3000, delay: '48h', center: { lat: 14.723, lng: -17.183 }, radiusKm: 7 },
+  { name: 'Thiès', fee: 4000, delay: '48–72h', center: { lat: 14.79, lng: -16.93 }, radiusKm: 12 },
+  { name: 'Mbour / Saly', fee: 4500, delay: '48–72h', center: { lat: 14.43, lng: -16.99 }, radiusKm: 12 },
+  { name: 'Touba', fee: 5000, delay: '48–72h', center: { lat: 14.86, lng: -15.88 }, radiusKm: 10 },
+  { name: 'Kaolack', fee: 5000, delay: '48–72h', center: { lat: 14.15, lng: -16.07 }, radiusKm: 10 },
+  { name: 'Saint-Louis', fee: 5000, delay: '48–72h', center: { lat: 16.03, lng: -16.49 }, radiusKm: 10 },
   { name: 'Autres régions', fee: 5000, delay: '3–5 jours' },
 ];
 
 /** Distance en km entre deux points GPS. */
 export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
   const toRad = (x: number) => (x * Math.PI) / 180;
-  const h = Math.sin(toRad(b.lat - a.lat) / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(toRad(b.lng - a.lng) / 2) ** 2;
+  const h =
+    Math.sin(toRad(b.lat - a.lat) / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(toRad(b.lng - a.lng) / 2) ** 2;
   return 12742 * Math.asin(Math.sqrt(h));
 }
 
@@ -116,9 +124,11 @@ export function zoneForPoint(p: { lat: number; lng: number }): string {
 }
 
 /** Itinéraire vers un point dans Google Maps (ouvre l'application sur téléphone). */
-export const googleMapsDirections = (p: { lat: number; lng: number }) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+export const googleMapsDirections = (p: { lat: number; lng: number }) =>
+  `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
 /** Itinéraire vers un point dans Waze. */
-export const wazeDirections = (p: { lat: number; lng: number }) => `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
+export const wazeDirections = (p: { lat: number; lng: number }) =>
+  `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
 
 /** Codes promo disponibles */
 export interface PromoCode {
@@ -143,7 +153,13 @@ export function buildWhatsAppLink(message: string, phone = SITE_CONFIG.whatsappR
   return `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(message)}`;
 }
 
-export function buildProductWhatsAppMessage(opts: { name: string; price: number; size?: string; color?: string; url?: string }): string {
+export function buildProductWhatsAppMessage(opts: {
+  name: string;
+  price: number;
+  size?: string;
+  color?: string;
+  url?: string;
+}): string {
   const lines = [
     `Bonjour Maefa Store 👋`,
     ``,
@@ -154,6 +170,9 @@ export function buildProductWhatsAppMessage(opts: { name: string; price: number;
   if (opts.size) lines.push(`▸ Taille : ${opts.size}`);
   if (opts.color) lines.push(`▸ Couleur : ${opts.color}`);
   if (opts.url) lines.push(``, `Lien : ${opts.url}`);
-  lines.push(``, SITE_CONFIG.confidentialPrices ? `Est-il disponible, et à quel prix ? Merci !` : `Est-il disponible ? Merci !`);
+  lines.push(
+    ``,
+    SITE_CONFIG.confidentialPrices ? `Est-il disponible, et à quel prix ? Merci !` : `Est-il disponible ? Merci !`,
+  );
   return lines.join('\n');
 }

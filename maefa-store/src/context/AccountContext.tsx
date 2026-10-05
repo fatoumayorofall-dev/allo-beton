@@ -1,11 +1,35 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { Order } from '../data/types';
-import { authLogout, authPin, authStart, authVerify, changeMyPin, fetchMe, getServerStatus, saveMyOrder, updateMe, type Account } from '../services/api';
+import {
+  authLogout,
+  authPin,
+  authStart,
+  authVerify,
+  changeMyPin,
+  fetchMe,
+  getServerStatus,
+  saveMyOrder,
+  updateMe,
+  type Account,
+} from '../services/api';
 import { useStore } from './StoreContext';
 
 const TOKEN_KEY = 'maefa_token';
-const readToken = () => { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } };
-const writeToken = (t: string | null) => { try { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ } };
+const readToken = () => {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+const writeToken = (t: string | null) => {
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* ignore */
+  }
+};
 
 interface AccountContextValue {
   /** 'off' : comptes indisponibles (serveur absent) */
@@ -34,31 +58,52 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const synced = useRef(false);
 
   /** Après connexion : fusion des favoris et des coordonnées de ce téléphone avec le compte. */
-  const adopt = useCallback((u: Account, orders: Order[]) => {
-    setUser(u);
-    setRemoteOrders(orders);
-    setStatus('user');
-    mergeWishlist(u.wishlist);
-    if (!savedCustomer && u.firstName) {
-      saveCustomer({ firstName: u.firstName, lastName: u.lastName, phone: u.phone.replace(/^\+221/, ''), zone: u.zone, address: u.address, location: u.location ?? undefined });
-    }
-    synced.current = true;
-  }, [mergeWishlist, savedCustomer, saveCustomer]);
+  const adopt = useCallback(
+    (u: Account, orders: Order[]) => {
+      setUser(u);
+      setRemoteOrders(orders);
+      setStatus('user');
+      mergeWishlist(u.wishlist);
+      if (!savedCustomer && u.firstName) {
+        saveCustomer({
+          firstName: u.firstName,
+          lastName: u.lastName,
+          phone: u.phone.replace(/^\+221/, ''),
+          zone: u.zone,
+          address: u.address,
+          location: u.location ?? undefined,
+        });
+      }
+      synced.current = true;
+    },
+    [mergeWishlist, savedCustomer, saveCustomer],
+  );
 
   useEffect(() => {
     let alive = true;
     (async () => {
       const server = await getServerStatus();
       if (!alive) return;
-      if (!server.accounts) { setStatus('off'); return; }
-      if (!token) { setStatus('guest'); return; }
+      if (!server.accounts) {
+        setStatus('off');
+        return;
+      }
+      if (!token) {
+        setStatus('guest');
+        return;
+      }
       const r = await fetchMe(token);
       if (!alive) return;
       if (r.ok) adopt(r.data.user, r.data.orders);
-      else if (r.status === 401) { writeToken(null); setToken(null); setStatus('guest'); }
-      else setStatus('guest');
+      else if (r.status === 401) {
+        writeToken(null);
+        setToken(null);
+        setStatus('guest');
+      } else setStatus('guest');
     })();
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [token]); // « adopt » volontairement absent : il ne doit pas relancer la session
 
   // Favoris : envoyés au compte quand ils changent (après la première synchronisation)
@@ -68,45 +113,62 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return () => clearTimeout(t);
   }, [wishlist, status, token]);
 
-  const verifyCode = useCallback(async (phone: string, code: string) => {
-    const r = await authVerify(phone, code);
-    if (!r.ok) return { ok: false, error: r.error };
-    writeToken(r.data.token);
-    setToken(r.data.token);
-    const me = await fetchMe(r.data.token);
-    adopt(r.data.user, me.ok ? me.data.orders : []);
-    return { ok: true, isNew: !r.data.user.firstName };
-  }, [adopt]);
+  const verifyCode = useCallback(
+    async (phone: string, code: string) => {
+      const r = await authVerify(phone, code);
+      if (!r.ok) return { ok: false, error: r.error };
+      writeToken(r.data.token);
+      setToken(r.data.token);
+      const me = await fetchMe(r.data.token);
+      adopt(r.data.user, me.ok ? me.data.orders : []);
+      return { ok: true, isNew: !r.data.user.firstName };
+    },
+    [adopt],
+  );
 
-  const loginWithPin = useCallback(async (phone: string, pin: string) => {
-    const r = await authPin(phone, pin);
-    if (!r.ok) return { ok: false, error: r.error };
-    writeToken(r.data.token);
-    setToken(r.data.token);
-    const me = await fetchMe(r.data.token);
-    adopt(r.data.user, me.ok ? me.data.orders : []);
-    return { ok: true, isNew: !r.data.user.firstName };
-  }, [adopt]);
+  const loginWithPin = useCallback(
+    async (phone: string, pin: string) => {
+      const r = await authPin(phone, pin);
+      if (!r.ok) return { ok: false, error: r.error };
+      writeToken(r.data.token);
+      setToken(r.data.token);
+      const me = await fetchMe(r.data.token);
+      adopt(r.data.user, me.ok ? me.data.orders : []);
+      return { ok: true, isNew: !r.data.user.firstName };
+    },
+    [adopt],
+  );
 
-  const saveProfile = useCallback(async (patch: Partial<Omit<Account, 'phone' | 'createdAt'>>) => {
-    if (!token) return false;
-    const r = await updateMe(token, patch);
-    if (r.ok) setUser(r.data.user);
-    return r.ok;
-  }, [token]);
+  const saveProfile = useCallback(
+    async (patch: Partial<Omit<Account, 'phone' | 'createdAt'>>) => {
+      if (!token) return false;
+      const r = await updateMe(token, patch);
+      if (r.ok) setUser(r.data.user);
+      return r.ok;
+    },
+    [token],
+  );
 
-  const changePin = useCallback(async (current: string, next: string) => {
-    if (!token) return { ok: false, error: 'Non connectée' };
-    const r = await changeMyPin(token, current, next);
-    if (!r.ok) return { ok: false, error: r.error };
-    setUser(u => (u ? { ...u, hasPin: true } : u));
-    return { ok: true };
-  }, [token]);
+  const changePin = useCallback(
+    async (current: string, next: string) => {
+      if (!token) return { ok: false, error: 'Non connectée' };
+      const r = await changeMyPin(token, current, next);
+      if (!r.ok) return { ok: false, error: r.error };
+      setUser(u => (u ? { ...u, hasPin: true } : u));
+      return { ok: true };
+    },
+    [token],
+  );
 
-  const recordOrder = useCallback((order: Order) => {
-    if (!token || status !== 'user') return;
-    saveMyOrder(token, order).then(r => { if (r.ok) setRemoteOrders(list => [order, ...list.filter(o => o.id !== order.id)]); });
-  }, [token, status]);
+  const recordOrder = useCallback(
+    (order: Order) => {
+      if (!token || status !== 'user') return;
+      saveMyOrder(token, order).then(r => {
+        if (r.ok) setRemoteOrders(list => [order, ...list.filter(o => o.id !== order.id)]);
+      });
+    },
+    [token, status],
+  );
 
   const logout = useCallback(() => {
     if (token) authLogout(token);
@@ -118,9 +180,21 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setStatus('guest');
   }, [token]);
 
-  const value = useMemo<AccountContextValue>(() => ({
-    status, user, remoteOrders, startLogin: authStart, verifyCode, loginWithPin, saveProfile, changePin, recordOrder, logout,
-  }), [status, user, remoteOrders, verifyCode, loginWithPin, saveProfile, changePin, recordOrder, logout]);
+  const value = useMemo<AccountContextValue>(
+    () => ({
+      status,
+      user,
+      remoteOrders,
+      startLogin: authStart,
+      verifyCode,
+      loginWithPin,
+      saveProfile,
+      changePin,
+      recordOrder,
+      logout,
+    }),
+    [status, user, remoteOrders, verifyCode, loginWithPin, saveProfile, changePin, recordOrder, logout],
+  );
 
   return <AccountContext.Provider value={value}>{children}</AccountContext.Provider>;
 };

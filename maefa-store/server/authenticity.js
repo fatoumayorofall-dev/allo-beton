@@ -22,7 +22,12 @@ export function newCode() {
 }
 /** Normalise ce que tape la cliente (minuscules, O→0, I/L→1, espaces) et vérifie la clé. */
 export function normalizeCode(input) {
-  const raw = String(input || '').toUpperCase().replace(/[^0-9A-Z]/g, '').replace(/O/g, '0').replace(/[IL]/g, '1').replace(/U/g, 'V');
+  const raw = String(input || '')
+    .toUpperCase()
+    .replace(/[^0-9A-Z]/g, '')
+    .replace(/O/g, '0')
+    .replace(/[IL]/g, '1')
+    .replace(/U/g, 'V');
   if (raw.length !== 11 || [...raw].some(ch => !ALPHABET.includes(ch))) return null;
   if (checkChar(raw.slice(0, 10)) !== raw[10]) return null;
   return `${raw.slice(0, 4)}-${raw.slice(4, 8)}-${raw.slice(8)}`;
@@ -37,13 +42,22 @@ export function registerAuthenticityRoutes(app, { limit, isAdmin, store }) {
     const quantity = Math.round(Number(req.body?.quantity));
     const productName = clip(req.body?.productName, 120);
     if (!productName) return res.status(400).json({ error: 'Choisissez une pièce' });
-    if (!(quantity >= 1 && quantity <= 100)) return res.status(400).json({ error: 'Entre 1 et 100 étiquettes à la fois' });
+    if (!(quantity >= 1 && quantity <= 100))
+      return res.status(400).json({ error: 'Entre 1 et 100 étiquettes à la fois' });
     const now = new Date().toISOString();
     const codes = [];
     while (codes.length < quantity) {
       const code = newCode();
       if (store.getAuthCode(code)) continue;
-      codes.push({ code, productId: clip(req.body?.productId, 40) || undefined, productSlug: clip(req.body?.productSlug, 90) || undefined, productName, orderId: clip(req.body?.orderId, 20) || undefined, createdAt: now, scans: 0 });
+      codes.push({
+        code,
+        productId: clip(req.body?.productId, 40) || undefined,
+        productSlug: clip(req.body?.productSlug, 90) || undefined,
+        productName,
+        orderId: clip(req.body?.orderId, 20) || undefined,
+        createdAt: now,
+        scans: 0,
+      });
     }
     res.status(201).json({ codes: store.saveAuthCodes(codes) });
   });
@@ -55,15 +69,20 @@ export function registerAuthenticityRoutes(app, { limit, isAdmin, store }) {
   /* Cliente : vérifier une étiquette */
   app.get('/api/authentique/:code', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    if (!limit(`auth:${req.ip}`, 60, 3600e3)) return res.status(429).json({ error: 'Trop de vérifications, réessayez dans une heure' });
+    if (!limit(`auth:${req.ip}`, 60, 3600e3))
+      return res.status(429).json({ error: 'Trop de vérifications, réessayez dans une heure' });
     const code = normalizeCode(req.params.code);
     if (!code) return res.json({ status: 'invalide' });
     const c = store.recordAuthScan(code);
     if (!c) return res.json({ status: 'inconnu', code });
     res.json({
       status: c.scans > SUSPICIOUS_AFTER ? 'suspect' : c.scans > 1 ? 'deja-verifie' : 'authentique',
-      code, productName: c.productName, productSlug: c.productSlug, issuedAt: c.createdAt.slice(0, 10),
-      scans: c.scans, firstScanAt: c.firstScanAt,
+      code,
+      productName: c.productName,
+      productSlug: c.productSlug,
+      issuedAt: c.createdAt.slice(0, 10),
+      scans: c.scans,
+      firstScanAt: c.firstScanAt,
     });
   });
 }

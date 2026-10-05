@@ -10,7 +10,12 @@
     "preview": "vite preview",
     "server": "node server/index.js",
     "start": "npm run build && node server/index.js",
-    "eval:assistant": "node scripts/eval-assistant/run.mjs"
+    "eval:assistant": "node scripts/eval-assistant/run.mjs",
+    "test:e2e": "node tests/e2e/run.mjs",
+    "test:assistant": "node scripts/eval-assistant/run.mjs --offline",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -27,13 +32,20 @@
     "twilio": "^6.1.1"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@types/react": "^18.3.28",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.18",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^17.13.0",
+    "playwright": "^1.56.1",
     "postcss": "^8.4.35",
+    "prettier": "^3.9.9",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.5.3",
+    "typescript-eslint": "^8.71.1",
     "vite": "^6.3.6"
   }
 }

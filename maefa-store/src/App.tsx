@@ -55,8 +55,15 @@ const Router = import.meta.env.VITE_ROUTER === 'hash' ? HashRouter : BrowserRout
 /** Pages les plus probables après l'arrivée : préchargées quand le navigateur n'a plus rien à faire. */
 const usePreloadLikelyPages = () => {
   useEffect(() => {
-    const preload = () => { Cart.preload(); Checkout.preload(); Market.preload(); };
-    const t = window.setTimeout(() => ('requestIdleCallback' in window ? window.requestIdleCallback(preload) : preload()), 2500);
+    const preload = () => {
+      Cart.preload();
+      Checkout.preload();
+      Market.preload();
+    };
+    const t = window.setTimeout(
+      () => ('requestIdleCallback' in window ? window.requestIdleCallback(preload) : preload()),
+      2500,
+    );
     return () => clearTimeout(t);
   }, []);
 };
@@ -75,13 +82,19 @@ const ScrollToTop: React.FC = () => {
 };
 
 const PageFallback: React.FC = () => (
-  <div className="min-h-[100svh] grid place-items-center" role="status" aria-busy="true" aria-label="Chargement"><BrandMark shine className="h-16 w-auto" /></div>
+  <div className="min-h-[100svh] grid place-items-center" role="status" aria-busy="true" aria-label="Chargement">
+    <BrandMark shine className="h-16 w-auto" />
+  </div>
 );
 
 /** Fondu doux à chaque changement de page. */
 const PageFade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
-  return <div key={pathname} className="animate-page-in">{children}</div>;
+  return (
+    <div key={pathname} className="animate-page-in">
+      {children}
+    </div>
+  );
 };
 
 /**
@@ -99,7 +112,8 @@ const useChromeMode = (): ChromeMode => {
   if (pathname === '/admin') return 'admin';
   return 'shop';
 };
-const Chrome: React.FC<{ on?: ChromeMode[]; children: React.ReactNode }> = ({ on = ['shop'], children }) => (on.includes(useChromeMode()) ? <>{children}</> : null);
+const Chrome: React.FC<{ on?: ChromeMode[]; children: React.ReactNode }> = ({ on = ['shop'], children }) =>
+  on.includes(useChromeMode()) ? <>{children}</> : null;
 
 export default function App() {
   usePreloadLikelyPages();
@@ -107,54 +121,89 @@ export default function App() {
     <Router>
       <StoreProvider>
         <AccountProvider>
-        <ScrollToTop />
-        <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-ink focus:text-ivory focus:px-4 focus:py-2">Aller au contenu</a>
-        <div className="min-h-screen flex flex-col">
-          <Chrome><Navbar /></Chrome>
-          <Chrome on={['checkout']}><CheckoutHeader /></Chrome>
-          <Chrome on={['admin']}><AdminHeader /></Chrome>
-          <main id="contenu" className="flex-1">
-            <Suspense fallback={<PageFallback />}>
-              <PageFade>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/boutique" element={<Catalog />} />
-                <Route path="/boutique/:category" element={<Catalog />} />
-                <Route path="/produit/:slug" element={<ProductDetail />} />
-                <Route path="/panier" element={<Cart />} />
-                <Route path="/commande" element={<Checkout />} />
-                <Route path="/confirmation/:id" element={<OrderSuccess />} />
-                <Route path="/suivi" element={<Tracking />} />
-                <Route path="/favoris" element={<Wishlist />} />
-                <Route path="/mes-commandes" element={<MyOrders />} />
-                <Route path="/compte" element={<Account />} />
-                <Route path="/p/:code" element={<SimpleProduct />} />
-                <Route path="/s" element={<Showcase />} />
-                <Route path="/journal" element={FEATURES.journal ? <Journal /> : <Navigate to="/boutique" replace />} />
-                <Route path="/journal/:slug" element={FEATURES.journal ? <ArticlePage /> : <Navigate to="/boutique" replace />} />
-                <Route path="/a-propos" element={<About />} />
-                <Route path="/faq" element={<FAQ />} />
-                <Route path="/authentique" element={<Authenticity />} />
-                <Route path="/authentique/:code" element={<Authenticity />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/livreur/tournee/:token" element={<DriverTour />} />
-                <Route path="/livreur/:token" element={<Driver />} />
-                <Route path="/marche" element={FEATURES.marche ? <Market /> : <Navigate to="/boutique" replace />} />
-                <Route path="/marche/:slug" element={FEATURES.marche ? <MarketProduct /> : <Navigate to="/boutique" replace />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              </PageFade>
-            </Suspense>
-          </main>
-          <Chrome><Footer /></Chrome>
-          <Chrome on={['checkout']}><CheckoutFooter /></Chrome>
-        </div>
-        <CartDrawer />
-        <QuickView />
-        <Toasts />
-        <Chrome><FloatingActions /><AssistantHost /><TabBar /></Chrome>
-        <Chrome on={['shop', 'checkout']}><MagicLayer /></Chrome>
-        <Chrome><InstallBanner /></Chrome>
+          <ScrollToTop />
+          <a
+            href="#contenu"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[200] focus:bg-ink focus:text-ivory focus:px-4 focus:py-2"
+          >
+            Aller au contenu
+          </a>
+          <div className="min-h-screen flex flex-col">
+            <Chrome>
+              <Navbar />
+            </Chrome>
+            <Chrome on={['checkout']}>
+              <CheckoutHeader />
+            </Chrome>
+            <Chrome on={['admin']}>
+              <AdminHeader />
+            </Chrome>
+            <main id="contenu" className="flex-1">
+              <Suspense fallback={<PageFallback />}>
+                <PageFade>
+                  <Routes>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/boutique" element={<Catalog />} />
+                    <Route path="/boutique/:category" element={<Catalog />} />
+                    <Route path="/produit/:slug" element={<ProductDetail />} />
+                    <Route path="/panier" element={<Cart />} />
+                    <Route path="/commande" element={<Checkout />} />
+                    <Route path="/confirmation/:id" element={<OrderSuccess />} />
+                    <Route path="/suivi" element={<Tracking />} />
+                    <Route path="/favoris" element={<Wishlist />} />
+                    <Route path="/mes-commandes" element={<MyOrders />} />
+                    <Route path="/compte" element={<Account />} />
+                    <Route path="/p/:code" element={<SimpleProduct />} />
+                    <Route path="/s" element={<Showcase />} />
+                    <Route
+                      path="/journal"
+                      element={FEATURES.journal ? <Journal /> : <Navigate to="/boutique" replace />}
+                    />
+                    <Route
+                      path="/journal/:slug"
+                      element={FEATURES.journal ? <ArticlePage /> : <Navigate to="/boutique" replace />}
+                    />
+                    <Route path="/a-propos" element={<About />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/authentique" element={<Authenticity />} />
+                    <Route path="/authentique/:code" element={<Authenticity />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/livreur/tournee/:token" element={<DriverTour />} />
+                    <Route path="/livreur/:token" element={<Driver />} />
+                    <Route
+                      path="/marche"
+                      element={FEATURES.marche ? <Market /> : <Navigate to="/boutique" replace />}
+                    />
+                    <Route
+                      path="/marche/:slug"
+                      element={FEATURES.marche ? <MarketProduct /> : <Navigate to="/boutique" replace />}
+                    />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </PageFade>
+              </Suspense>
+            </main>
+            <Chrome>
+              <Footer />
+            </Chrome>
+            <Chrome on={['checkout']}>
+              <CheckoutFooter />
+            </Chrome>
+          </div>
+          <CartDrawer />
+          <QuickView />
+          <Toasts />
+          <Chrome>
+            <FloatingActions />
+            <AssistantHost />
+            <TabBar />
+          </Chrome>
+          <Chrome on={['shop', 'checkout']}>
+            <MagicLayer />
+          </Chrome>
+          <Chrome>
+            <InstallBanner />
+          </Chrome>
         </AccountProvider>
       </StoreProvider>
     </Router>
