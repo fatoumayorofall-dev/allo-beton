@@ -45,7 +45,9 @@ flowchart LR
   API --> SEC --> DOM --> MEM
   MEM -- écriture différée --> STO
   MEM -. sans base .-> JS
-  DOM --> OSM
+  DOM --> GW[Passerelle geo]
+  GW -- HTTP --> GEOS[Microservice geo<br/>adresses, itinéraires,<br/>tournées]
+  GEOS --> OSM
   DOM --> WA
   API --> IA
 ```
@@ -77,13 +79,36 @@ maefa-store/
 │  ├─ requests.js     demandes WhatsApp (DEM-XXXXX), prix convenus
 │  ├─ catalog.js      catalogue partagé, stock, « sur commande »
 │  ├─ tourPlanner.js  optimisation des tournées de livraison
+│  ├─ geoGateway.js   passerelle vers le microservice geo (ou calcul intégré)
+│  ├─ jwt.js          jetons JWT HS256
+│  ├─ db/             schéma PostgreSQL (Drizzle), migrations, dépôt
 │  ├─ geo.js          adresses, itinéraires, lieux connus (OpenStreetMap)
 │  ├─ auth.js         comptes clientes (code SMS, sessions JWT révocables)
 │  ├─ adminAuth.js    accès gérante (PIN vérifié côté serveur)
 │  └─ store.js        persistance
-├─ tests/e2e/         17 scénarios Playwright + lanceur
+├─ services/geo/     microservice de géolocalisation et de tournées
+├─ tests/e2e/         18 scénarios Playwright + lanceur
+├─ tests/unit/        tests unitaires et d'intégration (node:test)
 └─ docs/              ce dossier, schéma de base de données, API (OpenAPI)
 ```
+
+### Patrons de conception
+
+| Patron | Où | Rôle |
+|---|---|---|
+| **MVC** | Vues : composants React (`src/pages`, `src/components`) ; contrôleurs : routes Express (`server/*.js`, `register…Routes`) ; modèle : `server/store.js` + `server/db/` | séparer l'affichage, le traitement des requêtes et les données |
+| **Injection de dépendances** | `server/index.js` (racine de composition) crée `store`, `wa`, `geo`, `isAdmin`, `limit` et les passe à chaque `register…Routes(app, { … })` | chaque module reçoit ce dont il a besoin ; on peut le tester avec des doublures |
+| **Dépôt (Repository)** | `server/db/pgRepository.js` (PostgreSQL) ou fichier JSON derrière la même interface (`store.js`) | changer de stockage sans toucher aux routes |
+| **Passerelle (Gateway) + Stratégie** | `server/geoGateway.js` : implémentation intégrée ou client HTTP du microservice, choisie à la configuration | découpler le métier du service de géolocalisation, avec repli automatique |
+| **Contexte (Provider)** | `StoreContext`, `AccountContext` (React) | état partagé du panier, du catalogue et du compte |
+
+### Microservice « geo »
+
+`services/geo/server.js` est un service HTTP **indépendant et sans état** : recherche d'adresse,
+adresse d'un point, lieux connus, itinéraire, matrice des temps de trajet et **optimisation des
+tournées**. Le serveur principal l'appelle quand `GEO_SERVICE_URL` est défini ; s'il ne répond pas,
+la passerelle calcule localement (le site ne tombe jamais en panne à cause de lui). Avec Docker,
+`docker compose up` lance trois conteneurs : `api`, `geo` et `db` (PostgreSQL).
 
 ---
 

@@ -12,19 +12,12 @@
 //    déclaré livré que si la cliente donne son code), note du livreur
 // ============================================================
 import crypto from 'node:crypto';
-import {
-  distanceM,
-  etaMinutes,
-  nearbyPlaces,
-  reverseGeocode,
-  roadRoute,
-  roadTable,
-  routeEtaMinutes,
-  searchPlaces,
-  trafficFactor,
-  validPoint,
-} from './geo.js';
-import { bestOrder, pathLength } from './tourPlanner.js';
+import { distanceM, etaMinutes, routeEtaMinutes, trafficFactor, validPoint } from './geo.js';
+import { pathLength } from './tourPlanner.js';
+import { localGeo } from './geoGateway.js';
+
+/** Service de géolocalisation injecté par registerOrderRoutes (intégré ou microservice). */
+let geoService = localGeo;
 import { agreedPrices, linkRequestToOrder } from './requests.js';
 import { checkMarketItems } from './market.js';
 import { applyStock, checkStock } from './catalog.js';
@@ -129,7 +122,7 @@ async function refreshRoute(leg, target) {
   if (r && age < ROUTE_EVERY_MS) {
     if (nearestSegment(r.path, pos).distance < ROUTE_OFF_M) return;
   }
-  const got = await roadRoute(pos, target);
+  const got = await geoService.roadRoute(pos, target);
   if (got) leg.route = { ...got, at: Date.now(), straight: distanceM(pos, target) };
 }
 
@@ -185,7 +178,8 @@ function publicDelivery(d, order) {
   return out;
 }
 
-export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder }) {
+export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder, geo = localGeo }) {
+  geoService = geo;
   const SITE_URL = process.env.SITE_URL || 'http://localhost:5174';
 
   /** Journalise un envoi WhatsApp dans la commande (visible par la gérante). */
@@ -740,9 +734,9 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
   /** Ordre le plus court + distances et heures d'arrivée estimées. */
   async function planTour(orders, vehicle = 'moto') {
     const points = [SHOP, ...orders.map(o => o.customer.location)];
-    const table = await roadTable(points);
+    const table = await geo.roadTable(points);
     const m = table.distanceM;
-    const order = bestOrder(m);
+    const order = await geo.bestOrder(m);
     const factor = trafficFactor(vehicle);
     let cumM = 0,
       cumS = 0,
@@ -1003,14 +997,14 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     if (!limit(`geo:${req.ip}`, 90, 60e3)) return res.status(429).json({ error: 'Trop de recherches' });
     const p = { lat: Number(req.query.lat), lng: Number(req.query.lng) };
     if (!validPoint(p)) return res.status(400).json({ error: 'Point invalide' });
-    res.json({ places: await nearbyPlaces(p.lat, p.lng, Number(req.query.r) || 350) });
+    res.json({ places: await geo.nearbyPlaces(p.lat, p.lng, Number(req.query.r) || 350) });
   });
 
   app.get('/api/geo/search', async (req, res) => {
     if (!limit(`geo:${req.ip}`, 90, 60e3)) return res.status(429).json({ error: 'Trop de recherches' });
     const near = { lat: Number(req.query.lat), lng: Number(req.query.lng) };
     try {
-      res.json({ results: await searchPlaces(req.query.q, validPoint(near) ? near : undefined) });
+      res.json({ results: await geo.searchPlaces(req.query.q, validPoint(near) ? near : undefined) });
     } catch (err) {
       console.error("Recherche d'adresse :", err.message);
       res.status(502).json({ error: 'Recherche indisponible', results: [] });
@@ -1022,7 +1016,7 @@ export function registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder
     const p = { lat: Number(req.query.lat), lng: Number(req.query.lng) };
     if (!validPoint(p)) return res.status(400).json({ error: 'Point invalide' });
     try {
-      res.json(await reverseGeocode(p.lat, p.lng));
+      res.json(await geo.reverseGeocode(p.lat, p.lng));
     } catch (err) {
       console.error('Adresse du point :', err.message);
       res.status(502).json({ error: 'Adresse indisponible' });

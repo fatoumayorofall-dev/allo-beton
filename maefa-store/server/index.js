@@ -270,7 +270,10 @@ app.delete('/api/voice/:slug', (req, res) => {
 registerAuthRoutes(app, { limit, wa, store, isAdmin });
 
 /* ---------- Commandes, livraison et suivi GPS du livreur ---------- */
-registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder });
+// Géolocalisation et tournées : intégrées, ou microservice si GEO_SERVICE_URL est défini
+const { createGeoGateway } = await import('./geoGateway.js');
+const geo = createGeoGateway();
+registerOrderRoutes(app, { limit, wa, store, isAdmin, validOrder, geo });
 
 /* ---------- Catalogue partagé, avis et alertes de retour en stock ---------- */
 registerCatalogRoutes(app, { limit, isAdmin, store });
@@ -308,6 +311,7 @@ app.listen(PORT, () => {
   );
   console.log(`  WhatsApp     : ${wa.whatsappEnabled() ? 'activé' : 'simulé (identifiants Twilio manquants)'}`);
   console.log(`  Données      : ${store.STORAGE === 'postgresql' ? 'PostgreSQL (ORM Drizzle)' : 'fichier JSON'}`);
+  console.log(`  Géolocalisation : ${geo.kind}`);
 });
 
 // Arrêt demandé (mise à jour ou redémarrage sur Render) : dernières données écrites avant de quitter

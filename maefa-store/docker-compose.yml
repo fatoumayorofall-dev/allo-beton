@@ -1,19 +1,50 @@
 # Lancer Maefa Store en local en une commande : docker compose up --build
 # puis ouvrir http://localhost:8787 (espace gérante : /admin, code PIN ci-dessous).
+# Architecture : serveur principal (api) + microservice de géolocalisation (geo) + PostgreSQL (db).
 services:
-  maefa:
+  api:
     build: .
     ports: ['8787:8787']
     environment:
       ADMIN_PIN: ${ADMIN_PIN:-changez-moi}
       SITE_URL: http://localhost:8787
+      DATABASE_URL: postgres://maefa:maefa@db:5432/maefa
+      GEO_SERVICE_URL: http://geo:8790
       # Facultatif : assistante IA en ligne, WhatsApp automatique
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
     volumes:
       - maefa-data:/data
+    depends_on:
+      db: { condition: service_healthy }
+      geo: { condition: service_started }
+    restart: unless-stopped
+
+  geo:
+    build: .
+    command: ['node', 'services/geo/server.js']
+    environment:
+      GEO_PORT: 8790
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8790/health']
+      interval: 30s
+    restart: unless-stopped
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: maefa
+      POSTGRES_PASSWORD: maefa
+      POSTGRES_DB: maefa
+    volumes:
+      - maefa-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U maefa']
+      interval: 5s
+      retries: 10
     restart: unless-stopped
 
 volumes:
   maefa-data:
+  maefa-db:

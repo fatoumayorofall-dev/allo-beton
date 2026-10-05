@@ -18,6 +18,7 @@ ENV NODE_ENV=production PORT=8787 DATA_DIR=/data PLAYWRIGHT_SKIP_BROWSER_DOWNLOA
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY server ./server
+COPY services ./services
 COPY --from=build /app/dist ./dist
 # Les données (commandes, demandes, comptes) vivent dans un volume, hors de l'image
 RUN mkdir -p /data && chown node:node /data

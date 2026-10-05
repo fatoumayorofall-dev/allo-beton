@@ -82,6 +82,18 @@ launch('npx', ['vite', 'preview', '--port', '4173', '--strictPort'], {}, path.jo
 await waitFor(GEO + '/');
 await waitFor('http://localhost:4173/');
 
+// Avec E2E_GEO_SERVICE=1 : la géolocalisation et les tournées passent par le microservice « geo »
+const GEO_SERVICE = process.env.E2E_GEO_SERVICE ? 'http://localhost:8790' : null;
+if (GEO_SERVICE) {
+  launch(
+    'node',
+    ['services/geo/server.js'],
+    { PHOTON_URL: GEO, NOMINATIM_URL: GEO, OSRM_URL: GEO, OVERPASS_URL: GEO + '/api/interpreter' },
+    path.join(OUT, 'geo-service.log'),
+  );
+  await waitFor(GEO_SERVICE + '/health');
+}
+
 let failures = 0;
 const summary = [];
 for (const name of wanted) {
@@ -102,6 +114,7 @@ for (const name of wanted) {
       OSRM_URL: GEO,
       OVERPASS_URL: GEO + '/api/interpreter',
       ...(DB_URL ? { DATABASE_URL: DB_URL } : {}),
+      ...(GEO_SERVICE ? { GEO_SERVICE_URL: GEO_SERVICE } : {}),
       ...(EXTRA_ENV[name] ?? {}),
     },
     path.join(OUT, 'server.log'),

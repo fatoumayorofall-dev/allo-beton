@@ -46,7 +46,7 @@ jobs:
         with: { name: site-compile, path: maefa-store/dist, retention-days: 3 }
 
   e2e:
-    name: Tests de bout en bout (Playwright, données dans PostgreSQL)
+    name: Tests de bout en bout (Playwright, PostgreSQL, microservice geo)
     needs: qualite
     runs-on: ubuntu-latest
     services:
@@ -67,7 +67,7 @@ jobs:
         with: { name: site-compile, path: maefa-store/dist }
       - name: Scénarios cliente, gérante et livreur
         run: npm run test:e2e
-        env: { E2E_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa' }
+        env: { E2E_DATABASE_URL: 'postgres://maefa:maefa@localhost:5432/maefa', E2E_GEO_SERVICE: '1' }
       - name: Captures d'écran en cas d'échec
         if: failure()
         uses: actions/upload-artifact@v4
