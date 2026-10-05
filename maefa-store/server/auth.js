@@ -8,6 +8,8 @@
 //  Pas de mot de passe compliqué, pas d'e-mail.
 // ============================================================
 import crypto from 'node:crypto';
+import { shopSecret } from './brandSecurity.js';
+import { looksLikeJwt, signJwt, verifyJwt } from './jwt.js';
 
 const OTP_TTL_MS = 10 * 60e3;
 const OTP_MAX_TRIES = 5;
@@ -57,14 +59,34 @@ function publicUser(u) {
 const clip = (v, n) => (typeof v === 'string' ? v.trim().slice(0, n) : undefined);
 
 export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
+  /*
+   * Sessions : la cliente reçoit un JWT (HS256) dont l'identifiant (jti) est une session gardée sur le
+   * serveur (seulement son empreinte). On peut donc révoquer un jeton (déconnexion, suppression du
+   * compte), ce qu'un JWT seul ne permet pas. Les anciens jetons (64 caractères hexadécimaux) restent
+   * acceptés jusqu'à leur expiration.
+   */
+  const jwtKey = () => crypto.createHmac('sha256', shopSecret()).update('maefa-session-jwt').digest();
+  function openSession(phone) {
+    const sid = crypto.randomBytes(32).toString('hex');
+    store.saveSession(sha256(sid), phone);
+    return signJwt({ sub: phone, jti: sid }, jwtKey(), SESSION_DAYS * 86400);
+  }
+  function sessionId(req) {
+    const token = (req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+    if (/^[a-f0-9]{64}$/.test(token)) return token;
+    if (!looksLikeJwt(token)) return null;
+    const claims = verifyJwt(token, jwtKey());
+    return claims && /^[a-f0-9]{64}$/.test(claims.jti) ? claims.jti : null;
+  }
+
   /** Retrouve la cliente connectée à partir de l'en-tête « Authorization: Bearer … ». */
   function currentUser(req) {
-    const token = (req.get('authorization') || '').replace(/^Bearer\s+/i, '');
-    if (!/^[a-f0-9]{64}$/.test(token)) return null;
-    const session = store.getSession(sha256(token));
+    const sid = sessionId(req);
+    if (!sid) return null;
+    const session = store.getSession(sha256(sid));
     if (!session) return null;
     if (Date.now() - Date.parse(session.createdAt) > SESSION_DAYS * 864e5) {
-      store.deleteSession(sha256(token));
+      store.deleteSession(sha256(sid));
       return null;
     }
     return store.getUser(session.phone);
@@ -122,9 +144,7 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     }
     otps.delete(phone);
     const user = store.saveUser(phone, { lastLogin: new Date().toISOString() });
-    const token = crypto.randomBytes(32).toString('hex');
-    store.saveSession(sha256(token), phone);
-    res.json({ token, user: publicUser(user) });
+    res.json({ token: openSession(phone), user: publicUser(user) });
   });
 
   // 2 bis. Code secret (quand WhatsApp n'est pas relié) : création à la première visite, puis vérification
@@ -164,14 +184,12 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
       store.saveUser(phone, { pinSalt: salt, pinHash: hashPin(pin, salt) });
     }
     const saved = store.saveUser(phone, { pinFails: 0, lastLogin: new Date().toISOString() });
-    const token = crypto.randomBytes(32).toString('hex');
-    store.saveSession(sha256(token), phone);
-    res.json({ token, user: publicUser(saved), isNew });
+    res.json({ token: openSession(phone), user: publicUser(saved), isNew });
   });
 
   app.post('/api/auth/logout', (req, res) => {
-    const token = (req.get('authorization') || '').replace(/^Bearer\s+/i, '');
-    if (/^[a-f0-9]{64}$/.test(token)) store.deleteSession(sha256(token));
+    const sid = sessionId(req);
+    if (sid) store.deleteSession(sha256(sid));
     res.status(204).end();
   });
 
@@ -186,7 +204,7 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
   app.get('/api/me/export', (req, res) => {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ error: 'Non connectée' });
-    const { pinHash: _secret, ...profile } = user;
+    const { pinHash: _hash, pinSalt: _salt, pinFails: _fails, ...profile } = user;
     const shopOrders = store.listShopOrders().filter(o => wa.toE164(o.customer?.phone) === user.phone);
     res.set('Content-Disposition', 'attachment; filename="mes-donnees-maefa.json"');
     res.json({

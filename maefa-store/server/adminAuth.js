@@ -1,12 +1,13 @@
 // ============================================================
 //  CONNEXION À L'ESPACE GÉRANT
 //  - le code PIN (ADMIN_PIN) n'est vérifié que par le serveur, jamais dans le navigateur
-//  - en échange, un jeton signé valable 12 h : le code ne circule plus à chaque action
+//  - en échange, un jeton JWT (HS256) valable 12 h : le code ne circule plus à chaque action
 //  - 10 essais ratés en 15 min depuis une même adresse → blocage (impossible de deviner le code)
 //  - changer ADMIN_PIN déconnecte tous les appareils (le jeton en dépend)
 // ============================================================
 import crypto from 'node:crypto';
 import { shopSecret } from './brandSecurity.js';
+import { looksLikeJwt, signJwt, verifyJwt } from './jwt.js';
 
 const TTL = 12 * 3600e3;
 const MAX_FAILS = 10;
@@ -39,6 +40,10 @@ export function createAdminAuth(pin) {
   // Libellé interne d'origine (antérieur au nom Maefa), conservé pour ne déconnecter personne.
   const sign = exp =>
     crypto.createHmac('sha256', shopSecret()).update(`fabima-admin:${exp}:${pin}`).digest('base64url');
+  // Clé des JWT de la gérante : dépend du code PIN, donc changer ADMIN_PIN invalide tous les jetons
+  const jwtKey = () => crypto.createHmac('sha256', shopSecret()).update(`fabima-admin:jwt:${pin}`).digest();
+  const jwtOk = v => verifyJwt(v, jwtKey())?.role === 'admin';
+  /** Ancien format (fa1.…), accepté jusqu'à son expiration pour ne déconnecter personne. */
   const tokenOk = v => {
     const m = /^fa1\.(\d{10,14})\.([\w-]{43})$/.exec(v);
     return !!m && Number(m[1]) > Date.now() && same(m[2], sign(m[1]));
@@ -48,6 +53,7 @@ export function createAdminAuth(pin) {
   function isAdmin(req) {
     const v = req.get('x-admin-pin') || '';
     if (!pin || !v) return false;
+    if (looksLikeJwt(v)) return jwtOk(v);
     if (v.startsWith('fa1.')) return tokenOk(v);
     if (locked(req.ip)) return false;
     if (same(v, pin)) {
@@ -69,8 +75,8 @@ export function createAdminAuth(pin) {
         return res.status(401).json({ error: 'Code incorrect' });
       }
       fails.delete(req.ip);
-      const exp = Date.now() + TTL;
-      res.json({ token: `fa1.${exp}.${sign(exp)}`, expiresAt: new Date(exp).toISOString() });
+      const token = signJwt({ sub: 'gerante', role: 'admin' }, jwtKey(), TTL / 1000);
+      res.json({ token, expiresAt: new Date(Date.now() + TTL).toISOString() });
     });
   }
 

@@ -77,6 +77,11 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
   await a.getByRole('button', { name: 'Ajouter à la vitrine du jour' }).click();
   await a.waitForTimeout(500);
   check('studio : ajout vitrine', await a.getByText('Dans la vitrine du jour').isVisible());
+  // Voix (micro simulé) ; on note la réponse du serveur pour comprendre un éventuel échec
+  const voicePuts = [];
+  a.on('response', r => {
+    if (r.request().method() === 'PUT' && r.url().includes('/api/voice/')) voicePuts.push(r.status());
+  });
   // Voix (micro simulé)
   const rec = a.locator('div.p-4', { hasText: 'Votre voix pour cette pièce' });
   await rec.getByRole('button', { name: 'Enregistrer ma voix' }).click();
@@ -90,7 +95,11 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
     await a.waitForTimeout(250);
     voices = await (await fetch(B + '/api/voice')).json();
   }
-  check('voix : enregistrée sur le serveur', voices.slugs.includes('sac-ndella-camel'), JSON.stringify(voices));
+  check(
+    'voix : enregistrée sur le serveur',
+    voices.slugs.includes('sac-ndella-camel'),
+    JSON.stringify({ voices, voicePuts }),
+  );
   await a.screenshot({ path: SP + '/st-2-studio.png' });
   await a.keyboard.press('Escape');
   await a

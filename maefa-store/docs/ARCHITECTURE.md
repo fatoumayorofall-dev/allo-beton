@@ -27,7 +27,7 @@ flowchart LR
   end
   subgraph Back["Back-end — Node.js + Express 5 (server/)"]
     API[API REST /api/*]
-    SEC[Sécurité : en-têtes, limites,<br/>jetons signés HMAC, PIN gérante]
+    SEC[Sécurité : en-têtes, limites,<br/>jetons JWT HS256, PIN gérante]
     DOM[Métier : commandes, demandes,<br/>catalogue, tournées, authenticité]
     STO[(Stockage JSON<br/>écriture atomique)]
   end
@@ -74,7 +74,7 @@ maefa-store/
 │  ├─ catalog.js      catalogue partagé, stock, « sur commande »
 │  ├─ tourPlanner.js  optimisation des tournées de livraison
 │  ├─ geo.js          adresses, itinéraires, lieux connus (OpenStreetMap)
-│  ├─ auth.js         comptes clientes (code SMS, jetons signés)
+│  ├─ auth.js         comptes clientes (code SMS, sessions JWT révocables)
 │  ├─ adminAuth.js    accès gérante (PIN vérifié côté serveur)
 │  └─ store.js        persistance
 ├─ tests/e2e/         17 scénarios Playwright + lanceur
@@ -236,8 +236,8 @@ sequenceDiagram
   livraison (jamais nuls), prix (catalogue ou prix convenu par la gérante), stock.
 - **Prix confidentiels** : le public ne reçoit qu'une classe de prix (pages, aperçus de liens,
   données de référencement, IA) ; le prix exact n'apparaît qu'avec le lien de la gérante.
-- **Accès gérante** : code PIN vérifié uniquement par le serveur, jeton signé (HMAC-SHA256).
-- **Comptes clientes** : connexion par code SMS, jetons signés, sel et secret hors du code
+- **Accès gérante** : code PIN vérifié uniquement par le serveur, jeton **JWT** (RFC 7519, HS256, 12 h) dont la clé dépend du PIN : changer le PIN déconnecte tout le monde.
+- **Comptes clientes** : connexion par code SMS ou code personnel (haché scrypt), **JWT** dont l'identifiant renvoie à une session serveur (donc révocable : déconnexion, suppression du compte), sel et secret hors du code
   (`AUTH_SECRET` en variable d'environnement).
 - **Limites de débit** par adresse IP et par téléphone (adaptées au partage d'IP des opérateurs
   mobiles).
@@ -251,6 +251,7 @@ sequenceDiagram
 
 | Niveau | Outil | Contenu |
 |---|---|---|
+| Tests unitaires | `npm run test:unit` (testeur intégré de Node.js) | JWT, optimisation des tournées (comparée à la recherche exhaustive), classes de prix, contrôle des prix convenus |
 | Analyse statique | TypeScript strict, ESLint, Prettier | erreurs de types, règles React (hooks), mise en forme |
 | Tests de l'assistante | `npm run test:assistant` | 66 vérifications : intentions, entités, langue, honnêteté commerciale |
 | Tests de bout en bout | `npm run test:e2e` (Playwright) | 17 scénarios, 292 vérifications, sur téléphones et ordinateurs simulés |

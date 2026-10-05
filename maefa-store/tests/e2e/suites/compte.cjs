@@ -66,7 +66,7 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
   check('espace cliente', await p.getByRole('heading', { name: /Awa/, level: 1 }).isVisible());
   await shot(p, '4-espace');
   const token = await p.evaluate(() => localStorage.getItem('maefa_token'));
-  check('jeton de session', /^[a-f0-9]{64}$/.test(token || ''));
+  check('jeton de session JWT', /^[\w-]+\.[\w-]+\.[\w-]+$/.test(token || ''));
   // favoris → compte
   await p.goto(B + '/produit/sac-ndella-camel');
   await p.waitForTimeout(600);

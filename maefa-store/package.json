@@ -15,7 +15,8 @@
     "test:assistant": "node scripts/eval-assistant/run.mjs --offline",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:unit": "node --test tests/unit/*.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

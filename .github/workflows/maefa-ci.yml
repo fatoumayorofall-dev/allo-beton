@@ -28,6 +28,8 @@ jobs:
         run: npm run format:check
       - name: Vérification des types (TypeScript)
         run: npm run typecheck
+      - name: Tests unitaires (JWT, tournées, prix)
+        run: npm run test:unit
       - name: Tests de l'assistante Maé (compréhension, honnêteté)
         run: npm run test:assistant
       - name: Compilation du site
