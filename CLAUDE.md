@@ -1,7 +1,7 @@
 # Projet ARC-AGI — règles permanentes
 
-Ce dossier (`arc-agi/`) contient notre solveur pour le concours Kaggle ARC Prize.
-Il est indépendant de l'application Allo Béton présente à la racine du dépôt.
+Ce dépôt contient notre solveur pour le concours Kaggle ARC Prize.
+Dépôt dédié uniquement au concours.
 
 ## Contraintes absolues
 
@@ -27,4 +27,4 @@ Il est indépendant de l'application Allo Béton présente à la racine du dép�
 - Un solveur = une fonction `solve(task) -> list[grid] | None` : `None` si la règle n'explique
   pas **toutes** les paires d'entraînement (pas de devinette silencieuse).
 - Chaque nouvelle brique logique est accompagnée de tests dans `tests/`.
-- Lancer les tests : `python -m unittest discover -s tests` depuis `arc-agi/`.
+- Lancer les tests : `python -m unittest discover -s tests` depuis la racine du dépôt.
