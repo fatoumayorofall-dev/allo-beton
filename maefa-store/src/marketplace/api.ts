@@ -79,10 +79,12 @@ export interface MpOrder {
   id: string;
   sellerId: string;
   shopName: string;
-  buyer: { name: string; phone: string };
+  /** Numéro de l'acheteur : seulement pendant la livraison (vue vendeur) */
+  buyer: { name: string; phone: string | null };
   lines: OrderLine[];
   subtotal: number;
-  delivery: { km: number; fee: number; to: DeliveryLocation & { landmark?: string }; from: DeliveryLocation };
+  /** Adresse exacte : seulement pendant la livraison (vue vendeur) */
+  delivery: { km: number; fee: number; to: (DeliveryLocation & { landmark?: string }) | null; from: DeliveryLocation };
   buyerFee: number;
   total: number;
   payment: 'especes' | 'wave' | 'orange_money';
@@ -184,6 +186,8 @@ export interface AdminSeller extends MySeller {
   ownerPhone: string | null;
   listings: number;
   balance: Balance;
+  /** Refus et annulations du vendeur : signal de vente hors application */
+  risk: { orders: number; dropped: number; rate: number; alert: boolean };
 }
 export interface Overview {
   sellers: Record<'en_attente' | 'active' | 'suspendue' | 'fermee', number>;

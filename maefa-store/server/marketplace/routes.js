@@ -14,6 +14,7 @@ import crypto from 'node:crypto';
 import express from 'express';
 import { PHOTO_URL, sniffImage, storeMedia } from '../media.js';
 import { commissions, deliveryFee, inSenegal, patchSettings, resolveSettings } from './pricing.js';
+import { CONTACT_REFUSED, findContact } from './contact.js';
 
 /** Rayons de la place de marché (les restaurants viendront avec la livraison rapide). */
 export const MP_CATEGORIES = [
@@ -114,6 +115,8 @@ function cleanListing(b, existing) {
   if (stock !== null && (!Number.isInteger(stock) || stock < 0 || stock > 100_000))
     return { error: 'Quantité en stock invalide' };
   if (variants.length && !variantLabel) return { error: 'Précisez le choix proposé (ex. : Taille, Couleur)' };
+  const contact = findContact(title, description, variantLabel, ...variants);
+  if (contact) return { error: CONTACT_REFUSED(contact) };
   return { value: { title, description, price, category, condition, photos, stock, variants, variantLabel } };
 }
 
@@ -288,6 +291,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const b = req.body ?? {};
     const name = clip(b.name, 60) || [user.firstName, user.lastName].filter(Boolean).join(' ');
     if (name.length < 2) return res.status(400).json({ error: 'Indiquez votre prénom' });
+    const contactInNote = findContact(name, b.note);
+    if (contactInNote) return res.status(400).json({ error: CONTACT_REFUSED(contactInNote) });
     const to = b.to;
     const r = prepare(b.items, to, user.phone);
     if (r.error) return res.status(400).json({ error: r.error });
@@ -438,6 +443,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const zone = clip(b.zone ?? existing?.zone, 60);
     const loc = b.location ?? existing?.location;
     if (shopName.length < 2) return res.status(400).json({ error: 'Donnez un nom à votre boutique' });
+    const contactInShop = findContact(shopName, description);
+    if (contactInShop) return res.status(400).json({ error: CONTACT_REFUSED(contactInShop) });
     if (!CATEGORY_IDS.has(category)) return res.status(400).json({ error: 'Choisissez votre rayon principal' });
     if (!inSenegal(loc))
       return res.status(400).json({ error: "Indiquez où se trouve la boutique (point d'enlèvement des colis)" });
@@ -564,9 +571,22 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.json({ ok: true });
   });
 
+  /**
+   * Vue du vendeur. Le numéro et l'adresse exacte de l'acheteur ne sont donnés que pendant la livraison
+   * (commande acceptée, prête, en route) : un vendeur ne peut pas les lire, refuser la commande puis
+   * appeler le client pour vendre hors de l'application. Avant : le prénom et la distance seulement.
+   */
+  const CONTACT_STEPS = new Set(['acceptee', 'prete', 'en_livraison']);
   const sellerOrderView = o => {
     const { commissions: c, ...rest } = o;
-    return { ...rest, platformFee: c.seller, buyerFeeToPay: c.buyer };
+    const open = CONTACT_STEPS.has(o.status);
+    return {
+      ...rest,
+      buyer: { name: o.buyer.name, phone: open ? o.buyer.phone : null },
+      delivery: open ? o.delivery : { km: o.delivery.km, fee: o.delivery.fee, from: o.delivery.from, to: null },
+      platformFee: c.seller,
+      buyerFeeToPay: c.buyer,
+    };
   };
 
   app.get('/api/mp/me/sales', (req, res) => {
@@ -608,6 +628,19 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     return false;
   };
 
+  /**
+   * Signal de contournement : commandes refusées ou annulées par le vendeur. Un vendeur qui refuse
+   * souvent a peut-être vendu « en bas », hors de l'application. La gérante voit le taux et décide.
+   */
+  function riskOf(v) {
+    const mine = store.listMpOrders().filter(o => o.sellerId === v.id);
+    const dropped = mine.filter(
+      o => (o.status === 'refusee' || o.status === 'annulee') && o.history?.at(-1)?.by === 'vendeur',
+    ).length;
+    const rate = mine.length ? dropped / mine.length : 0;
+    return { orders: mine.length, dropped, rate: Math.round(rate * 100), alert: dropped >= 3 && rate >= 0.3 };
+  }
+
   app.get('/api/admin/mp/overview', (req, res) => {
     if (!guard(req, res)) return;
     const orders = store.listMpOrders();
@@ -639,6 +672,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
           ownerPhone: v.ownerPhone,
           listings: store.listMpListings().filter(l => l.sellerId === v.id && l.status === 'publiee').length,
           balance: balanceOf(v),
+          risk: riskOf(v),
         })),
     });
   });

@@ -234,6 +234,12 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 </span>
               </div>
               {v.description && <p className="text-sm text-ink/70 mt-1">{v.description}</p>}
+              {v.risk.alert && (
+                <p className="text-sm mt-2 text-wine font-semibold" data-testid="admin-mp-risk">
+                  ⚠️ {v.risk.dropped} commandes refusées ou annulées sur {v.risk.orders} ({v.risk.rate} %) : vente hors
+                  application possible. Appelez les acheteurs pour vérifier.
+                </p>
+              )}
               <p className="text-sm mt-2">
                 Ventes livrées : {F(v.balance.sales)} · commissions dues : {F(v.balance.due)} · reste :{' '}
                 <strong>{F(v.balance.balance)}</strong>

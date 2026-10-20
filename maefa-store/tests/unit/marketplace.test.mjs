@@ -55,3 +55,20 @@ test('point de livraison : au Sénégal seulement', () => {
   assert.ok(!inSenegal({ lat: 'x', lng: 1 }));
   assert.ok(!inSenegal(null));
 });
+
+test('anti-contournement : numéros, liens, e-mails et réseaux refusés ; prix et tailles acceptés', async () => {
+  const { findContact } = await import('../../server/marketplace/contact.js');
+  for (const t of [
+    'Appelez le 77 123 45 67',
+    '+221 76.555.44.33',
+    '781234567',
+    'sept sept un deux trois quatre cinq six sept',
+    'Écrivez sur WhatsApp',
+    'mon insta @awa',
+    'voir www.awa.sn',
+    'awa@gmail.com',
+  ])
+    assert.ok(findContact(t), t);
+  for (const t of ['Robe taille 38 39 40 41 42', 'Dimensions 33 x 25 cm, 12 000 F', 'Prix 70 000 F, livraison 2 500 F'])
+    assert.equal(findContact(t), null, t);
+});

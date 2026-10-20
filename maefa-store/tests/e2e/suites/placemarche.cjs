@@ -190,6 +190,39 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
     String(notImage.status),
   );
 
+  // ── 5 bis. Anti-contournement : pas de numéro avant l'acceptation, pas de contact dans les textes
+  const vToken = await v.evaluate(() => localStorage.getItem('maefa_token'));
+  const VH = { 'content-type': 'application/json', Authorization: `Bearer ${vToken}` };
+  const early = await (await fetch(B + '/api/mp/me/sales', { headers: VH })).json();
+  check(
+    'vendeuse : ni numéro ni adresse avant d’accepter',
+    early.orders[0].buyer.phone === null && early.orders[0].delivery.to === null,
+    JSON.stringify(early.orders[0].buyer),
+  );
+  const sneaky = await fetch(B + '/api/mp/me/listings', {
+    method: 'POST',
+    headers: VH,
+    body: JSON.stringify({
+      title: 'Robe wax',
+      description: 'Moins cher sur WhatsApp : 77 123 45 67',
+      price: 9000,
+      category: 'mode',
+      photos: after.listings[0].photos,
+    }),
+  });
+  check('article avec numéro refusé', sneaky.status === 400);
+  const noteHack = await fetch(B + '/api/mp/orders', {
+    method: 'POST',
+    headers: H,
+    body: JSON.stringify({
+      items: [{ listingId, qty: 1, variant: 'L' }],
+      to: { lat: 14.765, lng: -17.44 },
+      name: 'Fatou',
+      note: 'appelle-moi au 78 700 33 44',
+    }),
+  });
+  check('message avec numéro refusé', noteHack.status === 400);
+
   // ── 6. La vendeuse traite la commande jusqu'à la livraison
   await v.reload();
   await v.waitForTimeout(1200);
@@ -201,6 +234,8 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
     await v.waitForTimeout(700);
   }
   check('commande livrée', /Livrée/.test(await v.getByTestId('mp-sale').innerText()));
+  const late = await (await fetch(B + '/api/mp/me/sales', { headers: VH })).json();
+  check('après la livraison : numéro de nouveau masqué', late.orders[0].buyer.phone === null);
   await v.getByRole('tab', { name: 'Mon solde' }).click();
   const due = await v.getByTestId('mp-balance-due').innerText();
   // 7 % de 12 000 F + 150 F de frais de service = 990 F

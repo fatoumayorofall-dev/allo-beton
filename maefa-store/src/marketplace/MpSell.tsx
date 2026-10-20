@@ -219,7 +219,12 @@ const SaleCard: React.FC<{ order: MpOrder; onMove: (o: MpOrder, to: OrderStatus)
         Commission {MP.name} : {F((o.platformFee ?? 0) + (o.buyerFeeToPay ?? 0))}
       </p>
     </div>
-    {['acceptee', 'prete', 'en_livraison'].includes(o.status) && (
+    {o.status === 'nouvelle' && (
+      <p className="mt-2 text-xs text-ink/60">
+        Le numéro et l'adresse de l'acheteur s'affichent dès que vous acceptez la commande.
+      </p>
+    )}
+    {o.buyer.phone && o.delivery.to && (
       <div className="mt-2 flex flex-wrap gap-2 text-sm">
         <a
           href={`tel:${o.buyer.phone}`}
