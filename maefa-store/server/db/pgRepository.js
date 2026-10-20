@@ -212,6 +212,49 @@ const TABLES = [
       })),
   },
   {
+    table: t.mpSellers,
+    pk: [t.mpSellers.id],
+    key: r => r.id,
+    rows: s =>
+      Object.values(s.mp?.sellers ?? {}).map(v => ({
+        id: v.id,
+        ownerPhone: nn(v.ownerPhone),
+        slug: v.slug,
+        status: v.status,
+        createdAt: v.createdAt,
+        data: v,
+      })),
+  },
+  {
+    table: t.mpListings,
+    pk: [t.mpListings.id],
+    key: r => r.id,
+    rows: s =>
+      Object.values(s.mp?.listings ?? {}).map(l => ({
+        id: l.id,
+        sellerId: l.sellerId,
+        status: l.status,
+        price: num(l.price),
+        createdAt: l.createdAt,
+        data: l,
+      })),
+  },
+  {
+    table: t.mpOrders,
+    pk: [t.mpOrders.id],
+    key: r => r.id,
+    rows: s =>
+      Object.values(s.mp?.orders ?? {}).map(o => ({
+        id: o.id,
+        sellerId: o.sellerId,
+        buyerPhone: nn(o.buyerPhone),
+        status: o.status,
+        total: num(o.total),
+        createdAt: o.createdAt,
+        data: o,
+      })),
+  },
+  {
     table: t.appSettings,
     pk: [t.appSettings.key],
     key: r => r.key,
@@ -223,6 +266,7 @@ const TABLES = [
       { key: 'catalogUpdatedAt', value: s.catalogUpdatedAt },
       { key: 'stockAlerts', value: s.stockAlerts },
       { key: 'adminPasskeys', value: s.adminPasskeys ?? [] },
+      { key: 'mpSettings', value: s.mp?.settings ?? null },
     ],
   },
 ];
@@ -283,6 +327,12 @@ export async function createPgRepository(url) {
       visits: settings.visits ?? {},
       stockAlerts: settings.stockAlerts ?? [],
       adminPasskeys: settings.adminPasskeys ?? [],
+      mp: {
+        sellers: Object.fromEntries(all.get(t.mpSellers).map(v => [v.id, v.data])),
+        listings: Object.fromEntries(all.get(t.mpListings).map(l => [l.id, l.data])),
+        orders: Object.fromEntries(all.get(t.mpOrders).map(o => [o.id, o.data])),
+        settings: settings.mpSettings ?? null,
+      },
     };
     // Point de départ des différences : ce qui est en base (les lignes inchangées ne seront pas réécrites)
     for (const d of TABLES) {

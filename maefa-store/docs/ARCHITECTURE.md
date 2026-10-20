@@ -256,6 +256,33 @@ sequenceDiagram
   end
 ```
 
+### 4.3 Place de marché : vendeurs indépendants
+
+Application à part sous `/m` (`src/marketplace/`, chargée seulement si on y va), qui partage avec la
+boutique les comptes (numéro, Face ID), la carte de livraison et le serveur (`server/marketplace/`).
+
+```mermaid
+sequenceDiagram
+  actor V as Vendeur
+  actor G as Gérante
+  participant A as API
+  actor C as Acheteur
+  V->>A: POST /api/mp/me/seller (boutique, point d'enlèvement)
+  V->>A: POST /api/mp/me/photos (photo réduite à 1280 px par le téléphone)
+  V->>A: POST /api/mp/me/listings → « en vérification »
+  G->>A: valide la boutique, publie l'article (refus motivé : contrefaçon…)
+  C->>A: POST /api/mp/quote (articles + point GPS)
+  A-->>C: une commande par vendeur : prix serveur, livraison = prise en charge + km, frais de service
+  C->>A: POST /api/mp/orders (stock réservé)
+  A->>V: WhatsApp « nouvelle commande »
+  V->>A: acceptée → prête → en livraison → livrée (stock rendu si refus/annulation)
+  A->>C: WhatsApp à chaque étape ; téléphone du vendeur après acceptation
+  G->>A: commission due = % vendeur + frais acheteur ; enregistre le règlement
+```
+
+Calculs d'argent isolés en fonctions pures (`server/marketplace/pricing.js`, testées seules) ;
+réglages (taux, prix au km, minimum, maximum) modifiables par la gérante dans des bornes contrôlées.
+
 ---
 
 ## 5. Algorithmes notables

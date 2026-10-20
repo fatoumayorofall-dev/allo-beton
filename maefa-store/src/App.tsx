@@ -21,8 +21,11 @@ import { TabBar } from './components/TabBar';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 
 /** Une nouvelle page repart sans erreur. */
+/** Clé d'une page : la place de marché (/m/…) est une seule application, qui gère elle-même ses pages. */
+const pageKey = (pathname: string) => (pathname === '/m' || pathname.startsWith('/m/') ? '/m' : pathname);
+
 const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <PageErrorBoundary key={useLocation().pathname}>{children}</PageErrorBoundary>
+  <PageErrorBoundary key={pageKey(useLocation().pathname)}>{children}</PageErrorBoundary>
 );
 
 /*
@@ -55,6 +58,8 @@ const MarketProduct = page(() => import('./pages/MarketProduct'), 'default');
 const Admin = lazy(() => import('./pages/Admin').then(m => ({ default: m.Admin })));
 const Driver = lazy(() => import('./pages/Driver'));
 const DriverTour = lazy(() => import('./pages/DriverTour'));
+/** Place de marché (vendeurs indépendants) : application à part, téléchargée seulement si on y va */
+const MarketplaceApp = lazy(() => import('./marketplace/MarketplaceApp'));
 
 /** Aperçu en ligne sans serveur (VITE_ROUTER=hash) : les adresses passent après le # pour fonctionner depuis n'importe quel dossier. */
 const Router = import.meta.env.VITE_ROUTER === 'hash' ? HashRouter : BrowserRouter;
@@ -98,7 +103,7 @@ const PageFallback: React.FC = () => (
 const PageFade: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { pathname } = useLocation();
   return (
-    <div key={pathname} className="animate-page-in">
+    <div key={pageKey(pathname)} className="animate-page-in">
       {children}
     </div>
   );
@@ -115,6 +120,7 @@ type ChromeMode = 'shop' | 'checkout' | 'admin' | 'none';
 const useChromeMode = (): ChromeMode => {
   const { pathname } = useLocation();
   if (pathname.startsWith('/p/') || pathname === '/s' || pathname.startsWith('/livreur/')) return 'none';
+  if (pathname === '/m' || pathname.startsWith('/m/')) return 'none'; // la place de marché a son propre habillage
   if (pathname === '/commande') return 'checkout';
   if (pathname === '/admin') return 'admin';
   return 'shop';
@@ -187,6 +193,7 @@ export default function App() {
                         path="/marche/:slug"
                         element={FEATURES.marche ? <MarketProduct /> : <Navigate to="/boutique" replace />}
                       />
+                      <Route path="/m/*" element={<MarketplaceApp />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </PageFade>

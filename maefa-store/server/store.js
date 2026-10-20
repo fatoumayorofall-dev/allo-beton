@@ -36,6 +36,8 @@ let state = {
   authCodes: {},
   comments: {},
   adminPasskeys: [],
+  // Place de marché : vendeurs, articles publiés par eux, commandes passées chez eux, réglages
+  mp: { sellers: {}, listings: {}, orders: {}, settings: null },
 };
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
@@ -224,6 +226,55 @@ export function deleteUserAccount(phone) {
   delete state.orders[phone];
   // Les avis publiés restent (prénom seulement) mais ne sont plus reliés au compte
   for (const c of Object.values(state.comments ?? {})) if (c.customerPhone === phone) c.customerPhone = null;
+  // Place de marché : la boutique est fermée et ses articles retirés ; les commandes restent (comptabilité)
+  for (const shop of Object.values(state.mp?.sellers ?? {}))
+    if (shop.ownerPhone === phone) {
+      Object.assign(shop, {
+        status: 'fermee',
+        ownerPhone: null,
+        contactPhone: null,
+        updatedAt: new Date().toISOString(),
+      });
+      for (const l of Object.values(state.mp.listings)) if (l.sellerId === shop.id) l.status = 'retiree';
+    }
+  persist();
+}
+
+/* ---------- Place de marché ---------- */
+const mp = () => (state.mp ??= { sellers: {}, listings: {}, orders: {}, settings: null });
+export const getMpSeller = id => mp().sellers[id] ?? null;
+export const listMpSellers = () => Object.values(mp().sellers);
+export const findMpSellerByOwner = phone => listMpSellers().find(s => s.ownerPhone === phone) ?? null;
+export const findMpSellerBySlug = slug => listMpSellers().find(s => s.slug === slug) ?? null;
+export function saveMpSeller(seller) {
+  mp().sellers[seller.id] = { ...seller, updatedAt: new Date().toISOString() };
+  persist();
+  return mp().sellers[seller.id];
+}
+export const getMpListing = id => mp().listings[id] ?? null;
+export const listMpListings = () => Object.values(mp().listings);
+export function saveMpListing(listing) {
+  mp().listings[listing.id] = { ...listing, updatedAt: new Date().toISOString() };
+  persist();
+  return mp().listings[listing.id];
+}
+/** Vues d'un article : pas de date de modification (ce n'est pas une modification du vendeur). */
+export function countMpView(id) {
+  const l = mp().listings[id];
+  if (!l) return;
+  l.views = (l.views ?? 0) + 1;
+  persist();
+}
+export const getMpOrder = id => mp().orders[id] ?? null;
+export const listMpOrders = () => Object.values(mp().orders).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+export function saveMpOrder(order) {
+  mp().orders[order.id] = { ...order, updatedAt: new Date().toISOString() };
+  persist();
+  return mp().orders[order.id];
+}
+export const getMpSettings = () => mp().settings;
+export function saveMpSettings(settings) {
+  mp().settings = settings;
   persist();
 }
 

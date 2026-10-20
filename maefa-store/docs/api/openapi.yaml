@@ -523,6 +523,157 @@ paths:
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses:
         '200': { description: OK }
+  /api/mp/config:
+    get:
+      tags: [Place de marché]
+      summary: 'Rayons, frais de service et barème de livraison'
+      responses: { '200': { description: OK } }
+  /api/mp/listings:
+    get:
+      tags: [Place de marché]
+      summary: 'Articles publiés (recherche q, rayon cat, vendeur, tri, page)'
+      responses: { '200': { description: '24 articles par page, sans téléphone' } }
+  /api/mp/listings/{id}:
+    get:
+      tags: [Place de marché]
+      summary: 'Un article publié et d’autres du même vendeur'
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '404': { description: Introuvable ou retiré } }
+  /api/mp/sellers/{slug}:
+    get:
+      tags: [Place de marché]
+      summary: 'Boutique validée et ses articles'
+      parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '404': { description: Introuvable } }
+  /api/mp/quote:
+    post:
+      tags: [Place de marché]
+      summary: 'Devis : une commande par vendeur, prix et stock du serveur, livraison selon la distance'
+      responses: { '200': { description: OK }, '400': { description: Article indisponible, stock, choix manquant } }
+  /api/mp/orders:
+    post:
+      tags: [Place de marché]
+      summary: 'Commander (paiement à la livraison) ; stock réservé ; vendeur prévenu sur WhatsApp'
+      security: [{ session: [] }]
+      responses: { '201': { description: Commandes créées }, '401': { description: Non connectée } }
+  /api/mp/me/orders:
+    get:
+      tags: [Place de marché]
+      summary: 'Mes achats (téléphone du vendeur après acceptation)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/orders/{id}/cancel:
+    post:
+      tags: [Place de marché]
+      summary: 'Annuler tant que le vendeur n’a pas accepté'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '409': { description: Déjà acceptée } }
+  /api/mp/me/seller:
+    get:
+      tags: [Place de marché]
+      summary: 'Ma boutique, mon solde de commissions'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Place de marché]
+      summary: 'Ouvrir ou modifier ma boutique (validation par la gérante)'
+      security: [{ session: [] }]
+      responses: { '201': { description: Ouverte }, '200': { description: Modifiée } }
+  /api/mp/me/photos:
+    post:
+      tags: [Place de marché]
+      summary: 'Envoyer une photo (JPEG, PNG ou WebP, 6 Mo au plus, format contrôlé au contenu)'
+      security: [{ session: [] }]
+      responses: { '201': { description: Adresse de la photo }, '415': { description: Pas une photo } }
+  /api/mp/me/listings:
+    get:
+      tags: [Place de marché]
+      summary: 'Mes articles (statut, vues, stock)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Place de marché]
+      summary: 'Ajouter un article (vérifié avant publication, sauf vendeur de confiance)'
+      security: [{ session: [] }]
+      responses: { '201': { description: Créé }, '400': { description: Champ invalide } }
+  /api/mp/me/listings/{id}:
+    patch:
+      tags: [Place de marché]
+      summary: 'Modifier (titre, photos ou texte changés : nouvelle vérification)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '404': { description: Pas mon article } }
+    delete:
+      tags: [Place de marché]
+      summary: 'Retirer de la vente'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/sales:
+    get:
+      tags: [Place de marché]
+      summary: 'Commandes reçues et solde'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/sales/{id}:
+    patch:
+      tags: [Place de marché]
+      summary: 'Étape suivante : acceptée, refusée, prête, en livraison, livrée, annulée (raison exigée)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '409': { description: Étape impossible } }
+  /api/admin/mp/overview:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : chiffres clés, commissions gagnées et à encaisser'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/sellers:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : vendeurs et soldes'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/sellers/{id}:
+    patch:
+      tags: [Place de marché]
+      summary: 'Gérante : valider, suspendre, vendeur de confiance'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/sellers/{id}/payments:
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : enregistrer un règlement de commissions'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: OK } }
+  /api/admin/mp/listings:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : articles (filtre status=en_attente pour la vérification)'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/listings/{id}:
+    patch:
+      tags: [Place de marché]
+      summary: 'Gérante : publier, refuser (raison envoyée au vendeur) ou retirer'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/orders:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : toutes les commandes de la place de marché'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/settings:
+    patch:
+      tags: [Place de marché]
+      summary: 'Gérante : taux de commission et barème de livraison (bornes contrôlées)'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK }, '400': { description: Hors bornes } }
   /api/me/pin:
     post:
       tags: [Comptes clientes]

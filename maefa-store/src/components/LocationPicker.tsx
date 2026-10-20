@@ -28,6 +28,8 @@ interface Props {
   /** Centre de la carte tant qu'aucun point n'est choisi (zone mémorisée, sinon Dakar) */
   initialCenter: LatLng;
   error?: string;
+  /** Titre au-dessus du choix (par défaut : « Où livrer ? * ») */
+  label?: string;
 }
 
 const KIND_ICONS: Record<string, string> = {
@@ -66,7 +68,7 @@ const sourceText = (v: DeliveryLocation) =>
  * l'adresse s'affiche en direct en bas, puis on confirme.
  * Sur la page, un résumé (aperçu de la carte + adresse) avec « Modifier ».
  */
-export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter, error }) => {
+export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter, error, label = 'Où livrer ? *' }) => {
   const [open, setOpen] = useState<null | { locate: boolean }>(null);
   const { addresses, save } = useSavedAddresses();
   const same = (a: { lat: number; lng: number }) =>
@@ -79,7 +81,7 @@ export const LocationPicker: React.FC<Props> = ({ value, onChange, initialCenter
   return (
     <div className="space-y-3" data-testid="location-picker">
       <div className="flex items-center justify-between gap-3">
-        <span className="field-label !mb-0">Où livrer ? *</span>
+        <span className="field-label !mb-0">{label}</span>
         <button
           type="button"
           onClick={() => speak(HELP)}

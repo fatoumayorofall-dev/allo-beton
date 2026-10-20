@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   Sparkles,
+  Store,
   MessageSquare,
   AlertTriangle,
   ArrowRight,
@@ -64,6 +65,7 @@ import { RequestsTab } from './AdminRequests';
 import { AnalyticsTab } from './AdminAnalytics';
 import { AdminFaceIdCard, AdminFaceIdLogin } from './AdminFaceId';
 import { CommentsTab } from './AdminComments';
+import { MarketplaceTab } from './AdminMarketplace';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 import { mediaUrl, normalizeVideoInput, staticMode } from '../utils/media';
 
@@ -102,7 +104,8 @@ type Tab =
   | 'status'
   | 'authenticity'
   | 'data'
-  | 'comments';
+  | 'comments'
+  | 'marketplace';
 
 const STATUS_STYLES: Record<OrderStatus, string> = {
   en_attente: 'bg-amber-100 text-amber-800',
@@ -225,6 +228,7 @@ export const Admin: React.FC = () => {
             ['authenticity', 'Authenticité', ShieldCheck],
             ['comments', 'Avis', MessageSquare],
             ['data', 'Données & IA', Sparkles],
+            ['marketplace', 'Place de marché', Store],
           ] as const
         ).map(([id, label, Icon]) => (
           <button
@@ -245,6 +249,7 @@ export const Admin: React.FC = () => {
       {tab === 'requests' && <RequestsTab pin={adminPin()} />}
       {tab === 'data' && <AnalyticsTab pin={adminPin()} />}
       {tab === 'comments' && <CommentsTab pin={adminPin()} />}
+      {tab === 'marketplace' && <MarketplaceTab pin={adminPin()} />}
       {tab === 'orders' && <Orders />}
       {tab === 'tours' && <ToursTab pin={adminPin()} />}
       {tab === 'products' && <Products />}

@@ -216,6 +216,11 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
       appareils: (passkeys ?? []).map(k => ({ nom: k.name, activeLe: k.createdAt, utiliseLe: k.lastUsedAt })),
       commandes: shopOrders.length ? shopOrders : store.getOrders(user.phone),
       avis: store.listComments().filter(c => c.customerPhone === user.phone),
+      placeDeMarche: {
+        boutique: store.findMpSellerByOwner(user.phone),
+        articles: store.listMpListings().filter(l => l.sellerId === store.findMpSellerByOwner(user.phone)?.id),
+        achats: store.listMpOrders().filter(o => o.buyerPhone === user.phone),
+      },
     });
   });
 
@@ -223,9 +228,19 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
   app.delete('/api/me', (req, res) => {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ error: 'Non connectée' });
-    const active = store
-      .listShopOrders()
-      .some(o => wa.toE164(o.customer?.phone) === user.phone && !['livree', 'annulee'].includes(o.status));
+    const shop = store.findMpSellerByOwner(user.phone);
+    const mpActive = store
+      .listMpOrders()
+      .some(
+        o =>
+          (o.buyerPhone === user.phone || (shop && o.sellerId === shop.id)) &&
+          !['livree', 'annulee', 'refusee'].includes(o.status),
+      );
+    const active =
+      mpActive ||
+      store
+        .listShopOrders()
+        .some(o => wa.toE164(o.customer?.phone) === user.phone && !['livree', 'annulee'].includes(o.status));
     if (active)
       return res
         .status(409)

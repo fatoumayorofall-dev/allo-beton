@@ -151,7 +151,7 @@ const DigitBoxes = React.forwardRef<
 
 type Step = 'phone' | 'code' | 'pin' | 'pin-new' | 'pin-confirm' | 'locked';
 
-const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
+export const Login: React.FC<{ onDone: (isNew: boolean) => void; brand?: string }> = ({ onDone, brand = 'Maefa' }) => {
   const { startLogin, verifyCode, loginWithPin, loginWithPasskey } = useAccount();
   const biometric = useBiometric();
   const takeChallenge = usePrefetchedChallenge(biometric ? loadLoginChallenge : null);
@@ -294,7 +294,7 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
           <div>
             <p className="eyebrow">Espace cliente</p>
             <h1 className="font-display text-4xl sm:text-[2.75rem] mt-3 leading-[1.05]">
-              Bienvenue chez <em className="text-gold-dark">Maefa</em>
+              Bienvenue chez <em className="text-gold-dark">{brand}</em>
             </h1>
             <p className="text-ink/70 mt-3 leading-relaxed">
               Connexion ou création de compte : il suffit de votre numéro.
@@ -568,7 +568,7 @@ const Welcome: React.FC = () => (
 /*  Prénom (première connexion)                                        */
 /* ------------------------------------------------------------------ */
 
-const NameStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
+export const NameStep: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const { saveProfile } = useAccount();
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);

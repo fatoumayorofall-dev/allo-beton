@@ -22,6 +22,11 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG10 | Une tournée dessert plusieurs commandes dans un ordre calculé ; une commande appartient au plus à une tournée à la fois. |
 | RG11 | Une cliente peut laisser un avis par produit acheté. |
 | RG12 | Une session de connexion appartient à une cliente ; seule l'empreinte du jeton est gardée. |
+| RG13 | Place de marché : un compte peut ouvrir au plus une boutique (VENDEUR), visible seulement après validation par la gérante. |
+| RG14 | Une annonce appartient à un seul vendeur ; elle n'est visible qu'une fois vérifiée (« publiée ») et tant que la boutique est validée. |
+| RG15 | Une commande de la place de marché concerne un seul vendeur : un panier avec plusieurs vendeurs donne une commande par vendeur. |
+| RG16 | Le prix, le stock et les frais viennent toujours du serveur ; la livraison dépend de la distance vendeur → acheteur (prise en charge + prix au km, minimum et maximum). |
+| RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
 ## 2. Dictionnaire des données (extrait)
 
@@ -62,6 +67,10 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **TOURNEE** (<u>id_tournee</u>, jeton, date, distance)
 - **AVIS** (<u>id_avis</u>, note, commentaire, date)
 - **SESSION** (<u>empreinte_jeton</u>, date)
+- **VENDEUR** (<u>id_vendeur</u>, nom_boutique, slug, rayon, quartier, latitude, longitude, statut, de_confiance, date_creation)
+- **ANNONCE** (<u>id_annonce</u>, titre, description, prix, rayon, etat, photos, stock, choix, statut, raison_refus, vues, date)
+- **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, date)
+- **REGLEMENT** (<u>id_reglement</u>, montant, note, date)
 
 ### Associations et cardinalités
 
@@ -78,6 +87,12 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | DESSERVIR | TOURNEE (1,n) | COMMANDE (0,1) | rang |
 | NOTER | CLIENTE (0,n) / PRODUIT (0,n) | AVIS (1,1) | — |
 | OUVRIR | CLIENTE (0,n) | SESSION (1,1) | — |
+| TENIR | CLIENTE (0,1) | VENDEUR (1,1) | — |
+| PUBLIER | VENDEUR (0,n) | ANNONCE (1,1) | — |
+| ACHETER | CLIENTE (0,n) | COMMANDE_MARCHE (1,1) | — |
+| RECEVOIR | VENDEUR (0,n) | COMMANDE_MARCHE (1,1) | — |
+| COMPRENDRE | COMMANDE_MARCHE (1,n) | ANNONCE (0,n) | quantite, choix, prix |
+| REGLER | VENDEUR (0,n) | REGLEMENT (1,1) | — |
 
 ### Schéma
 
@@ -134,6 +149,9 @@ des clés ; ses propriétés deviennent des colonnes.
 - **deliveries** (<u>#order_id</u>, data)
 - **tours** (<u>id</u>, token, created_at, data)
 - **account_orders** (<u>#customer_phone, order_id</u>, data)
+- **mp_sellers** (<u>id</u>, owner_phone, slug, status, created_at, data) — VENDEUR et ses RÈGLEMENTS
+- **mp_listings** (<u>id</u>, #seller_id, status, price, created_at, data) — ANNONCE
+- **mp_orders** (<u>id</u>, #seller_id, buyer_phone, status, total, created_at, data) — COMMANDE_MARCHE et ses lignes
 
 `#` = clé étrangère ; <u>souligné</u> = clé primaire. Les colonnes `data` (JSONB) gardent les détails
 variables (couleurs, photos, étapes de livraison) sans multiplier les tables.

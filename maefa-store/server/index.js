@@ -280,6 +280,9 @@ registerPasskeyRoutes(app, {
   isAdmin,
   adminAuth,
 });
+// Place de marché : vendeurs indépendants, acheteurs, commissions de la plateforme
+const { registerMarketplaceRoutes } = await import('./marketplace/routes.js');
+registerMarketplaceRoutes(app, { limit, isAdmin, store, currentUser, wa, dataDir: store.DATA_DIR });
 // Avis et questions sur les pièces, visibles par toutes ; modération par la gérante
 const { registerCommentRoutes } = await import('./comments.js');
 registerCommentRoutes(app, { limit, isAdmin, store, currentUser, toE164: wa.toE164 });

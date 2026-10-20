@@ -1,0 +1,132 @@
+import React, { Suspense, lazy } from 'react';
+import { NavLink, Link, Route, Routes } from 'react-router-dom';
+import { Home, Loader2, Package, ShoppingBag, Store, UserRound } from 'lucide-react';
+import { MpCartProvider, useMpCart } from './cart';
+import { MP, mpPath } from './config';
+
+const MpHome = lazy(() => import('./MpHome'));
+const MpListingPage = lazy(() => import('./MpListingPage'));
+const MpShop = lazy(() => import('./MpShop'));
+const MpCart = lazy(() => import('./MpCart'));
+const MpOrders = lazy(() => import('./MpOrders'));
+const MpSell = lazy(() => import('./MpSell'));
+const MpAccount = lazy(() => import('./MpAccount'));
+
+const Wait = () => (
+  <div className="py-24 grid place-items-center">
+    <Loader2 className="w-6 h-6 animate-spin text-ink/40" />
+  </div>
+);
+
+/** Logo provisoire : le nom écrit, en attendant le nom et le logo définitifs. */
+export const MpLogo: React.FC = () => (
+  <Link to={mpPath()} className="flex items-center gap-2" aria-label={`${MP.name}, accueil`}>
+    <span className="w-9 h-9 rounded-xl bg-ink text-ivory grid place-items-center font-display text-xl">
+      {MP.name[0]}
+    </span>
+    <span className="font-display text-2xl leading-none text-ink">{MP.name}</span>
+  </Link>
+);
+
+const Header: React.FC = () => {
+  const { count } = useMpCart();
+  return (
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-ink/[0.07]">
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+        <MpLogo />
+        <nav className="flex items-center gap-1" aria-label="Menu">
+          <NavLink
+            to={mpPath('/vendre')}
+            className="hidden sm:inline-flex items-center gap-2 h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold hover:border-ink"
+          >
+            <Store className="w-4 h-4" /> Vendre
+          </NavLink>
+          <NavLink
+            to={mpPath('/compte')}
+            aria-label="Mon compte"
+            className="hidden sm:grid w-10 h-10 rounded-full place-items-center hover:bg-ivory"
+          >
+            <UserRound className="w-5 h-5" />
+          </NavLink>
+          <NavLink
+            to={mpPath('/panier')}
+            aria-label={`Panier, ${count} article${count > 1 ? 's' : ''}`}
+            className="relative w-10 h-10 rounded-full grid place-items-center hover:bg-ivory"
+            data-testid="mp-cart-link"
+          >
+            <ShoppingBag className="w-5 h-5" />
+            {count > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-wine text-white text-[11px] font-bold grid place-items-center">
+                {count}
+              </span>
+            )}
+          </NavLink>
+        </nav>
+      </div>
+    </header>
+  );
+};
+
+/** Barre du bas sur téléphone : les 5 gestes essentiels. */
+const TabBar: React.FC = () => {
+  const { count } = useMpCart();
+  const tabs = [
+    { to: mpPath(), label: 'Accueil', Icon: Home, end: true },
+    { to: mpPath('/vendre'), label: 'Vendre', Icon: Store },
+    { to: mpPath('/panier'), label: count ? `Panier (${count})` : 'Panier', Icon: ShoppingBag },
+    { to: mpPath('/commandes'), label: 'Commandes', Icon: Package },
+    { to: mpPath('/compte'), label: 'Compte', Icon: UserRound },
+  ];
+  return (
+    <nav
+      className="sm:hidden fixed bottom-0 inset-x-0 z-40 bg-white border-t border-ink/10 grid grid-cols-5 pb-[env(safe-area-inset-bottom)]"
+      aria-label="Navigation"
+    >
+      {tabs.map(({ to, label, Icon, end }) => (
+        <NavLink
+          key={to}
+          to={to}
+          end={end}
+          className={({ isActive }) =>
+            `h-16 flex flex-col items-center justify-center gap-1 text-[11px] font-semibold ${isActive ? 'text-ink' : 'text-ink/55'}`
+          }
+        >
+          <Icon className="w-5 h-5" strokeWidth={1.6} />
+          {label}
+        </NavLink>
+      ))}
+    </nav>
+  );
+};
+
+/**
+ * Place de marché : application à part entière sous /m (son propre en-tête, son panier),
+ * qui partage avec la boutique les comptes (numéro, Face ID), la carte et le serveur.
+ */
+export default function MarketplaceApp() {
+  return (
+    <MpCartProvider>
+      <div className="min-h-screen bg-[#faf7f5] flex flex-col" data-testid="marketplace">
+        <Header />
+        <main className="flex-1 pb-24 sm:pb-10">
+          <Suspense fallback={<Wait />}>
+            <Routes>
+              <Route index element={<MpHome />} />
+              <Route path="annonce/:id" element={<MpListingPage />} />
+              <Route path="boutique/:slug" element={<MpShop />} />
+              <Route path="panier" element={<MpCart />} />
+              <Route path="commandes" element={<MpOrders />} />
+              <Route path="vendre" element={<MpSell />} />
+              <Route path="compte" element={<MpAccount />} />
+              <Route path="*" element={<MpHome />} />
+            </Routes>
+          </Suspense>
+        </main>
+        <footer className="hidden sm:block border-t border-ink/[0.07] py-6 text-center text-xs text-ink/60">
+          {MP.name} · {MP.tagline} · Paiement à la livraison
+        </footer>
+        <TabBar />
+      </div>
+    </MpCartProvider>
+  );
+}

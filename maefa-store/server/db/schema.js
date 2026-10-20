@@ -248,6 +248,68 @@ export const productComments = pgTable(
   ],
 );
 
+/* ---------- Place de marché (vendeurs indépendants) ---------- */
+
+/** Boutique d'un vendeur (entité VENDEUR, rattachée au compte CLIENTE qui l'a ouverte). */
+export const mpSellers = pgTable(
+  'mp_sellers',
+  {
+    id: text('id').primaryKey(),
+    ownerPhone: text('owner_phone'),
+    slug: text('slug').notNull(),
+    status: text('status').notNull(),
+    createdAt: createdAt().notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [
+    uniqueIndex('mp_sellers_slug_idx').on(t.slug),
+    index('mp_sellers_owner_idx').on(t.ownerPhone),
+    check('statut_vendeur', sql`${t.status} in ('en_attente', 'active', 'suspendue', 'fermee')`),
+  ],
+);
+
+/** Article publié par un vendeur (entité ANNONCE). */
+export const mpListings = pgTable(
+  'mp_listings',
+  {
+    id: text('id').primaryKey(),
+    sellerId: text('seller_id')
+      .notNull()
+      .references(() => mpSellers.id),
+    status: text('status').notNull(),
+    price: integer('price').notNull(),
+    createdAt: createdAt().notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [
+    index('mp_listings_seller_idx').on(t.sellerId),
+    index('mp_listings_status_idx').on(t.status),
+    check('prix_positif', sql`${t.price} > 0`),
+    check('statut_annonce', sql`${t.status} in ('en_attente', 'publiee', 'refusee', 'retiree')`),
+  ],
+);
+
+/** Commande passée chez un vendeur (entité COMMANDE_MARCHE : ACHETEUR – VENDEUR). */
+export const mpOrders = pgTable(
+  'mp_orders',
+  {
+    id: text('id').primaryKey(),
+    sellerId: text('seller_id')
+      .notNull()
+      .references(() => mpSellers.id),
+    buyerPhone: text('buyer_phone'),
+    status: text('status').notNull(),
+    total: integer('total').notNull(),
+    createdAt: createdAt().notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [
+    index('mp_orders_seller_idx').on(t.sellerId),
+    index('mp_orders_buyer_idx').on(t.buyerPhone),
+    index('mp_orders_status_idx').on(t.status),
+  ],
+);
+
 /** Réglages et petits documents (vitrine, visites, réglages du Marché, date du catalogue). */
 export const appSettings = pgTable('app_settings', {
   key: text('key').primaryKey(),
