@@ -33,6 +33,26 @@ export function setupPwa() {
   if (import.meta.env.PROD && import.meta.env.VITE_ROUTER !== 'hash' && 'serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
   }
+  // Après une mise à jour du site, un onglet resté ouvert demande des fichiers qui n'existent plus :
+  // on recharge la page une fois (au plus toutes les 30 s) pour prendre la nouvelle version.
+  window.addEventListener('vite:preloadError', e => {
+    e.preventDefault();
+    reloadForNewVersion();
+  });
+}
+
+/** Recharge la page pour obtenir la dernière version du site ; renvoie false si on vient déjà de le faire. */
+export function reloadForNewVersion(): boolean {
+  if (!navigator.onLine) return false; // hors ligne : recharger n'aiderait pas
+  try {
+    const last = Number(sessionStorage.getItem('maefa_reload_at') || 0);
+    if (Date.now() - last < 30_000) return false;
+    sessionStorage.setItem('maefa_reload_at', String(Date.now()));
+  } catch {
+    /* stockage indisponible : on recharge quand même */
+  }
+  window.location.reload();
+  return true;
 }
 
 export const isStandalone = () =>

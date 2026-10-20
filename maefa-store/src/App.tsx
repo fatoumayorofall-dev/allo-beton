@@ -18,6 +18,12 @@ import { BrandMark } from './components/Logo';
 import { MagicLayer } from './components/Magic';
 import { AdminHeader, CheckoutFooter, CheckoutHeader } from './components/FocusedChrome';
 import { TabBar } from './components/TabBar';
+import { PageErrorBoundary } from './components/PageErrorBoundary';
+
+/** Une nouvelle page repart sans erreur. */
+const RouteErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <PageErrorBoundary key={useLocation().pathname}>{children}</PageErrorBoundary>
+);
 
 /*
  * Découpage du code : l'accueil, la boutique et les fiches produit arrivent tout de suite ;
@@ -140,50 +146,52 @@ export default function App() {
               <AdminHeader />
             </Chrome>
             <main id="contenu" className="flex-1">
-              <Suspense fallback={<PageFallback />}>
-                <PageFade>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/boutique" element={<Catalog />} />
-                    <Route path="/boutique/:category" element={<Catalog />} />
-                    <Route path="/produit/:slug" element={<ProductDetail />} />
-                    <Route path="/panier" element={<Cart />} />
-                    <Route path="/commande" element={<Checkout />} />
-                    <Route path="/confirmation/:id" element={<OrderSuccess />} />
-                    <Route path="/suivi" element={<Tracking />} />
-                    <Route path="/favoris" element={<Wishlist />} />
-                    <Route path="/mes-commandes" element={<MyOrders />} />
-                    <Route path="/compte" element={<Account />} />
-                    <Route path="/p/:code" element={<SimpleProduct />} />
-                    <Route path="/s" element={<Showcase />} />
-                    <Route
-                      path="/journal"
-                      element={FEATURES.journal ? <Journal /> : <Navigate to="/boutique" replace />}
-                    />
-                    <Route
-                      path="/journal/:slug"
-                      element={FEATURES.journal ? <ArticlePage /> : <Navigate to="/boutique" replace />}
-                    />
-                    <Route path="/a-propos" element={<About />} />
-                    <Route path="/faq" element={<FAQ />} />
-                    <Route path="/confidentialite" element={<Privacy />} />
-                    <Route path="/authentique" element={<Authenticity />} />
-                    <Route path="/authentique/:code" element={<Authenticity />} />
-                    <Route path="/admin" element={<Admin />} />
-                    <Route path="/livreur/tournee/:token" element={<DriverTour />} />
-                    <Route path="/livreur/:token" element={<Driver />} />
-                    <Route
-                      path="/marche"
-                      element={FEATURES.marche ? <Market /> : <Navigate to="/boutique" replace />}
-                    />
-                    <Route
-                      path="/marche/:slug"
-                      element={FEATURES.marche ? <MarketProduct /> : <Navigate to="/boutique" replace />}
-                    />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </PageFade>
-              </Suspense>
+              <RouteErrorBoundary>
+                <Suspense fallback={<PageFallback />}>
+                  <PageFade>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/boutique" element={<Catalog />} />
+                      <Route path="/boutique/:category" element={<Catalog />} />
+                      <Route path="/produit/:slug" element={<ProductDetail />} />
+                      <Route path="/panier" element={<Cart />} />
+                      <Route path="/commande" element={<Checkout />} />
+                      <Route path="/confirmation/:id" element={<OrderSuccess />} />
+                      <Route path="/suivi" element={<Tracking />} />
+                      <Route path="/favoris" element={<Wishlist />} />
+                      <Route path="/mes-commandes" element={<MyOrders />} />
+                      <Route path="/compte" element={<Account />} />
+                      <Route path="/p/:code" element={<SimpleProduct />} />
+                      <Route path="/s" element={<Showcase />} />
+                      <Route
+                        path="/journal"
+                        element={FEATURES.journal ? <Journal /> : <Navigate to="/boutique" replace />}
+                      />
+                      <Route
+                        path="/journal/:slug"
+                        element={FEATURES.journal ? <ArticlePage /> : <Navigate to="/boutique" replace />}
+                      />
+                      <Route path="/a-propos" element={<About />} />
+                      <Route path="/faq" element={<FAQ />} />
+                      <Route path="/confidentialite" element={<Privacy />} />
+                      <Route path="/authentique" element={<Authenticity />} />
+                      <Route path="/authentique/:code" element={<Authenticity />} />
+                      <Route path="/admin" element={<Admin />} />
+                      <Route path="/livreur/tournee/:token" element={<DriverTour />} />
+                      <Route path="/livreur/:token" element={<Driver />} />
+                      <Route
+                        path="/marche"
+                        element={FEATURES.marche ? <Market /> : <Navigate to="/boutique" replace />}
+                      />
+                      <Route
+                        path="/marche/:slug"
+                        element={FEATURES.marche ? <MarketProduct /> : <Navigate to="/boutique" replace />}
+                      />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </PageFade>
+                </Suspense>
+              </RouteErrorBoundary>
             </main>
             <Chrome>
               <Footer />

@@ -1,5 +1,5 @@
 // Service worker Maefa Store : ouverture rapide et consultation même avec une connexion faible.
-const VERSION = 'maefa-v8'; // v8 : nouveau nom Maefa (logo, icônes)
+const VERSION = 'maefa-v9'; // v9 : seules les pages bien reçues sont gardées pour le hors-ligne
 const SHELL = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/fonts/jost-latin.woff2', '/fonts/bodoni-moda-latin.woff2'];
 const RUNTIME = `${VERSION}-runtime`;
 
@@ -32,8 +32,10 @@ self.addEventListener('fetch', event => {
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req).then(res => {
-        const copy = res.clone();
-        caches.open(VERSION).then(c => c.put('/', copy));
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(VERSION).then(c => c.put('/', copy));
+        }
         return res;
       }).catch(() => caches.match('/')),
     );
@@ -43,8 +45,10 @@ self.addEventListener('fetch', event => {
   // Fichiers du site (noms versionnés) : la mémoire d'abord
   if (url.origin === self.location.origin && (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/icons/') || url.pathname.startsWith('/fonts/'))) {
     event.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
-      const copy = res.clone();
-      caches.open(VERSION).then(c => c.put(req, copy));
+      if (res.ok) {
+        const copy = res.clone();
+        caches.open(VERSION).then(c => c.put(req, copy));
+      }
       return res;
     })));
     return;
