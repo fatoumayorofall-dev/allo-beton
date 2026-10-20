@@ -38,6 +38,12 @@ import { BrandMark } from '../components/Logo';
 import { Twinkles } from '../components/Magic';
 import { ForYou, pickForHer } from '../components/ForYou';
 import { canBuy } from '../utils/stock';
+import { BiometricIcon, FaceIdPanel, FaceIdPrompt, useBiometric } from '../components/FaceIdPanel';
+import { biometricLabel, usePrefetchedChallenge } from '../utils/passkey';
+import { passkeyLoginOptions } from '../services/api';
+
+/** Défi de connexion Face ID (le téléphone propose lui-même le compte Maefa enregistré) */
+const loadLoginChallenge = () => passkeyLoginOptions();
 import type { Product } from '../data/types';
 import { formatPrice } from '../utils/format';
 import type { DeliveryLocation, OrderStatus } from '../data/types';
@@ -146,7 +152,9 @@ const DigitBoxes = React.forwardRef<
 type Step = 'phone' | 'code' | 'pin' | 'pin-new' | 'pin-confirm' | 'locked';
 
 const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
-  const { startLogin, verifyCode, loginWithPin } = useAccount();
+  const { startLogin, verifyCode, loginWithPin, loginWithPasskey } = useAccount();
+  const biometric = useBiometric();
+  const takeChallenge = usePrefetchedChallenge(biometric ? loadLoginChallenge : null);
   const [step, setStep] = useState<Step>('phone');
   const [digits, setDigits] = useState('');
   const [code, setCode] = useState('');
@@ -339,6 +347,28 @@ const Login: React.FC<{ onDone: (isNew: boolean) => void }> = ({ onDone }) => {
             )}
           </button>
         </form>
+        {biometric && (
+          <>
+            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-ink/50">
+              <span className="h-px flex-1 bg-ink/10" /> ou <span className="h-px flex-1 bg-ink/10" />
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              data-testid="passkey-login"
+              onClick={() => {
+                const ready = takeChallenge();
+                finish(
+                  () => loginWithPasskey(ready),
+                  () => {},
+                );
+              }}
+              className="btn-outline w-full !h-16 !text-[13px] inline-flex items-center justify-center gap-2.5"
+            >
+              <BiometricIcon className="w-5 h-5" /> Se connecter avec {biometricLabel()}
+            </button>
+          </>
+        )}
         <p className="mt-6 flex items-center justify-center gap-2 text-xs text-ink/70">
           <Lock className="w-3.5 h-3.5" /> Vos informations restent privées et ne sont jamais revendues.
         </p>
@@ -1092,6 +1122,8 @@ const Dashboard: React.FC = () => {
         </div>
       </section>
 
+      <FaceIdPrompt />
+
       {/* Profil à compléter */}
       {doneCount < todo.length && (
         <section className="rounded-[2rem] bg-blush/40 border border-gold/20 p-5 sm:p-6" data-testid="account-todo">
@@ -1392,6 +1424,8 @@ const Dashboard: React.FC = () => {
       </Panel>
 
       <SavedAddressesPanel />
+
+      <FaceIdPanel />
 
       <MyDataPanel />
 

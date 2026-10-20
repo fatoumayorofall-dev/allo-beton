@@ -62,6 +62,7 @@ import { AuthenticityTab } from './AdminAuthenticity';
 import { ToursTab } from './AdminTours';
 import { RequestsTab } from './AdminRequests';
 import { AnalyticsTab } from './AdminAnalytics';
+import { AdminFaceIdCard, AdminFaceIdLogin } from './AdminFaceId';
 import { CommentsTab } from './AdminComments';
 import { restockLink, statusLink } from '../utils/whatsappMessages';
 import { mediaUrl, normalizeVideoInput, staticMode } from '../utils/media';
@@ -178,6 +179,7 @@ export const Admin: React.FC = () => {
             {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Se connecter'}
           </button>
           {DEMO_PIN && <p className="text-xs text-ink/70 mt-4">Code de démonstration : {DEMO_PIN}</p>}
+          <AdminFaceIdLogin onToken={enter} />
         </form>
       </div>
     );
@@ -239,6 +241,7 @@ export const Admin: React.FC = () => {
         ))}
       </div>
       {tab === 'dashboard' && <Dashboard onGoto={setTab} />}
+      {tab === 'dashboard' && !DEMO_PIN && <AdminFaceIdCard pin={adminPin()} />}
       {tab === 'requests' && <RequestsTab pin={adminPin()} />}
       {tab === 'data' && <AnalyticsTab pin={adminPin()} />}
       {tab === 'comments' && <CommentsTab pin={adminPin()} />}

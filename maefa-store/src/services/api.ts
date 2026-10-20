@@ -297,6 +297,8 @@ export interface Account {
   addresses?: SavedAddress[];
   /** Un code secret est enregistré (sinon connexion par WhatsApp seulement) */
   hasPin?: boolean;
+  /** Nombre d'appareils où Face ID / l'empreinte est activé */
+  passkeys?: number;
   wishlist: string[];
   createdAt: string;
 }
@@ -771,6 +773,63 @@ export const patchComment = (pin: string, id: string, patch: { status?: 'publie'
   });
 export const deleteComment = (pin: string, id: string) =>
   call<{ ok: true }>(`/api/admin/comments/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: { 'x-admin-pin': pin },
+  });
+
+/* ---------- Face ID / empreinte (passkeys) ---------- */
+export interface PasskeyDevice {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  /** Clé synchronisée (trousseau iCloud, Google) : disponible sur ses autres appareils */
+  synced: boolean;
+}
+type Json = Record<string, unknown>;
+/** Défi WebAuthn préparé par le serveur (usage unique, 5 min) */
+export interface PasskeyChallenge {
+  challengeId: string;
+  options: Json;
+}
+export const passkeyRegisterOptions = (token: string) =>
+  call<PasskeyChallenge>('/api/me/passkeys/options', { method: 'POST', token });
+export const passkeyRegister = (token: string, challengeId: string, response: unknown, name?: string) =>
+  call<{ passkey: PasskeyDevice; user: Account }>('/api/me/passkeys', {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ challengeId, response, name }),
+  });
+export const fetchMyPasskeys = (token: string) => call<{ passkeys: PasskeyDevice[] }>('/api/me/passkeys', { token });
+export const deleteMyPasskey = (token: string, id: string) =>
+  call<{ ok: true; user: Account }>(`/api/me/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE', token });
+export const passkeyLoginOptions = () => call<PasskeyChallenge>('/api/auth/passkey/options', { method: 'POST' });
+export const passkeyLogin = (challengeId: string, response: unknown) =>
+  call<{ token: string; user: Account }>('/api/auth/passkey/verify', {
+    method: 'POST',
+    body: JSON.stringify({ challengeId, response }),
+  });
+
+/* Gérante */
+export const adminPasskeyStatus = () => call<{ enabled: boolean }>('/api/admin/passkey/status');
+export const adminPasskeyLoginOptions = () => call<PasskeyChallenge>('/api/admin/passkey/options', { method: 'POST' });
+export const adminPasskeyLogin = (challengeId: string, response: unknown) =>
+  call<{ token: string; expiresAt: string }>('/api/admin/passkey/verify', {
+    method: 'POST',
+    body: JSON.stringify({ challengeId, response }),
+  });
+export const adminPasskeyRegisterOptions = (pin: string) =>
+  call<PasskeyChallenge>('/api/admin/passkeys/options', { method: 'POST', headers: { 'x-admin-pin': pin } });
+export const adminPasskeyRegister = (pin: string, challengeId: string, response: unknown, name?: string) =>
+  call<{ passkey: PasskeyDevice }>('/api/admin/passkeys', {
+    method: 'POST',
+    headers: { 'x-admin-pin': pin },
+    body: JSON.stringify({ challengeId, response, name }),
+  });
+export const fetchAdminPasskeys = (pin: string) =>
+  call<{ passkeys: PasskeyDevice[] }>('/api/admin/passkeys', { headers: { 'x-admin-pin': pin } });
+export const deleteAdminPasskey = (pin: string, id: string) =>
+  call<{ ok: true }>(`/api/admin/passkeys/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: { 'x-admin-pin': pin },
   });

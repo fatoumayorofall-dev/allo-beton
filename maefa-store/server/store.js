@@ -35,6 +35,7 @@ let state = {
   stockAlerts: [],
   authCodes: {},
   comments: {},
+  adminPasskeys: [],
 };
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
@@ -223,6 +224,13 @@ export function deleteUserAccount(phone) {
   delete state.orders[phone];
   // Les avis publiés restent (prénom seulement) mais ne sont plus reliés au compte
   for (const c of Object.values(state.comments ?? {})) if (c.customerPhone === phone) c.customerPhone = null;
+  persist();
+}
+
+/** Face ID / empreinte de la gérante : clés publiques des appareils autorisés (jamais de donnée biométrique). */
+export const getAdminPasskeys = () => (state.adminPasskeys ??= []);
+export function saveAdminPasskeys(list) {
+  state.adminPasskeys = list;
   persist();
 }
 

@@ -51,6 +51,7 @@ function publicUser(u) {
     location: u.location ?? null,
     addresses: u.addresses ?? [],
     hasPin: !!u.pinHash,
+    passkeys: (u.passkeys ?? []).length,
     wishlist: u.wishlist ?? [],
     createdAt: u.createdAt,
   };
@@ -204,13 +205,15 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
   app.get('/api/me/export', (req, res) => {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ error: 'Non connectée' });
-    const { pinHash: _hash, pinSalt: _salt, pinFails: _fails, ...profile } = user;
+    const { pinHash: _hash, pinSalt: _salt, pinFails: _fails, passkeys, ...profile } = user;
     const shopOrders = store.listShopOrders().filter(o => wa.toE164(o.customer?.phone) === user.phone);
     res.set('Content-Disposition', 'attachment; filename="mes-donnees-maefa.json"');
     res.json({
       exportedAt: new Date().toISOString(),
       responsable: 'Maefa Store, Dakar (Sénégal)',
       profil: profile,
+      // Face ID / empreinte : seulement les appareils (aucune donnée biométrique n'est jamais reçue)
+      appareils: (passkeys ?? []).map(k => ({ nom: k.name, activeLe: k.createdAt, utiliseLe: k.lastUsedAt })),
       commandes: shopOrders.length ? shopOrders : store.getOrders(user.phone),
       avis: store.listComments().filter(c => c.customerPhone === user.phone),
     });
@@ -362,5 +365,5 @@ export function registerAuthRoutes(app, { limit, wa, store, isAdmin }) {
     res.json({ customers });
   });
 
-  return { currentUser };
+  return { currentUser, openSession, publicUser };
 }

@@ -67,6 +67,12 @@ export const Privacy: React.FC = () => {
             <strong>Compte</strong> : code personnel (gardé sous forme chiffrée, illisible même pour nous), favoris.
           </li>
           <li>
+            <strong>Face ID / empreinte</strong> (si vous l'activez) : votre visage et votre empreinte ne quittent
+            jamais votre téléphone. Nous gardons seulement le nom de l'appareil, sa date d'activation et une « clé
+            publique » qui permet de vérifier la signature du téléphone, sans pouvoir s'en servir pour se connecter.
+            Vous pouvez retirer un appareil à tout moment depuis votre espace.
+          </li>
+          <li>
             <strong>Échanges</strong> : vos demandes envoyées sur WhatsApp, vos messages à l'assistante Maé.
           </li>
           <li>
@@ -113,9 +119,10 @@ export const Privacy: React.FC = () => {
 
       <Section id="securite" title="6. Comment sont-elles protégées ?">
         <p>
-          Connexion chiffrée (HTTPS), codes personnels chiffrés, accès de la gérante protégé par un code vérifié par le
-          serveur, jetons de connexion signés, limites contre les tentatives répétées. Les prix et les données sensibles
-          ne sont jamais exposés au public.
+          Connexion chiffrée (HTTPS), codes personnels chiffrés, connexion par Face ID ou empreinte selon la norme
+          internationale WebAuthn (passkeys, protégée contre les faux sites), accès de la gérante protégé par un code
+          vérifié par le serveur, jetons de connexion signés, limites contre les tentatives répétées. Les prix et les
+          données sensibles ne sont jamais exposés au public.
         </p>
       </Section>
 

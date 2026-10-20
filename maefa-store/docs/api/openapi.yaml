@@ -430,6 +430,99 @@ paths:
       responses:
         '200': { description: Fichier JSON (profil, adresses, commandes), sans le code secret }
         '401': { description: Non connectée }
+  /api/auth/passkey/options:
+    post:
+      tags: [Face ID]
+      summary: 'Connexion par Face ID / empreinte : défi à signer (le téléphone choisit son compte)'
+      responses:
+        '200': { description: 'challengeId + options WebAuthn (PublicKeyCredentialRequestOptions)' }
+        '429': { description: Trop d'essais }
+  /api/auth/passkey/verify:
+    post:
+      tags: [Face ID]
+      summary: 'Vérifie la signature du téléphone et ouvre une session'
+      responses:
+        '200': { description: 'Jeton de session (JWT) + profil' }
+        '400': { description: Défi expiré ou déjà utilisé }
+        '401': { description: Signature refusée }
+        '404': { description: Appareil inconnu pour ce compte }
+  /api/me/passkeys/options:
+    post:
+      tags: [Face ID]
+      summary: 'Activer Face ID sur ce téléphone : options de création de la clé'
+      security: [{ session: [] }]
+      responses:
+        '200': { description: 'Options WebAuthn (PublicKeyCredentialCreationOptions)' }
+  /api/me/passkeys:
+    get:
+      tags: [Face ID]
+      summary: 'Appareils où Face ID / l’empreinte est activé'
+      security: [{ session: [] }]
+      responses:
+        '200': { description: 'Nom, dates ; jamais la clé publique' }
+    post:
+      tags: [Face ID]
+      summary: 'Enregistre la clé publique créée par le téléphone'
+      security: [{ session: [] }]
+      responses:
+        '201': { description: Appareil activé }
+        '400': { description: Réponse invalide ou défi expiré }
+  /api/me/passkeys/{id}:
+    delete:
+      tags: [Face ID]
+      summary: 'Retirer un appareil'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: OK }
+  /api/admin/passkey/status:
+    get:
+      tags: [Face ID]
+      summary: 'Face ID est-il activé pour l’espace gérant ?'
+      responses:
+        '200': { description: '{ enabled }' }
+  /api/admin/passkey/options:
+    post:
+      tags: [Face ID]
+      summary: 'Entrée gérante par Face ID : défi à signer (appareils autorisés seulement)'
+      responses:
+        '200': { description: challengeId + options }
+        '404': { description: Aucun appareil activé (ou ADMIN_PIN changé depuis) }
+  /api/admin/passkey/verify:
+    post:
+      tags: [Face ID]
+      summary: 'Vérifie la signature et donne le jeton gérante (12 h)'
+      responses:
+        '200': { description: 'Jeton JWT gérante' }
+        '401': { description: Appareil non autorisé ou signature refusée }
+  /api/admin/passkeys/options:
+    post:
+      tags: [Face ID]
+      summary: 'Activer Face ID pour l’espace gérant sur ce téléphone'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: Options WebAuthn }
+  /api/admin/passkeys:
+    get:
+      tags: [Face ID]
+      summary: 'Appareils autorisés pour l’espace gérant'
+      security: [{ admin: [] }]
+      responses:
+        '200': { description: Liste des appareils }
+    post:
+      tags: [Face ID]
+      summary: 'Enregistre un appareil de la gérante (lié au code PIN du moment)'
+      security: [{ admin: [] }]
+      responses:
+        '201': { description: Appareil activé }
+  /api/admin/passkeys/{id}:
+    delete:
+      tags: [Face ID]
+      summary: 'Retirer un appareil de la gérante'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        '200': { description: OK }
   /api/me/pin:
     post:
       tags: [Comptes clientes]

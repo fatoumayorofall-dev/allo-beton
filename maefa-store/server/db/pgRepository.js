@@ -222,6 +222,7 @@ const TABLES = [
       { key: 'catalogPublished', value: s.catalog !== null },
       { key: 'catalogUpdatedAt', value: s.catalogUpdatedAt },
       { key: 'stockAlerts', value: s.stockAlerts },
+      { key: 'adminPasskeys', value: s.adminPasskeys ?? [] },
     ],
   },
 ];
@@ -281,6 +282,7 @@ export async function createPgRepository(url) {
       showcase: settings.showcase ?? [],
       visits: settings.visits ?? {},
       stockAlerts: settings.stockAlerts ?? [],
+      adminPasskeys: settings.adminPasskeys ?? [],
     };
     // Point de départ des différences : ce qui est en base (les lignes inchangées ne seront pas réécrites)
     for (const d of TABLES) {

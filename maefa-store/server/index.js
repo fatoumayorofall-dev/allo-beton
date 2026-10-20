@@ -82,7 +82,8 @@ setInterval(() => buckets.clear(), 6 * 3600e3).unref();
 
 const ADMIN_PIN = process.env.ADMIN_PIN || '';
 const { createAdminAuth } = await import('./adminAuth.js');
-const { isAdmin, registerAdminLogin } = createAdminAuth(ADMIN_PIN);
+const adminAuth = createAdminAuth(ADMIN_PIN);
+const { isAdmin, registerAdminLogin } = adminAuth;
 registerAdminLogin(app);
 
 /** Validation minimale d'une commande reçue du navigateur. */
@@ -267,7 +268,18 @@ app.delete('/api/voice/:slug', (req, res) => {
 });
 
 /* ---------- Comptes clientes (numéro de téléphone + code WhatsApp) ---------- */
-const { currentUser } = registerAuthRoutes(app, { limit, wa, store, isAdmin });
+const { currentUser, openSession, publicUser } = registerAuthRoutes(app, { limit, wa, store, isAdmin });
+// Connexion par Face ID / empreinte (passkeys) pour les clientes et la gérante
+const { registerPasskeyRoutes } = await import('./passkeys.js');
+registerPasskeyRoutes(app, {
+  limit,
+  store,
+  currentUser,
+  openSession,
+  publicUser,
+  isAdmin,
+  adminAuth,
+});
 // Avis et questions sur les pièces, visibles par toutes ; modération par la gérante
 const { registerCommentRoutes } = await import('./comments.js');
 registerCommentRoutes(app, { limit, isAdmin, store, currentUser, toE164: wa.toE164 });

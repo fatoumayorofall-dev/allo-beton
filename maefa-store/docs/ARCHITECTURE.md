@@ -308,6 +308,13 @@ flowchart LR
 - **Accès gérante** : code PIN vérifié uniquement par le serveur, jeton **JWT** (RFC 7519, HS256, 12 h) dont la clé dépend du PIN : changer le PIN déconnecte tout le monde.
 - **Comptes clientes** : connexion par code SMS ou code personnel (haché scrypt), **JWT** dont l'identifiant renvoie à une session serveur (donc révocable : déconnexion, suppression du compte), sel et secret hors du code
   (`AUTH_SECRET` en variable d'environnement).
+- **Face ID / empreinte (passkeys, norme W3C WebAuthn)** : le téléphone vérifie la personne et signe un
+  défi à usage unique (5 min) avec une clé privée qui ne le quitte jamais ; le serveur
+  (`server/passkeys.js`, bibliothèque SimpleWebAuthn) ne garde que la clé publique et vérifie l'origine du site
+  (anti-hameçonnage), la vérification de la personne (`userVerification: required`) et le compteur de signatures.
+  Aucune donnée biométrique n'est reçue. Côté gérante, chaque appareil porte une empreinte HMAC du PIN du
+  moment : changer `ADMIN_PIN` retire tous les appareils. Testé avec l'authentificateur virtuel de Chromium
+  (`tests/e2e/suites/faceid.cjs`).
 - **Limites de débit** par adresse IP et par téléphone (adaptées au partage d'IP des opérateurs
   mobiles).
 - **En-têtes** : Content-Security-Policy stricte, `X-Frame-Options`, `nosniff`,

@@ -75,13 +75,13 @@ const check = (name, ok, extra = '') => results.push(`${ok ? 'OK  ' : 'FAIL'} ${
   await page.goto(B + '/produit/sac-ndella-noir');
   await page.waitForTimeout(500);
   await shot('product');
-  await page.getByRole('button', { name: /Avis clientes/ }).click();
+  await page.getByRole('button', { name: /Avis et questions/ }).click();
   await page.waitForTimeout(400);
-  await page.getByRole('button', { name: 'Donner mon avis' }).click();
-  await page.getByLabel('Votre nom').fill('Test A.');
-  await page.getByLabel('Votre avis').fill('Superbes escarpins, très confortables.');
-  await page.getByRole('button', { name: 'Publier' }).click();
-  await page.waitForTimeout(300);
+  await page.getByTestId('comment-open').click();
+  await page.getByTestId('comment-form').getByLabel('Votre prénom').fill('Test A.');
+  await page.getByTestId('comment-form').getByLabel('Votre message').fill('Superbes escarpins, très confortables.');
+  await page.getByTestId('comment-submit').click();
+  await page.waitForTimeout(800);
   check('avis publié', await page.getByText('Superbes escarpins').isVisible());
 
   // Commande avec emballage cadeau + mémorisation

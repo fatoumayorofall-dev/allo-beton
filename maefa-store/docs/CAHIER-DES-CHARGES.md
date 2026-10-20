@@ -66,7 +66,8 @@ surtout par WhatsApp. Cette vente « à la main » pose plusieurs problèmes :
 - **EF-15** Suivi du livreur en direct par la cliente ; notification au départ de chaque arrêt.
 
 ### 4.4 Compte et données
-- **EF-16** Connexion par numéro de téléphone (code SMS) ou code personnel.
+- **EF-16** Connexion par numéro de téléphone (code SMS) ou code personnel ; ensuite, au choix, par
+  **Face ID / empreinte** (passkeys WebAuthn), aussi pour l'espace gérant.
 - **EF-17** Historique des commandes, favoris, adresses.
 - **EF-18** **Télécharger ses données** et **supprimer son compte** (loi 2008-12).
 
@@ -85,7 +86,7 @@ surtout par WhatsApp. Cette vente « à la main » pose plusieurs problèmes :
 |---|---|---|
 | ENF-01 | **Performance** sur réseau mobile 3G/4G | miniatures 540 px, compression, cache hors ligne, code découpé par page |
 | ENF-02 | **Charge** | 200 commandes simultanées sans erreur (test réalisé) |
-| ENF-03 | **Sécurité** | HTTPS, contrôle serveur des prix et totaux, codes chiffrés (scrypt), jetons signés, limites de débit, CSP |
+| ENF-03 | **Sécurité** | HTTPS, contrôle serveur des prix et totaux, codes chiffrés (scrypt), jetons signés, Face ID / empreinte sans donnée biométrique reçue (WebAuthn), limites de débit, CSP |
 | ENF-04 | **Confidentialité** | conformité à la loi n° 2008-12 (CDP) : politique, accès, effacement |
 | ENF-05 | **Disponibilité** | hébergement cloud, sauvegarde atomique des données, arrêt propre |
 | ENF-06 | **Compatibilité** | téléphones Android et iPhone, navigateurs récents, application installable (PWA) |

@@ -75,10 +75,15 @@ export function createAdminAuth(pin) {
         return res.status(401).json({ error: 'Code incorrect' });
       }
       fails.delete(req.ip);
-      const token = signJwt({ sub: 'gerante', role: 'admin' }, jwtKey(), TTL / 1000);
-      res.json({ token, expiresAt: new Date(Date.now() + TTL).toISOString() });
+      res.json(issueToken());
     });
   }
 
-  return { isAdmin, registerAdminLogin };
+  /** Jeton de l'espace gérant (après le code PIN, ou après Face ID sur un appareil autorisé). */
+  function issueToken() {
+    const token = signJwt({ sub: 'gerante', role: 'admin' }, jwtKey(), TTL / 1000);
+    return { token, expiresAt: new Date(Date.now() + TTL).toISOString() };
+  }
+
+  return { isAdmin, registerAdminLogin, issueToken, pin };
 }
