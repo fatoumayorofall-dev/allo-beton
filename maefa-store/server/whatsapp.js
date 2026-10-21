@@ -21,6 +21,16 @@ const {
 const client = TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : null;
 
 export const whatsappEnabled = () => !!(client && TWILIO_WHATSAPP_FROM);
+/** Pendant la création des données d'exemple : aucun message ne part (numéros fictifs). */
+let silenced = 0;
+export async function silently(fn) {
+  silenced += 1;
+  try {
+    return await fn();
+  } finally {
+    silenced -= 1;
+  }
+}
 export const smsEnabled = () => !!(client && TWILIO_SMS_FROM);
 export const ownerConfigured = () => !!OWNER_WHATSAPP;
 
@@ -113,6 +123,7 @@ export function buildStatusMessage(order, status) {
 export async function sendWhatsApp(to, body, template) {
   const dest = toE164(to);
   if (!dest) return { ok: false, error: 'numéro invalide' };
+  if (silenced) return { ok: false, simulated: true };
   if (!whatsappEnabled()) {
     console.log(`📱 [WHATSAPP SIMULÉ] → ${dest}\n${body}\n`);
     return { ok: false, simulated: true };
@@ -138,6 +149,7 @@ export async function sendWhatsApp(to, body, template) {
 export async function sendSms(to, body) {
   const dest = toE164(to);
   if (!dest) return { ok: false, error: 'numéro invalide' };
+  if (silenced) return { ok: false, simulated: true };
   if (!smsEnabled()) {
     console.log(`✉️ [SMS SIMULÉ] → ${dest}\n${body}\n`);
     return { ok: false, simulated: true };

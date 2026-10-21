@@ -326,6 +326,7 @@ app.use(express.static(dist, { index: false, maxAge: '1h' }));
 app.get(/^(?!\/api\/).*/, sendPage);
 
 const PORT = Number(process.env.PORT) || 8787;
+const { demoEnabled, seedDemo } = await import('./marketplace/demo.js');
 app.listen(PORT, () => {
   console.log(`Maefa Store — serveur sur http://localhost:${PORT}`);
   console.log(
@@ -335,6 +336,16 @@ app.listen(PORT, () => {
   console.log(`  Données      : ${store.STORAGE === 'postgresql' ? 'PostgreSQL (ORM Drizzle)' : 'fichier JSON'}`);
   console.log(`  Géolocalisation : ${geo.kind}`);
   console.log(`  Cache        : ${cacheBackend()}`);
+  // Site de test : place de marché remplie d'exemples si elle est vide (boutiques, commandes, livreurs…)
+  if (demoEnabled())
+    seedDemo({ base: `http://127.0.0.1:${PORT}`, store, openSession, adminPin: process.env.ADMIN_PIN, wa })
+      .then(r => {
+        if (r)
+          console.log(
+            `  Données d'exemple : ${r.sellers} boutiques, ${r.listings} articles, ${r.orders} commandes, ${r.drivers} livreurs`,
+          );
+      })
+      .catch(e => console.error("  Données d'exemple : échec —", e.message));
 });
 
 // Arrêt demandé (mise à jour ou redémarrage sur Render) : dernières données écrites avant de quitter

@@ -53,6 +53,7 @@ Copiez `server/.env.example` en `server/.env`, puis renseignez :
 | `ANTHROPIC_API_KEY` | Active l'assistante IA (Claude). Clé à créer sur console.anthropic.com. |
 | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` | Active l'envoi automatique des messages WhatsApp (même fournisseur qu'Allô Béton). |
 | `TWILIO_SMS_FROM` | Facultatif : envoie aussi par SMS les codes de remise de la place de marché (un SMS arrive sans connexion internet). |
+| `MP_DEMO` | `1` : au démarrage, si la place de marché est vide, crée des données d'exemple (boutiques, articles, livreurs, commandes à toutes les étapes) par les vraies routes du serveur. Par défaut actif quand `NOINDEX=1` (site de test). Comptes d'exemple : `server/marketplace/demo.js`. |
 | `OWNER_WHATSAPP` | Votre numéro : vous y recevez chaque nouvelle commande. |
 | `ADMIN_PIN` | **Code de l'espace gérant**, vérifié uniquement par le serveur (il n'apparaît nulle part dans le site). À la connexion, le serveur remet un jeton signé valable 12 h ; 10 essais ratés en 15 min bloquent l'adresse. Changer ce code déconnecte tous les appareils. Sans lui, l'espace gérant reste fermé. |
 | `SITE_URL` | Adresse publique du site (ex. `https://maefastore.sn`) : liens de suivi envoyés sur WhatsApp, aperçus de liens, sitemap. |

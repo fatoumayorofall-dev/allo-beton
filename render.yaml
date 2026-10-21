@@ -26,3 +26,6 @@ services:
       # Site de test : caché de Google (à retirer pour le vrai site)
       - key: NOINDEX
         value: "1"
+      # Site de test : place de marché remplie d'exemples au démarrage quand elle est vide (mettre 0 pour le vrai site)
+      - key: MP_DEMO
+        value: "1"

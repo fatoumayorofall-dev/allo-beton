@@ -33,6 +33,8 @@ const EXTRA_ENV = {
   anonymat: { OTP_DEV_MODE: '1' },
   fraude: { OTP_DEV_MODE: '1' },
   horsligne: { OTP_DEV_MODE: '1' },
+  // Données d'exemple créées au démarrage ; connexion par code secret (sans code par message)
+  demo: { MP_DEMO: '1' },
 };
 const GEO = 'http://localhost:9922';
 const DB_URL = process.env.E2E_DATABASE_URL;

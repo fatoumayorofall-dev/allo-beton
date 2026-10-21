@@ -398,6 +398,15 @@ problème est le téléphone sans réseau :
   téléphone ne valide rien seul, et le code n'y est jamais stocké d'avance (sinon le livreur pourrait le lire).
 - **Bandeau « Pas de réseau »** dans toute la place de marché.
 
+### 4.10 Données d'exemple (`server/marketplace/demo.js`)
+
+Sur le site de test (`MP_DEMO=1`, ou `NOINDEX=1` par défaut), une place de marché vide se remplit au
+démarrage : 6 boutiques (adresse fixe, sans adresse fixe, point relais, formule Pro, une à valider),
+2 points relais, 16 articles (images d'exemple), 3 livreurs, 9 commandes à toutes les étapes (livrées
+avec avis, signalement, deux livraisons ratées, en route, prête, nouvelles, groupe moitié-moitié).
+Tout passe par les vraies routes HTTP du serveur, avec les vrais codes de remise : la création elle-même
+vérifie le parcours complet (scénario `demo`). Aucun message ne part pendant la création (`wa.silently`).
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |
