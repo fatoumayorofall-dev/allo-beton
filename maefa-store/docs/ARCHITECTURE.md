@@ -331,6 +331,17 @@ sequenceDiagram
 - Formules vendeurs : Découverte (gratuite, 30 articles, 7 %) et Pro (abonnement mensuel, 3 %, mise en avant
   dans le fil « Pour vous ») ; taux et prix réglables par la gérante.
 
+### 4.6 Confiance après la livraison (`server/marketplace/aftersale.js`)
+
+- **Avis vérifiés** : liés à une commande livrée de l'acheteuse (impossible de noter sans avoir acheté
+  dans l'application) ; filtrés contre les numéros et liens ; à partir de 3 avis, la note pèse dans le
+  « sérieux du vendeur » du fil (`0,6 + 0,4 × note / 5`).
+- **Signalements** : délai de 72 h, prévenance du vendeur et de la gérante (WhatsApp), résolution notée et
+  envoyée à la cliente.
+- **Suivi du livreur** : position envoyée par son téléphone pendant la course (au plus toutes les 20 s),
+  distance et temps estimés (`eta`, vitesse moyenne dans Dakar selon le véhicule) ; visible seulement par
+  les acheteuses de la course, seulement pendant la livraison.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

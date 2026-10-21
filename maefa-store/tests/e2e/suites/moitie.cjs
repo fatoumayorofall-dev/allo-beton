@@ -253,6 +253,39 @@ const login = async phone => {
   await c2.waitForSelector('[data-testid="mp-order"]');
   check('2e cliente : livrée', /Livrée/.test(await c2.getByTestId('mp-order').innerText()));
 
+  // ── 7. Après la livraison : avis vérifié (vendeur + livreur) et signalement d'un problème
+  // 5 étoiles pour le vendeur (1re rangée), 4 pour le livreur (2e rangée)
+  const form = c2.getByTestId('mp-review-form');
+  await form.getByRole('radio', { name: '5 étoiles' }).first().click();
+  await form.getByRole('radio', { name: '4 étoiles' }).nth(1).click();
+  await c2.getByLabel('Votre avis').fill('Robe conforme, livreur aimable.');
+  await c2.getByTestId('mp-review-send').click();
+  await c2.waitForSelector('[data-testid="mp-review-done"]', { timeout: 10000 });
+  check('avis vérifié publié', /★★★★★/.test(await c2.getByTestId('mp-review-done').innerText()));
+  await c2.getByTestId('mp-problem-open').click();
+  await c2.getByLabel('Article abîmé').check();
+  await c2.getByLabel('Explication du problème').fill('Une couture est défaite.');
+  await c2.getByTestId('mp-problem-send').click();
+  await c2.waitForSelector('[data-testid="mp-dispute"]', { timeout: 10000 });
+  check('problème signalé, « l’équipe examine »', /examine/.test(await c2.getByTestId('mp-dispute').innerText()));
+  await shot(c2, '7-avis-signalement');
+  const shopSlug = (await j('/api/mp/listings')).body.listings.find(l => l.seller.shopName === 'Sandaga Style').seller
+    .slug;
+  const shop = (await j(`/api/mp/sellers/${shopSlug}`)).body;
+  check(
+    'boutique : note 5/5 (1 avis vérifié)',
+    shop.seller.rating.average === 5 && shop.reviews.length === 1,
+    JSON.stringify(shop.seller.rating),
+  );
+  const disputes = (await j('/api/admin/mp/disputes', { headers: A })).body.disputes;
+  check('gérante : signalement reçu', disputes.length === 1 && disputes[0].status === 'ouvert');
+  const solved = await j(`/api/admin/mp/disputes/${disputes[0].orderId}`, {
+    method: 'PATCH',
+    headers: A,
+    body: JSON.stringify({ status: 'resolu', resolution: 'La boutique reprend la robe et la répare.' }),
+  });
+  check('gérante : solution notée', solved.status === 200);
+
   check('aucune erreur JavaScript', errors.length === 0, errors.join(' | '));
   console.log(res.join('\n'));
   await b.close();

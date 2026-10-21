@@ -637,6 +637,47 @@ paths:
       security: [{ admin: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses: { '200': { description: OK } }
+  /api/mp/me/orders/{id}/review:
+    post:
+      tags: [Place de marché]
+      summary: 'Avis vérifié après la livraison (vendeur 1 à 5, livreur 1 à 5, texte sans numéro)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: Publié }, '409': { description: Pas livrée ou déjà notée } }
+  /api/mp/me/orders/{id}/problem:
+    post:
+      tags: [Place de marché]
+      summary: 'Signaler un problème (non conforme, abîmé, incomplet sous 72 h ; non reçu)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: Signalé }, '409': { description: Délai dépassé ou déjà en cours } }
+  /api/mp/me/orders/{id}/driver:
+    get:
+      tags: [Place de marché]
+      summary: 'Où est mon livreur ? Distance et temps estimés (pendant la livraison seulement)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: 'tracking ou null' } }
+  /api/admin/mp/disputes:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : problèmes signalés'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/disputes/{id}:
+    patch:
+      tags: [Place de marché]
+      summary: 'Gérante : résoudre ou rejeter (solution envoyée à la cliente)'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/reviews/{id}:
+    patch:
+      tags: [Place de marché]
+      summary: 'Gérante : masquer un avis déplacé'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
   /api/mp/config:
     get:
       tags: [Place de marché]

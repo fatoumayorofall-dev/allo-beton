@@ -30,6 +30,8 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG19 | Moitié-moitié : une commande ne rejoint une course que si aucun membre ne paie plus et que le détour reste raisonnable ; chacun paie au plus le prix de sa course seule. |
 | RG20 | Livraison par livreur (méthode A) : le livreur encaisse l'acheteur, envoie au vendeur le prix des articles moins sa commission, garde sa part moins sa commission, et doit le reste à la plateforme. |
 | RG21 | Un vendeur a la formule Découverte (gratuite, articles limités) ou Pro (abonnement mensuel, commission réduite) ; chaque abonnement payé est enregistré. |
+| RG22 | Seule l'acheteuse d'une commande livrée peut laisser un avis (vendeur, livreur), une fois, dans les 30 jours ; la note d'un vendeur est la moyenne de ses avis non masqués. |
+| RG23 | Un problème (non conforme, abîmé, incomplet) se signale sous 72 h après la livraison ; « non reçu » tant que la commande n'est pas livrée ; la gérante le résout ou le rejette avec une explication. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
 ## 2. Dictionnaire des données (extrait)
@@ -78,6 +80,8 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **LIVREUR** (<u>id_livreur</u>, nom, telephone, vehicule, quartier, statut, disponible, latitude, longitude, date_creation)
 - **COURSE** (<u>id_course</u>, mode, statut, heure_depart, distance_km, prix_total, date)
 - **ABONNEMENT** (<u>id_abonnement</u>, mois, montant, date, fin)
+- **AVIS_MARCHE** (<u>#id_commande_marche</u>, note_vendeur, texte, note_livreur, masque, date) — 0 ou 1 par commande
+- **SIGNALEMENT** (<u>#id_commande_marche</u>, type, texte, statut, solution, date, date_resolution) — 0 ou 1 en cours par commande
 
 ### Associations et cardinalités
 
