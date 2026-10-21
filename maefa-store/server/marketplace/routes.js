@@ -475,6 +475,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.json({
       seller: { ...publicSeller(seller), sales: delivered.length, rating: ratingOf(delivered, 'seller') },
       live: live ? { id: live.id, title: live.title } : null,
+      upcoming: lives.upcomingFor(seller, currentUser(req)?.phone),
       listings,
       reviews: publicReviews(delivered),
     });
@@ -516,6 +517,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       const live = deal ? null : lives.priceFor(listing);
       if (listing.priceMode === 'negocier' && !deal && !live)
         return { error: `« ${listing.title} » : prix à négocier. Faites une offre au vendeur avant de commander.` };
+      if (live?.flashLeft !== undefined && wanted.get(listing.id) > live.flashLeft)
+        return { error: `Plus que ${live.flashLeft} « ${listing.title} » au prix flash` };
       if (deal && wanted.get(listing.id) > deal.qty)
         return { error: `Le prix convenu pour « ${listing.title} » vaut pour ${deal.qty} article` };
       const g = groups.get(seller.id) ?? { seller, lines: [], deals: [] };
@@ -526,6 +529,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         price: deal?.amount ?? live?.price ?? listing.price,
         ...(deal ? { agreed: true } : {}),
         ...(live ? { liveId: live.liveId } : {}),
+        ...(live?.flashLeft !== undefined ? { flash: true } : {}),
         qty,
         variant,
         variantLabel: listing.variantLabel || null,

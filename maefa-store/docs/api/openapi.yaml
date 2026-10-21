@@ -770,6 +770,48 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string } }
         - { name: jours, in: query, schema: { type: integer, enum: [7, 30, 90, 365] } }
       responses: { '200': { description: OK } }
+  /api/mp/lives/upcoming:
+    get:
+      tags: [Place de marché]
+      summary: 'Lives programmés (boutique, titre, date, rappels ; reminded pour la cliente connectée)'
+      responses: { '200': { description: OK } }
+  /api/mp/sellers/{slug}/live-reminder:
+    post:
+      tags: [Place de marché]
+      summary: 'Cliente : « Me prévenir » ({ on }) du prochain live de la boutique'
+      security: [{ session: [] }]
+      parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '404': { description: Pas de live programmé } }
+  /api/mp/me/lives/schedule:
+    get:
+      tags: [Place de marché]
+      summary: 'Vendeuse : son live programmé'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : programmer un live ({ title, at } : de 5 minutes à 14 jours) ; abonnées prévenues'
+      security: [{ session: [] }]
+      responses: { '201': { description: OK }, '400': { description: Date invalide } }
+    delete:
+      tags: [Place de marché]
+      summary: 'Vendeuse : annuler le live programmé (les clientes au rappel sont prévenues)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/lives/{id}/flash:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : offre flash ({ listingId, price, minutes: 2|5|10|15, qty }) ou { stop: true }'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '400': { description: Prix, durée ou quantité invalides } }
+  /api/mp/me/lives/{id}/banner:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : bandeau d’annonce du live ({ text }, vide pour l’enlever)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
   /api/mp/me/follows:
     get:
       tags: [Place de marché]

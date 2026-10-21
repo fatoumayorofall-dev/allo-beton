@@ -10,6 +10,9 @@
 //  - Commentaires : connectée, prénom seulement ; pas de numéro, lien ni réseau social (les ventes
 //    restent dans l'application) ; la vendeuse peut masquer une personne ; signalement à la gérante.
 //  - La gérante voit les lives en cours et peut en arrêter un (contrefaçon, contenu interdit).
+//  - Live programmé : la vendeuse annonce la date ; les clientes touchent « Me prévenir » et reçoivent un
+//    message 15 minutes avant, puis au début. Offre flash : un prix pendant quelques minutes, en quantité
+//    limitée (compte à rebours à l'écran, le serveur décompte les pièces). Bandeau d'annonce de la vendeuse.
 // ============================================================
 import crypto from 'node:crypto';
 import express from 'express';
@@ -35,6 +38,22 @@ const VIEWER_MS = 12e3;
 /** Abonnées prévenues au plus une fois toutes les 3 h par boutique */
 const NOTICE_EVERY_MS = 3 * 3600e3;
 const MIME = /^video\/(webm|mp4)(;\s*codecs="?[\w.,\s]+"?)?$/i;
+/** Offre flash : durées proposées (minutes) ; quelques minutes de plus pour finir la commande */
+export const FLASH_MINUTES = [2, 5, 10, 15];
+const FLASH_GRACE_MS = 3 * 60e3;
+/** Live programmé : de 5 minutes à 14 jours à l'avance ; rappel 15 minutes avant */
+const SCHEDULE_MIN_MS = 5 * 60e3;
+const SCHEDULE_MAX_MS = 14 * 864e5;
+const SOON_MS = 15 * 60e3;
+const fmtDate = iso =>
+  new Date(iso).toLocaleString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Africa/Dakar',
+  });
 
 /** Prix live autorisé : entre 100 F et le prix de l'article (une vraie remise, jamais plus cher). */
 export const cleanLivePrice = (v, price) => {
@@ -72,12 +91,20 @@ export function registerLiveRoutes(
     l.comments = l.comments.slice(-200);
   };
 
-  /** Articles du live encore en vente, avec leur prix live */
+  /** Offre flash en cours (compte à rebours, pièces restantes) ; `grace` : encore commandable */
+  const flashOn = (p, grace = 0) => !!p.flash && Date.now() <= p.flash.until + grace && p.flash.left > 0;
+  const flashView = p =>
+    flashOn(p)
+      ? { price: p.flash.price, until: new Date(p.flash.until).toISOString(), left: p.flash.left, qty: p.flash.qty }
+      : null;
+  /** Articles du live encore en vente, avec leur prix live et leur offre flash */
   const productsOf = l =>
     l.products
       .map(p => {
         const found = visibleListing(p.listingId);
-        return found ? { ...publicListing(found.listing, found.seller), livePrice: p.livePrice } : null;
+        return found
+          ? { ...publicListing(found.listing, found.seller), livePrice: p.livePrice, flash: flashView(p) }
+          : null;
       })
       .filter(Boolean);
   const cover = (l, v) => {
@@ -103,21 +130,40 @@ export function registerLiveRoutes(
     seq: l.seq,
     mime: l.mime,
     pinned: l.pinned,
+    banner: l.banner ?? null,
     products: productsOf(l),
   });
 
-  /** Prix live d'un article pour une commande (pendant le live et 15 minutes après), sinon null. */
+  /**
+   * Prix d'un article pour une commande : offre flash en cours (et 3 minutes après, s'il reste des pièces),
+   * sinon prix live (pendant le live et 15 minutes après), sinon null. `flashLeft` : pièces au prix flash.
+   */
   function priceFor(listing) {
+    let found = null;
     for (const l of lives.values()) {
       if (l.sellerId !== listing.sellerId) continue;
       if (!isOn(l) && Date.now() - Date.parse(l.endedAt) > LIVE_PRICE_GRACE_MS) continue;
       const p = l.products.find(x => x.listingId === listing.id);
-      if (p?.livePrice) return { price: p.livePrice, liveId: l.id };
+      if (p && flashOn(p, FLASH_GRACE_MS)) return { price: p.flash.price, liveId: l.id, flashLeft: p.flash.left };
+      if (p?.livePrice && !found) found = { price: p.livePrice, liveId: l.id };
     }
-    return null;
+    return found;
   }
-  /** Commande passée : annonce anonyme dans le live (« une cliente vient de commander »), compteur des ventes */
+  /** Commande passée : annonce anonyme dans le live, compteur des ventes, pièces flash décomptées */
   function onOrder(order) {
+    for (const x of order.lines.filter(line => line.flash)) {
+      const l = lives.get(x.liveId);
+      const p = l?.products.find(y => y.listingId === x.listingId);
+      if (!p?.flash) continue;
+      p.flash.left = Math.max(0, p.flash.left - x.qty);
+      if (isOn(l))
+        system(
+          l,
+          p.flash.left
+            ? `⚡ Plus que ${p.flash.left} « ${x.title} » au prix flash !`
+            : `⚡ Offre flash épuisée : « ${x.title} »`,
+        );
+    }
     const l = currentFor(order.sellerId);
     if (!l) return;
     const lines = order.lines.filter(x => l.products.some(p => p.listingId === x.listingId));
@@ -126,6 +172,18 @@ export function registerLiveRoutes(
     l.amount += lines.reduce((t, x) => t + x.price * x.qty, 0);
     system(l, `🛍️ Une cliente vient de commander « ${lines[0].title} »`);
   }
+
+  /* ---------- Lives programmés (gardés dans la boutique : ils survivent à un redémarrage) ---------- */
+  const scheduleOf = v =>
+    v?.liveSchedule && Date.parse(v.liveSchedule.at) > Date.now() - 30 * 60e3 ? v.liveSchedule : null;
+  /** Prochain live d'une boutique, pour sa vitrine (`phone` : la cliente a-t-elle demandé un rappel ?) */
+  const upcomingFor = (v, phone) => {
+    const s = scheduleOf(v);
+    return s
+      ? { title: s.title, at: s.at, reminders: s.reminders.length, reminded: !!phone && s.reminders.includes(phone) }
+      : null;
+  };
+  const shopLink = v => `${siteUrl()}/m/boutique/${v.slug}`;
   function end(l, by, reason = '') {
     if (!isOn(l)) return l;
     l.status = 'termine';
@@ -166,11 +224,25 @@ export function registerLiveRoutes(
     return l;
   }
 
-  // Coupures : plus de vidéo → « coupure » puis fin ; les lives terminés sont oubliés au bout d'une heure
+  // Coupures : plus de vidéo → « coupure » puis fin ; les lives terminés sont oubliés au bout d'une heure ;
+  // lives programmés : rappel 15 minutes avant, oubliés 2 h après l'heure prévue s'ils n'ont pas eu lieu
+  let ticks = 0;
   const sweep = setInterval(() => {
     for (const l of lives.values()) {
       if (isOn(l) && Date.now() - l.lastSegmentAt > DROP_MS) end(l, 'coupure');
       if (!isOn(l) && Date.now() - Date.parse(l.endedAt) > 3600e3) lives.delete(l.id);
+    }
+    if (ticks++ % 4) return;
+    for (const v of store.listMpSellers()) {
+      const s = v.liveSchedule;
+      if (!s) continue;
+      const left = Date.parse(s.at) - Date.now();
+      if (left < -2 * 3600e3) store.saveMpSeller({ ...v, liveSchedule: null });
+      else if (left <= SOON_MS && left > 0 && !s.soonAt) {
+        store.saveMpSeller({ ...v, liveSchedule: { ...s, soonAt: now() } });
+        for (const phone of s.reminders)
+          notify(phone, `⏰ Dans 15 minutes : live de « ${v.shopName} » : « ${s.title} ». ${shopLink(v)}`);
+      }
     }
   }, 15e3);
   sweep.unref?.();
@@ -212,6 +284,18 @@ export function registerLiveRoutes(
         .filter(isOn)
         .map(summary)
         .sort((a, b) => Number(b.seller?.featured) - Number(a.seller?.featured) || b.viewers - a.viewers),
+    });
+  });
+  // Lives à venir sur la plateforme (accueil)
+  app.get('/api/mp/lives/upcoming', (req, res) => {
+    const phone = currentUser(req)?.phone;
+    res.json({
+      upcoming: store
+        .listMpSellers()
+        .filter(v => v.status === 'active' && scheduleOf(v) && !currentFor(v.id))
+        .map(v => ({ ...upcomingFor(v, phone), seller: publicSeller(v) }))
+        .sort((a, b) => (a.at < b.at ? -1 : 1))
+        .slice(0, 20),
     });
   });
   // État du live, nouveaux commentaires (après « after ») ; « viewer » : compte la spectatrice
@@ -297,7 +381,72 @@ export function registerLiveRoutes(
     res.json({ ok: true });
   });
 
+  // « Me prévenir » : rappel 15 minutes avant et au début du live
+  app.post('/api/mp/sellers/:slug/live-reminder', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Connectez-vous pour être prévenue' });
+    if (tooMany(res, `mp-live-rem:${user.phone}`, 30, 3600e3)) return;
+    const v = store.findMpSellerBySlug(clip(req.params.slug, 60));
+    const s = scheduleOf(v);
+    if (!s) return res.status(404).json({ error: 'Pas de live programmé' });
+    const on = req.body?.on !== false;
+    const others = s.reminders.filter(p => p !== user.phone);
+    const reminders = on ? [...others, user.phone].slice(-2000) : others;
+    store.saveMpSeller({ ...v, liveSchedule: { ...s, reminders } });
+    res.json({ on, reminders: reminders.length });
+  });
+
   /* ---------- Vendeuse ---------- */
+  // Programmer un live : la date est annoncée aux abonnées, les clientes demandent un rappel
+  app.post('/api/mp/me/lives/schedule', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Connectez-vous' });
+    const v = store.findMpSellerByOwner(user.phone);
+    if (!v || v.status !== 'active')
+      return res.status(403).json({ error: 'Le live est ouvert aux boutiques validées' });
+    if (tooMany(res, `mp-live-plan:${user.phone}`, 10, 3600e3)) return;
+    const at = Date.parse(req.body?.at);
+    if (!Number.isFinite(at) || at < Date.now() + SCHEDULE_MIN_MS || at > Date.now() + SCHEDULE_MAX_MS)
+      return res.status(400).json({ error: 'Choisissez une date entre 5 minutes et 14 jours à partir de maintenant' });
+    const title = clip(req.body?.title, 80) || `Live de ${v.shopName}`;
+    const contact = findContact(title);
+    if (contact) return res.status(400).json({ error: CONTACT_REFUSED(contact) });
+    const previous = scheduleOf(v);
+    const schedule = {
+      id: previous?.id ?? `P-${code(6)}`,
+      title,
+      at: new Date(at).toISOString(),
+      reminders: previous?.reminders ?? [],
+      createdAt: now(),
+      soonAt: null,
+    };
+    const announce =
+      (v.followers ?? []).length &&
+      !(v.scheduleNoticeAt && Date.now() - Date.parse(v.scheduleNoticeAt) < NOTICE_EVERY_MS);
+    store.saveMpSeller({ ...v, liveSchedule: schedule, ...(announce ? { scheduleNoticeAt: now() } : {}) });
+    if (announce)
+      for (const f of v.followers.slice(0, 300))
+        notify(
+          f.phone,
+          `📅 « ${v.shopName} » fera un live ${fmtDate(schedule.at)} : « ${title} ». Touchez « Me prévenir » : ${shopLink(v)}`,
+        );
+    res.status(201).json({ schedule: upcomingFor(store.getMpSeller(v.id)) });
+  });
+  app.delete('/api/mp/me/lives/schedule', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Connectez-vous' });
+    const v = store.findMpSellerByOwner(user.phone);
+    const s = scheduleOf(v);
+    if (!s) return res.status(404).json({ error: 'Pas de live programmé' });
+    store.saveMpSeller({ ...v, liveSchedule: null });
+    for (const phone of s.reminders) notify(phone, `Le live « ${s.title} » de « ${v.shopName} » est annulé.`);
+    res.json({ ok: true });
+  });
+  app.get('/api/mp/me/lives/schedule', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Connectez-vous' });
+    res.json({ schedule: upcomingFor(store.findMpSellerByOwner(user.phone)) });
+  });
   app.get('/api/mp/me/lives/current', (req, res) => {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ error: 'Connectez-vous' });
@@ -349,16 +498,19 @@ export function registerLiveRoutes(
     };
     lives.set(l.id, l);
     system(l, `Bienvenue dans le live de ${v.shopName} ! Touchez un article pour le commander.`);
-    // La communauté de la boutique est prévenue (au plus une fois toutes les 3 h)
-    const followers = v.followers ?? [];
-    if (followers.length && !(v.liveNoticeAt && Date.now() - Date.parse(v.liveNoticeAt) < NOTICE_EVERY_MS)) {
-      store.saveMpSeller({ ...v, liveNoticeAt: now() });
-      for (const f of followers.slice(0, 300))
-        notify(
-          f.phone,
-          `🔴 « ${v.shopName} » est en direct : « ${title} ». Regardez et commandez : ${siteUrl()}/m/live/${l.id}`,
-        );
-    }
+    // La communauté de la boutique est prévenue (au plus une fois toutes les 3 h) ; les clientes qui ont
+    // demandé un rappel pour le live programmé le sont toujours
+    const text = `🔴 « ${v.shopName} » est en direct : « ${title} ». Regardez et commandez : ${siteUrl()}/m/live/${l.id}`;
+    const reminders = scheduleOf(v)?.reminders ?? [];
+    const followers = (v.followers ?? []).map(f => f.phone);
+    const throttled = v.liveNoticeAt && Date.now() - Date.parse(v.liveNoticeAt) < NOTICE_EVERY_MS;
+    const to = new Set([...reminders, ...(throttled ? [] : followers.slice(0, 300))]);
+    store.saveMpSeller({
+      ...v,
+      liveSchedule: null,
+      ...(throttled || !followers.length ? {} : { liveNoticeAt: now() }),
+    });
+    for (const phone of to) notify(phone, text);
     res.status(201).json({ live: fullView(l) });
   });
   app.post('/api/mp/me/lives/:id/segments', express.raw({ type: () => true, limit: MAX_SEGMENT_BYTES }), (req, res) => {
@@ -387,13 +539,54 @@ export function registerLiveRoutes(
     if (l) system(me.live, `📌 Article présenté : « ${l.title} »`);
     res.json({ live: fullView(me.live) });
   });
+  // Offre flash sur un article : prix, durée (minutes), quantité facultative ; l'article est présenté
+  app.post('/api/mp/me/lives/:id/flash', (req, res) => {
+    const me = myLive(req, res);
+    if (!me) return;
+    if (!isOn(me.live)) return res.status(409).json({ error: 'Le live est terminé' });
+    const p = me.live.products.find(x => x.listingId === clip(req.body?.listingId, 20));
+    const listing = p && store.getMpListing(p.listingId);
+    if (!listing) return res.status(400).json({ error: "Cet article n'est pas dans le live" });
+    if (req.body?.stop) {
+      p.flash = null;
+      return res.json({ live: fullView(me.live) });
+    }
+    const price = cleanLivePrice(req.body?.price, listing.price);
+    if (!price) return res.status(400).json({ error: "Le prix flash doit être plus bas que le prix de l'article" });
+    const minutes = Number(req.body?.minutes);
+    if (!FLASH_MINUTES.includes(minutes)) return res.status(400).json({ error: 'Durée : 2, 5, 10 ou 15 minutes' });
+    const qtyRaw = req.body?.qty;
+    const qty = qtyRaw === null || qtyRaw === undefined || qtyRaw === '' ? null : Math.round(Number(qtyRaw));
+    if (qty !== null && (!Number.isInteger(qty) || qty < 1 || qty > 500))
+      return res.status(400).json({ error: 'Quantité : de 1 à 500 pièces' });
+    p.flash = { price, until: Date.now() + minutes * 60e3, qty, left: qty ?? 1e9 };
+    me.live.pinned = p.listingId;
+    system(
+      me.live,
+      `⚡ Offre flash : « ${listing.title} » à ${price.toLocaleString('fr-FR')} F pendant ${minutes} min${qty ? ` (${qty} pièce${qty > 1 ? 's' : ''})` : ''} !`,
+    );
+    res.json({ live: fullView(me.live) });
+  });
+  // Bandeau d'annonce au-dessus de la vidéo (« -20 % sur tout ce soir »)
+  app.post('/api/mp/me/lives/:id/banner', (req, res) => {
+    const me = myLive(req, res);
+    if (!me) return;
+    const text = clip(req.body?.text, 80);
+    const contact = text && findContact(text);
+    if (contact) return res.status(400).json({ error: CONTACT_REFUSED(contact) });
+    me.live.banner = text || null;
+    res.json({ live: fullView(me.live) });
+  });
   app.post('/api/mp/me/lives/:id/products', (req, res) => {
     const me = myLive(req, res);
     if (!me) return;
     const p = cleanProducts(req.body?.products, me.seller.id);
     if (p.error) return res.status(400).json({ error: p.error });
     if (!p.value.length) return res.status(400).json({ error: 'Gardez au moins un article' });
-    me.live.products = p.value;
+    me.live.products = p.value.map(x => ({
+      ...x,
+      flash: me.live.products.find(y => y.listingId === x.listingId)?.flash ?? null,
+    }));
     if (!p.value.some(x => x.listingId === me.live.pinned)) me.live.pinned = p.value[0].listingId;
     res.json({ live: fullView(me.live) });
   });
@@ -445,5 +638,5 @@ export function registerLiveRoutes(
     res.json({ live: summary(l) });
   });
 
-  return { priceFor, onOrder, currentFor };
+  return { priceFor, onOrder, currentFor, upcomingFor };
 }

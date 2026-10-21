@@ -1,6 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BadgeCheck, Bell, BellRing, Check, Link2, Loader2, MapPin, Search, Share2 } from 'lucide-react';
+import {
+  BadgeCheck,
+  Bell,
+  BellRing,
+  CalendarClock,
+  Check,
+  Link2,
+  MapPin,
+  Search,
+  Share2,
+  Star,
+  Truck,
+} from 'lucide-react';
 import { fetchFollows, fetchShop, followShop, type MpListing, type MpSeller, type PublicReview } from './api';
 import { Stars } from '../components/Stars';
 import { ListingCard } from './ListingCard';
@@ -9,6 +21,9 @@ import { ACCENTS, shopLink } from './format';
 import { usePageTitle } from '../utils/usePageTitle';
 import { useAccount } from '../context/AccountContext';
 import { StatusButton } from './StatusKit';
+import { RemindButton, liveWhen } from './LiveRow';
+import { Skeleton } from './Skeleton';
+import type { UpcomingLive } from './api';
 
 /**
  * La boutique en ligne d'un abonné : sa vitrine (bannière, logo, couleur), ses articles avec leurs prix,
@@ -17,7 +32,13 @@ import { StatusButton } from './StatusKit';
 export default function MpShop() {
   const { slug = '' } = useParams();
   const [data, setData] = useState<
-    | { seller: MpSeller; listings: MpListing[]; reviews: PublicReview[]; live?: { id: string; title: string } | null }
+    | {
+        seller: MpSeller;
+        listings: MpListing[];
+        reviews: PublicReview[];
+        live?: { id: string; title: string } | null;
+        upcoming?: UpcomingLive | null;
+      }
     | null
     | 'absent'
   >(null);
@@ -64,8 +85,17 @@ export default function MpShop() {
 
   if (data === null)
     return (
-      <div className="py-24 grid place-items-center">
-        <Loader2 className="w-6 h-6 animate-spin text-ink/40" />
+      <div className="max-w-6xl mx-auto sm:px-4 sm:pt-5" aria-busy="true">
+        <Skeleton className="h-36 sm:h-56 sm:rounded-3xl" />
+        <div className="px-4 sm:px-0 mt-4 space-y-3">
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 pt-4">
+            {[0, 1, 2, 3].map(i => (
+              <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   if (data === 'absent' || !s)
@@ -140,34 +170,41 @@ export default function MpShop() {
               </span>
             )}
           </h1>
-          <p className="mt-1 text-sm text-ink/65 flex flex-wrap items-center gap-x-3 gap-y-1">
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink/75">
             {s.zone && (
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-ivory">
                 <MapPin className="w-3.5 h-3.5" /> {s.zone}
               </span>
             )}
-            <span>
-              Boutique en ligne depuis{' '}
-              {new Date(s.since).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-            </span>
-            {!!s.sales && (
-              <span>
-                {s.sales} vente{s.sales > 1 ? 's' : ''} livrée{s.sales > 1 ? 's' : ''}
-              </span>
-            )}
             {!!s.rating?.count && (
-              <span className="inline-flex items-center gap-1" data-testid="mp-shop-rating">
-                <Stars rating={s.rating.average ?? 0} size={13} /> {s.rating.average?.toLocaleString('fr-FR')} (
+              <span
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-ivory"
+                data-testid="mp-shop-rating"
+              >
+                <Stars rating={s.rating.average ?? 0} size={12} /> {s.rating.average?.toLocaleString('fr-FR')} (
                 {s.rating.count} avis)
               </span>
             )}
-          </p>
+            {!!s.sales && (
+              <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-ivory">
+                <Truck className="w-3.5 h-3.5" /> {s.sales} vente{s.sales > 1 ? 's' : ''} livrée{s.sales > 1 ? 's' : ''}
+              </span>
+            )}
+            {followers > 0 && (
+              <span className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-ivory">
+                <Star className="w-3.5 h-3.5" /> {followers} abonnée{followers > 1 ? 's' : ''}
+              </span>
+            )}
+            <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-ivory">
+              Depuis {new Date(s.since).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+            </span>
+          </div>
           {s.description && <p className="mt-3 text-[15px] text-ink/85 whitespace-pre-line">{s.description}</p>}
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-4 flex items-center gap-2">
             <button
               onClick={toggleFollow}
               aria-pressed={following}
-              className="h-11 px-5 rounded-full font-semibold text-sm inline-flex items-center gap-2 border"
+              className="flex-1 sm:flex-none h-11 px-5 rounded-full font-semibold text-sm inline-flex items-center justify-center gap-2 border"
               style={following ? { borderColor: color, color } : { background: '#1c1917', color: '#fff' }}
               data-testid="mp-shop-follow"
             >
@@ -177,11 +214,11 @@ export default function MpShop() {
             </button>
             <button
               onClick={share}
-              className="h-11 px-5 rounded-full text-white font-semibold text-sm inline-flex items-center gap-2"
+              className="flex-1 sm:flex-none h-11 px-5 rounded-full text-white font-semibold text-sm inline-flex items-center justify-center gap-2"
               style={{ background: color }}
               data-testid="mp-shop-share"
             >
-              <Share2 className="w-4 h-4" /> Partager la boutique
+              <Share2 className="w-4 h-4" /> Partager
             </button>
             <button
               onClick={async () => {
@@ -189,16 +226,18 @@ export default function MpShop() {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
               }}
-              className="h-11 px-4 rounded-full border border-ink/15 font-semibold text-sm inline-flex items-center gap-2"
+              aria-label={copied ? 'Lien copié' : `Copier le lien ${link.replace(/^https?:\/\//, '')}`}
+              title={link.replace(/^https?:\/\//, '')}
+              className="w-11 h-11 shrink-0 rounded-full border border-ink/15 grid place-items-center"
             >
               {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
-              {copied ? 'Lien copié' : link.replace(/^https?:\/\//, '')}
             </button>
             <StatusButton
-              label="Statut WhatsApp"
+              label=""
+              ariaLabel="Image pour un statut WhatsApp"
               filename={`statut-${s.slug}.jpg`}
               testId="mp-shop-status"
-              className="h-11 px-4 rounded-full border border-ink/15 font-semibold text-sm inline-flex items-center gap-2"
+              className="w-11 h-11 shrink-0 rounded-full border border-ink/15 grid place-items-center"
               make={() => ({
                 photo: s.cover ?? listings[0]?.photos[0] ?? s.logo,
                 title: s.shopName,
@@ -218,6 +257,20 @@ export default function MpShop() {
             <p className="mt-2 text-xs text-ink/55">
               Suivez la boutique : vous êtes prévenue de ses nouveautés et de ses lives.
             </p>
+          )}
+          {data.upcoming && (
+            <div
+              className="mt-4 rounded-2xl p-3 flex items-center gap-3 text-white"
+              style={{ background: `linear-gradient(120deg, ${color}, #1c1917)` }}
+              data-testid="mp-shop-upcoming"
+            >
+              <CalendarClock className="w-6 h-6 shrink-0" />
+              <span className="flex-1 min-w-0">
+                <strong className="block text-sm">Live {liveWhen(data.upcoming.at)}</strong>
+                <span className="block text-sm truncate opacity-90">{data.upcoming.title}</span>
+              </span>
+              <RemindButton slug={s.slug} reminded={data.upcoming.reminded} dark />
+            </div>
           )}
         </div>
       </section>

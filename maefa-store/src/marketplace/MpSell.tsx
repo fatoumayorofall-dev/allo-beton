@@ -546,6 +546,7 @@ const GrowPanel: React.FC<{
   const boostPrice = settings?.boostPrice ?? 2000;
   return (
     <div className="space-y-4">
+      <ShopLinkPanel seller={seller} />
       <section className="bg-white rounded-3xl border border-ink/[0.06] p-5" data-testid="mp-status-kit">
         <h2 className="font-display text-2xl">Votre statut WhatsApp, chaque jour</h2>
         <p className="text-sm text-ink/70 mt-1">
@@ -783,40 +784,88 @@ export default function MpSell() {
     setBalance(r.data.balance);
   };
   const pending = sales.filter(o => o.status === 'nouvelle').length;
+  const delivered30 = sales
+    .filter(
+      o =>
+        o.status === 'livree' &&
+        Date.now() - Date.parse(o.history[o.history.length - 1]?.at ?? o.createdAt) < 30 * 864e5,
+    )
+    .reduce((t, o) => t + o.subtotal, 0);
   const rate = Math.round((settings?.sellerRate ?? 0.07) * 100);
 
   return (
     <div className="max-w-4xl mx-auto px-4 pt-5 space-y-4" data-testid="mp-seller-space">
-      <section className="bg-white rounded-3xl border border-ink/[0.06] p-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-ink/55 font-semibold">Ma boutique</p>
-          <h1 className="font-display text-3xl">{seller.shopName}</h1>
-          {seller.status === 'en_attente' && (
-            <p className="mt-1 text-sm text-amber-900" data-testid="mp-seller-pending">
-              En cours de vérification : préparez déjà vos articles, ils apparaîtront dès la validation.
-            </p>
-          )}
-          {seller.status === 'suspendue' && (
-            <p className="mt-1 text-sm text-wine">Boutique suspendue : contactez-nous.</p>
+      <section className="rounded-3xl bg-ink text-ivory p-5 relative overflow-hidden" data-dark>
+        <span
+          className="absolute -right-12 -top-12 w-44 h-44 rounded-full blur-2xl opacity-40 pointer-events-none"
+          style={{ background: ACCENTS[seller.accent]?.hex ?? ACCENTS.prune.hex }}
+          aria-hidden
+        />
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-ivory/60 font-semibold">Ma boutique</p>
+            <h1 className="font-display text-2xl sm:text-3xl leading-tight break-words">{seller.shopName}</h1>
+          </div>
+          {seller.status === 'active' && (
+            <Link
+              to={mpPath(`/boutique/${seller.slug}`)}
+              aria-label="Voir ma boutique"
+              className="shrink-0 h-9 px-3 rounded-full bg-white/10 text-xs font-semibold inline-flex items-center gap-1.5"
+            >
+              <Eye className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Voir ma boutique</span>
+            </Link>
           )}
         </div>
-        {seller.status === 'active' && (
-          <div className="flex flex-wrap gap-2">
+        {seller.status === 'en_attente' && (
+          <p className="relative mt-1 text-sm text-amber-200" data-testid="mp-seller-pending">
+            En cours de vérification : préparez déjà vos articles, ils apparaîtront dès la validation.
+          </p>
+        )}
+        {seller.status === 'suspendue' && (
+          <p className="relative mt-1 text-sm text-red-200">Boutique suspendue : contactez-nous.</p>
+        )}
+        <dl className="relative mt-4 grid grid-cols-3 gap-2" data-testid="mp-seller-today">
+          {(
+            [
+              ['Nouvelles commandes', String(pending), () => setTab('commandes')],
+              ['Ventes livrées (30 j)', F(delivered30), () => setTab('tableau')],
+              ['Commission à régler', F(Math.max(0, balance?.balance ?? 0)), () => setTab('solde')],
+            ] as [string, string, () => void][]
+          ).map(([k, v, open]) => (
+            <button key={k} onClick={open} className="text-left rounded-2xl bg-white/10 hover:bg-white/15 p-3">
+              <dt className="text-[11px] leading-tight text-ivory/70">{k}</dt>
+              <dd className="mt-1 text-lg font-bold tabular-nums">{v}</dd>
+            </button>
+          ))}
+        </dl>
+        <div className="relative mt-4 flex gap-2 overflow-x-auto no-scrollbar">
+          <button
+            onClick={() => {
+              setTab('articles');
+              setEditing('new');
+            }}
+            className="shrink-0 h-10 px-4 rounded-full bg-ivory text-ink text-sm font-semibold inline-flex items-center gap-1.5"
+            data-testid="mp-quick-add"
+          >
+            <Plus className="w-4 h-4" /> Article
+          </button>
+          {seller.status === 'active' && (
             <Link
               to={mpPath('/live/studio')}
-              className="h-11 px-5 rounded-full bg-red-600 text-white text-sm font-bold inline-flex items-center gap-2"
+              className="shrink-0 h-10 px-4 rounded-full bg-red-600 text-white text-sm font-bold inline-flex items-center gap-1.5"
               data-testid="mp-go-live"
             >
               <Radio className="w-4 h-4" /> Faire un live
             </Link>
-            <Link to={mpPath(`/boutique/${seller.slug}`)} className="btn-outline !h-11 !px-5">
-              Voir ma boutique
-            </Link>
-          </div>
-        )}
+          )}
+          <button
+            onClick={() => setTab('grandir')}
+            className="shrink-0 h-10 px-4 rounded-full bg-white/10 text-sm font-semibold inline-flex items-center gap-1.5"
+          >
+            <Megaphone className="w-4 h-4" /> Attirer des clientes
+          </button>
+        </div>
       </section>
-
-      <ShopLinkPanel seller={seller} />
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar" role="tablist">
         {(

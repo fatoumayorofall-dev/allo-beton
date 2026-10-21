@@ -50,6 +50,9 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG40 | Un prix live est facultatif, entre 100 F et le prix de l'article ; il s'applique à la commande pendant le live et 15 minutes après. |
 | RG41 | Commenter un live demande d'être connectée (prénom seulement) ; pas de numéro, lien ni réseau social ; la vendeuse peut masquer une personne ; la gérante peut arrêter un live. |
 | RG42 | Chaque vendeuse a son tableau de bord (7, 30, 90 jours ou 12 mois) calculé sur ses seules commandes : uniquement des chiffres, jamais le numéro ni le nom d'une cliente ; l'export pour la comptabilité ne contient pas non plus de données de clientes. La gérante peut l'ouvrir. |
+| RG43 | Un live se programme de 5 minutes à 14 jours à l'avance (un à la fois par boutique) ; les clientes qui demandent un rappel sont prévenues 15 minutes avant et au début ; un live programmé non tenu est oublié 2 h après l'heure prévue. |
+| RG44 | Une offre flash porte sur un article du live : prix plus bas que l'article, durée de 2, 5, 10 ou 15 minutes, quantité facultative (1 à 500) ; le prix s'applique à la commande pendant le compte à rebours (et 3 minutes après) tant qu'il reste des pièces ; chaque commande décompte les pièces. |
+| RG45 | Le bandeau d'annonce d'un live fait 80 caractères au plus, sans numéro, lien ni réseau social. |
 | RG30 | Un arrêt fait sans réseau est gardé sur le téléphone du livreur et envoyé au retour du réseau avec son heure réelle ; le serveur vérifie le code à la réception, comme pour un arrêt en direct. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 

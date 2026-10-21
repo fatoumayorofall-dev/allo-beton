@@ -502,6 +502,22 @@ async function run({ base, store, openSession, adminPin }) {
   for (const v of [...new Set(events.map(e => e.v))])
     await call('POST', '/api/mp/events', { v, events: events.filter(e => e.v === v).map(({ t, id }) => ({ t, id })) });
 
+  // 8. Des lives programmés (« Lives à venir » à l'accueil, « Me prévenir ») : ce soir et samedi à 20 h
+  const at = days => {
+    const d = new Date(Date.now() + days * 864e5);
+    d.setUTCHours(20, 0, 0, 0); // 20 h à Dakar (UTC)
+    return (d.getTime() < Date.now() + 30 * 60e3 ? new Date(d.getTime() + 864e5) : d).toISOString();
+  };
+  const saturday = (6 - new Date().getUTCDay() + 7) % 7 || 7;
+  await call('POST', '/api/mp/me/lives/schedule', { title: 'Nouveaux boubous de Tabaski', at: at(0) }, H.awa);
+  await call(
+    'POST',
+    '/api/mp/me/lives/schedule',
+    { title: 'Sacs et chaussures : prix live', at: at(saturday) },
+    H.maefa,
+  );
+  await call('POST', '/api/mp/sellers/chez-awa-mode/live-reminder', { on: true }, H.khady);
+
   return {
     sellers: store.listMpSellers().length,
     listings: store.listMpListings().length,

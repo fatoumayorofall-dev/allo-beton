@@ -70,6 +70,9 @@ const login = async phone => {
   // ── 1. La vendeuse personnalise sa vitrine
   const v = await mk(token);
   await v.goto(B + '/m/vendre');
+  await v.waitForSelector('[data-testid="mp-seller-space"]', { timeout: 15000 });
+  // Le lien de la boutique et son QR code sont dans « Attirer des clientes »
+  await v.getByRole('tab', { name: 'Attirer des clientes' }).click();
   await v.waitForSelector('[data-testid="mp-shop-link"]', { timeout: 15000 });
   const url = (await v.getByTestId('mp-shop-link-url').innerText()).trim();
   check('lien court de la boutique', /\/b\/chez-awa-mode$/.test(url), url);

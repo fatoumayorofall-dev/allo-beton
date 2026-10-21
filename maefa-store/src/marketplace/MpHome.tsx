@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Clapperboard, Loader2, Search, Store, Truck, Users } from 'lucide-react';
+import { Clapperboard, Radio, Search, Store, Truck, Users } from 'lucide-react';
 import { fetchConfig, fetchFeed, fetchShops, type FeedItem, type MpCategory, type ShopSummary } from './api';
 import { getSeen, getTaste } from './taste';
 import { useAccount } from '../context/AccountContext';
@@ -8,6 +8,7 @@ import { visitorId } from '../utils/track';
 import { ListingCard } from './ListingCard';
 import { ShopCard } from './ShopCard';
 import { LiveRow } from './LiveRow';
+import { Skeleton } from './Skeleton';
 import { MP, mpPath } from './config';
 import { usePageTitle } from '../utils/usePageTitle';
 
@@ -64,23 +65,29 @@ export default function MpHome() {
     <div className="max-w-6xl mx-auto px-4">
       {!q && !cat && <LiveRow />}
       {!q && !cat && (
-        <section className="mt-5 rounded-3xl bg-ink text-ivory p-6 sm:p-10 relative overflow-hidden" data-dark>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-gold-light font-semibold">Boutiques en ligne</p>
-          <h1 className="font-display text-4xl sm:text-5xl mt-2 leading-[1.05] max-w-xl">{MP.tagline}</h1>
-          <ul className="mt-5 grid sm:grid-cols-3 gap-3 text-sm text-ivory/85 max-w-3xl">
-            <li className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-gold-light" /> Des boutiques vérifiées
+        <section className="mt-4 rounded-3xl bg-ink text-ivory p-5 sm:p-9 relative overflow-hidden" data-dark>
+          <span
+            className="absolute -right-16 -top-16 w-56 h-56 rounded-full bg-gold/25 blur-2xl pointer-events-none"
+            aria-hidden
+          />
+          <p className="relative text-[11px] uppercase tracking-[0.2em] text-gold-light font-semibold">
+            Boutiques en ligne
+          </p>
+          <h1 className="relative font-display text-3xl sm:text-5xl mt-1.5 leading-[1.05] max-w-xl">{MP.tagline}</h1>
+          <ul className="relative mt-4 flex flex-wrap gap-1.5 text-xs text-ivory/90">
+            <li className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-white/10">
+              <Users className="w-3.5 h-3.5 text-gold-light" /> Boutiques vérifiées
             </li>
-            <li className="flex items-center gap-2">
-              <Truck className="w-4 h-4 text-gold-light" /> Paiement à la livraison
+            <li className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-white/10">
+              <Truck className="w-3.5 h-3.5 text-gold-light" /> Paiement à la livraison
             </li>
-            <li className="flex items-center gap-2">
-              <Store className="w-4 h-4 text-gold-light" /> Votre boutique en ligne, sans payer de site
+            <li className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-white/10">
+              <Radio className="w-3.5 h-3.5 text-gold-light" /> Ventes en live
             </li>
           </ul>
           <Link
             to={mpPath('/vendre')}
-            className="mt-6 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-ivory text-ink font-semibold text-sm"
+            className="relative mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-ivory text-ink font-semibold text-sm"
           >
             <Store className="w-4 h-4" /> Créer ma boutique en ligne
           </Link>
@@ -142,11 +149,17 @@ export default function MpHome() {
       </p>
 
       {!shops ? (
-        <div className="py-20 grid place-items-center">
-          <Loader2 className="w-6 h-6 animate-spin text-ink/40" />
+        <div className="mt-3 grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" aria-busy="true">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="aspect-[4/3] rounded-2xl" />
+              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+          ))}
         </div>
       ) : shops.length ? (
-        <div className="mt-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="mp-shops">
+        <div className="mt-3 grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" data-testid="mp-shops">
           {shops.map(s => (
             <ShopCard key={s.id} shop={s} />
           ))}

@@ -291,6 +291,8 @@ export const fetchShop = (slug: string) =>
     reviews: PublicReview[];
     /** Live en cours de la boutique */
     live?: { id: string; title: string } | null;
+    /** Prochain live programmé */
+    upcoming?: UpcomingLive | null;
   }>(`/api/mp/sellers/${encodeURIComponent(slug)}`);
 /** Fil « Pour vous » : articles classés selon les goûts (gardés sur le téléphone), la tendance et la distance */
 export type FeedItem = MpListing & { why: string };
@@ -779,6 +781,16 @@ export const endCall = (id: string) => post<{ call: CallInfo }>(`/api/mp/me/call
 export interface LiveProduct extends MpListing {
   /** Prix spécial pendant le live (et 15 minutes après) */
   livePrice: number | null;
+  /** Offre flash en cours : prix, fin du compte à rebours, pièces restantes */
+  flash?: { price: number; until: string; left: number; qty: number | null } | null;
+}
+/** Live programmé d'une boutique */
+export interface UpcomingLive {
+  title: string;
+  at: string;
+  reminders: number;
+  reminded: boolean;
+  seller?: MpSeller;
 }
 export type LiveStatus = 'en_direct' | 'coupure' | 'termine';
 export interface LiveSummary {
@@ -797,6 +809,8 @@ export interface LiveView extends LiveSummary {
   seq: number;
   mime: string | null;
   pinned: string | null;
+  /** Bandeau d'annonce de la vendeuse */
+  banner?: string | null;
   products: LiveProduct[];
 }
 export interface LiveComment {
@@ -815,6 +829,19 @@ export interface LiveResult {
 }
 export type LiveProductInput = { listingId: string; livePrice: number | null };
 export const fetchLives = () => call<{ lives: LiveSummary[] }>('/api/mp/lives');
+export const fetchUpcoming = () => call<{ upcoming: UpcomingLive[] }>('/api/mp/lives/upcoming');
+export const remindLive = (slug: string, on: boolean) =>
+  post<{ on: boolean; reminders: number }>(`/api/mp/sellers/${slug}/live-reminder`, { on });
+export const scheduleLive = (title: string, at: string) =>
+  post<{ schedule: UpcomingLive }>('/api/mp/me/lives/schedule', { title, at });
+export const fetchMySchedule = () => call<{ schedule: UpcomingLive | null }>('/api/mp/me/lives/schedule');
+export const cancelSchedule = () => post<{ ok: true }>('/api/mp/me/lives/schedule', undefined, 'DELETE');
+export const flashLive = (id: string, listingId: string, price: number, minutes: number, qty: number | null) =>
+  post<{ live: LiveView }>(`/api/mp/me/lives/${id}/flash`, { listingId, price, minutes, qty });
+export const stopFlash = (id: string, listingId: string) =>
+  post<{ live: LiveView }>(`/api/mp/me/lives/${id}/flash`, { listingId, stop: true });
+export const setLiveBanner = (id: string, text: string) =>
+  post<{ live: LiveView }>(`/api/mp/me/lives/${id}/banner`, { text });
 export const fetchLive = (id: string, after: number, viewer?: string) =>
   call<{ live: LiveView; comments: LiveComment[]; hidden: number[] }>(
     `/api/mp/lives/${id}?${new URLSearchParams({ after: String(after), ...(viewer ? { viewer } : {}) })}`,

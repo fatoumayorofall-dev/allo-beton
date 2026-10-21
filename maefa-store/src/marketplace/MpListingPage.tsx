@@ -276,27 +276,30 @@ export default function MpListingPage() {
               {error}
             </p>
           )}
-          {l.soldOut ? (
-            <p className="mt-6 h-14 rounded-full bg-ink/5 grid place-items-center font-semibold">Épuisé</p>
-          ) : l.negotiable && !deal ? (
-            <button
-              disabled={chatBusy}
-              onClick={() => chat(true)}
-              className="btn-dark w-full !h-14 mt-6"
-              data-testid="mp-make-offer"
-            >
-              <MessageCircle className="w-4 h-4" /> Faire une offre au vendeur
-            </button>
-          ) : (
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <button onClick={() => put(false)} className="btn-outline !h-14" data-testid="mp-add">
-                <ShoppingBag className="w-4 h-4" /> {added ? 'Ajouté ✓' : 'Au panier'}
+          {/* Boutons d'achat : toujours visibles en bas de l'écran sur téléphone */}
+          <div className="sticky bottom-16 sm:static z-30 -mx-4 px-4 py-3 sm:mx-0 sm:px-0 sm:py-0 mt-6 bg-[#faf7f5]/95 backdrop-blur sm:bg-transparent border-t border-ink/10 sm:border-0">
+            {l.soldOut ? (
+              <p className="h-14 rounded-full bg-ink/5 grid place-items-center font-semibold">Épuisé</p>
+            ) : l.negotiable && !deal ? (
+              <button
+                disabled={chatBusy}
+                onClick={() => chat(true)}
+                className="btn-dark w-full !h-14"
+                data-testid="mp-make-offer"
+              >
+                <MessageCircle className="w-4 h-4" /> Faire une offre au vendeur
               </button>
-              <button onClick={() => put(true)} className="btn-dark !h-14" data-testid="mp-buy">
-                Commander
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => put(false)} className="btn-outline !h-14" data-testid="mp-add">
+                  <ShoppingBag className="w-4 h-4" /> {added ? 'Ajouté ✓' : 'Au panier'}
+                </button>
+                <button onClick={() => put(true)} className="btn-dark !h-14" data-testid="mp-buy">
+                  Commander
+                </button>
+              </div>
+            )}
+          </div>
 
           {!l.soldOut && (
             <button

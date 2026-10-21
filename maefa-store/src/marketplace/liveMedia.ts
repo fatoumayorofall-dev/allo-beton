@@ -8,8 +8,16 @@ import { liveSegmentUrl, uploadLiveSegment } from './api';
 
 /** Durée d'un morceau : court = peu de retard ; long = moins d'envois */
 export const SEGMENT_MS = 3000;
-/** Qualité téléphone : ≈ 200 Mo par heure de live (le wifi est conseillé à la vendeuse) */
-const VIDEO_BPS = 450_000;
+/**
+ * Qualité choisie par la vendeuse : données utilisées par heure de live (envoi chez elle, réception chez
+ * chaque spectatrice). « Économie » pour un réseau faible, « HD » sur wifi.
+ */
+export const QUALITIES = {
+  eco: { label: 'Économie', video: 250_000, width: 360, height: 640, perHour: '≈ 120 Mo/h' },
+  normale: { label: 'Normale', video: 450_000, width: 480, height: 854, perHour: '≈ 200 Mo/h' },
+  hd: { label: 'HD', video: 900_000, width: 720, height: 1280, perHour: '≈ 400 Mo/h' },
+} as const;
+export type Quality = keyof typeof QUALITIES;
 const AUDIO_BPS = 32_000;
 const RECORD_MIMES = [
   'video/webm;codecs=vp8,opus',
@@ -27,9 +35,14 @@ export function pickRecordMime() {
 }
 
 /** Caméra et micro du téléphone (avant ou arrière), en format portrait */
-export const openCamera = (facing: 'user' | 'environment') =>
+export const openCamera = (facing: 'user' | 'environment', quality: Quality = 'normale') =>
   navigator.mediaDevices.getUserMedia({
-    video: { facingMode: facing, width: { ideal: 480 }, height: { ideal: 854 }, frameRate: { ideal: 24, max: 30 } },
+    video: {
+      facingMode: facing,
+      width: { ideal: QUALITIES[quality].width },
+      height: { ideal: QUALITIES[quality].height },
+      frameRate: { ideal: 24, max: 30 },
+    },
     audio: { echoCancellation: true, noiseSuppression: true },
   });
 
@@ -51,7 +64,12 @@ export class LiveRecorder {
   constructor(
     private readonly liveId: string,
     private readonly onEvent: (e: RecorderEvent) => void,
+    private quality: Quality = 'normale',
   ) {}
+  /** Qualité changée pendant le live : utilisée dès le morceau suivant */
+  setQuality(q: Quality) {
+    this.quality = q;
+  }
 
   start(stream: MediaStream) {
     this.stream = stream;
@@ -73,7 +91,7 @@ export class LiveRecorder {
     if (!this.stream) return;
     const rec = new MediaRecorder(this.stream, {
       mimeType: this.mime,
-      videoBitsPerSecond: VIDEO_BPS,
+      videoBitsPerSecond: QUALITIES[this.quality].video,
       audioBitsPerSecond: AUDIO_BPS,
     });
     const parts: Blob[] = [];

@@ -490,6 +490,13 @@ quitter le live.
   pour des centaines de spectatrices par live, prévoir un service vidéo dédié (relais ou CDN). Scénario de
   test `live` (caméra simulée de Chromium).
 
+**Version 2 du live** : live programmé (gardé dans la boutique, `liveSchedule` : rappels « Me prévenir »,
+message 15 minutes avant par la tâche de fond, puis au début ; `GET /api/mp/lives/upcoming`), offre flash
+(`POST /api/mp/me/lives/:id/flash` : prix, durée, quantité ; `priceFor` renvoie les pièces restantes,
+`prepare()` refuse au-delà, `onOrder` décompte et l'annonce), bandeau d'annonce, questions rapides, double
+tap = cœur, glisser ou flèches vers le live suivant, studio plein écran avec qualité vidéo au choix
+(Économie, Normale, HD). Scénario `live2`. Audit complet : `docs/AUDIT-2026-10.md`.
+
 ### 4.16 Tableau de bord des ventes de chaque vendeuse (`server/marketplace/dashboard.js`)
 
 Onglet « Tableau de bord » de l'espace vendeuse (`SellerDashboard.tsx`), sur 7, 30, 90 jours ou 12 mois,

@@ -1,9 +1,10 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Bike, CheckCircle2, Loader2, Minus, Plus, ShoppingBag, Trash2, Users } from 'lucide-react';
+import { Bike, CheckCircle2, Clapperboard, Loader2, Minus, Plus, ShoppingBag, Trash2, Users } from 'lucide-react';
 import { fetchQuote, placeOrders, type MpOrder, type QuoteOrder } from './api';
 import { useMpCart } from './cart';
 import { MP, mpPath } from './config';
+import { LiveRow } from './LiveRow';
 import { F, PAYMENT_LABELS } from './format';
 import { useAccount } from '../context/AccountContext';
 import type { DeliveryLocation } from '../data/types';
@@ -103,12 +104,28 @@ export default function MpCart() {
 
   if (!items.length)
     return (
-      <div className="max-w-md mx-auto px-4 py-20 text-center">
-        <ShoppingBag className="w-12 h-12 mx-auto text-ink/30" strokeWidth={1.3} />
-        <p className="font-display text-3xl mt-4">Votre panier est vide</p>
-        <Link to={mpPath()} className="btn-dark mt-6 inline-flex !h-12 !px-6">
-          Voir les articles
-        </Link>
+      <div className="max-w-2xl mx-auto px-4 pt-10 pb-6">
+        <div className="text-center">
+          <span className="w-20 h-20 mx-auto rounded-full bg-white border border-ink/[0.06] grid place-items-center">
+            <ShoppingBag className="w-9 h-9 text-ink/40" strokeWidth={1.3} />
+          </span>
+          <p className="font-display text-3xl mt-4">Votre panier est vide</p>
+          <p className="text-sm text-ink/65 mt-1">
+            Regardez les lives en cours, ou visitez les boutiques : vous payez seulement à la livraison.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <Link to={mpPath()} className="btn-dark inline-flex !h-12 !px-6">
+              Voir les boutiques
+            </Link>
+            <Link
+              to={mpPath('/pour-vous')}
+              className="h-12 px-6 rounded-full border border-ink/15 font-semibold text-sm inline-flex items-center gap-2"
+            >
+              <Clapperboard className="w-4 h-4" /> Articles en vidéo
+            </Link>
+          </div>
+        </div>
+        <LiveRow />
       </div>
     );
 
