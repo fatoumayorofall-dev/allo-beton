@@ -17,7 +17,8 @@ interface Taste {
 interface Item {
   id: string;
   category: string;
-  price: number;
+  /** null : prix à négocier (pas pris en compte pour les goûts de prix) */
+  price: number | null;
   seller: { id: string } | null;
 }
 
@@ -110,7 +111,7 @@ export function note(item: Item, g: Gesture) {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 40),
   );
-  if (POSITIVE.has(g) && item.price > 0) {
+  if (POSITIVE.has(g) && item.price !== null && item.price > 0) {
     const n = Math.min((old.price?.n ?? 0) + 1, 50);
     const mean = old.price ? old.price.mean + (Math.log(item.price) - old.price.mean) / n : Math.log(item.price);
     t.price = { mean, n };

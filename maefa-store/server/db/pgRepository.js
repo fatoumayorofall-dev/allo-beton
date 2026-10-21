@@ -282,6 +282,20 @@ const TABLES = [
       })),
   },
   {
+    table: t.mpChats,
+    pk: [t.mpChats.id],
+    key: r => r.id,
+    rows: s =>
+      Object.values(s.mp?.chats ?? {}).map(c => ({
+        id: c.id,
+        listingId: c.listingId,
+        sellerId: c.sellerId,
+        buyerPhone: c.buyerPhone,
+        updatedAt: c.updatedAt,
+        data: c,
+      })),
+  },
+  {
     table: t.mpLedger,
     pk: [t.mpLedger.seq],
     key: r => String(r.seq),
@@ -369,6 +383,7 @@ export async function createPgRepository(url) {
         trips: Object.fromEntries(all.get(t.mpTrips).map(x => [x.id, x.data])),
         settings: settings.mpSettings ?? null,
         relays: settings.mpRelays ?? {},
+        chats: Object.fromEntries(all.get(t.mpChats).map(c => [c.id, c.data])),
         ledger: all
           .get(t.mpLedger)
           .sort((a, b) => a.seq - b.seq)

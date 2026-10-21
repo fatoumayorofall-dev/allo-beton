@@ -18,17 +18,36 @@ const pinLogin = async (phone, pin) =>
 
 (async () => {
   // La création se fait juste après le démarrage : on attend qu'elle soit finie
-  let listings = [];
-  for (let i = 0; i < 60 && listings.length < 15; i++) {
-    listings = (await j('/api/mp/listings')).body?.listings ?? [];
-    if (listings.length < 15) await new Promise(r => setTimeout(r, 500));
+  // (photos des articles Maefa comprises : on attend les commandes et les discussions d'exemple)
+  const allListings = async () => {
+    const first = (await j('/api/mp/listings')).body;
+    let list = first?.listings ?? [];
+    for (let page = 2; list.length < (first?.total ?? 0); page++)
+      list = [...list, ...(await j(`/api/mp/listings?page=${page}`)).body.listings];
+    return list;
+  };
+  for (let i = 0; i < 180; i++) {
+    const n = (await j('/api/admin/mp/orders', { headers: A })).body?.orders?.length ?? 0;
+    const done = (await j('/api/admin/mp/security', { headers: A })).body?.ledger?.count ?? 0;
+    if (n >= 9 && done >= 12) break;
+    await new Promise(r => setTimeout(r, 500));
   }
-  check('15 articles publiés, avec photo', listings.length === 15 && listings.every(l => l.photos.length));
-  await new Promise(r => setTimeout(r, 1500));
+  await new Promise(r => setTimeout(r, 3000));
+  const listings = await allListings();
+  check(
+    '37 articles publiés, avec photo',
+    listings.length === 37 && listings.every(l => l.photos.length),
+    String(listings.length),
+  );
+  const maefa = listings.filter(l => l.seller.shopName === 'Maefa');
+  check(
+    'Maefa : 22 articles, prix cachés (fourchette seulement)',
+    maefa.length === 22 && maefa.every(l => l.price === null && l.negotiable && /F$/.test(l.priceBand)),
+  );
   const ov = (await j('/api/admin/mp/overview', { headers: A })).body;
   check(
-    '5 boutiques validées, 1 à valider, 1 article à vérifier',
-    ov.sellers.active === 5 && ov.sellers.en_attente === 1 && ov.listingsPending === 1,
+    '6 boutiques validées (dont Maefa), 1 à valider, 1 article à vérifier',
+    ov.sellers.active === 6 && ov.sellers.en_attente === 1 && ov.listingsPending === 1,
     JSON.stringify(ov.sellers),
   );
   check('2 livreurs disponibles, 1 à valider', ov.drivers.online === 2 && ov.drivers.en_attente === 1);
@@ -83,6 +102,14 @@ const pinLogin = async (phone, pin) =>
   const track = (await j(`/api/mp/me/orders/${enRoute.id}/driver`, { headers: { Authorization: `Bearer ${khady}` } }))
     .body.tracking;
   check('Khady : colis en route, livreur visible sur la carte', track?.phase === 'vers_vous' && !!track.position);
+  const kChats = (await j('/api/mp/me/chats', { headers: { Authorization: `Bearer ${khady}` } })).body.chats;
+  check(
+    'Khady : prix convenu avec Maefa (20 000 F)',
+    kChats.some(c => c.with === 'Maefa' && c.deal?.amount === 20000),
+  );
+  const owner = await pinLogin('77 309 38 19', '5281');
+  const mChats = (await j('/api/mp/me/chats', { headers: { Authorization: `Bearer ${owner}` } })).body;
+  check('Maefa (numéro de la gérante) : messages non lus', mChats.unread >= 2 && mChats.chats.length === 2);
 
   // Écrans
   const b = (browser = await chromium.launch());
@@ -108,6 +135,22 @@ const pinLogin = async (phone, pin) =>
   await moussa.waitForSelector('[data-testid="mp-driver-trip"]', { timeout: 15000 });
   check('Moussa : course en cours avec le dépôt à faire', (await moussa.getByTestId('mp-stop-code').count()) === 1);
   await moussa.screenshot({ path: `${SP}/demo-2-livreur.png` });
+
+  // Maefa répond à l'offre de Seynabou dans la messagerie
+  const m = await mk('Pixel 7', owner);
+  await m.goto(B + '/m/discussions');
+  await m.waitForSelector('[data-testid="mp-chat-item"]', { timeout: 15000 });
+  await m.waitForTimeout(800);
+  check('Maefa : badge des messages non lus', /\d/.test(await m.getByTestId('mp-chats-link').innerText()));
+  await m.getByTestId('mp-chat-item').filter({ hasText: 'Seynabou' }).click();
+  await m.waitForSelector('[data-testid="mp-offer-yes"]', { timeout: 10000 });
+  await m.screenshot({ path: `${SP}/demo-4-offre-recue.png` });
+  await m.getByTestId('mp-offer-yes').click();
+  await m.waitForSelector('[data-testid="mp-chat-deal"]', { timeout: 10000 });
+  check(
+    'Maefa : offre acceptée, prix convenu affiché',
+    /12\s000 F/.test(await m.getByTestId('mp-chat-deal').innerText()),
+  );
 
   const g = await mk('Desktop Chrome');
   await g.addInitScript(() => {

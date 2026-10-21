@@ -342,7 +342,7 @@ app.listen(PORT, () => {
       .then(r => {
         if (r)
           console.log(
-            `  Données d'exemple : ${r.sellers} boutiques, ${r.listings} articles, ${r.orders} commandes, ${r.drivers} livreurs`,
+            `  Données d'exemple : ${r.sellers} boutiques, ${r.listings} articles, ${r.orders} commandes, ${r.drivers} livreurs, ${r.chats} discussions`,
           );
       })
       .catch(e => console.error("  Données d'exemple : échec —", e.message));

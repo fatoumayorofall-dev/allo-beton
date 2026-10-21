@@ -37,6 +37,8 @@ import {
   sellerLimit,
 } from './fraud.js';
 import { shopSecret } from '../brandSecurity.js';
+import { priceBandLabel } from '../prices.js';
+import { registerChatRoutes } from './chat.js';
 
 /** Rayons de la place de marché (les restaurants viendront avec la livraison rapide). */
 export const MP_CATEGORIES = [
@@ -138,11 +140,15 @@ export const publicSeller = v => ({
   since: v.createdAt,
 });
 const isVisible = (l, seller) => l.status === 'publiee' && seller?.status === 'active';
+/** Prix « à négocier » : le public ne voit qu'une classe de prix, l'acheteur fait une offre au vendeur */
+const PRICE_MODES = new Set(['affiche', 'negocier']);
 export const publicListing = (l, seller) => ({
   id: l.id,
   title: l.title,
   description: l.description,
-  price: l.price,
+  price: l.priceMode === 'negocier' ? null : l.price,
+  negotiable: l.priceMode === 'negocier',
+  priceBand: l.priceMode === 'negocier' ? priceBandLabel(l.price) : null,
   category: l.category,
   condition: l.condition,
   photos: l.photos,
@@ -170,6 +176,8 @@ function cleanListing(b, existing) {
     ? [...new Set(b.variants.map(v => clip(String(v ?? ''), 30)).filter(Boolean))].slice(0, 20)
     : (existing?.variants ?? []);
   const variantLabel = clip(b.variantLabel ?? existing?.variantLabel ?? '', 20);
+  const priceMode = b.priceMode ?? existing?.priceMode ?? 'affiche';
+  if (!PRICE_MODES.has(priceMode)) return { error: 'Affichage du prix invalide' };
   if (title.length < 3) return { error: "Donnez un titre à l'article (3 lettres au moins)" };
   if (!Number.isFinite(price) || price < 100 || price > 50_000_000) return { error: 'Prix invalide (100 F au moins)' };
   if (!CATEGORY_IDS.has(category)) return { error: 'Choisissez un rayon' };
@@ -183,7 +191,9 @@ function cleanListing(b, existing) {
   if (variants.length && !variantLabel) return { error: 'Précisez le choix proposé (ex. : Taille, Couleur)' };
   const contact = findContact(title, description, variantLabel, ...variants);
   if (contact) return { error: CONTACT_REFUSED(contact) };
-  return { value: { title, description, price, category, condition, photos, video, stock, variants, variantLabel } };
+  return {
+    value: { title, description, price, priceMode, category, condition, photos, video, stock, variants, variantLabel },
+  };
 }
 
 export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentUser, wa, dataDir }) {
@@ -199,6 +209,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   };
   const site = req => `${req.protocol}://${req.get('host')}`;
   const trips = createTripService({ store, settings, notify });
+  // Discussions acheteur–vendeur et marchandage (prix convenu utilisé à la commande)
+  const chats = registerChatRoutes(app, { limit, store, currentUser, notify, publicListing });
   // Registre infalsifiable des mouvements d'argent (scellé avec la clé du serveur, gardée hors de la base)
   const ledger = createLedger({ store, secret: shopSecret() });
   const tooMany = (req, res, key, max, windowMs) => {
@@ -417,16 +429,25 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
               ? `Plus que ${listing.stock} « ${listing.title} » disponible(s)`
               : `« ${listing.title} » est épuisé`,
         };
-      const g = groups.get(seller.id) ?? { seller, lines: [] };
+      // Prix convenu en discutant (marchandage) : il remplace le prix affiché ; obligatoire pour un
+      // article « à négocier », dont le prix n'est pas public
+      const deal = buyerPhone ? chats.dealFor(listing.id, buyerPhone) : null;
+      if (listing.priceMode === 'negocier' && !deal)
+        return { error: `« ${listing.title} » : prix à négocier. Faites une offre au vendeur avant de commander.` };
+      if (deal && wanted.get(listing.id) > deal.qty)
+        return { error: `Le prix convenu pour « ${listing.title} » vaut pour ${deal.qty} article` };
+      const g = groups.get(seller.id) ?? { seller, lines: [], deals: [] };
       g.lines.push({
         listingId: listing.id,
         title: listing.title,
         photo: listing.photos[0],
-        price: listing.price,
+        price: deal?.amount ?? listing.price,
+        ...(deal ? { agreed: true } : {}),
         qty,
         variant,
         variantLabel: listing.variantLabel || null,
       });
+      if (deal) g.deals.push(deal.chatId);
       groups.set(seller.id, g);
     }
     // Nouvelle boutique : montant limité tant qu'elle n'a pas livré quelques commandes
@@ -437,13 +458,14 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       const tooBig = sellerLimit(seller, delivered, subtotal, s.newSellerMaxOrder);
       if (tooBig) return { error: tooBig };
     }
-    const orders = [...groups.values()].map(({ seller, lines }) => {
+    const orders = [...groups.values()].map(({ seller, lines, deals }) => {
       const subtotal = lines.reduce((t, l) => t + l.price * l.qty, 0);
       const { km, fee } = deliveryFee(pricePoint(seller.location), to, s);
       const c = commissions({ subtotal, deliveryFee: fee }, s, sellerRateFor(seller, s));
       return {
         seller,
         lines,
+        deals,
         subtotal,
         delivery: { km, fee },
         buyerFee: c.buyer,
@@ -541,6 +563,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         history: [{ status: 'nouvelle', at: now(), by: 'acheteur' }],
         createdAt: now(),
       });
+      // Prix convenu utilisé : une commande par accord
+      for (const chatId of o.deals) chats.useDeal(chatId, order.id);
       if (order.handover)
         notifyCode(
           user.phone,
@@ -787,7 +811,14 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     },
   );
 
-  const sellerListingView = l => ({ ...publicListing(l, null), status: l.status, stock: l.stock, reason: l.reason });
+  const sellerListingView = l => ({
+    ...publicListing(l, null),
+    price: l.price,
+    priceMode: l.priceMode ?? 'affiche',
+    status: l.status,
+    stock: l.stock,
+    reason: l.reason,
+  });
 
   app.get('/api/mp/me/listings', (req, res) => {
     const me = sellerOf(req, res);

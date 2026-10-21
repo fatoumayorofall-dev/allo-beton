@@ -38,6 +38,8 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG27 | Une livraison ratée (absent, refus) renvoie le colis au vendeur ; à 2 livraisons ratées non pardonnées, l'acheteur ne peut plus commander ; 5 commandes en cours au plus tant qu'il n'a jamais été livré, 15 ensuite. |
 | RG28 | Tant qu'une boutique (non « de confiance ») a moins de 3 ventes livrées, une commande ne dépasse pas le montant fixé par la gérante ; nul ne commande dans sa propre boutique. |
 | RG29 | Chaque mouvement d'argent est ajouté au registre (jamais modifié) avec l'empreinte scellée de la ligne précédente. |
+| RG31 | Le vendeur choisit pour chaque article : prix affiché, ou prix caché « à négocier » (le public voit une classe de prix). Un article à négocier ne se commande qu'au prix convenu. |
+| RG32 | Une discussion relie un acheteur et un vendeur au sujet d'un article. Une offre acceptée devient le prix convenu : 48 h, une commande d'un article. Pas de numéro, lien ni e-mail dans les messages. |
 | RG30 | Un arrêt fait sans réseau est gardé sur le téléphone du livreur et envoyé au retour du réseau avec son heure réelle ; le serveur vérifie le code à la réception, comme pour un arrêt en direct. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
@@ -71,6 +73,9 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | code_enlevement, code_depot | Codes de remise à 4 chiffres | N | 4 | COMMANDE_MARCHE |
 | motif_echec | absent, refus | A | 10 | COMMANDE_MARCHE |
 | plafond_argent | Argent qu'un livreur peut garder | N | 9 | LIVREUR |
+| mode_prix | affiche, negocier | A | 8 | ANNONCE |
+| montant_offre, statut_offre | Offre de prix et sa réponse (en_attente, acceptee, refusee, remplacee) | N / A | 9 / 10 | MESSAGE |
+| prix_convenu, valable_jusqu_a | Accord de la discussion | N / D | 9 | DISCUSSION |
 | num_operation, empreinte | Ligne du registre et son empreinte HMAC | N / AN | 9 / 64 | OPERATION |
 
 ## 3. MCD — Modèle conceptuel des données
@@ -88,7 +93,7 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **AVIS** (<u>id_avis</u>, note, commentaire, date)
 - **SESSION** (<u>empreinte_jeton</u>, date)
 - **VENDEUR** (<u>id_vendeur</u>, nom_boutique, slug, rayon, quartier, latitude, longitude, mode_remise, statut, de_confiance, date_creation)
-- **ANNONCE** (<u>id_annonce</u>, titre, description, prix, rayon, etat, photos, stock, choix, statut, raison_refus, vues, date)
+- **ANNONCE** (<u>id_annonce</u>, titre, description, prix, mode_prix, rayon, etat, photos, stock, choix, statut, raison_refus, vues, date)
 - **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, mode_remise, latitude_remise, longitude_remise, repere_remise, code_enlevement, code_depot, essais_code, motif_echec, date)
 - **REGLEMENT** (<u>id_reglement</u>, montant, note, date)
 - **LIVREUR** (<u>id_livreur</u>, nom, telephone, vehicule, quartier, statut, disponible, latitude, longitude, plafond_argent, date_creation)
@@ -97,6 +102,8 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **AVIS_MARCHE** (<u>#id_commande_marche</u>, note_vendeur, texte, note_livreur, masque, date) — 0 ou 1 par commande
 - **SIGNALEMENT** (<u>#id_commande_marche</u>, type, texte, statut, solution, date, date_resolution) — 0 ou 1 en cours par commande
 - **POINT_RELAIS** (<u>id_relais</u>, nom, quartier, horaires, telephone, latitude, longitude, adresse, repere, actif, date_creation)
+- **DISCUSSION** (<u>id_discussion</u>, prenom_acheteur, prix_convenu, valable_jusqu_a, date)
+- **MESSAGE** (<u>id_message</u>, auteur, texte, montant_offre, statut_offre, date)
 - **OPERATION** (<u>num_operation</u>, date, type, donnees, empreinte_precedente, empreinte) — registre infalsifiable
 
 ### Associations et cardinalités
@@ -124,6 +131,9 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | EFFECTUER | LIVREUR (0,n) | COURSE (0,1) | date_acceptation |
 | VERSER | LIVREUR (0,n) | REGLEMENT (1,1) | — |
 | SOUSCRIRE | VENDEUR (0,n) | ABONNEMENT (1,1) | — |
+| PORTER_SUR | DISCUSSION (1,1) | ANNONCE (0,n) | — |
+| ECHANGER | CLIENTE (0,n) / VENDEUR (0,n) | DISCUSSION (1,1) | — |
+| CONTENIR_MSG | DISCUSSION (1,n) | MESSAGE (1,1) | — |
 | DEPOSER | VENDEUR (0,1) | POINT_RELAIS (0,n) | — (seulement en mode « relais ») |
 | PASSER_PAR | COMMANDE_MARCHE (0,1) | POINT_RELAIS (0,n) | — (relais retenu à la commande) |
 
@@ -187,6 +197,7 @@ des clés ; ses propriétés deviennent des colonnes.
 - **mp_orders** (<u>id</u>, #seller_id, buyer_phone, status, total, created_at, data) — COMMANDE_MARCHE et ses lignes
 - **mp_drivers** (<u>id</u>, owner_phone, status, created_at, data) — LIVREUR et ses versements
 - **mp_trips** (<u>id</u>, mode, status, #driver_id, created_at, data) — COURSE, ses arrêts et les parts de chacun
+- **mp_chats** (<u>id</u>, #listing_id, #seller_id, buyer_phone, updated_at, data) — DISCUSSION et ses MESSAGES
 - **mp_ledger** (<u>seq</u>, at, type, hash, data) — OPERATION (registre : lignes ajoutées, jamais modifiées)
 - **app_settings**(clé `mpRelays`) — POINT_RELAIS (peu nombreux : un document JSON) ; `mp_sellers.data.relayId` et
   `mp_orders.data.delivery.relay` portent les associations DEPOSER et PASSER_PAR

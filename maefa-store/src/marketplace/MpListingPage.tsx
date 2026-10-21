@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   Heart,
   Loader2,
+  MessageCircle,
   Minus,
   Plus,
   Share2,
@@ -12,11 +13,12 @@ import {
   ShoppingBag,
   Truck,
 } from 'lucide-react';
-import { fetchListing, type MpListing } from './api';
+import { fetchChats, fetchListing, openChat, type Deal, type MpListing } from './api';
 import { useMpCart } from './cart';
 import { ListingCard } from './ListingCard';
 import { MP, mpPath } from './config';
-import { F } from './format';
+import { F, priceText } from './format';
+import { useAccount } from '../context/AccountContext';
 import { isLiked, note } from './taste';
 import { usePageTitle } from '../utils/usePageTitle';
 
@@ -31,6 +33,10 @@ export default function MpListingPage() {
   const [error, setError] = useState('');
   const [added, setAdded] = useState(false);
   const [liked, setLiked] = useState(false);
+  // Prix convenu avec le vendeur pour cet article (marchandage dans la messagerie)
+  const [deal, setDeal] = useState<Deal | null>(null);
+  const [chatBusy, setChatBusy] = useState(false);
+  const { status } = useAccount();
   const l = data && data !== 'absent' ? data.listing : null;
   usePageTitle(l ? `${l.title} · ${MP.name}` : MP.name, l?.description.slice(0, 150));
 
@@ -43,6 +49,11 @@ export default function MpListingPage() {
     setLiked(isLiked(id));
     fetchListing(id).then(r => setData(r.ok ? r.data : 'absent'));
   }, [id]);
+  useEffect(() => {
+    setDeal(null);
+    if (status !== 'user') return;
+    fetchChats().then(r => r.ok && setDeal(r.data.chats.find(c => c.listing?.id === id)?.deal ?? null));
+  }, [id, status]);
 
   // Goûts : vue à l'ouverture, « regardé » après 5 secondes sur la fiche
   const listingForTaste = data && data !== 'absent' ? data.listing : null;
@@ -73,10 +84,21 @@ export default function MpListingPage() {
   const put = (go: boolean) => {
     if (l.variants.length && !variant) return setError(`Choisissez : ${l.variantLabel}`);
     setError('');
-    add(l, qty, variant);
+    if (deal) add(l, 1, variant, deal.amount);
+    else add(l, qty, variant);
     note(l, 'cart');
     setAdded(true);
     if (go) navigate(mpPath('/panier'));
+  };
+
+  // Discussion avec le vendeur (question ou offre de prix) : il faut être connecté
+  const chat = async (offer: boolean) => {
+    if (status !== 'user') return navigate(mpPath(`/compte?retour=${encodeURIComponent(mpPath(`/annonce/${l.id}`))}`));
+    setChatBusy(true);
+    const r = await openChat(l.id);
+    setChatBusy(false);
+    if (!r.ok) return setError(r.error);
+    navigate(mpPath(`/discussions/${r.data.chat.id}${offer ? '?offre=1' : ''}`));
   };
 
   return (
@@ -134,9 +156,27 @@ export default function MpListingPage() {
           </p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1 leading-tight">{l.title}</h1>
           <div className="mt-3 flex items-center gap-3">
-            <p className="text-3xl font-bold" data-testid="mp-price">
-              {F(l.price)}
-            </p>
+            <div>
+              <p className="text-3xl font-bold" data-testid="mp-price">
+                {deal ? F(deal.amount) : priceText(l)}
+              </p>
+              {deal ? (
+                <p className="text-sm font-semibold text-emerald-800" data-testid="mp-deal">
+                  Prix convenu avec le vendeur · valable jusqu'au{' '}
+                  {new Date(deal.until).toLocaleString('fr-FR', {
+                    weekday: 'long',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              ) : (
+                l.negotiable && (
+                  <p className="text-sm font-semibold text-emerald-800">
+                    Prix à négocier : faites une offre au vendeur
+                  </p>
+                )
+              )}
+            </div>
             <button
               onClick={() => {
                 note(l, liked ? 'unlike' : 'like');
@@ -155,7 +195,7 @@ export default function MpListingPage() {
                 if (navigator.share) await navigator.share({ title: l.title, url }).catch(() => {});
                 else
                   window.open(
-                    `https://wa.me/?text=${encodeURIComponent(`${l.title} · ${F(l.price)}\n${url}`)}`,
+                    `https://wa.me/?text=${encodeURIComponent(`${l.title} · ${priceText(l)}\n${url}`)}`,
                     '_blank',
                     'noopener',
                   );
@@ -189,7 +229,7 @@ export default function MpListingPage() {
             </div>
           )}
 
-          <div className="mt-5 flex items-center gap-3">
+          <div className={`mt-5 flex items-center gap-3 ${deal ? 'hidden' : ''}`}>
             <span className="field-label !mb-0">Quantité</span>
             <div className="inline-flex items-center rounded-full border border-ink/15 bg-white">
               <button
@@ -219,6 +259,15 @@ export default function MpListingPage() {
           )}
           {l.soldOut ? (
             <p className="mt-6 h-14 rounded-full bg-ink/5 grid place-items-center font-semibold">Épuisé</p>
+          ) : l.negotiable && !deal ? (
+            <button
+              disabled={chatBusy}
+              onClick={() => chat(true)}
+              className="btn-dark w-full !h-14 mt-6"
+              data-testid="mp-make-offer"
+            >
+              <MessageCircle className="w-4 h-4" /> Faire une offre au vendeur
+            </button>
           ) : (
             <div className="mt-6 grid grid-cols-2 gap-3">
               <button onClick={() => put(false)} className="btn-outline !h-14" data-testid="mp-add">
@@ -230,6 +279,17 @@ export default function MpListingPage() {
             </div>
           )}
 
+          {!l.soldOut && (
+            <button
+              disabled={chatBusy}
+              onClick={() => chat(false)}
+              className="mt-3 w-full h-12 rounded-full border border-ink/15 font-semibold text-sm inline-flex items-center justify-center gap-2"
+              data-testid="mp-ask-seller"
+            >
+              <MessageCircle className="w-4 h-4" />{' '}
+              {l.negotiable ? 'Poser une question' : 'Écrire au vendeur ou négocier'}
+            </button>
+          )}
           <ul className="mt-6 space-y-2 text-sm text-ink/80">
             <li className="flex items-center gap-2">
               <Truck className="w-4 h-4 text-gold-dark" /> Livraison calculée selon la distance, payée à la réception

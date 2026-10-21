@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { BadgeCheck, Heart, Loader2, Share2, ShoppingBag, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { fetchFeed, type FeedItem } from './api';
 import { MP, mpPath } from './config';
-import { F } from './format';
+import { priceText } from './format';
 import { getSeen, getTaste, isLiked, note } from './taste';
 import { useAccount } from '../context/AccountContext';
 import { visitorId } from '../utils/track';
@@ -73,7 +73,7 @@ const Slide: React.FC<{ item: FeedItem; muted: boolean; onToggleSound: () => voi
   const share = async () => {
     note(item, 'share');
     const url = `${location.origin}${mpPath(`/annonce/${item.id}`)}`;
-    const text = `${item.title} · ${F(item.price)} sur ${MP.name}`;
+    const text = `${item.title} · ${priceText(item)} sur ${MP.name}`;
     if (navigator.share) await navigator.share({ title: item.title, text, url }).catch(() => {});
     else window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, '_blank', 'noopener');
   };
@@ -169,7 +169,7 @@ const Slide: React.FC<{ item: FeedItem; muted: boolean; onToggleSound: () => voi
         )}
         <h2 className="mt-1 text-lg leading-snug font-semibold line-clamp-2">{item.title}</h2>
         <div className="mt-3 flex items-center gap-3">
-          <span className="text-2xl font-bold">{F(item.price)}</span>
+          <span className="text-2xl font-bold">{priceText(item)}</span>
           <Link
             to={mpPath(`/annonce/${item.id}`)}
             className="ml-auto inline-flex items-center gap-2 h-12 px-6 rounded-full bg-white text-ink font-semibold text-sm"

@@ -27,7 +27,8 @@ const read = (): MpCartItem[] => {
 interface CartValue {
   items: MpCartItem[];
   count: number;
-  add: (l: MpListing, qty: number, variant: string | null) => void;
+  /** price : prix convenu en discutant (sinon le prix affiché) */
+  add: (l: MpListing, qty: number, variant: string | null, price?: number) => void;
   setQty: (listingId: string, variant: string | null, qty: number) => void;
   remove: (listingId: string, variant: string | null) => void;
   clear: () => void;
@@ -55,7 +56,7 @@ export const MpCartProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
   const same = (i: MpCartItem, id: string, v: string | null) => i.listingId === id && i.variant === v;
   const add = useCallback(
-    (l: MpListing, qty: number, variant: string | null) => {
+    (l: MpListing, qty: number, variant: string | null, price?: number) => {
       setItems(list => {
         const found = list.find(i => same(i, l.id, variant));
         if (found) return list.map(i => (i === found ? { ...i, qty: Math.min(20, i.qty + qty) } : i));
@@ -65,7 +66,7 @@ export const MpCartProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             listingId: l.id,
             title: l.title,
             photo: l.photos[0],
-            price: l.price,
+            price: price ?? l.price ?? 0,
             qty,
             variant,
             variantLabel: l.variantLabel,

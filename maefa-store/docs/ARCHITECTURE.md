@@ -398,7 +398,21 @@ problème est le téléphone sans réseau :
   téléphone ne valide rien seul, et le code n'y est jamais stocké d'avance (sinon le livreur pourrait le lire).
 - **Bandeau « Pas de réseau »** dans toute la place de marché.
 
-### 4.10 Données d'exemple (`server/marketplace/demo.js`)
+### 4.10 Messagerie et marchandage (`server/marketplace/chat.js`)
+
+- **Prix affiché ou à négocier** (`priceMode`) : un article « à négocier » ne montre au public (fiches,
+  fil, recherche, aperçus) qu'une classe de prix (`priceBandLabel`, la même que la boutique Maefa) ; le
+  prix exact reste chez le vendeur. On ne peut le commander qu'après un accord.
+- **Discussion** par article et par acheteur : questions, réponses, offres de prix. L'autre personne
+  accepte, refuse ou fait une contre-offre (l'offre en attente est alors « remplacée »).
+- **Prix convenu** : l'offre acceptée vaut 48 h pour cet acheteur, cet article, une commande d'un article ;
+  le serveur l'applique lui-même dans `prepare()` (le navigateur ne fait que proposer), puis la marque
+  « utilisée ».
+- **Anti-contournement et anonymat** : numéros, liens, e-mails et réseaux sociaux refusés (`findContact`) ;
+  l'acheteur voit le nom de la boutique, le vendeur le prénom de l'acheteur ; alerte WhatsApp au plus
+  toutes les 10 minutes par discussion. Table `mp_chats` (migration 0005).
+
+### 4.11 Données d'exemple (`server/marketplace/demo.js`)
 
 Sur le site de test (`MP_DEMO=1`, ou `NOINDEX=1` par défaut), une place de marché vide se remplit au
 démarrage : 6 boutiques (adresse fixe, sans adresse fixe, point relais, formule Pro, une à valider),

@@ -6,6 +6,7 @@ import {
   uploadPhoto,
   uploadVideo,
   type ListingInput,
+  type PriceMode,
   type MpCategory,
   type MyListing,
 } from './api';
@@ -24,6 +25,7 @@ export const ListingForm: React.FC<{
   const videoRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [price, setPrice] = useState(initial ? String(initial.price) : '');
+  const [priceMode, setPriceMode] = useState<PriceMode>(initial?.priceMode ?? 'affiche');
   const [category, setCategory] = useState(initial?.category ?? '');
   const [condition, setCondition] = useState<'neuf' | 'occasion'>(initial?.condition ?? 'neuf');
   const [stock, setStock] = useState(
@@ -74,6 +76,7 @@ export const ListingForm: React.FC<{
     const body: ListingInput = {
       title: title.trim(),
       price: Number(price.replace(/\s/g, '')),
+      priceMode,
       category,
       condition,
       photos,
@@ -240,6 +243,31 @@ export const ListingForm: React.FC<{
           />
         </label>
       </div>
+      <fieldset className="space-y-2" data-testid="mp-price-mode">
+        <legend className="field-label">Affichage du prix</legend>
+        {(
+          [
+            ['affiche', 'Afficher le prix', 'Les clients voient le prix et commandent directement.'],
+            [
+              'negocier',
+              'Prix caché, à négocier',
+              'Les clients voient une fourchette (ex. : 20 000 – 30 000 F) et vous font une offre dans la messagerie. Ils commandent au prix convenu.',
+            ],
+          ] as [PriceMode, string, string][]
+        ).map(([id, label, text]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={priceMode === id}
+            onClick={() => setPriceMode(id)}
+            data-testid={`mp-price-${id}`}
+            className={`w-full text-left p-3 rounded-2xl border-2 ${priceMode === id ? 'border-ink bg-ivory' : 'border-ink/10'}`}
+          >
+            <span className="font-semibold text-sm">{label}</span>
+            <span className="block text-xs text-ink/70 mt-0.5">{text}</span>
+          </button>
+        ))}
+      </fieldset>
       <div className="grid grid-cols-2 gap-3">
         <label className="block">
           <span className="field-label">Rayon *</span>

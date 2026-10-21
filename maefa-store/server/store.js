@@ -250,6 +250,7 @@ const mp = () => {
   state.mp.trips ??= {};
   state.mp.relays ??= {};
   state.mp.ledger ??= [];
+  state.mp.chats ??= {};
   return state.mp;
 };
 export const getMpSeller = id => mp().sellers[id] ?? null;
@@ -312,6 +313,14 @@ export function saveMpRelay(relay) {
   mp().relays[relay.id] = { ...relay, updatedAt: new Date().toISOString() };
   persist();
   return mp().relays[relay.id];
+}
+/* Discussions acheteur–vendeur (questions, offres de prix) */
+export const getMpChat = id => mp().chats[id] ?? null;
+export const listMpChats = () => Object.values(mp().chats).sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1));
+export function saveMpChat(chat) {
+  mp().chats[chat.id] = { ...chat, updatedAt: new Date().toISOString() };
+  persist();
+  return mp().chats[chat.id];
 }
 /* Registre infalsifiable des mouvements d'argent : on ajoute, on ne modifie jamais */
 export const listMpLedger = () => mp().ledger;

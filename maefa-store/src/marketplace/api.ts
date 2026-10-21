@@ -48,11 +48,17 @@ export interface MpSeller {
   /** Note des clientes (avis vérifiés : commandes reçues dans l'application) */
   rating?: { average: number | null; count: number };
 }
+/** Prix affiché, ou caché « à négocier » (le public voit une classe de prix et fait une offre) */
+export type PriceMode = 'affiche' | 'negocier';
 export interface MpListing {
   id: string;
   title: string;
   description: string;
-  price: number;
+  /** null quand le prix est à négocier */
+  price: number | null;
+  negotiable: boolean;
+  /** Classe de prix montrée à la place d'un prix caché (« 20 000 – 30 000 F ») */
+  priceBand: string | null;
   category: string;
   condition: 'neuf' | 'occasion';
   photos: string[];
@@ -66,7 +72,9 @@ export interface MpListing {
   createdAt: string;
   seller: MpSeller | null;
 }
-export interface MyListing extends MpListing {
+export interface MyListing extends Omit<MpListing, 'price'> {
+  price: number;
+  priceMode: PriceMode;
   status: 'en_attente' | 'publiee' | 'refusee' | 'retiree';
   stock: number | null;
   reason?: string;
@@ -306,7 +314,7 @@ export const uploadVideo = (blob: Blob) =>
 export const fetchMyListings = () => call<{ listings: MyListing[] }>('/api/mp/me/listings');
 export type ListingInput = Pick<
   MyListing,
-  'title' | 'description' | 'price' | 'category' | 'condition' | 'photos' | 'video' | 'stock' | 'variants'
+  'title' | 'description' | 'price' | 'priceMode' | 'category' | 'condition' | 'photos' | 'video' | 'stock' | 'variants'
 > & { variantLabel: string };
 export const createListing = (body: ListingInput) => post<{ listing: MyListing }>('/api/mp/me/listings', body);
 export const updateListing = (id: string, body: Partial<ListingInput>) =>
@@ -600,3 +608,51 @@ export const adminUnlockOrder = (pin: string, id: string) =>
   call<{ ok: true }>(`/api/admin/mp/orders/${id}/unlock`, { method: 'POST', headers: admin(pin) });
 export const adminLedger = (pin: string) =>
   call<{ check: LedgerCheck; entries: LedgerEntry[] }>('/api/admin/mp/ledger', { headers: admin(pin) });
+
+/* ---------- Discussions et marchandage ---------- */
+export interface ChatMessage {
+  id: string;
+  from: 'acheteur' | 'vendeur';
+  at: string;
+  text?: string;
+  /** Message automatique (offre acceptée, refusée) */
+  system?: boolean;
+  offer?: { amount: number; status: 'en_attente' | 'acceptee' | 'refusee' | 'remplacee' };
+}
+/** Prix convenu : valable 48 h, pour un article */
+export interface Deal {
+  amount: number;
+  qty: number;
+  at: string;
+  until: string;
+}
+export interface Chat {
+  id: string;
+  role: 'acheteur' | 'vendeur';
+  listing: {
+    id: string;
+    title: string;
+    photo: string | null;
+    negotiable: boolean;
+    price: number | null;
+    priceBand: string | null;
+    variantLabel: string | null;
+    variants: string[];
+  } | null;
+  /** Nom de la boutique (pour l'acheteur) ou prénom de l'acheteur (pour le vendeur) */
+  with: string;
+  deal: Deal | null;
+  unread: number;
+  last: { text?: string; at: string; from: 'acheteur' | 'vendeur' } | null;
+  updatedAt: string;
+  messages?: ChatMessage[];
+}
+export const openChat = (listingId: string, text?: string) =>
+  post<{ chat: Chat }>(`/api/mp/listings/${listingId}/chat`, text ? { text } : {});
+export const fetchChats = () => call<{ chats: Chat[]; unread: number }>('/api/mp/me/chats');
+export const fetchChat = (id: string) => call<{ chat: Chat }>(`/api/mp/me/chats/${id}`);
+export const sendChat = (id: string, text: string) => post<{ chat: Chat }>(`/api/mp/me/chats/${id}/messages`, { text });
+export const sendOffer = (id: string, amount: number) =>
+  post<{ chat: Chat }>(`/api/mp/me/chats/${id}/offers`, { amount });
+export const answerOffer = (id: string, msg: string, accept: boolean) =>
+  post<{ chat: Chat }>(`/api/mp/me/chats/${id}/offers/${msg}`, { accept });

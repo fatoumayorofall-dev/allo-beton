@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { BadgeCheck, Play, Sparkles } from 'lucide-react';
 import type { MpListing } from './api';
 import { mpPath } from './config';
-import { F } from './format';
+import { priceText } from './format';
 
 export const ListingCard: React.FC<{ listing: MpListing; showSeller?: boolean; why?: string }> = ({
   listing: l,
@@ -46,7 +46,10 @@ export const ListingCard: React.FC<{ listing: MpListing; showSeller?: boolean; w
     </div>
     <div className="p-3">
       <p className="text-[14px] leading-snug line-clamp-2 min-h-[2.5em]">{l.title}</p>
-      <p className="mt-1 font-bold text-[15px]">{F(l.price)}</p>
+      <p className="mt-1 font-bold text-[15px]" data-testid="mp-card-price">
+        {priceText(l)}
+      </p>
+      {l.negotiable && <p className="text-[11px] font-semibold text-emerald-800">Prix à négocier</p>}
       {showSeller && l.seller && (
         <p className="mt-1 text-[11px] text-ink/60 flex items-center gap-1 truncate">
           {l.seller.verified && <BadgeCheck className="w-3.5 h-3.5 text-emerald-700 shrink-0" />}

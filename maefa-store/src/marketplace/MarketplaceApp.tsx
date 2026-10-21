@@ -1,9 +1,11 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { NavLink, Link, Route, Routes } from 'react-router-dom';
-import { Clapperboard, Home, Loader2, ShoppingBag, Store, UserRound } from 'lucide-react';
+import { Clapperboard, Home, Loader2, MessageCircle, ShoppingBag, Store, UserRound } from 'lucide-react';
 import { MpCartProvider, useMpCart } from './cart';
 import { MP, mpPath } from './config';
 import { useOnline } from './offline';
+import { fetchChats } from './api';
+import { useAccount } from '../context/AccountContext';
 
 const MpHome = lazy(() => import('./MpHome'));
 const MpFeed = lazy(() => import('./MpFeed'));
@@ -14,6 +16,7 @@ const MpCart = lazy(() => import('./MpCart'));
 const MpOrders = lazy(() => import('./MpOrders'));
 const MpSell = lazy(() => import('./MpSell'));
 const MpAccount = lazy(() => import('./MpAccount'));
+const MpChats = lazy(() => import('./MpChats'));
 
 const Wait = () => (
   <div className="py-24 grid place-items-center">
@@ -31,8 +34,23 @@ export const MpLogo: React.FC = () => (
   </Link>
 );
 
+/** Messages non lus (vérifiés toutes les 30 secondes quand on est connecté) */
+function useUnread() {
+  const { status } = useAccount();
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (status !== 'user') return setUnread(0);
+    const check = () => fetchChats().then(r => r.ok && setUnread(r.data.unread));
+    check();
+    const t = setInterval(check, 30000);
+    return () => clearInterval(t);
+  }, [status]);
+  return unread;
+}
+
 const Header: React.FC = () => {
   const { count } = useMpCart();
+  const unread = useUnread();
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-ink/[0.07]">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
@@ -56,6 +74,19 @@ const Header: React.FC = () => {
             className="hidden sm:grid w-10 h-10 rounded-full place-items-center hover:bg-ivory"
           >
             <UserRound className="w-5 h-5" />
+          </NavLink>
+          <NavLink
+            to={mpPath('/discussions')}
+            aria-label={`Messages${unread ? `, ${unread} non lu${unread > 1 ? 's' : ''}` : ''}`}
+            className="relative w-10 h-10 rounded-full grid place-items-center hover:bg-ivory"
+            data-testid="mp-chats-link"
+          >
+            <MessageCircle className="w-5 h-5" />
+            {unread > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 min-w-5 h-5 px-1 rounded-full bg-wine text-white text-[11px] font-bold grid place-items-center">
+                {unread}
+              </span>
+            )}
           </NavLink>
           <NavLink
             to={mpPath('/panier')}
@@ -142,6 +173,8 @@ export default function MarketplaceApp() {
               <Route path="vendre" element={<MpSell />} />
               <Route path="compte" element={<MpAccount />} />
               <Route path="livreur" element={<MpDriver />} />
+              <Route path="discussions" element={<MpChats />} />
+              <Route path="discussions/:id" element={<MpChats />} />
               <Route path="*" element={<MpHome />} />
             </Routes>
           </Suspense>

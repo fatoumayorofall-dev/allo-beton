@@ -1,0 +1,232 @@
+[
+  {
+    "title": "Sac Ndella",
+    "category": "sacs",
+    "price": 25000,
+    "variantLabel": "Couleur",
+    "variants": ["Camel", "Bordeaux", "Noir", "Chocolat"],
+    "photos": [
+      "sac-ndella-camel-1.jpg",
+      "sac-ndella-bordeaux-1.jpg",
+      "sac-ndella-noir-1.jpg",
+      "sac-ndella-chocolat-1.jpg"
+    ],
+    "description": "Aspect daim, finitions lisses, coutures contrastées. À la main pour une tenue habillée, en bandoulière pour les journées chargées : il passe du bureau aux cérémonies."
+  },
+  {
+    "title": "Sac Awa à fermoir doré",
+    "category": "sacs",
+    "price": 18500,
+    "variantLabel": "Couleur",
+    "variants": ["Taupe", "Noir", "Crème & cognac", "Vert olive", "Bleu ciel", "Cognac", "Bordeaux"],
+    "photos": [
+      "sac-awa-taupe-1.jpg",
+      "sac-awa-noir-1.jpg",
+      "sac-awa-creme-cognac-1.jpg",
+      "sac-awa-vert-olive-1.jpg",
+      "sac-awa-bleu-1.jpg",
+      "sac-awa-cognac-1.jpg"
+    ],
+    "description": "Aspect cuir lisse, bande centrale plissée, bandes et anses effet croco, fermoir en métal doré. Tenu à la main avec une robe portefeuille ou un tailleur : l'allure d'un sac de créatrice, du bureau aux cérémonies."
+  },
+  {
+    "title": "Sac Soxna effet croco",
+    "category": "sacs",
+    "price": 22000,
+    "variantLabel": "Couleur",
+    "variants": ["Cognac", "Vert émeraude", "Rouge", "Violet", "Bleu roi", "Noir", "Blanc", "Fuchsia", "Orange"],
+    "photos": [
+      "sac-soxna-cognac-1.jpg",
+      "sac-soxna-vert-emeraude-1.jpg",
+      "sac-soxna-rouge-1.jpg",
+      "sac-soxna-violet-1.jpg",
+      "sac-soxna-bleu-roi-1.jpg",
+      "sac-soxna-noir-1.jpg"
+    ],
+    "description": "Aspect cuir verni embossé effet croco, anse carrée en métal doré. À la main par son anse dorée pour une cérémonie, en bandoulière pour la journée : une couleur vive suffit à illuminer une tenue simple."
+  },
+  {
+    "title": "Sac Diarra à breloque cœur",
+    "category": "sacs",
+    "price": 15000,
+    "variantLabel": "Couleur",
+    "variants": ["Bordeaux", "Rose poudré", "Noir", "Crème", "Gris perle", "Chocolat", "Camel", "Taupe rosé"],
+    "photos": [
+      "sac-diarra-bordeaux-1.jpg",
+      "sac-diarra-rose-1.jpg",
+      "sac-diarra-noir-1.jpg",
+      "sac-diarra-creme-1.jpg",
+      "sac-diarra-gris-1.jpg",
+      "sac-diarra-chocolat-1.jpg"
+    ],
+    "description": "Aspect daim marbré, anses et bandes aspect cuir lisse, fermoir tournant et clous dorés. À la main ou en bandoulière, avec une robe simple : la breloque cœur et ses clés dorées font le bijou."
+  },
+  {
+    "title": "Pochette Coumba à papillon",
+    "category": "sacs",
+    "price": 15000,
+    "variantLabel": "Couleur",
+    "variants": ["Orange", "Fuchsia", "Doré", "Noir", "Chocolat"],
+    "photos": [
+      "pochette-papillon-orange-1.jpg",
+      "pochette-papillon-fuchsia-1.jpg",
+      "pochette-papillon-dore-1.jpg",
+      "pochette-papillon-noir-1.jpg",
+      "pochette-papillon-chocolat-1.jpg"
+    ],
+    "description": "Aspect satin, strass sur le rabat et le contour, fermoir papillon en pierres. Pour un mariage ou un baptême, avec un grand boubou ou un ensemble en bazin : elle donne l'éclat final."
+  },
+  {
+    "title": "Tongs Zara à anneau doré — Doré",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-anneau-dore-dore-1.jpg", "tongs-anneau-dore-dore-2.jpg"],
+    "description": "Des tongs plates Zara en doré, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir."
+  },
+  {
+    "title": "Tongs Zara à anneau doré — Noir",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-anneau-dore-noir-1.jpg", "tongs-anneau-dore-noir-2.jpg"],
+    "description": "Des tongs plates Zara en noir, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir."
+  },
+  {
+    "title": "Tongs Zara à anneau doré — Blanc",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-anneau-dore-blanc-1.jpg", "tongs-anneau-dore-blanc-2.jpg"],
+    "description": "Des tongs plates Zara en blanc, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir."
+  },
+  {
+    "title": "Tongs Zara à anneau doré — Bordeaux",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-anneau-dore-bordeaux-1.jpg", "tongs-anneau-dore-bordeaux-2.jpg"],
+    "description": "Des tongs plates Zara en bordeaux, rehaussées d'un grand anneau doré sculpté : confortables toute la journée et assez élégantes pour le soir."
+  },
+  {
+    "title": "Mules Zara croisées à strass — Noir et doré",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-croisees-strass-noir-dore-1.jpg", "mules-croisees-strass-noir-dore-2.jpg"],
+    "description": "Des mules plates Zara en noir et doré : une large bride croisée effet surpiqué et trois fines brides à strass. Faciles à enfiler, confortables et habillées à la fois."
+  },
+  {
+    "title": "Mules Zara croisées à strass — Noir",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-croisees-strass-noir-1.jpg", "mules-croisees-strass-noir-2.jpg"],
+    "description": "Des mules plates Zara en noir : une large bride croisée effet surpiqué et trois fines brides à strass. Faciles à enfiler, confortables et habillées à la fois."
+  },
+  {
+    "title": "Mules Zara croisées à strass — Bronze",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-croisees-strass-bronze-1.jpg", "mules-croisees-strass-bronze-2.jpg"],
+    "description": "Des mules plates Zara en bronze : une large bride croisée effet surpiqué et trois fines brides à strass. Faciles à enfiler, confortables et habillées à la fois."
+  },
+  {
+    "title": "Mules Zara croisées à strass — Doré",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-croisees-strass-dore-1.jpg", "mules-croisees-strass-dore-2.jpg"],
+    "description": "Des mules plates Zara en doré : une large bride croisée effet surpiqué et trois fines brides à strass. Faciles à enfiler, confortables et habillées à la fois."
+  },
+  {
+    "title": "Mules Zara à talon — Bordeaux",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-talon-bordeaux-1.jpg", "mules-talon-bordeaux-2.jpg"],
+    "description": "Des mules Zara à talon en bordeaux : une large bride croisée au bout ouvert, une semelle vernie assortie et un talon fin. Élégantes pour les cérémonies, les soirées et le bureau."
+  },
+  {
+    "title": "Mules Zara à talon — Vert sapin",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-talon-vert-sapin-1.jpg", "mules-talon-vert-sapin-2.jpg"],
+    "description": "Des mules Zara à talon en vert sapin : une large bride croisée au bout ouvert, une semelle vernie assortie et un talon fin. Élégantes pour les cérémonies, les soirées et le bureau."
+  },
+  {
+    "title": "Mules Zara à talon — Violet",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-talon-violet-1.jpg", "mules-talon-violet-2.jpg"],
+    "description": "Des mules Zara à talon en violet : une large bride croisée au bout ouvert, une semelle vernie assortie et un talon fin. Élégantes pour les cérémonies, les soirées et le bureau."
+  },
+  {
+    "title": "Mules Zara à talon — Camel",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["mules-talon-camel-1.jpg", "mules-talon-camel-2.jpg"],
+    "description": "Des mules Zara à talon en camel : une large bride croisée au bout ouvert, une semelle vernie assortie et un talon fin. Élégantes pour les cérémonies, les soirées et le bureau."
+  },
+  {
+    "title": "Tongs Zara à anneau d'orteil — Cognac",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-zara-orteil-cognac-1.jpg", "tongs-zara-orteil-cognac-2.jpg"],
+    "description": "Des sandales plates Zara en cognac : une barre dorée sur le dessus du pied et un anneau doré autour de l'orteil. Légères, faciles à porter, avec une touche de bijou."
+  },
+  {
+    "title": "Tongs Zara à anneau d'orteil — Noir",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-zara-orteil-noir-1.jpg", "tongs-zara-orteil-noir-2.jpg"],
+    "description": "Des sandales plates Zara en noir : une barre dorée sur le dessus du pied et un anneau doré autour de l'orteil. Légères, faciles à porter, avec une touche de bijou."
+  },
+  {
+    "title": "Tongs Zara à anneau d'orteil — Blanc",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-zara-orteil-blanc-1.jpg", "tongs-zara-orteil-blanc-2.jpg"],
+    "description": "Des sandales plates Zara en blanc : une barre dorée sur le dessus du pied et un anneau doré autour de l'orteil. Légères, faciles à porter, avec une touche de bijou."
+  },
+  {
+    "title": "Tongs Zara à anneau d'orteil — Bordeaux",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-zara-orteil-bordeaux-1.jpg", "tongs-zara-orteil-bordeaux-2.jpg"],
+    "description": "Des sandales plates Zara en bordeaux : une barre dorée sur le dessus du pied et un anneau doré autour de l'orteil. Légères, faciles à porter, avec une touche de bijou."
+  },
+  {
+    "title": "Tongs Zara à anneau d'orteil — Chocolat",
+    "category": "mode",
+    "price": 15000,
+    "variantLabel": "Pointure",
+    "variants": ["36", "37", "38", "39", "40", "41"],
+    "photos": ["tongs-zara-orteil-chocolat-1.jpg", "tongs-zara-orteil-chocolat-2.jpg"],
+    "description": "Des sandales plates Zara en chocolat : une barre dorée sur le dessus du pied et un anneau doré autour de l'orteil. Légères, faciles à porter, avec une touche de bijou."
+  }
+]

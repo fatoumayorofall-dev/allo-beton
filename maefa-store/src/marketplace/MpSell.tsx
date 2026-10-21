@@ -630,7 +630,14 @@ export default function MpSell() {
                       {LISTING_STATUS[l.status][0]}
                     </span>
                   </div>
-                  <p className="text-sm font-bold mt-0.5">{F(l.price)}</p>
+                  <p className="text-sm font-bold mt-0.5">
+                    {F(l.price)}
+                    {l.priceMode === 'negocier' && (
+                      <span className="ml-1.5 text-[11px] font-semibold text-emerald-800">
+                        · prix caché, à négocier
+                      </span>
+                    )}
+                  </p>
                   <p className="text-xs text-ink/60 flex items-center gap-3">
                     <span>{l.stock === null ? 'Stock non limité' : `${l.stock} en stock`}</span>
                     <span className="inline-flex items-center gap-1">

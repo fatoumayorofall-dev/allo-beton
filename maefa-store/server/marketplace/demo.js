@@ -12,6 +12,13 @@ import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PHOTOS = path.join(here, 'demo');
+/** Photos des articles Maefa : celles du site compilé (ou du dossier public en développement) */
+const PRODUITS = [
+  path.join(here, '..', '..', 'dist', 'produits'),
+  path.join(here, '..', '..', 'public', 'produits'),
+].find(d => fs.existsSync(d));
+/** Numéro de la gérante : sa boutique Maefa sur la place de marché (elle s'y connecte avec son numéro) */
+const OWNER = process.env.OWNER_WHATSAPP || '+221773093819';
 
 export const demoEnabled = () =>
   process.env.MP_DEMO !== undefined ? process.env.MP_DEMO === '1' : process.env.NOINDEX === '1';
@@ -24,6 +31,7 @@ export const DEMO_ACCOUNTS = {
   ndeye: { phone: '+221700000104', firstName: 'Ndèye', role: 'vendeuse' },
   tech: { phone: '+221700000105', firstName: 'Ousmane', role: 'vendeur formule Pro' },
   rufisque: { phone: '+221700000106', firstName: 'Coumba', role: 'boutique à valider' },
+  maefa: { phone: OWNER, firstName: 'Fatoumata', role: 'boutique Maefa (vos articles, prix à négocier)' },
   khady: { phone: '+221700000201', firstName: 'Khady', role: 'cliente' },
   fatou: { phone: '+221700000202', firstName: 'Fatou', role: 'cliente' },
   mariama: { phone: '+221700000203', firstName: 'Mariama', role: 'cliente bloquée (2 livraisons ratées)' },
@@ -45,6 +53,7 @@ const PLACES = {
   guediawaye: { lat: 14.7769, lng: -17.4006, label: 'Guédiawaye' },
   pattedoie: { lat: 14.7466, lng: -17.4573, label: "Patte d'Oie", landmark: 'devant la station-service' },
   rufisque: { lat: 14.7167, lng: -17.2667, label: 'Rufisque' },
+  dakar: { lat: 14.7167, lng: -17.4677, label: 'Dakar' },
 };
 
 /**
@@ -75,17 +84,18 @@ async function run({ base, store, openSession, adminPin }) {
   // Un compte par personne : session ouverte directement (pas de code par message pour des numéros fictifs)
   const H = {};
   for (const [key, a] of Object.entries(DEMO_ACCOUNTS)) {
-    store.saveUser(a.phone, { firstName: a.firstName, lastName: '', demo: true });
+    store.saveUser(a.phone, { firstName: a.firstName, lastName: '', ...(a.phone === OWNER ? {} : { demo: true }) });
     H[key] = { Authorization: `Bearer ${openSession(a.phone)}` };
   }
-  const photo = async (who, name) => {
+  const upload = async (who, file) => {
     const r = await fetch(`${base}/api/mp/me/photos`, {
       method: 'POST',
       headers: { ...H[who], 'content-type': 'image/jpeg' },
-      body: fs.readFileSync(path.join(PHOTOS, `${name}.jpg`)),
+      body: fs.readFileSync(file),
     });
     return (await r.json()).url;
   };
+  const photo = (who, name) => upload(who, path.join(PHOTOS, `${name}.jpg`));
   const DEMO = '\n\n(Boutique de démonstration)';
 
   // ── Réglages : livreurs de la plateforme activés (codes de remise, moitié-moitié, plafond)
@@ -264,6 +274,50 @@ async function run({ base, store, openSession, adminPin }) {
   await call('PATCH', `/api/admin/mp/sellers/${sellerOf('tech').id}`, { trusted: true }, A);
   await call('POST', `/api/admin/mp/sellers/${sellerOf('tech').id}/plan`, { months: 1 }, A);
 
+  // ── Maefa : les sacs et chaussures de la boutique, avec leurs photos ; prix cachés, à négocier
+  //    (comme sur la boutique, où les prix sont confidentiels)
+  const M = [];
+  if (PRODUITS) {
+    await call(
+      'POST',
+      '/api/mp/me/seller',
+      {
+        shopName: 'Maefa',
+        category: 'mode',
+        zone: 'Dakar',
+        description:
+          'Chaussures et sacs pour femmes, 100 % en ligne. Paiement à la livraison : Wave, Orange Money ou espèces. Ni échange ni retour : vérifiez bien votre pointure. Prix à négocier : faites votre offre dans la messagerie.',
+        pickupMode: 'variable',
+        location: PLACES.dakar,
+      },
+      H.maefa,
+    );
+    await call('PATCH', `/api/admin/mp/sellers/${sellerOf('maefa').id}`, { status: 'active', trusted: true }, A);
+    for (const a of JSON.parse(fs.readFileSync(path.join(PHOTOS, 'maefa.json'), 'utf8'))) {
+      const photos = [];
+      for (const f of a.photos) photos.push(await upload('maefa', path.join(PRODUITS, f)));
+      const l = (
+        await call(
+          'POST',
+          '/api/mp/me/listings',
+          {
+            title: a.title,
+            price: a.price,
+            priceMode: 'negocier',
+            category: a.category,
+            photos,
+            description: a.description,
+            variantLabel: a.variantLabel,
+            variants: a.variants,
+          },
+          H.maefa,
+        )
+      ).listing;
+      if (l.status !== 'publiee') await call('PATCH', `/api/admin/mp/listings/${l.id}`, { status: 'publiee' }, A);
+      M.push(l);
+    }
+  }
+
   // ── Livreurs : deux validés et disponibles, un à valider
   const drivers = {};
   for (const [who, name, vehicle, zone, place] of [
@@ -379,7 +433,29 @@ async function run({ base, store, openSession, adminPin }) {
   await order('rokhaya', [['chemise', 'L']], PLACES.pikine, 'partagee', 240);
   await order('seynabou', [['sandales', '39']], PLACES.guediawaye, 'partagee', 240);
 
-  // 6. Un peu d'intérêt pour le fil « Pour vous » (vues et « j'aime » anonymes)
+  // 6. Discussions : une question sans réponse, un marchandage conclu (prix convenu), une offre en attente
+  const chatOn = async (who, listingId, text) =>
+    (await call('POST', `/api/mp/listings/${listingId}/chat`, { text }, H[who])).chat;
+  const say = (who, id, text) => call('POST', `/api/mp/me/chats/${id}/messages`, { text }, H[who]);
+  const offer = async (who, id, amount) =>
+    (await call('POST', `/api/mp/me/chats/${id}/offers`, { amount }, H[who])).chat.messages.at(-1).id;
+  const answer = (who, id, msg, accept) => call('POST', `/api/mp/me/chats/${id}/offers/${msg}`, { accept }, H[who]);
+  await chatOn('fatou', L.boubou, 'Bonjour, vous faites la taille XL ?');
+  const soxna = M.find(l => l.title.startsWith('Sac Soxna'));
+  if (soxna) {
+    const c = await chatOn('khady', soxna.id, 'Bonjour, le sac Soxna existe en rouge ?');
+    await say('maefa', c.id, 'Bonjour Khady, oui, il est disponible en rouge.');
+    await offer('khady', c.id, 18000);
+    const counter = await offer('maefa', c.id, 20000);
+    await answer('khady', c.id, counter, true);
+  }
+  const mules = M.find(l => l.title.startsWith('Mules Zara à talon'));
+  if (mules) {
+    const c = await chatOn('seynabou', mules.id, 'Bonsoir, je peux les avoir en 39 ?');
+    await offer('seynabou', c.id, 12000);
+  }
+
+  // 7. Un peu d'intérêt pour le fil « Pour vous » (vues et « j'aime » anonymes)
   const events = [];
   for (const [key, views, likes] of [
     ['robe', 9, 4],
@@ -394,6 +470,12 @@ async function run({ base, store, openSession, adminPin }) {
         { v: `demo-visite-${i}`, t: 'view', id: L[key] },
         ...(i < likes ? [{ v: `demo-visite-${i}`, t: 'like', id: L[key] }] : []),
       );
+  for (const [i, l] of M.slice(0, 6).entries())
+    for (let k = 0; k < 7 - i; k++)
+      events.push(
+        { v: `demo-visite-${k}`, t: 'view', id: l.id },
+        ...(k < 3 ? [{ v: `demo-visite-${k}`, t: 'like', id: l.id }] : []),
+      );
   for (const v of [...new Set(events.map(e => e.v))])
     await call('POST', '/api/mp/events', { v, events: events.filter(e => e.v === v).map(({ t, id }) => ({ t, id })) });
 
@@ -402,5 +484,6 @@ async function run({ base, store, openSession, adminPin }) {
     listings: store.listMpListings().length,
     orders: store.listMpOrders().length,
     drivers: store.listMpDrivers().length,
+    chats: store.listMpChats().length,
   };
 }

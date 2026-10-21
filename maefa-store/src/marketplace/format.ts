@@ -1,7 +1,10 @@
-import type { OrderStatus } from './api';
+import type { MpListing, OrderStatus } from './api';
 
 /** Prix affiché : « 12 000 F » (court, lisible sur téléphone). */
 export const F = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} F`;
+/** Prix d'un article : exact, ou classe de prix quand il est à négocier. */
+export const priceText = (l: Pick<MpListing, 'price' | 'priceBand'>) =>
+  l.price === null ? (l.priceBand ?? 'Prix à négocier') : F(l.price);
 
 export const STATUS_LABELS: Record<OrderStatus, string> = {
   nouvelle: 'En attente du vendeur',

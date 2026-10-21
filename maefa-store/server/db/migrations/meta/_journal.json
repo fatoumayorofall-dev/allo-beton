@@ -36,6 +36,13 @@
       "when": 1792579102005,
       "tag": "0004_registre_infalsifiable",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792584744674,
+      "tag": "0005_discussions",
+      "breakpoints": true
     }
   ]
 }

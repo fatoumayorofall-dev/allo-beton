@@ -344,6 +344,22 @@ export const mpTrips = pgTable(
   ],
 );
 
+/** Discussions acheteur–vendeur au sujet d'un article : messages et offres de prix (marchandage). */
+export const mpChats = pgTable(
+  'mp_chats',
+  {
+    id: text('id').primaryKey(),
+    listingId: text('listing_id').notNull(),
+    sellerId: text('seller_id')
+      .notNull()
+      .references(() => mpSellers.id),
+    buyerPhone: text('buyer_phone').notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' }).notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [index('mp_chats_seller_idx').on(t.sellerId), index('mp_chats_buyer_idx').on(t.buyerPhone)],
+);
+
 /**
  * Registre infalsifiable des mouvements d'argent de la place de marché : on ajoute des lignes, jamais
  * on ne les modifie ; chaque ligne porte l'empreinte scellée de la précédente (voir marketplace/fraud.js).

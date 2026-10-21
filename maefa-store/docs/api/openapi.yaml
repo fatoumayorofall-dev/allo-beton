@@ -700,6 +700,50 @@ paths:
           '200': { description: Modifié },
           '400': { description: 'Nom ou emplacement manquant' },
         }
+  /api/mp/listings/{id}/chat:
+    post:
+      tags: [Place de marché]
+      summary: 'Ouvrir (ou retrouver) la discussion avec le vendeur sur un article ; premier message facultatif (text)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        { '201': { description: Discussion }, '400': { description: 'Numéro ou lien refusé, ou propre article' } }
+  /api/mp/me/chats:
+    get:
+      tags: [Place de marché]
+      summary: 'Mes discussions (acheteur et vendeur) et nombre de messages non lus'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/chats/{id}:
+    get:
+      tags: [Place de marché]
+      summary: 'Une discussion et ses messages (marqués lus)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '404': { description: Introuvable } }
+  /api/mp/me/chats/{id}/messages:
+    post:
+      tags: [Place de marché]
+      summary: 'Envoyer un message (500 caractères ; pas de numéro, lien, e-mail ni réseau social)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: Envoyé }, '400': { description: Refusé } }
+  /api/mp/me/chats/{id}/offers:
+    post:
+      tags: [Place de marché]
+      summary: 'Proposer un prix (amount) ; remplace l’offre en attente'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: Offre envoyée } }
+  /api/mp/me/chats/{id}/offers/{msg}:
+    post:
+      tags: [Place de marché]
+      summary: 'Répondre à l’offre de l’autre personne (accept : true | false) ; acceptée = prix convenu 48 h'
+      security: [{ session: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: msg, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: OK }, '409': { description: 'Propre offre ou déjà répondue' } }
   /api/admin/mp/security:
     get:
       tags: [Place de marché]
