@@ -137,6 +137,25 @@ export function registerLiveRoutes(
       by === 'gerante' ? `Live arrêté par la plateforme${reason ? ` : ${reason}` : ''}` : 'Le live est terminé',
     );
     const v = store.getMpSeller(l.sellerId);
+    // Bilan gardé dans la boutique (tableau de bord) : les 30 derniers lives
+    if (v)
+      store.saveMpSeller({
+        ...v,
+        liveHistory: [
+          ...(v.liveHistory ?? []),
+          {
+            id: l.id,
+            title: l.title,
+            startedAt: l.startedAt,
+            endedAt: l.endedAt,
+            sales: l.sales,
+            amount: l.amount,
+            peak: l.peak,
+            likes: l.likes,
+            endedBy: by,
+          },
+        ].slice(-30),
+      });
     if (by !== 'vendeur')
       notify(
         sellerPhone(v),

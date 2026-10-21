@@ -49,6 +49,7 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG39 | Seule une boutique validée peut faire un live, un à la fois ; ses abonnées sont prévenues au début (au plus une fois toutes les 3 h). |
 | RG40 | Un prix live est facultatif, entre 100 F et le prix de l'article ; il s'applique à la commande pendant le live et 15 minutes après. |
 | RG41 | Commenter un live demande d'être connectée (prénom seulement) ; pas de numéro, lien ni réseau social ; la vendeuse peut masquer une personne ; la gérante peut arrêter un live. |
+| RG42 | Chaque vendeuse a son tableau de bord (7, 30, 90 jours ou 12 mois) calculé sur ses seules commandes : uniquement des chiffres, jamais le numéro ni le nom d'une cliente ; l'export pour la comptabilité ne contient pas non plus de données de clientes. La gérante peut l'ouvrir. |
 | RG30 | Un arrêt fait sans réseau est gardé sur le téléphone du livreur et envoyé au retour du réseau avec son heure réelle ; le serveur vérifie le code à la réception, comme pour un arrêt en direct. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 

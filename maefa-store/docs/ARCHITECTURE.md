@@ -490,6 +490,18 @@ quitter le live.
   pour des centaines de spectatrices par live, prévoir un service vidéo dédié (relais ou CDN). Scénario de
   test `live` (caméra simulée de Chromium).
 
+### 4.16 Tableau de bord des ventes de chaque vendeuse (`server/marketplace/dashboard.js`)
+
+Onglet « Tableau de bord » de l'espace vendeuse (`SellerDashboard.tsx`), sur 7, 30, 90 jours ou 12 mois,
+comparé à la période d'avant : ventes livrées, ce qu'elle garde après commission, commandes par étape, panier
+moyen, taux de réussite, visites de ses articles (compteur par jour, `viewDays`) et part des visites qui
+deviennent une commande, clientes et clientes fidèles (2 commandes livrées ou plus), abonnées, note, courbe
+des ventes (une barre par jour ou par mois), articles les plus vendus, articles vus mais jamais vendus
+(« à revoir »), origine des ventes (live, prix négocié, prix affiché), paiements, modes de livraison et bilan
+de ses lives (gardé dans la boutique à la fin de chaque live). Export pour Excel (point-virgule, accents),
+sans données de clientes. Calcul pur, testé seul (`tests/unit/dashboard.test.mjs`) ; la gérante ouvre le même
+tableau depuis la fiche d'une boutique (`GET /api/admin/mp/sellers/:id/dashboard`). Scénario `tableau`.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

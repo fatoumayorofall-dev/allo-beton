@@ -274,6 +274,11 @@ export function countMpView(id) {
   const l = mp().listings[id];
   if (!l) return;
   l.views = (l.views ?? 0) + 1;
+  // Visites par jour (tableau de bord de la vendeuse) : 400 jours gardés
+  const day = new Date().toISOString().slice(0, 10);
+  const days = { ...(l.viewDays ?? {}), [day]: (l.viewDays?.[day] ?? 0) + 1 };
+  for (const k of Object.keys(days).sort().slice(0, -400)) delete days[k];
+  l.viewDays = days;
   persist();
 }
 /** Tendance d'un article (vues, « j'aime », paniers…) : calculée par le fil « Pour vous ». */

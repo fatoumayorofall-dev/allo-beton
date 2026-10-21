@@ -11,6 +11,8 @@ import {
   adminActivatePro,
   adminBoost,
   adminLives,
+  adminSellerDashboard,
+  type DashboardDays,
   adminStopLive,
   type AdminLive,
   adminCloseTrip,
@@ -35,6 +37,7 @@ import {
   type Overview,
 } from '../marketplace/api';
 import { MP, mpPath } from '../marketplace/config';
+import { SellerDashboard } from '../marketplace/SellerDashboard';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from '../marketplace/format';
 
 type Sub =
@@ -112,6 +115,15 @@ const RelayForm: React.FC<{ pin: string; onSaved: () => void }> = ({ pin, onSave
     </form>
   );
 };
+/** Tableau de bord d'une boutique, ouvert par la gérante pour l'aider */
+const SellerDashboardFor: React.FC<{ pin: string; id: string }> = ({ pin, id }) => {
+  const load = useCallback((days: DashboardDays) => adminSellerDashboard(pin, id, days), [pin, id]);
+  return (
+    <div className="mt-4 rounded-2xl bg-ivory p-3" data-testid="admin-mp-seller-dashboard">
+      <SellerDashboard load={load} />
+    </div>
+  );
+};
 type PendingListing = MyListing & { seller: (MpSeller & { status: string }) | null };
 const SELLER_STATUS: Record<string, [string, string]> = {
   en_attente: ['À valider', 'bg-amber-100 text-amber-900'],
@@ -135,6 +147,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
   const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [relays, setRelays] = useState<AdminRelay[]>([]);
   const [lives, setLives] = useState<AdminLive[]>([]);
+  const [openDash, setOpenDash] = useState<string | null>(null);
   const [driversOn, setDriversOn] = useState(false);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState<Record<string, string>>({});
@@ -487,6 +500,14 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                   </button>
                 )}
                 <button
+                  onClick={() => setOpenDash(openDash === v.id ? null : v.id)}
+                  aria-expanded={openDash === v.id}
+                  className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold"
+                  data-testid="admin-mp-dashboard"
+                >
+                  {openDash === v.id ? 'Fermer le tableau de bord' : 'Tableau de bord'}
+                </button>
+                <button
                   onClick={() => patchSeller(v, { trusted: !v.trusted })}
                   className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold"
                 >
@@ -533,6 +554,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                   </button>
                 )}
               </div>
+              {openDash === v.id && <SellerDashboardFor pin={pin} id={v.id} />}
             </article>
           ))}
           {!sellers.length && <p className="text-sm text-ink/70">Aucun vendeur pour le moment.</p>}

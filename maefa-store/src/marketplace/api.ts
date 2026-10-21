@@ -369,6 +369,48 @@ export const confirmPayout = (id: string, missing = false) =>
     'PATCH',
   );
 export const requestPro = () => post<{ seller: MySeller }>('/api/mp/me/plan-request', {});
+/* ---------- Tableau de bord de la vendeuse ---------- */
+export type DashboardDays = 7 | 30 | 90 | 365;
+export interface DashboardArticle {
+  id: string;
+  title: string;
+  photo: string | null;
+  qty?: number;
+  amount?: number;
+  views: number;
+}
+export interface Dashboard {
+  days: DashboardDays;
+  from: string;
+  to: string;
+  revenue: number;
+  commission: number;
+  net: number;
+  prevRevenue: number;
+  /** Évolution en % par rapport à la période d'avant (null : rien avant) */
+  change: number | null;
+  orders: { created: number; delivered: number; inProgress: number; cancelled: number; failed: number };
+  successRate: number | null;
+  avgBasket: number;
+  series: { key: string; revenue: number; orders: number }[];
+  monthly: boolean;
+  views: number;
+  conversion: number | null;
+  top: DashboardArticle[];
+  toImprove: DashboardArticle[];
+  channels: { live: number; negocie: number; affiche: number };
+  payments: Record<string, number>;
+  deliveryModes: Record<string, number>;
+  buyers: number;
+  loyal: number;
+  followers: number;
+  lives: { id: string; title: string; startedAt: string; sales: number; amount: number; peak: number; likes: number }[];
+  rating: { average: number | null; count: number };
+  plan: 'decouverte' | 'pro';
+  rate: number;
+}
+export const fetchDashboard = (days: DashboardDays) =>
+  call<{ dashboard: Dashboard }>(`/api/mp/me/dashboard?jours=${days}`);
 export const requestBoost = () => post<{ seller: MySeller }>('/api/mp/me/boost-request', {});
 export const followShop = (slug: string, follow: boolean) =>
   post<{ following: boolean; followers: number }>(`/api/mp/sellers/${slug}/follow`, { follow });
@@ -559,6 +601,8 @@ export const adminDriverPayment = (pin: string, id: string, amount: number) =>
 export const adminTrips = (pin: string) => call<{ trips: AdminTrip[] }>('/api/admin/mp/trips', { headers: admin(pin) });
 export const adminCloseTrip = (pin: string, id: string) =>
   call<{ trip: AdminTrip }>(`/api/admin/mp/trips/${id}/close`, { method: 'POST', headers: admin(pin) });
+export const adminSellerDashboard = (pin: string, id: string, days: DashboardDays) =>
+  call<{ dashboard: Dashboard }>(`/api/admin/mp/sellers/${id}/dashboard?jours=${days}`, { headers: admin(pin) });
 export const adminLives = (pin: string) => call<{ lives: AdminLive[] }>('/api/admin/mp/lives', { headers: admin(pin) });
 export const adminStopLive = (pin: string, id: string, reason: string) =>
   call<{ live: LiveSummary }>(`/api/admin/mp/lives/${id}/stop`, {

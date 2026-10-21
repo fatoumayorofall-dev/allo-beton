@@ -754,6 +754,22 @@ paths:
       security: [{ admin: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses: { '200': { description: OK } }
+  /api/mp/me/dashboard:
+    get:
+      tags: [Place de marché]
+      summary: 'Vendeuse : tableau de bord de ses ventes (jours = 7, 30, 90 ou 365) ; chiffres seulement, aucune donnée de cliente'
+      security: [{ session: [] }]
+      parameters: [{ name: jours, in: query, schema: { type: integer, enum: [7, 30, 90, 365] } }]
+      responses: { '200': { description: OK }, '404': { description: Pas de boutique } }
+  /api/admin/mp/sellers/{id}/dashboard:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : tableau de bord d’une boutique'
+      security: [{ admin: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: jours, in: query, schema: { type: integer, enum: [7, 30, 90, 365] } }
+      responses: { '200': { description: OK } }
   /api/mp/me/follows:
     get:
       tags: [Place de marché]

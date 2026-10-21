@@ -19,6 +19,7 @@ import {
 import {
   confirmPayout,
   fetchConfig,
+  fetchDashboard,
   fetchRelays,
   fetchMyListings,
   fetchMySeller,
@@ -43,6 +44,7 @@ import {
 import { ListingForm } from './ListingForm';
 import { ShopLinkPanel } from './ShopLink';
 import { StatusButton } from './StatusKit';
+import { SellerDashboard } from './SellerDashboard';
 import { shrinkPhoto } from './photo';
 import { MP, mpPath } from './config';
 import { recall, remember } from './offline';
@@ -527,7 +529,7 @@ const SaleCard: React.FC<{
   </article>
 );
 
-type Tab = 'articles' | 'commandes' | 'solde' | 'grandir' | 'boutique';
+type Tab = 'articles' | 'commandes' | 'tableau' | 'solde' | 'grandir' | 'boutique';
 
 /* ---------- Attirer des clientes (sans publicité) et gagner en visibilité ---------- */
 const GrowPanel: React.FC<{
@@ -821,6 +823,7 @@ export default function MpSell() {
           [
             ['articles', `Articles (${listings.length})`],
             ['commandes', pending ? `Commandes · ${pending} nouvelle${pending > 1 ? 's' : ''}` : 'Commandes'],
+            ['tableau', 'Tableau de bord'],
             ['solde', 'Mon solde'],
             ['grandir', 'Attirer des clientes'],
             ['boutique', 'Infos boutique'],
@@ -1055,6 +1058,8 @@ export default function MpSell() {
           )}
         </section>
       )}
+
+      {tab === 'tableau' && <SellerDashboard load={fetchDashboard} sales={sales} name={seller.slug} />}
 
       {tab === 'grandir' && (
         <GrowPanel

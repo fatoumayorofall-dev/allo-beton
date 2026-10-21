@@ -40,6 +40,7 @@ import { shopSecret } from '../brandSecurity.js';
 import { priceBandLabel } from '../prices.js';
 import { registerChatRoutes } from './chat.js';
 import { registerLiveRoutes } from './live.js';
+import { PERIODS, sellerDashboard } from './dashboard.js';
 
 /** Rayons de la place de marché (les restaurants viendront avec la livraison rapide). */
 export const MP_CATEGORIES = [
@@ -1199,6 +1200,26 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.json({ order: sellerOrderView(saved), balance: balanceOf(me.seller) });
   });
 
+  // Tableau de bord des ventes de la vendeuse (période : 7, 30, 90 ou 365 jours)
+  const dashboardOf = (v, req) => {
+    const days = PERIODS.includes(Number(req.query.jours)) ? Number(req.query.jours) : 30;
+    const orders = store.listMpOrders();
+    return {
+      ...sellerDashboard({ seller: v, orders, listings: store.listMpListings(), days }),
+      rating: ratingOf(
+        orders.filter(o => o.sellerId === v.id && o.status === 'livree'),
+        'seller',
+      ),
+      plan: sellerPlan(v),
+      rate: sellerRateFor(v, settings()),
+    };
+  };
+  app.get('/api/mp/me/dashboard', (req, res) => {
+    const me = sellerOf(req, res);
+    if (!me) return;
+    res.set('Cache-Control', 'no-store').json({ dashboard: dashboardOf(me.seller, req) });
+  });
+
   // Demande de mise « À la une » (la gérante active après le paiement Wave)
   app.post('/api/mp/me/boost-request', (req, res) => {
     const me = sellerOf(req, res);
@@ -1306,6 +1327,14 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       tripsOpen: store.listMpTrips().filter(t => ['ouverte', 'fermee', 'acceptee'].includes(t.status)).length,
       settings: settings(),
     });
+  });
+
+  // Gérante : tableau de bord d'une boutique (pour l'aider ou vérifier)
+  app.get('/api/admin/mp/sellers/:id/dashboard', (req, res) => {
+    if (!guard(req, res)) return;
+    const v = store.getMpSeller(clip(req.params.id, 20));
+    if (!v) return res.status(404).json({ error: 'Vendeur introuvable' });
+    res.json({ dashboard: dashboardOf(v, req) });
   });
 
   app.get('/api/admin/mp/sellers', (req, res) => {
