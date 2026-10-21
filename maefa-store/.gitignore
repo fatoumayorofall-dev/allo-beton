@@ -6,3 +6,6 @@ server/.env
 server/data/
 __pycache__/
 tests/e2e/.out/
+
+# Instantané Redis local (tests)
+dump.rdb
