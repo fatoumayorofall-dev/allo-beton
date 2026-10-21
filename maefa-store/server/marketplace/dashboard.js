@@ -140,7 +140,8 @@ export function sellerDashboard({ seller, orders, listings, days, now = Date.now
     series: buckets,
     monthly,
     views,
-    conversion: pct(created.length, views),
+    // Part des visites qui deviennent une commande (plafonnée : une cliente peut commander sans visite comptée)
+    conversion: pct(Math.min(created.length, views), views),
     top,
     toImprove,
     channels,
