@@ -444,6 +444,28 @@ avec avis, signalement, deux livraisons ratées, en route, prête, nouvelles, gr
 Tout passe par les vraies routes HTTP du serveur, avec les vrais codes de remise : la création elle-même
 vérifie le parcours complet (scénario `demo`). Aucun message ne part pendant la création (`wa.silently`).
 
+### 4.14 Attirer des clientes sans publicité, et revenus
+
+- **Image pour le statut WhatsApp** (`src/marketplace/StatusKit.tsx`) : dessinée sur le téléphone (canvas
+  1080 × 1920) avec la photo, le titre, le prix ou « à négocier », le lien et un QR code ; partagée
+  directement (Web Share avec fichier) ou téléchargée. Pour la vendeuse (boutique, chaque article) et pour
+  la cliente (fiche article, boutique) : chaque statut est une vitrine gratuite.
+- **Suivre une boutique** : `POST /api/mp/sellers/:slug/follow` ; à la mise en ligne d'un article, les
+  abonnées reçoivent un message WhatsApp avec le lien court (une fois par 24 h et 300 personnes au plus
+  par boutique) : elles reviennent d'elles-mêmes.
+- **Parrainage des vendeuses** : chaque boutique a un code (`/m/vendre?parrain=CODE`, gardé sur le
+  téléphone le temps de se connecter) ; à la première vente livrée de la filleule, la marraine reçoit
+  1 mois de formule Pro (`onDelivered`, registre `parrainage`, montant 0 ; refusé si la marraine est
+  l'acheteuse).
+- **Moitié-moitié** : la cliente invite ses voisines sur WhatsApp ; plus elles sont nombreuses dans la
+  même direction, moins chacune paie la livraison.
+- **Google** : boutiques actives et articles en ligne dans `sitemap.xml` ; aperçu d'un article
+  (`/m/annonce/:id`) avec titre, boutique et photo, jamais le prix ; pages privées du marché exclues.
+- **Revenus** : commissions, formule Pro, livraison, et « À la une » (`boostPrice`, 2 000 F la semaine
+  par défaut) : demande de la vendeuse, activation par la gérante après le paiement Wave
+  (`POST /api/admin/mp/sellers/:id/boost`), badge, tête de l'annuaire, bonus dans le fil, recette au
+  tableau de bord et ligne `mise_en_avant` au registre. Scénario de test `croissance`.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

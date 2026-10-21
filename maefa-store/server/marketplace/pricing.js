@@ -29,6 +29,8 @@ export const DEFAULT_MP_SETTINGS = Object.freeze({
   driverCashCap: 30000,
   /** Nouvelle boutique (moins de 3 ventes livrées) : montant d'articles au plus par commande */
   newSellerMaxOrder: 100000,
+  /** Boutique « À la une » (en tête de l'annuaire et du fil) : prix par semaine */
+  boostPrice: 2000,
 });
 
 /** Bornes acceptées pour chaque réglage (contrôle des modifications de la gérante). */
@@ -45,6 +47,7 @@ const BOUNDS = {
   proRate: [0, 0.3],
   driverCashCap: [5000, 2000000],
   newSellerMaxOrder: [5000, 10000000],
+  boostPrice: [0, 100000],
 };
 
 /** Réglages complets à partir de ceux enregistrés (les champs manquants prennent la valeur par défaut). */

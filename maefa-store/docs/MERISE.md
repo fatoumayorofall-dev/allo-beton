@@ -43,6 +43,9 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG33 | L'annuaire des boutiques et le fil de découverte ne montrent aucun prix et aucun tri par prix : les vendeurs ne sont pas mis en concurrence ; les prix se voient dans chaque boutique. |
 | RG34 | Chaque boutique d'abonné a sa vitrine (logo, bannière, couleur), un lien court et un QR code. |
 | RG35 | Un appel par internet relie les deux personnes d'une discussion, sans échange de numéro ; sa durée, ou le fait qu'il soit manqué ou refusé, est noté dans la discussion. |
+| RG36 | Une boutique ouverte avec le lien de parrainage d'une autre est rattachée à sa marraine ; à sa première vente livrée (dont l'acheteur n'est pas la marraine), la marraine reçoit 1 mois de formule Pro, une seule fois, noté au registre. |
+| RG37 | Une cliente connectée peut suivre une boutique (pas la sienne) ; à la mise en ligne d'un article, les abonnées sont prévenues au plus une fois par 24 h par boutique. |
+| RG38 | Une mise « À la une » payée (1 à 12 semaines) place la boutique en tête de l'annuaire et la favorise dans le fil ; chaque achat est enregistré et noté au registre. |
 | RG30 | Un arrêt fait sans réseau est gardé sur le téléphone du livreur et envoyé au retour du réseau avec son heure réelle ; le serveur vérifie le code à la réception, comme pour un arrêt en direct. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 

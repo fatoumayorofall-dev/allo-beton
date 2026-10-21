@@ -9,6 +9,7 @@ import {
   adminResolveDispute,
   type AdminDispute,
   adminActivatePro,
+  adminBoost,
   adminCloseTrip,
   adminDriverPayment,
   adminDrivers,
@@ -155,6 +156,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
         proRate: String(Math.round(st.proRate * 1000) / 10),
         driverCashCap: String(st.driverCashCap),
         newSellerMaxOrder: String(st.newSellerMaxOrder),
+        boostPrice: String(st.boostPrice),
       });
       setDriversOn(st.drivers);
     }
@@ -208,6 +210,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
       proRate: n('proRate') / 100,
       driverCashCap: n('driverCashCap'),
       newSellerMaxOrder: n('newSellerMaxOrder'),
+      boostPrice: n('boostPrice'),
       drivers: driversOn,
     });
     setMessage(r.ok ? 'Réglages enregistrés' : r.error);
@@ -222,6 +225,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
     ['Commissions gagnées', F(overview.earned)],
     ['Reste à encaisser', F(overview.outstanding)],
     ['Abonnements Pro', F(overview.subscriptions)],
+    ['Mises « À la une »', F(overview.boosts ?? 0)],
     ['Livreurs disponibles', `${overview.drivers.online} / ${overview.drivers.active}`],
     ['Courses en cours', overview.tripsOpen],
     ['Signalements ouverts', disputes.filter(d => d.status === 'ouvert').length],
@@ -358,6 +362,22 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                     Demande de formule Pro
                   </span>
                 )}
+                {v.boostUntil ? (
+                  <span className="ml-2 px-2 py-0.5 rounded-full bg-gold-pale text-ink text-xs font-semibold">
+                    À la une jusqu'au {new Date(v.boostUntil).toLocaleDateString('fr-FR')}
+                  </span>
+                ) : (
+                  v.boostRequestedAt && (
+                    <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
+                      Demande « À la une »
+                    </span>
+                  )
+                )}
+                {!!v.referrals && (
+                  <span className="ml-2 text-xs text-ink/60">
+                    · {v.referrals} boutique(s) parrainée(s), {v.referralMonths} mois Pro offert(s)
+                  </span>
+                )}
               </p>
               {v.description && <p className="text-sm text-ink/70 mt-1">{v.description}</p>}
               {v.risk.alert && (
@@ -406,6 +426,26 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 >
                   {v.plan === 'pro' ? 'Prolonger Pro (1 mois)' : 'Activer Pro (1 mois)'}
                 </button>
+                {v.status === 'active' && (
+                  <button
+                    onClick={async () => {
+                      const weeks = Number(
+                        window.prompt(
+                          `Paiement reçu de « ${v.shopName} » pour être à la une : combien de semaines ? (${F(overview?.settings.boostPrice ?? 0)} la semaine)`,
+                          '1',
+                        ),
+                      );
+                      if (!weeks) return;
+                      const r = await adminBoost(pin, v.id, weeks);
+                      if (!r.ok) return setMessage(r.error);
+                      load();
+                    }}
+                    className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold"
+                    data-testid="admin-mp-boost"
+                  >
+                    {v.boostUntil ? 'Prolonger « À la une »' : 'Mettre « À la une »'}
+                  </button>
+                )}
                 {v.balance.balance > 0 && (
                   <button
                     onClick={() => payment(v)}
@@ -686,6 +726,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 ['proRate', 'Formule Pro : commission (%)'],
                 ['driverCashCap', 'Livreur : argent gardé au plus (F)'],
                 ['newSellerMaxOrder', 'Nouvelle boutique : commande au plus (F)'],
+                ['boostPrice', '« À la une » : prix par semaine (F)'],
               ] as [string, string][]
             ).map(([k, label]) => (
               <label key={k} className="block">

@@ -45,6 +45,10 @@ export interface MpSeller {
   /** Vitrine de la boutique en ligne : bannière et couleur choisies par le vendeur */
   cover: string | null;
   accent: ShopAccent;
+  /** « À la une » : mise en avant payée (en tête de l'accueil et du fil) */
+  featured?: boolean;
+  /** Nombre de clientes qui suivent la boutique */
+  followers?: number;
   verified: boolean;
   since: string;
   sales?: number;
@@ -205,6 +209,8 @@ export interface MpSettings {
   driverCashCap: number;
   /** Nouvelle boutique : montant d'articles au plus par commande */
   newSellerMaxOrder: number;
+  /** Prix d'une semaine « À la une » */
+  boostPrice: number;
 }
 export interface MySeller extends MpSeller {
   status: 'en_attente' | 'active' | 'suspendue' | 'fermee';
@@ -217,6 +223,13 @@ export interface MySeller extends MpSeller {
   /** Où le livreur récupère les colis : adresse, point donné à chaque commande, ou point relais */
   pickupMode: PickupMode;
   relay: Relay | null;
+  /** Parrainage : code à partager, boutiques venues grâce à lui, mois Pro gagnés */
+  referralCode: string | null;
+  referrals: number;
+  referralMonths: number;
+  /** « À la une » jusqu'à cette date (null : pas en ce moment) */
+  boostUntil: string | null;
+  boostRequestedAt: string | null;
 }
 export type PickupMode = 'fixe' | 'variable' | 'relais';
 export interface Relay {
@@ -350,6 +363,10 @@ export const confirmPayout = (id: string, missing = false) =>
     'PATCH',
   );
 export const requestPro = () => post<{ seller: MySeller }>('/api/mp/me/plan-request', {});
+export const requestBoost = () => post<{ seller: MySeller }>('/api/mp/me/boost-request', {});
+export const followShop = (slug: string, follow: boolean) =>
+  post<{ following: boolean; followers: number }>(`/api/mp/sellers/${slug}/follow`, { follow });
+export const fetchFollows = () => call<{ shops: string[] }>('/api/mp/me/follows');
 
 /* ---------- Livreur ---------- */
 export interface Driver {
@@ -479,6 +496,8 @@ export interface Overview {
   earned: number;
   outstanding: number;
   subscriptions: number;
+  /** Mises « À la une » payées */
+  boosts: number;
   drivers: { en_attente: number; active: number; online: number };
   tripsOpen: number;
   settings: MpSettings;
@@ -534,6 +553,12 @@ export const adminDriverPayment = (pin: string, id: string, amount: number) =>
 export const adminTrips = (pin: string) => call<{ trips: AdminTrip[] }>('/api/admin/mp/trips', { headers: admin(pin) });
 export const adminCloseTrip = (pin: string, id: string) =>
   call<{ trip: AdminTrip }>(`/api/admin/mp/trips/${id}/close`, { method: 'POST', headers: admin(pin) });
+export const adminBoost = (pin: string, id: string, weeks: number) =>
+  call<{ seller: MySeller }>(`/api/admin/mp/sellers/${id}/boost`, {
+    method: 'POST',
+    headers: admin(pin),
+    body: JSON.stringify({ weeks }),
+  });
 export const adminActivatePro = (pin: string, id: string, months: number) =>
   call<{ seller: MySeller }>(`/api/admin/mp/sellers/${id}/plan`, {
     method: 'POST',

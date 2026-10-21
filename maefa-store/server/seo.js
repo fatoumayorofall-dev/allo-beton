@@ -24,11 +24,13 @@ const clip = (s, n = 160) => {
 };
 
 /** Pages privées : jamais dans les résultats de recherche. */
-const PRIVATE = /^\/(admin|livreur\/|commande|compte|confirmation\/|mes-commandes|panier|favoris)/;
+const PRIVATE =
+  /^\/(admin|livreur\/|commande|compte|confirmation\/|mes-commandes|panier|favoris|m\/(vendre|panier|commandes|compte|livreur|discussions))/;
 const STATIC_PAGES = [
   { path: '/', priority: '1.0', freq: 'daily' },
   { path: '/boutique', priority: '0.9', freq: 'daily' },
   { path: '/marche', priority: '0.7', freq: 'daily' },
+  { path: '/m', priority: '0.8', freq: 'daily' },
   { path: '/journal', priority: '0.6', freq: 'weekly' },
   { path: '/a-propos', priority: '0.4', freq: 'monthly' },
   { path: '/faq', priority: '0.4', freq: 'monthly' },
@@ -161,6 +163,21 @@ export function registerSeoRoutes(app, { store, dist }) {
           canonical: `/m/boutique/${v.slug}`,
         };
     }
+    // Article d'une boutique : titre, boutique et photo dans l'aperçu (jamais le prix : pas de comparaison)
+    if ((m = /^\/m\/annonce\/([^/]+)$/.exec(pathname))) {
+      const l = store.getMpListing?.(decodeURIComponent(m[1]));
+      const v = l && store.getMpSeller?.(l.sellerId);
+      if (l?.status === 'publiee' && v?.status === 'active')
+        return {
+          ...base,
+          title: `${l.title} — ${v.shopName}`,
+          description: clip(
+            l.description || `${l.title} chez ${v.shopName} : commandez en ligne, paiement à la livraison.`,
+          ),
+          image: l.photos?.[0] || null,
+          canonical: `/m/annonce/${l.id}`,
+        };
+    }
     if (pathname === '/journal')
       return titled(
         'Le journal',
@@ -233,6 +250,12 @@ export function registerSeoRoutes(app, { store, dist }) {
           'Disallow: /compte',
           'Disallow: /confirmation/',
           'Disallow: /mes-commandes',
+          'Disallow: /m/vendre',
+          'Disallow: /m/panier',
+          'Disallow: /m/commandes',
+          'Disallow: /m/compte',
+          'Disallow: /m/livreur',
+          'Disallow: /m/discussions',
           'Disallow: /api/',
           '',
           `Sitemap: ${originOf(req)}/sitemap.xml`,
@@ -241,7 +264,13 @@ export function registerSeoRoutes(app, { store, dist }) {
       );
   });
 
-  /* sitemap.xml : pages, univers, pièces (avec photo), Marché et articles */
+  const mpShops = () => (store.listMpSellers?.() ?? []).filter(v => v.status === 'active');
+  const mpListings = () => {
+    const open = new Set(mpShops().map(v => v.id));
+    return (store.listMpListings?.() ?? []).filter(l => l.status === 'publiee' && open.has(l.sellerId)).slice(0, 5000);
+  };
+
+  /* sitemap.xml : pages, univers, pièces (avec photo), Marché, boutiques en ligne et articles */
   app.get('/sitemap.xml', (req, res) => {
     const origin = originOf(req);
     const d = data();
@@ -278,6 +307,24 @@ export function registerSeoRoutes(app, { store, dist }) {
           lastmod: String(p.updatedAt || p.createdAt || '').slice(0, 10) || undefined,
           image: p.images?.[0],
           title: p.name,
+        }),
+      ),
+      // Boutiques en ligne des abonnés et leurs articles : trouvés sur Google sans publicité
+      ...mpShops().map(v =>
+        url(`/m/boutique/${v.slug}`, {
+          freq: 'daily',
+          priority: '0.6',
+          image: v.cover || v.logo || undefined,
+          title: v.shopName,
+        }),
+      ),
+      ...mpListings().map(l =>
+        url(`/m/annonce/${l.id}`, {
+          freq: 'weekly',
+          priority: '0.4',
+          lastmod: String(l.publishedAt || l.createdAt || '').slice(0, 10) || undefined,
+          image: l.photos?.[0],
+          title: l.title,
         }),
       ),
       ...d.articles.map(a =>

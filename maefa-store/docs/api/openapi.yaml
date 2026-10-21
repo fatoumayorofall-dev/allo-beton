@@ -617,6 +617,37 @@ paths:
       security: [{ admin: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses: { '200': { description: OK } }
+  /api/mp/me/boost-request:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeur : demander la mise « À la une » (la gérante est prévenue, activation après paiement)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/sellers/{id}/boost:
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : mettre une boutique « À la une » ({ weeks: 1 à 12 }, paiement enregistré, noté au registre)'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '400': { description: 1 à 12 semaines } }
+  /api/mp/sellers/{slug}/follow:
+    post:
+      tags: [Place de marché]
+      summary: 'Cliente : suivre ({ follow: true }) ou ne plus suivre une boutique ; prévenue de ses nouveautés'
+      security: [{ session: [] }]
+      parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
+      responses:
+        {
+          '200': { description: OK },
+          '400': { description: Sa propre boutique },
+          '401': { description: Non connectée },
+        }
+  /api/mp/me/follows:
+    get:
+      tags: [Place de marché]
+      summary: 'Cliente : boutiques suivies (noms courts)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
   /api/admin/mp/drivers:
     get:
       tags: [Livreurs]

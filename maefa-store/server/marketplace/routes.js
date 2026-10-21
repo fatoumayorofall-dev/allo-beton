@@ -130,6 +130,8 @@ const now = () => new Date().toISOString();
 /* ---------- Vues publiques : jamais le téléphone du vendeur ni de l'acheteur ---------- */
 /** Couleurs de vitrine proposées aux boutiques (la valeur affichée est choisie côté site) */
 export const SHOP_ACCENTS = ['prune', 'or', 'emeraude', 'indigo', 'corail', 'terracotta', 'noir'];
+/** Boutique « À la une » (mise en avant payée à la semaine) */
+export const isFeatured = v => Date.parse(v?.boostUntil ?? 0) > Date.now();
 export const publicSeller = v => ({
   id: v.id,
   shopName: v.shopName,
@@ -141,6 +143,8 @@ export const publicSeller = v => ({
   /** Bannière et couleur de la vitrine (boutique en ligne de l'abonné) */
   cover: v.cover ?? null,
   accent: v.accent ?? 'prune',
+  featured: isFeatured(v),
+  followers: (v.followers ?? []).length,
   verified: v.status === 'active',
   since: v.createdAt,
 });
@@ -301,7 +305,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     return Math.min(1, 0.4 + 0.06 * done) * (1 - dropped / mine.length) * stars;
   };
   /** Formule Pro : mise en avant dans le fil */
-  const boost = seller => (sellerPlan(seller) === 'pro' ? 0.15 : 0);
+  const boost = seller => (sellerPlan(seller) === 'pro' ? 0.15 : 0) + (isFeatured(seller) ? 0.25 : 0);
 
   app.post('/api/mp/feed', (req, res) => {
     if (tooMany(req, res, `mp-feed:${req.ip}`, 300, 600e3)) return;
@@ -382,9 +386,10 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         articles: mine.length,
         photos: mine.slice(0, 3).map(l => l.photos[0]),
       }))
-      // Formule Pro mise en avant, puis les mieux notées, puis les plus actives
+      // « À la une » (payé), puis formule Pro, puis les mieux notées, puis les plus actives
       .sort(
         (a, b) =>
+          Number(b.featured) - Number(a.featured) ||
           Number(b.pro) - Number(a.pro) ||
           (b.rating.average ?? 0) - (a.rating.average ?? 0) ||
           b.sales - a.sales ||
@@ -751,13 +756,85 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     planRequestedAt: v.planRequestedAt ?? null,
     pickupMode: v.pickupMode ?? 'fixe',
     relay: v.relayId ? relayView(store.getMpRelay(v.relayId)) : null,
+    // Parrainage : son code, les boutiques parrainées et les mois Pro gagnés
+    referralCode: v.referralCode ?? null,
+    referrals: store.listMpSellers().filter(x => x.referredBy === v.id).length,
+    referralMonths: (v.referralRewards ?? []).length,
+    boostUntil: isFeatured(v) ? v.boostUntil : null,
+    boostRequestedAt: v.boostRequestedAt ?? null,
   });
+
+  const siteUrl = () => (process.env.SITE_URL || '').replace(/\/+$/, '');
+  /** Code de parrainage unique (6 caractères) */
+  const newReferralCode = () => {
+    let c = code(6);
+    while (store.listMpSellers().some(x => x.referralCode === c)) c = code(6);
+    return c;
+  };
+  /** Prolonge la formule Pro (achat, ou mois offert par le parrainage). */
+  function extendPro(v, months, amount, note) {
+    const from = sellerPlan(v) === 'pro' ? new Date(v.plan.until) : new Date();
+    const until = new Date(from);
+    until.setMonth(until.getMonth() + months);
+    const subscriptionId = code(6);
+    ledger.append(amount ? 'abonnement' : 'parrainage', { sellerId: v.id, subscriptionId, months, amount, note });
+    const saved = store.saveMpSeller({
+      ...v,
+      plan: { id: 'pro', until: until.toISOString() },
+      planRequestedAt: null,
+      subscriptions: [
+        ...(v.subscriptions ?? []),
+        { id: subscriptionId, months, amount, at: now(), until: until.toISOString(), ...(note ? { note } : {}) },
+      ],
+    });
+    return { saved, until };
+  }
+  /**
+   * Après chaque commande livrée : la première vente d'une boutique parrainée offre un mois de formule Pro
+   * à la boutique qui l'a fait venir (une seule fois, et seulement sur une vraie vente livrée).
+   */
+  function onDelivered(order) {
+    const v = store.getMpSeller(order.sellerId);
+    if (!v?.referredBy || v.referralRewardedAt) return;
+    const parrain = store.getMpSeller(v.referredBy);
+    // Pas de récompense si c'est la marraine elle-même qui achète (fausse vente pour gagner le mois)
+    if (parrain && [parrain.ownerPhone, parrain.contactPhone].includes(order.buyerPhone)) return;
+    store.saveMpSeller({ ...v, referralRewardedAt: now() });
+    if (!parrain || parrain.status !== 'active') return;
+    const { saved, until } = extendPro(parrain, 1, 0, `parrainage de ${v.shopName}`);
+    store.saveMpSeller({
+      ...saved,
+      referralRewards: [...(saved.referralRewards ?? []), { sellerId: v.id, at: now() }],
+    });
+    notify(
+      parrain.contactPhone ?? parrain.ownerPhone,
+      `🎁 « ${v.shopName} », que vous avez fait venir, a fait sa première vente : 1 mois de formule Pro offert (jusqu'au ${until.toLocaleDateString('fr-FR')}).`,
+    );
+  }
+  /**
+   * Nouvel article en ligne : les clientes qui suivent la boutique sont prévenues (une fois par jour au plus
+   * par boutique, 300 personnes au plus) : elles reviennent d'elles-mêmes, sans publicité.
+   */
+  function announce(listing) {
+    const v = store.getMpSeller(listing.sellerId);
+    const followers = v?.followers ?? [];
+    if (!followers.length || v.status !== 'active') return;
+    if (v.followersNoticeAt && Date.now() - Date.parse(v.followersNoticeAt) < 24 * 3600e3) return;
+    store.saveMpSeller({ ...v, followersNoticeAt: now() });
+    for (const f of followers.slice(0, 300))
+      notify(
+        f.phone,
+        `🆕 Nouveautés chez « ${v.shopName} » : « ${listing.title} » et d'autres. Voir la boutique : ${siteUrl()}/b/${v.slug}`,
+      );
+  }
 
   app.get('/api/mp/me/seller', (req, res) => {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ error: 'Non connectée' });
-    const seller = store.findMpSellerByOwner(user.phone);
+    let seller = store.findMpSellerByOwner(user.phone);
     if (!seller || seller.status === 'fermee') return res.json({ seller: null });
+    // Boutiques ouvertes avant le parrainage : leur code est créé à la première visite
+    if (!seller.referralCode) seller = store.saveMpSeller({ ...seller, referralCode: newReferralCode() });
     res.json({ seller: sellerView(seller), balance: balanceOf(seller), settings: settings() });
   });
 
@@ -812,7 +889,12 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         status: 'en_attente',
         createdAt: now(),
         payments: [],
+        // Venue grâce au lien d'une autre boutique (parrainage)
+        referredBy:
+          store.listMpSellers().find(x => x.referralCode && x.referralCode === clip(b.referral, 10).toUpperCase())
+            ?.id ?? null,
       }),
+      referralCode: existing?.referralCode ?? newReferralCode(),
       ...(existing?.status === 'fermee' ? { status: 'en_attente' } : {}),
       shopName,
       slug,
@@ -917,6 +999,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       views: 0,
       createdAt: now(),
     });
+    if (listing.status === 'publiee') announce(listing);
     res.status(201).json({ listing: sellerListingView(listing) });
   });
 
@@ -1035,6 +1118,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       if (t && !t.driverId) trips.reprice(t, { announce: false });
     }
     const saved = move(ready, status, 'vendeur', reason);
+    if (status === 'livree') onDelivered(saved);
     if (status === 'livree')
       ledger.append('vente_livree', {
         orderId: o.id,
@@ -1094,6 +1178,47 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.json({ order: sellerOrderView(saved), balance: balanceOf(me.seller) });
   });
 
+  // Demande de mise « À la une » (la gérante active après le paiement Wave)
+  app.post('/api/mp/me/boost-request', (req, res) => {
+    const me = sellerOf(req, res);
+    if (!me) return;
+    if (tooMany(req, res, `mp-boost:${me.user.phone}`, 5, 3600e3)) return;
+    const saved = store.saveMpSeller({ ...me.seller, boostRequestedAt: now() });
+    if (process.env.OWNER_WHATSAPP)
+      notify(
+        process.env.OWNER_WHATSAPP,
+        `📣 « ${me.seller.shopName} » veut être « À la une » (${settings().boostPrice} F/semaine).`,
+      );
+    res.json({ seller: sellerView(saved) });
+  });
+
+  // Suivre une boutique : la cliente est prévenue de ses nouveautés
+  app.post('/api/mp/sellers/:slug/follow', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Connectez-vous pour suivre la boutique' });
+    if (tooMany(req, res, `mp-follow:${user.phone}`, 60, 3600e3)) return;
+    const v = store.findMpSellerBySlug(clip(req.params.slug, 60));
+    if (!v || v.status !== 'active') return res.status(404).json({ error: 'Boutique introuvable' });
+    if (v.ownerPhone === user.phone) return res.status(400).json({ error: "C'est votre boutique" });
+    const others = (v.followers ?? []).filter(f => f.phone !== user.phone);
+    const follow = req.body?.follow !== false;
+    const saved = store.saveMpSeller({
+      ...v,
+      followers: follow ? [...others, { phone: user.phone, at: now() }].slice(-5000) : others,
+    });
+    res.json({ following: follow, followers: saved.followers.length });
+  });
+  app.get('/api/mp/me/follows', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Non connecté' });
+    res.json({
+      shops: store
+        .listMpSellers()
+        .filter(v => v.status === 'active' && (v.followers ?? []).some(f => f.phone === user.phone))
+        .map(v => v.slug),
+    });
+  });
+
   // Demande de passage à la formule Pro (la gérante active après le paiement Wave)
   app.post('/api/mp/me/plan-request', (req, res) => {
     const me = sellerOf(req, res);
@@ -1148,6 +1273,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         0,
       ),
       subscriptions: sellers.reduce((t, v) => t + (v.subscriptions ?? []).reduce((u, x) => u + x.amount, 0), 0),
+      boosts: sellers.reduce((t, v) => t + (v.boosts ?? []).reduce((u, x) => u + x.amount, 0), 0),
       outstanding:
         sellers.reduce((t, v) => t + balanceOf(v).balance, 0) +
         store.listMpDrivers().reduce((t, d) => t + drivers.balanceOf(d).balance, 0),
@@ -1244,27 +1370,38 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   });
 
   // Formule Pro payée : activée pour N mois (le paiement est noté avec les règlements du vendeur)
+  // Mise « À la une » payée : en tête de l'annuaire et du fil pendant N semaines
+  app.post('/api/admin/mp/sellers/:id/boost', (req, res) => {
+    if (!guard(req, res)) return;
+    const v = store.getMpSeller(clip(req.params.id, 20));
+    if (!v) return res.status(404).json({ error: 'Vendeur introuvable' });
+    const weeks = Math.round(Number(req.body?.weeks));
+    if (!Number.isInteger(weeks) || weeks < 1 || weeks > 12) return res.status(400).json({ error: '1 à 12 semaines' });
+    const from = isFeatured(v) ? Date.parse(v.boostUntil) : Date.now();
+    const until = new Date(from + weeks * 7 * 864e5).toISOString();
+    const amount = settings().boostPrice * weeks;
+    const id = code(6);
+    ledger.append('mise_en_avant', { sellerId: v.id, boostId: id, weeks, amount });
+    const saved = store.saveMpSeller({
+      ...v,
+      boostUntil: until,
+      boostRequestedAt: null,
+      boosts: [...(v.boosts ?? []), { id, weeks, amount, at: now(), until }],
+    });
+    notify(
+      v.contactPhone ?? v.ownerPhone,
+      `📣 Votre boutique est « À la une » jusqu'au ${new Date(until).toLocaleDateString('fr-FR')} : en tête de l'accueil et du fil.`,
+    );
+    res.json({ seller: sellerView(saved) });
+  });
+
   app.post('/api/admin/mp/sellers/:id/plan', (req, res) => {
     if (!guard(req, res)) return;
     const v = store.getMpSeller(clip(req.params.id, 20));
     if (!v) return res.status(404).json({ error: 'Vendeur introuvable' });
     const months = Math.round(Number(req.body?.months));
     if (!Number.isInteger(months) || months < 1 || months > 24) return res.status(400).json({ error: '1 à 24 mois' });
-    const from = sellerPlan(v) === 'pro' ? new Date(v.plan.until) : new Date();
-    const until = new Date(from);
-    until.setMonth(until.getMonth() + months);
-    const amount = settings().proPrice * months;
-    const subscriptionId = code(6);
-    ledger.append('abonnement', { sellerId: v.id, subscriptionId, months, amount });
-    const saved = store.saveMpSeller({
-      ...v,
-      plan: { id: 'pro', until: until.toISOString() },
-      planRequestedAt: null,
-      subscriptions: [
-        ...(v.subscriptions ?? []),
-        { id: subscriptionId, months, amount, at: now(), until: until.toISOString() },
-      ],
-    });
+    const { saved, until } = extendPro(v, months, settings().proPrice * months);
     notify(
       v.contactPhone ?? v.ownerPhone,
       `⭐ Formule Pro activée jusqu'au ${until.toLocaleDateString('fr-FR')} : commission réduite, articles illimités, mise en avant.`,
@@ -1304,6 +1441,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       ...(status === 'publiee' && !l.publishedAt ? { publishedAt: now() } : {}),
     });
     const v = store.getMpSeller(l.sellerId);
+    if (status === 'publiee' && l.status !== 'publiee') announce(saved);
     if (status === 'refusee')
       notify(
         v?.contactPhone ?? v?.ownerPhone,
@@ -1415,5 +1553,6 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     notifyCode,
     ledger,
     restock,
+    onDelivered: order => onDelivered(order),
   });
 }

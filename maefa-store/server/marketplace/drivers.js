@@ -27,7 +27,7 @@ export const publicDriver = d => (d ? { name: d.name, phone: d.phone, vehicle: d
 
 export function registerDriverRoutes(
   app,
-  { limit, isAdmin, store, currentUser, trips, settings, notify, notifyCode, ledger, restock },
+  { limit, isAdmin, store, currentUser, trips, settings, notify, notifyCode, ledger, restock, onDelivered },
 ) {
   const now = () => new Date().toISOString();
   const tooMany = (req, res, key, max, ms) => {
@@ -313,6 +313,7 @@ export function registerDriverRoutes(
         deliveredAt: now(),
         history: history('livree'),
       });
+      onDelivered(store.getMpOrder(o.id));
       ledger.append('livraison', {
         orderId: o.id,
         driverId: d.id,

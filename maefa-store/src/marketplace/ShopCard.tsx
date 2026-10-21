@@ -24,6 +24,14 @@ export const ShopCard: React.FC<{ shop: ShopSummary }> = ({ shop: s }) => {
             ))}
           </div>
         )}
+        {s.featured && (
+          <span
+            className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-gold text-ink text-[10px] font-bold uppercase tracking-wide"
+            data-testid="mp-featured"
+          >
+            À la une
+          </span>
+        )}
         {s.pro && (
           <span className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-bold uppercase tracking-wide">
             Boutique Pro

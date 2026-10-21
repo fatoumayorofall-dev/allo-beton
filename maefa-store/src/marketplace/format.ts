@@ -1,4 +1,5 @@
 import type { MpListing, OrderStatus } from './api';
+import { mpPath } from './config';
 
 /** Prix affiché : « 12 000 F » (court, lisible sur téléphone). */
 export const F = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} F`;
@@ -38,6 +39,7 @@ export const ACCENTS: Record<import('./api').ShopAccent, { name: string; hex: st
 };
 /** Lien court de la boutique, à partager */
 export const shopLink = (slug: string) => `${location.origin}/b/${slug}`;
+export const listingLink = (id: string) => `${location.origin}${mpPath(`/annonce/${id}`)}`;
 export const PAYMENT_LABELS = { especes: 'Espèces', wave: 'Wave', orange_money: 'Orange Money' } as const;
 export const ago = (iso: string) => {
   const m = Math.round((Date.now() - Date.parse(iso)) / 60000);

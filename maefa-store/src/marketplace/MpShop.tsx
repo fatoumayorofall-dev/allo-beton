@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { BadgeCheck, Check, Link2, Loader2, MapPin, Search, Share2 } from 'lucide-react';
-import { fetchShop, type MpListing, type MpSeller, type PublicReview } from './api';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { BadgeCheck, Bell, BellRing, Check, Link2, Loader2, MapPin, Search, Share2 } from 'lucide-react';
+import { fetchFollows, fetchShop, followShop, type MpListing, type MpSeller, type PublicReview } from './api';
 import { Stars } from '../components/Stars';
 import { ListingCard } from './ListingCard';
 import { MP, mpPath } from './config';
 import { ACCENTS, shopLink } from './format';
 import { usePageTitle } from '../utils/usePageTitle';
+import { useAccount } from '../context/AccountContext';
+import { StatusButton } from './StatusKit';
 
 /**
  * La boutique en ligne d'un abonné : sa vitrine (bannière, logo, couleur), ses articles avec leurs prix,
@@ -20,7 +22,26 @@ export default function MpShop() {
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');
   const [copied, setCopied] = useState(false);
+  const { status } = useAccount();
+  const navigate = useNavigate();
+  // Suivre la boutique : la cliente est prévenue de ses nouveautés (elle revient d'elle-même)
+  const [following, setFollowing] = useState(false);
+  const [followers, setFollowers] = useState(0);
   const s = data && data !== 'absent' ? data.seller : null;
+  useEffect(() => setFollowers(s?.followers ?? 0), [s]);
+  useEffect(() => {
+    if (status !== 'user') return setFollowing(false);
+    fetchFollows().then(r => r.ok && setFollowing(r.data.shops.includes(slug)));
+  }, [status, slug]);
+  const [followError, setFollowError] = useState('');
+  const toggleFollow = async () => {
+    if (status !== 'user') return navigate(mpPath(`/compte?retour=${encodeURIComponent(mpPath(`/boutique/${slug}`))}`));
+    setFollowError('');
+    const r = await followShop(slug, !following);
+    if (!r.ok) return setFollowError(r.error);
+    setFollowing(r.data.following);
+    setFollowers(r.data.followers);
+  };
   usePageTitle(s ? `${s.shopName} · ${MP.name}` : MP.name, s?.description.slice(0, 150));
   useEffect(() => {
     setData(null);
@@ -92,6 +113,14 @@ export default function MpShop() {
           <h1 className="mt-3 font-display text-3xl sm:text-4xl flex items-center gap-2">
             {s.shopName}
             {s.verified && <BadgeCheck className="w-6 h-6 text-emerald-700" aria-label="Boutique vérifiée" />}
+            {s.featured && (
+              <span
+                className="px-2 py-0.5 rounded-full bg-gold text-ink text-[11px] font-sans font-bold uppercase tracking-wide"
+                data-testid="mp-featured"
+              >
+                À la une
+              </span>
+            )}
           </h1>
           <p className="mt-1 text-sm text-ink/65 flex flex-wrap items-center gap-x-3 gap-y-1">
             {s.zone && (
@@ -118,6 +147,17 @@ export default function MpShop() {
           {s.description && <p className="mt-3 text-[15px] text-ink/85 whitespace-pre-line">{s.description}</p>}
           <div className="mt-4 flex flex-wrap gap-2">
             <button
+              onClick={toggleFollow}
+              aria-pressed={following}
+              className="h-11 px-5 rounded-full font-semibold text-sm inline-flex items-center gap-2 border"
+              style={following ? { borderColor: color, color } : { background: '#1c1917', color: '#fff' }}
+              data-testid="mp-shop-follow"
+            >
+              {following ? <BellRing className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+              {following ? 'Abonnée' : 'Suivre'}
+              {followers > 0 && <span className="opacity-70">· {followers}</span>}
+            </button>
+            <button
               onClick={share}
               className="h-11 px-5 rounded-full text-white font-semibold text-sm inline-flex items-center gap-2"
               style={{ background: color }}
@@ -136,7 +176,29 @@ export default function MpShop() {
               {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
               {copied ? 'Lien copié' : link.replace(/^https?:\/\//, '')}
             </button>
+            <StatusButton
+              label="Statut WhatsApp"
+              filename={`statut-${s.slug}.jpg`}
+              testId="mp-shop-status"
+              className="h-11 px-4 rounded-full border border-ink/15 font-semibold text-sm inline-flex items-center gap-2"
+              make={() => ({
+                photo: s.cover ?? listings[0]?.photos[0] ?? s.logo,
+                title: s.shopName,
+                line: 'Boutique en ligne',
+                small: s.zone ? `${s.zone} · livraison partout` : 'Livraison partout au Sénégal',
+                link,
+                color,
+              })}
+            />
           </div>
+          {followError && (
+            <p className="mt-2 text-sm text-wine" role="alert">
+              {followError}
+            </p>
+          )}
+          {!following && (
+            <p className="mt-2 text-xs text-ink/55">Suivez la boutique : vous êtes prévenue de ses nouveautés.</p>
+          )}
         </div>
       </section>
 

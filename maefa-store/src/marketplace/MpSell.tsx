@@ -1,6 +1,20 @@
 import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, Loader2, MapPin, Pencil, Phone, Plus, Store, Trash2, Wallet } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  Check,
+  Eye,
+  Gift,
+  Link2,
+  Loader2,
+  MapPin,
+  Megaphone,
+  Pencil,
+  Phone,
+  Plus,
+  Store,
+  Trash2,
+  Wallet,
+} from 'lucide-react';
 import {
   confirmPayout,
   fetchConfig,
@@ -10,6 +24,7 @@ import {
   fetchSales,
   moveSale,
   removeListing,
+  requestBoost,
   requestPro,
   saveMySeller,
   type Balance,
@@ -26,16 +41,26 @@ import {
 } from './api';
 import { ListingForm } from './ListingForm';
 import { ShopLinkPanel } from './ShopLink';
+import { StatusButton } from './StatusKit';
 import { shrinkPhoto } from './photo';
 import { MP, mpPath } from './config';
 import { recall, remember } from './offline';
-import { ACCENTS, F, PAYMENT_LABELS, STATUS_LABELS, STATUS_STYLES, ago } from './format';
+import { ACCENTS, F, PAYMENT_LABELS, STATUS_LABELS, STATUS_STYLES, ago, listingLink, shopLink } from './format';
 import { useAccount } from '../context/AccountContext';
 import { DELIVERY_ZONES, SITE_CONFIG } from '../config/site';
 import type { DeliveryLocation } from '../data/types';
 import { usePageTitle } from '../utils/usePageTitle';
 
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
+/** Code de parrainage reçu par lien (« /m/vendre?parrain=CODE »), gardé jusqu'à l'ouverture de la boutique */
+const REFERRAL_KEY = 'mp_parrain';
+const savedReferral = () => {
+  try {
+    return localStorage.getItem(REFERRAL_KEY) ?? '';
+  } catch {
+    return '';
+  }
+};
 const DAKAR = { lat: 14.7167, lng: -17.4677 };
 const LISTING_STATUS: Record<MyListing['status'], [string, string]> = {
   en_attente: ['En vérification', 'bg-amber-100 text-amber-900'],
@@ -126,9 +151,16 @@ const ShopForm: React.FC<{
       logo,
       cover,
       accent,
+      ...(initial ? {} : { referral: savedReferral() || undefined }),
     } as Partial<MySeller>);
     setBusy(false);
     if (!r.ok) return setError(r.error);
+    if (!initial)
+      try {
+        localStorage.removeItem(REFERRAL_KEY);
+      } catch {
+        /* rien */
+      }
     onSaved(r.data.seller);
   };
   return (
@@ -494,11 +526,147 @@ const SaleCard: React.FC<{
   </article>
 );
 
-type Tab = 'articles' | 'commandes' | 'solde' | 'boutique';
+type Tab = 'articles' | 'commandes' | 'solde' | 'grandir' | 'boutique';
+
+/* ---------- Attirer des clientes (sans publicité) et gagner en visibilité ---------- */
+const GrowPanel: React.FC<{
+  seller: MySeller;
+  settings: MpSettings | null;
+  photo: string | null;
+  copied: boolean;
+  onCopied: () => void;
+  onSeller: (s: MySeller) => void;
+  onError: (m: string) => void;
+}> = ({ seller, settings, photo, copied, onCopied, onSeller, onError }) => {
+  const color = ACCENTS[seller.accent]?.hex ?? ACCENTS.prune.hex;
+  const invite = `${location.origin}${mpPath(`/vendre?parrain=${seller.referralCode ?? ''}`)}`;
+  const boostPrice = settings?.boostPrice ?? 2000;
+  return (
+    <div className="space-y-4">
+      <section className="bg-white rounded-3xl border border-ink/[0.06] p-5" data-testid="mp-status-kit">
+        <h2 className="font-display text-2xl">Votre statut WhatsApp, chaque jour</h2>
+        <p className="text-sm text-ink/70 mt-1">
+          Tous vos contacts voient vos statuts : c'est votre vitrine gratuite. L'image est prête (photo, prix ou « à
+          négocier », lien et QR code) : la cliente l'ouvre et commande directement chez vous.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <StatusButton
+            label="Image de ma boutique"
+            filename={`statut-${seller.slug}.jpg`}
+            testId="mp-shop-status"
+            className="h-11 px-5 rounded-full text-white font-semibold text-sm inline-flex items-center gap-2"
+            style={{ background: color }}
+            make={() => ({
+              photo,
+              title: seller.shopName,
+              line: 'Ma boutique en ligne',
+              small: seller.zone ? `${seller.zone} · livraison partout` : 'Livraison partout au Sénégal',
+              link: shopLink(seller.slug),
+              color,
+            })}
+          />
+        </div>
+        <ul className="mt-3 text-sm text-ink/75 list-disc pl-5 space-y-1">
+          <li>Un article par jour en statut : le bouton image est à côté de chaque article en ligne.</li>
+          <li>Votre lien dans la bio Instagram, TikTok et Facebook.</li>
+          <li>Le QR code imprimé sur vos sachets et cartes : la cliente revient commander seule.</li>
+          <li>Les clientes qui « suivent » votre boutique sont prévenues de vos nouveautés.</li>
+        </ul>
+      </section>
+
+      <section className="bg-white rounded-3xl border border-ink/[0.06] p-5" data-testid="mp-boost">
+        <h2 className="font-display text-2xl flex items-center gap-2">
+          <Megaphone className="w-5 h-5" /> À la une
+        </h2>
+        <p className="text-sm text-ink/70 mt-1">
+          Votre boutique en tête de l'accueil et du fil « Pour vous » pendant une semaine, avec le badge « À la une » :{' '}
+          {F(boostPrice)} la semaine.
+        </p>
+        {seller.boostUntil ? (
+          <p className="mt-2 text-sm font-semibold text-emerald-800">
+            Votre boutique est à la une jusqu'au {new Date(seller.boostUntil).toLocaleDateString('fr-FR')}.
+          </p>
+        ) : seller.boostRequestedAt ? (
+          <p className="mt-2 text-sm text-emerald-800" data-testid="mp-boost-sent">
+            Demande envoyée : réglez {F(boostPrice)} par Wave au {SITE_CONFIG.phone}, votre boutique passe à la une dès
+            réception.
+          </p>
+        ) : (
+          <button
+            disabled={seller.status !== 'active'}
+            onClick={async () => {
+              const r = await requestBoost();
+              if (r.ok) onSeller(r.data.seller);
+              else onError(r.error);
+            }}
+            className="btn-dark mt-3 !h-11 !px-5 disabled:opacity-50"
+            data-testid="mp-request-boost"
+          >
+            Mettre ma boutique à la une
+          </button>
+        )}
+      </section>
+
+      <section className="bg-white rounded-3xl border border-ink/[0.06] p-5" data-testid="mp-referral">
+        <h2 className="font-display text-2xl flex items-center gap-2">
+          <Gift className="w-5 h-5" /> Invitez une autre vendeuse
+        </h2>
+        <p className="text-sm text-ink/70 mt-1">
+          Elle ouvre sa boutique avec votre lien : dès sa première vente livrée, vous gagnez 1 mois de formule Pro
+          offert (commission réduite et mise en avant).
+        </p>
+        {seller.referralCode && (
+          <>
+            <p className="mt-3 font-semibold break-all" data-testid="mp-referral-link">
+              {invite.replace(/^https?:\/\//, '')}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                onClick={async () => {
+                  await navigator.clipboard?.writeText(invite).catch(() => {});
+                  onCopied();
+                }}
+                className="h-10 px-4 rounded-full border border-ink/15 font-semibold text-sm inline-flex items-center gap-2"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}{' '}
+                {copied ? 'Copié' : 'Copier le lien'}
+              </button>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Ouvre ta boutique en ligne gratuite sur ${MP.name}, comme moi : ${invite}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-10 px-4 rounded-full text-white font-semibold text-sm inline-flex items-center gap-2"
+                style={{ background: color }}
+              >
+                Inviter sur WhatsApp
+              </a>
+            </div>
+          </>
+        )}
+        <p className="mt-3 text-sm" data-testid="mp-referral-stats">
+          {seller.referrals} boutique{seller.referrals > 1 ? 's' : ''} venue{seller.referrals > 1 ? 's' : ''} grâce à
+          vous · {seller.referralMonths} mois Pro gagné{seller.referralMonths > 1 ? 's' : ''}
+        </p>
+      </section>
+    </div>
+  );
+};
 
 export default function MpSell() {
   usePageTitle(`Vendre · ${MP.name}`);
   const { status } = useAccount();
+  // Lien de parrainage d'une autre boutique : gardé même si la personne doit d'abord se connecter
+  const [params] = useSearchParams();
+  const parrain = params.get('parrain');
+  useEffect(() => {
+    if (parrain && /^[A-Z0-9]{4,10}$/i.test(parrain))
+      try {
+        localStorage.setItem(REFERRAL_KEY, parrain.toUpperCase());
+      } catch {
+        /* rien */
+      }
+  }, [parrain]);
+  const [copied, setCopied] = useState(false);
   const [categories, setCategories] = useState<MpCategory[]>([]);
   const [configRate, setConfigRate] = useState(0.07);
   const [seller, setSeller] = useState<MySeller | null | undefined>(undefined);
@@ -644,6 +812,7 @@ export default function MpSell() {
             ['articles', `Articles (${listings.length})`],
             ['commandes', pending ? `Commandes · ${pending} nouvelle${pending > 1 ? 's' : ''}` : 'Commandes'],
             ['solde', 'Mon solde'],
+            ['grandir', 'Attirer des clientes'],
             ['boutique', 'Infos boutique'],
           ] as [Tab, string][]
         ).map(([id, label]) => (
@@ -719,6 +888,23 @@ export default function MpSell() {
                   {l.status === 'refusee' && l.reason && <p className="text-xs text-wine mt-1">Refusé : {l.reason}</p>}
                 </div>
                 <div className="flex flex-col gap-2">
+                  {l.status === 'publiee' && (
+                    <StatusButton
+                      label=""
+                      ariaLabel={`Image pour mon statut : ${l.title}`}
+                      filename={`statut-${l.id}.jpg`}
+                      testId="mp-listing-status"
+                      className="w-9 h-9 rounded-full border border-ink/10 grid place-items-center"
+                      make={() => ({
+                        photo: l.photos[0] ?? null,
+                        title: l.title,
+                        line: l.priceMode === 'negocier' ? 'Prix à négocier : faites votre offre' : F(l.price),
+                        small: `chez ${seller.shopName}`,
+                        link: listingLink(l.id),
+                        color: ACCENTS[seller.accent]?.hex ?? ACCENTS.prune.hex,
+                      })}
+                    />
+                  )}
                   <button
                     onClick={() => setEditing(l)}
                     aria-label={`Modifier ${l.title}`}
@@ -858,6 +1044,21 @@ export default function MpSell() {
             </>
           )}
         </section>
+      )}
+
+      {tab === 'grandir' && (
+        <GrowPanel
+          seller={seller}
+          settings={settings}
+          photo={seller.cover ?? listings.find(l => l.status === 'publiee')?.photos[0] ?? seller.logo}
+          copied={copied}
+          onCopied={() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+          }}
+          onSeller={setSeller}
+          onError={setMessage}
+        />
       )}
 
       {tab === 'boutique' && (

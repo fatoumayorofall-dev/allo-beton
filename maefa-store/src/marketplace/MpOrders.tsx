@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, Package, Phone } from 'lucide-react';
+import { Loader2, Package, Phone, Users } from 'lucide-react';
 import { cancelMyOrder, fetchMyOrders, type MpOrder } from './api';
 import { MP, mpPath } from './config';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from './format';
@@ -143,6 +143,19 @@ export default function MpOrders() {
                   : o.trip.status === 'ouverte'
                     ? `Moitié-moitié : ${o.trip.members > 1 ? `vous partagez le livreur avec ${o.trip.members - 1} autre(s) commande(s)` : "en attente d'autres commandes dans votre direction"} jusqu'à ${o.trip.deadline ? new Date(o.trip.deadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'bientôt'}. Le prix ne peut que baisser.`
                     : 'Un livreur va être choisi dès que le colis est prêt.'}
+                {o.trip.mode === 'partagee' && o.trip.status === 'ouverte' && !o.trip.driver && (
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(
+                      `On partage le livreur ? Commande sur ${MP.name} en livraison « moitié-moitié »${o.trip.deadline ? ` avant ${new Date(o.trip.deadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : ''} : plus on est nombreuses dans la même direction, moins chacune paie. ${location.origin}${mpPath()}`,
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 flex w-fit items-center gap-1.5 h-9 px-3 rounded-full bg-emerald-700 text-white text-xs font-semibold"
+                    data-testid="mp-order-invite"
+                  >
+                    <Users className="w-3.5 h-3.5" /> Inviter mes voisines : la livraison baisse pour tout le monde
+                  </a>
+                )}
               </p>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink/60">

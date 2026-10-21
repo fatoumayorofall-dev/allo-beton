@@ -17,7 +17,8 @@ import { fetchChats, fetchListing, openChat, type Deal, type MpListing } from '.
 import { useMpCart } from './cart';
 import { ListingCard } from './ListingCard';
 import { MP, mpPath } from './config';
-import { F, priceText } from './format';
+import { ACCENTS, F, listingLink, priceText } from './format';
+import { StatusButton } from './StatusKit';
 import { useAccount } from '../context/AccountContext';
 import { isLiked, note } from './taste';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -205,6 +206,24 @@ export default function MpListingPage() {
             >
               <Share2 className="w-5 h-5" />
             </button>
+            <StatusButton
+              label=""
+              ariaLabel="Image pour un statut WhatsApp"
+              filename={`statut-${l.id}.jpg`}
+              testId="mp-listing-status"
+              className="w-11 h-11 rounded-full border border-ink/15 grid place-items-center"
+              make={() => {
+                note(l, 'share');
+                return {
+                  photo: l.photos[0] ?? null,
+                  title: l.title,
+                  line: l.price === null ? 'Prix à négocier : faites votre offre' : F(l.price),
+                  small: l.seller ? `chez ${l.seller.shopName}` : '',
+                  link: listingLink(l.id),
+                  color: ACCENTS[l.seller?.accent ?? 'prune']?.hex ?? ACCENTS.prune.hex,
+                };
+              }}
+            />
           </div>
 
           {l.variants.length > 0 && (
