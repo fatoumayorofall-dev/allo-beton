@@ -11,6 +11,7 @@ import {
   Pencil,
   Phone,
   Plus,
+  Radio,
   Store,
   Trash2,
   Wallet,
@@ -798,9 +799,18 @@ export default function MpSell() {
           )}
         </div>
         {seller.status === 'active' && (
-          <Link to={mpPath(`/boutique/${seller.slug}`)} className="btn-outline !h-11 !px-5">
-            Voir ma boutique
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              to={mpPath('/live/studio')}
+              className="h-11 px-5 rounded-full bg-red-600 text-white text-sm font-bold inline-flex items-center gap-2"
+              data-testid="mp-go-live"
+            >
+              <Radio className="w-4 h-4" /> Faire un live
+            </Link>
+            <Link to={mpPath(`/boutique/${seller.slug}`)} className="btn-outline !h-11 !px-5">
+              Voir ma boutique
+            </Link>
+          </div>
         )}
       </section>
 

@@ -7,6 +7,7 @@ import { useAccount } from '../context/AccountContext';
 import { visitorId } from '../utils/track';
 import { ListingCard } from './ListingCard';
 import { ShopCard } from './ShopCard';
+import { LiveRow } from './LiveRow';
 import { MP, mpPath } from './config';
 import { usePageTitle } from '../utils/usePageTitle';
 
@@ -61,6 +62,7 @@ export default function MpHome() {
 
   return (
     <div className="max-w-6xl mx-auto px-4">
+      {!q && !cat && <LiveRow />}
       {!q && !cat && (
         <section className="mt-5 rounded-3xl bg-ink text-ivory p-6 sm:p-10 relative overflow-hidden" data-dark>
           <p className="text-[11px] uppercase tracking-[0.2em] text-gold-light font-semibold">Boutiques en ligne</p>

@@ -36,6 +36,7 @@ const EXTRA_ENV = {
   discussion: { OTP_DEV_MODE: '1' },
   vitrine: { OTP_DEV_MODE: '1' },
   croissance: { OTP_DEV_MODE: '1' },
+  live: { OTP_DEV_MODE: '1' },
   // Appels : sonnerie raccourcie pour tester l'appel manqué
   appel: { OTP_DEV_MODE: '1', CALL_RING_SECONDS: '6' },
   // Données d'exemple créées au démarrage ; connexion par code secret (sans code par message)

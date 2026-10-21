@@ -796,3 +796,27 @@ body[data-install-banner] .floating-actions {
     animation: none !important;
   }
 }
+
+/* Live : cœurs envoyés par les spectatrices (ils montent et s'effacent) */
+@keyframes live-heart {
+  0% {
+    transform: translate(0, 0) scale(0.6);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(0, -24px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 0px), -240px) scale(1.25);
+    opacity: 0;
+  }
+}
+.live-heart {
+  animation: live-heart 1.6s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-heart {
+    animation-duration: 0.01s;
+  }
+}

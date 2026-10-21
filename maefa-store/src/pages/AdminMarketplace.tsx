@@ -10,6 +10,9 @@ import {
   type AdminDispute,
   adminActivatePro,
   adminBoost,
+  adminLives,
+  adminStopLive,
+  type AdminLive,
   adminCloseTrip,
   adminDriverPayment,
   adminDrivers,
@@ -35,7 +38,16 @@ import { MP, mpPath } from '../marketplace/config';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from '../marketplace/format';
 
 type Sub =
-  'verifier' | 'litiges' | 'vendeurs' | 'livreurs' | 'courses' | 'relais' | 'securite' | 'commandes' | 'reglages';
+  | 'verifier'
+  | 'lives'
+  | 'litiges'
+  | 'vendeurs'
+  | 'livreurs'
+  | 'courses'
+  | 'relais'
+  | 'securite'
+  | 'commandes'
+  | 'reglages';
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
 const SecurityPanel = lazy(() => import('./AdminSecurity'));
 
@@ -122,6 +134,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
   const [trips, setTrips] = useState<AdminTrip[]>([]);
   const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [relays, setRelays] = useState<AdminRelay[]>([]);
+  const [lives, setLives] = useState<AdminLive[]>([]);
   const [driversOn, setDriversOn] = useState(false);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState<Record<string, string>>({});
@@ -135,7 +148,8 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
       adminDrivers(pin),
       adminTrips(pin),
     ]);
-    const [dz, rl] = await Promise.all([adminDisputes(pin), adminRelays(pin)]);
+    const [dz, rl, lv] = await Promise.all([adminDisputes(pin), adminRelays(pin), adminLives(pin)]);
+    if (lv.ok) setLives(lv.data.lives);
     if (dz.ok) setDisputes(dz.data.disputes);
     if (rl.ok) setRelays(rl.data.relays);
     if (d.ok) setDrivers(d.data.drivers);
@@ -258,6 +272,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
         {(
           [
             ['verifier', `À vérifier (${pending.length})`],
+            ['lives', `Lives (${lives.filter(l => l.status !== 'termine').length})`],
             ['litiges', `Signalements (${disputes.filter(d => d.status === 'ouvert').length})`],
             ['vendeurs', `Vendeurs (${sellers.length})`],
             ['commandes', `Commandes (${orders.length})`],
@@ -285,6 +300,69 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
         <p className="text-sm" role="status">
           {message}
         </p>
+      )}
+
+      {sub === 'lives' && (
+        <div className="space-y-3" data-testid="admin-mp-lives">
+          <p className="text-sm text-ink/70">
+            Lives en cours et terminés depuis moins d'une heure. Arrêtez un live qui montre une contrefaçon, un objet
+            interdit ou un contenu choquant : la vendeuse est prévenue.
+          </p>
+          {!lives.length && <p className="text-sm text-ink/70">Aucun live pour le moment.</p>}
+          {lives.map(l => (
+            <article
+              key={l.id}
+              className="bg-white rounded-2xl border border-ink/[0.06] p-4"
+              data-testid="admin-mp-live"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold">
+                  {l.seller?.shopName} · « {l.title} »
+                </p>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${l.status === 'termine' ? 'bg-ink/10 text-ink/70' : 'bg-red-100 text-red-900'}`}
+                >
+                  {l.status === 'termine' ? 'Terminé' : l.status === 'coupure' ? 'Coupure réseau' : 'En direct'}
+                </span>
+              </div>
+              <p className="text-sm text-ink/70 mt-1">
+                {l.viewers} spectatrice(s) · {l.peak} au plus · {l.likes} cœur(s) · {l.sales} commande(s), {F(l.amount)}
+              </p>
+              {l.reports.length > 0 && (
+                <ul className="mt-2 text-sm text-wine" data-testid="admin-mp-live-reports">
+                  {l.reports.map((r, i) => (
+                    <li key={i}>🚩 {r.reason || 'Signalé sans raison'}</li>
+                  ))}
+                </ul>
+              )}
+              {l.status !== 'termine' && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <a
+                    href={mpPath(`/live/${l.id}`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold inline-flex items-center"
+                  >
+                    Regarder
+                  </a>
+                  <button
+                    onClick={async () => {
+                      const reason = window.prompt('Pourquoi arrêter ce live ? (la vendeuse recevra ce message)');
+                      if (reason === null) return;
+                      const r = await adminStopLive(pin, l.id, reason);
+                      if (!r.ok) return setMessage(r.error);
+                      load();
+                    }}
+                    className="h-10 px-4 rounded-full border border-wine/30 text-wine text-sm font-semibold"
+                    data-testid="admin-mp-live-stop"
+                  >
+                    Arrêter le live
+                  </button>
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
       )}
 
       {sub === 'verifier' && (

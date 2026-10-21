@@ -642,6 +642,118 @@ paths:
           '400': { description: Sa propre boutique },
           '401': { description: Non connectée },
         }
+  /api/mp/lives:
+    get:
+      tags: [Place de marché]
+      summary: 'Lives en cours (boutique, titre, image, spectatrices)'
+      responses: { '200': { description: OK } }
+  /api/mp/lives/{id}:
+    get:
+      tags: [Place de marché]
+      summary: 'État du live, articles (prix live), article présenté, nouveaux commentaires (after) ; viewer = compteur anonyme'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: after, in: query, schema: { type: integer } }
+        - { name: viewer, in: query, schema: { type: string } }
+      responses: { '200': { description: OK }, '404': { description: Terminé depuis plus d’une heure } }
+  /api/mp/lives/{id}/segments/{seq}:
+    get:
+      tags: [Place de marché]
+      summary: 'Morceau de vidéo du live (3 s, webm ou mp4)'
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: seq, in: path, required: true, schema: { type: integer } }
+      responses: { '200': { description: Vidéo }, '404': { description: Plus disponible } }
+  /api/mp/lives/{id}/comments:
+    post:
+      tags: [Place de marché]
+      summary: 'Commenter un live (connectée ; ni numéro, ni lien, ni réseau social)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        {
+          '201': { description: OK },
+          '400': { description: Contact refusé },
+          '403': { description: Masquée par la vendeuse },
+        }
+  /api/mp/lives/{id}/like:
+    post:
+      tags: [Place de marché]
+      summary: 'Envoyer des cœurs ({ n: 1 à 10 })'
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/lives/{id}/report:
+    post:
+      tags: [Place de marché]
+      summary: 'Signaler un live à la gérante'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/lives:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : lancer un live ({ title, products: [{ listingId, livePrice }] }) ; abonnées prévenues'
+      security: [{ session: [] }]
+      responses:
+        {
+          '201': { description: OK },
+          '400': { description: Articles ou prix live invalides },
+          '403': { description: Boutique non validée },
+        }
+  /api/mp/me/lives/current:
+    get:
+      tags: [Place de marché]
+      summary: 'Vendeuse : son live en cours (pour le reprendre)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/lives/{id}/segments:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : envoyer un morceau de vidéo (corps binaire video/webm ou video/mp4, 3 Mo au plus)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: OK }, '409': { description: Live terminé } }
+  /api/mp/me/lives/{id}/pin:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : présenter un article à l’écran'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/lives/{id}/products:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : changer les articles du live et leurs prix live'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '400': { description: Prix live plus cher que l’article } }
+  /api/mp/me/lives/{id}/mute:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : masquer l’autrice d’un commentaire ({ commentId })'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/lives/{id}/end:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeuse : terminer le live (bilan : commandes, montant, spectatrices, cœurs)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/lives:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : lives en cours et récents, signalements'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/lives/{id}/stop:
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : arrêter un live ({ reason } : la vendeuse est prévenue)'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
   /api/mp/me/follows:
     get:
       tags: [Place de marché]

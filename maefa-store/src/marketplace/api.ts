@@ -279,13 +279,19 @@ export interface ShopSummary extends MpSeller {
   rating: { average: number | null; count: number };
   articles: number;
   photos: string[];
+  /** Live en cours (son identifiant) */
+  live?: string | null;
 }
 export const fetchShops = (params: Record<string, string>) =>
   call<{ shops: ShopSummary[] }>(`/api/mp/shops?${new URLSearchParams(params)}`);
 export const fetchShop = (slug: string) =>
-  call<{ seller: MpSeller; listings: MpListing[]; reviews: PublicReview[] }>(
-    `/api/mp/sellers/${encodeURIComponent(slug)}`,
-  );
+  call<{
+    seller: MpSeller;
+    listings: MpListing[];
+    reviews: PublicReview[];
+    /** Live en cours de la boutique */
+    live?: { id: string; title: string } | null;
+  }>(`/api/mp/sellers/${encodeURIComponent(slug)}`);
 /** Fil « Pour vous » : articles classés selon les goûts (gardés sur le téléphone), la tendance et la distance */
 export type FeedItem = MpListing & { why: string };
 export const fetchFeed = (body: {
@@ -553,6 +559,13 @@ export const adminDriverPayment = (pin: string, id: string, amount: number) =>
 export const adminTrips = (pin: string) => call<{ trips: AdminTrip[] }>('/api/admin/mp/trips', { headers: admin(pin) });
 export const adminCloseTrip = (pin: string, id: string) =>
   call<{ trip: AdminTrip }>(`/api/admin/mp/trips/${id}/close`, { method: 'POST', headers: admin(pin) });
+export const adminLives = (pin: string) => call<{ lives: AdminLive[] }>('/api/admin/mp/lives', { headers: admin(pin) });
+export const adminStopLive = (pin: string, id: string, reason: string) =>
+  call<{ live: LiveSummary }>(`/api/admin/mp/lives/${id}/stop`, {
+    method: 'POST',
+    headers: admin(pin),
+    body: JSON.stringify({ reason }),
+  });
 export const adminBoost = (pin: string, id: string, weeks: number) =>
   call<{ seller: MySeller }>(`/api/admin/mp/sellers/${id}/boost`, {
     method: 'POST',
@@ -717,3 +730,85 @@ export const fetchCall = (id: string) => call<{ call: CallInfo }>(`/api/mp/me/ca
 export const answerCall = (id: string, sdp: string) =>
   post<{ call: CallInfo }>(`/api/mp/me/calls/${id}/answer`, { sdp });
 export const endCall = (id: string) => post<{ call: CallInfo }>(`/api/mp/me/calls/${id}/end`, {});
+
+/* ---------- Ventes en direct (live) ---------- */
+export interface LiveProduct extends MpListing {
+  /** Prix spécial pendant le live (et 15 minutes après) */
+  livePrice: number | null;
+}
+export type LiveStatus = 'en_direct' | 'coupure' | 'termine';
+export interface LiveSummary {
+  id: string;
+  title: string;
+  status: LiveStatus;
+  startedAt: string;
+  endedAt: string | null;
+  viewers: number;
+  likes: number;
+  cover: string | null;
+  seller: MpSeller | null;
+}
+export interface LiveView extends LiveSummary {
+  /** Dernier morceau de vidéo reçu */
+  seq: number;
+  mime: string | null;
+  pinned: string | null;
+  products: LiveProduct[];
+}
+export interface LiveComment {
+  id: number;
+  name: string;
+  text: string;
+  at: string;
+  system: boolean;
+  seller: boolean;
+}
+export interface LiveResult {
+  sales: number;
+  amount: number;
+  peak: number;
+  likes: number;
+}
+export type LiveProductInput = { listingId: string; livePrice: number | null };
+export const fetchLives = () => call<{ lives: LiveSummary[] }>('/api/mp/lives');
+export const fetchLive = (id: string, after: number, viewer?: string) =>
+  call<{ live: LiveView; comments: LiveComment[]; hidden: number[] }>(
+    `/api/mp/lives/${id}?${new URLSearchParams({ after: String(after), ...(viewer ? { viewer } : {}) })}`,
+  );
+export const liveSegmentUrl = (id: string, seq: number) => `${API_BASE}/api/mp/lives/${id}/segments/${seq}`;
+export const sendLiveComment = (id: string, text: string) =>
+  post<{ comment: LiveComment }>(`/api/mp/lives/${id}/comments`, { text });
+export const likeLive = (id: string, n: number) => post<{ likes: number }>(`/api/mp/lives/${id}/like`, { n });
+export const reportLive = (id: string, reason: string) => post<{ ok: true }>(`/api/mp/lives/${id}/report`, { reason });
+export const fetchMyLive = () => call<{ live: LiveView | null }>('/api/mp/me/lives/current');
+export const startLive = (title: string, products: LiveProductInput[]) =>
+  post<{ live: LiveView }>('/api/mp/me/lives', { title, products });
+export const pinLive = (id: string, listingId: string | null) =>
+  post<{ live: LiveView }>(`/api/mp/me/lives/${id}/pin`, { listingId });
+export const muteLive = (id: string, commentId: number) =>
+  post<{ ok: true }>(`/api/mp/me/lives/${id}/mute`, { commentId });
+export const endLive = (id: string) => post<{ live: LiveView; result: LiveResult }>(`/api/mp/me/lives/${id}/end`, {});
+/** Envoi d'un morceau de vidéo (3 s) : délai court, un morceau en retard ne sert plus à rien */
+export async function uploadLiveSegment(id: string, blob: Blob): Promise<Result<{ seq: number; viewers: number }>> {
+  const token = readToken();
+  try {
+    const res = await fetch(`${API_BASE}/api/mp/me/lives/${id}/segments`, {
+      method: 'POST',
+      body: blob,
+      headers: { 'Content-Type': blob.type, ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      signal: AbortSignal.timeout(20000),
+    });
+    const body = await res.json().catch(() => null);
+    return res.ok
+      ? { ok: true, data: body }
+      : { ok: false, error: body?.error || 'Envoi impossible', status: res.status };
+  } catch {
+    return { ok: false, error: 'Réseau trop faible', status: 0 };
+  }
+}
+export interface AdminLive extends LiveSummary {
+  sales: number;
+  amount: number;
+  peak: number;
+  reports: { reason: string; at: string }[];
+}

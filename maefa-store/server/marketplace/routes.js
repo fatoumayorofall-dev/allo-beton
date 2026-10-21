@@ -39,6 +39,7 @@ import {
 import { shopSecret } from '../brandSecurity.js';
 import { priceBandLabel } from '../prices.js';
 import { registerChatRoutes } from './chat.js';
+import { registerLiveRoutes } from './live.js';
 
 /** Rayons de la place de marché (les restaurants viendront avec la livraison rapide). */
 export const MP_CATEGORIES = [
@@ -217,6 +218,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     wa.sendSms(phone, text).catch(() => {});
   };
   const site = req => `${req.protocol}://${req.get('host')}`;
+  const siteUrl = () => (process.env.SITE_URL || '').replace(/\/+$/, '');
   const trips = createTripService({ store, settings, notify });
   // Discussions acheteur–vendeur et marchandage (prix convenu utilisé à la commande)
   const chats = registerChatRoutes(app, { limit, store, currentUser, notify, publicListing });
@@ -241,6 +243,18 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const seller = l && store.getMpSeller(l.sellerId);
     return l && isVisible(l, seller) ? { listing: l, seller } : null;
   };
+  // Ventes en direct : vidéo, commentaires, articles présentés, prix live
+  const lives = registerLiveRoutes(app, {
+    limit,
+    store,
+    currentUser,
+    isAdmin,
+    notify,
+    publicSeller,
+    publicListing,
+    visibleListing,
+    siteUrl,
+  });
 
   /* ==================== PUBLIC ==================== */
 
@@ -385,11 +399,13 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         rating: ratingOf(delivered, 'seller'),
         articles: mine.length,
         photos: mine.slice(0, 3).map(l => l.photos[0]),
+        live: lives.currentFor(v.id)?.id ?? null,
       }))
-      // « À la une » (payé), puis formule Pro, puis les mieux notées, puis les plus actives
+      // « À la une » (payé), puis en direct, puis formule Pro, puis les mieux notées, puis les plus actives
       .sort(
         (a, b) =>
           Number(b.featured) - Number(a.featured) ||
+          Number(!!b.live) - Number(!!a.live) ||
           Number(b.pro) - Number(a.pro) ||
           (b.rating.average ?? 0) - (a.rating.average ?? 0) ||
           b.sales - a.sales ||
@@ -454,8 +470,10 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       .filter(l => l.sellerId === seller.id && l.status === 'publiee')
       .map(l => publicListing(l, null));
     const delivered = store.listMpOrders().filter(o => o.sellerId === seller.id && o.status === 'livree');
+    const live = lives.currentFor(seller.id);
     res.json({
       seller: { ...publicSeller(seller), sales: delivered.length, rating: ratingOf(delivered, 'seller') },
+      live: live ? { id: live.id, title: live.title } : null,
       listings,
       reviews: publicReviews(delivered),
     });
@@ -493,7 +511,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       // Prix convenu en discutant (marchandage) : il remplace le prix affiché ; obligatoire pour un
       // article « à négocier », dont le prix n'est pas public
       const deal = buyerPhone ? chats.dealFor(listing.id, buyerPhone) : null;
-      if (listing.priceMode === 'negocier' && !deal)
+      // Prix live : fixé par la vendeuse pendant son live (et 15 minutes après)
+      const live = deal ? null : lives.priceFor(listing);
+      if (listing.priceMode === 'negocier' && !deal && !live)
         return { error: `« ${listing.title} » : prix à négocier. Faites une offre au vendeur avant de commander.` };
       if (deal && wanted.get(listing.id) > deal.qty)
         return { error: `Le prix convenu pour « ${listing.title} » vaut pour ${deal.qty} article` };
@@ -502,8 +522,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         listingId: listing.id,
         title: listing.title,
         photo: listing.photos[0],
-        price: deal?.amount ?? listing.price,
+        price: deal?.amount ?? live?.price ?? listing.price,
         ...(deal ? { agreed: true } : {}),
+        ...(live ? { liveId: live.liveId } : {}),
         qty,
         variant,
         variantLabel: listing.variantLabel || null,
@@ -626,6 +647,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       });
       // Prix convenu utilisé : une commande par accord
       for (const chatId of o.deals) chats.useDeal(chatId, order.id);
+      lives.onOrder(order);
       if (order.handover)
         notifyCode(
           user.phone,
@@ -764,7 +786,6 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     boostRequestedAt: v.boostRequestedAt ?? null,
   });
 
-  const siteUrl = () => (process.env.SITE_URL || '').replace(/\/+$/, '');
   /** Code de parrainage unique (6 caractères) */
   const newReferralCode = () => {
     let c = code(6);

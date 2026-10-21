@@ -466,6 +466,30 @@ vérifie le parcours complet (scénario `demo`). Aucun message ne part pendant l
   (`POST /api/admin/mp/sellers/:id/boost`), badge, tête de l'annuaire, bonus dans le fil, recette au
   tableau de bord et ligne `mise_en_avant` au registre. Scénario de test `croissance`.
 
+### 4.15 Ventes en direct (live, `server/marketplace/live.js`)
+
+Comme sur TikTok, la vendeuse filme ses articles en direct ; ses abonnées sont prévenues sur WhatsApp au
+début du live ; les clientes regardent en plein écran, commentent, envoient des cœurs et commandent sans
+quitter le live.
+
+- **Vidéo sans service extérieur** (`src/marketplace/liveMedia.ts`) : le téléphone de la vendeuse
+  enregistre des morceaux de 3 s (`MediaRecorder`, un enregistrement complet par morceau, ≈ 450 kbit/s,
+  ≈ 200 Mo par heure) et les envoie en HTTPS (`POST /api/mp/me/lives/:id/segments`) ; le serveur garde
+  les 10 derniers en mémoire ; les spectatrices les lisent à la suite sans coupure (Media Source, mode
+  « séquence »), ou un par un si le navigateur ne sait pas faire autrement. Retard ≈ 5 à 8 s. Réseau lent
+  côté vendeuse : on garde les morceaux les plus récents ; plus de vidéo depuis 20 s : « coupure »,
+  5 min : fin du live.
+- **Vendre pendant le live** : un article « présenté » à l'écran, la liste des articles du live, le panier ;
+  prix live facultatif (une remise, valable pendant le live et 15 min après, appliqué par `prepare()`) ;
+  annonce anonyme « une cliente vient de commander » ; bilan à la fin (commandes, montant, spectatrices,
+  cœurs).
+- **Communauté et modération** : commentaires connectés, filtre anti-contournement, la vendeuse masque une
+  personne ; signalement à la gérante, qui voit les lives en cours et peut en arrêter un (la vendeuse est
+  prévenue). « En direct maintenant » en tête de l'accueil, badge dans l'annuaire, bandeau dans la boutique.
+- **Limites** : lives en mémoire (un seul serveur, comme les appels), 30 lives en même temps au plus ;
+  pour des centaines de spectatrices par live, prévoir un service vidéo dédié (relais ou CDN). Scénario de
+  test `live` (caméra simulée de Chromium).
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

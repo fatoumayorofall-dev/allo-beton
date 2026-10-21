@@ -24,6 +24,14 @@ export const ShopCard: React.FC<{ shop: ShopSummary }> = ({ shop: s }) => {
             ))}
           </div>
         )}
+        {s.live && (
+          <span
+            className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-red-600 text-white text-[10px] font-bold uppercase tracking-wide"
+            data-testid="mp-shop-live"
+          >
+            En direct
+          </span>
+        )}
         {s.featured && (
           <span
             className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-gold text-ink text-[10px] font-bold uppercase tracking-wide"

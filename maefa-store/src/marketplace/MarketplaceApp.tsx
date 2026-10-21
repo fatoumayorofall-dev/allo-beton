@@ -18,6 +18,8 @@ const MpOrders = lazy(() => import('./MpOrders'));
 const MpSell = lazy(() => import('./MpSell'));
 const MpAccount = lazy(() => import('./MpAccount'));
 const MpChats = lazy(() => import('./MpChats'));
+const MpLive = lazy(() => import('./MpLive'));
+const MpLiveStudio = lazy(() => import('./MpLiveStudio'));
 
 const Wait = () => (
   <div className="py-24 grid place-items-center">
@@ -175,6 +177,8 @@ export default function MarketplaceApp() {
                 <Route path="vendre" element={<MpSell />} />
                 <Route path="compte" element={<MpAccount />} />
                 <Route path="livreur" element={<MpDriver />} />
+                <Route path="live/studio" element={<MpLiveStudio />} />
+                <Route path="live/:id" element={<MpLive />} />
                 <Route path="discussions" element={<MpChats />} />
                 <Route path="discussions/:id" element={<MpChats />} />
                 <Route path="*" element={<MpHome />} />

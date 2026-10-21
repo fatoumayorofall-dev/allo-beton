@@ -17,7 +17,9 @@ import { StatusButton } from './StatusKit';
 export default function MpShop() {
   const { slug = '' } = useParams();
   const [data, setData] = useState<
-    { seller: MpSeller; listings: MpListing[]; reviews: PublicReview[] } | null | 'absent'
+    | { seller: MpSeller; listings: MpListing[]; reviews: PublicReview[]; live?: { id: string; title: string } | null }
+    | null
+    | 'absent'
   >(null);
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');
@@ -99,6 +101,22 @@ export default function MpShop() {
 
   return (
     <div className="max-w-6xl mx-auto sm:px-4 sm:pt-5" data-testid="mp-shop">
+      {data.live && (
+        <Link
+          to={mpPath(`/live/${data.live.id}`)}
+          className="flex items-center gap-3 bg-red-600 text-white px-4 py-3 sm:rounded-2xl sm:mb-3"
+          data-testid="mp-shop-live-banner"
+        >
+          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse shrink-0" aria-hidden />
+          <span className="flex-1 min-w-0">
+            <strong className="block text-sm">En direct maintenant</strong>
+            <span className="block text-sm truncate opacity-90">{data.live.title}</span>
+          </span>
+          <span className="h-9 px-4 rounded-full bg-white text-red-700 text-sm font-bold grid place-items-center">
+            Regarder
+          </span>
+        </Link>
+      )}
       <section className="bg-white sm:rounded-3xl border-b sm:border border-ink/[0.06] overflow-hidden">
         <div className="relative h-36 sm:h-56" style={{ background: color }} data-testid="mp-shop-cover">
           {s.cover && <img src={s.cover} alt="" className="w-full h-full object-cover" />}
@@ -197,7 +215,9 @@ export default function MpShop() {
             </p>
           )}
           {!following && (
-            <p className="mt-2 text-xs text-ink/55">Suivez la boutique : vous êtes prévenue de ses nouveautés.</p>
+            <p className="mt-2 text-xs text-ink/55">
+              Suivez la boutique : vous êtes prévenue de ses nouveautés et de ses lives.
+            </p>
           )}
         </div>
       </section>
