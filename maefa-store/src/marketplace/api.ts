@@ -45,6 +45,8 @@ export interface MpSeller {
   verified: boolean;
   since: string;
   sales?: number;
+  /** Note des clientes (avis vérifiés : commandes reçues dans l'application) */
+  rating?: { average: number | null; count: number };
 }
 export interface MpListing {
   id: string;
@@ -78,6 +80,19 @@ export interface OrderLine {
   qty: number;
   variant: string | null;
   variantLabel: string | null;
+}
+export type ProblemKind = 'non_conforme' | 'abime' | 'incomplet' | 'non_recu';
+export const PROBLEM_LABELS: Record<ProblemKind, string> = {
+  non_conforme: "L'article ne correspond pas à l'annonce",
+  abime: 'Article abîmé',
+  incomplet: 'Il manque quelque chose',
+  non_recu: "Je n'ai pas reçu ma commande",
+};
+export interface PublicReview {
+  name: string;
+  stars: number;
+  text: string;
+  at: string;
 }
 export type DeliveryMode = 'vendeur' | 'express' | 'partagee';
 export interface PublicDriver {
@@ -124,6 +139,17 @@ export interface MpOrder {
     members: number;
     deadline: string | null;
     driver: PublicDriver | null;
+  } | null;
+  /** Avis vérifié laissé après la livraison */
+  review?: { seller: { stars: number; text: string }; driver?: { stars: number }; at: string } | null;
+  /** Problème signalé (sous 72 h) et sa résolution */
+  dispute?: {
+    kind: ProblemKind;
+    text: string;
+    status: 'ouvert' | 'resolu' | 'rejete';
+    at: string;
+    resolution: string;
+    resolvedAt: string | null;
   } | null;
   /** Vue vendeur : livreur de la course et montant qu'il vous envoie */
   driver?: PublicDriver | null;
@@ -195,7 +221,9 @@ export const fetchListings = (params: Record<string, string>) =>
 export const fetchListing = (id: string) =>
   call<{ listing: MpListing; more: MpListing[] }>(`/api/mp/listings/${encodeURIComponent(id)}`);
 export const fetchShop = (slug: string) =>
-  call<{ seller: MpSeller; listings: MpListing[] }>(`/api/mp/sellers/${encodeURIComponent(slug)}`);
+  call<{ seller: MpSeller; listings: MpListing[]; reviews: PublicReview[] }>(
+    `/api/mp/sellers/${encodeURIComponent(slug)}`,
+  );
 /** Fil « Pour vous » : articles classés selon les goûts (gardés sur le téléphone), la tendance et la distance */
 export type FeedItem = MpListing & { why: string };
 export const fetchFeed = (body: {
@@ -221,6 +249,19 @@ export const placeOrders = (body: {
 }) => post<{ orders: MpOrder[] }>('/api/mp/orders', body);
 export const fetchMyOrders = () => call<{ orders: MpOrder[] }>('/api/mp/me/orders');
 export const cancelMyOrder = (id: string) => post<{ order: MpOrder }>(`/api/mp/me/orders/${id}/cancel`, {});
+export const reviewOrder = (id: string, body: { sellerStars: number; text: string; driverStars?: number }) =>
+  post<{ review: NonNullable<MpOrder['review']> }>(`/api/mp/me/orders/${id}/review`, body);
+export const reportProblem = (id: string, kind: ProblemKind, text: string) =>
+  post<{ dispute: NonNullable<MpOrder['dispute']> }>(`/api/mp/me/orders/${id}/problem`, { kind, text });
+export interface Tracking {
+  name: string;
+  vehicle: PublicDriver['vehicle'];
+  phase: 'chez_vendeur' | 'vers_vous';
+  position: { lat: number; lng: number; at: string } | null;
+  km?: number;
+  minutes?: number;
+}
+export const fetchTracking = (id: string) => call<{ tracking: Tracking | null }>(`/api/mp/me/orders/${id}/driver`);
 
 /* ---------- Vendeur ---------- */
 export const fetchMySeller = () =>
@@ -413,4 +454,27 @@ export const adminActivatePro = (pin: string, id: string, months: number) =>
     method: 'POST',
     headers: admin(pin),
     body: JSON.stringify({ months }),
+  });
+export interface AdminDispute {
+  orderId: string;
+  shopName: string;
+  buyer: { name: string; phone: string };
+  total: number;
+  orderStatus: OrderStatus;
+  driverId: string | null;
+  problem: string;
+  kind: ProblemKind;
+  text: string;
+  status: 'ouvert' | 'resolu' | 'rejete';
+  at: string;
+  resolution: string;
+  resolvedAt: string | null;
+}
+export const adminDisputes = (pin: string) =>
+  call<{ disputes: AdminDispute[] }>('/api/admin/mp/disputes', { headers: admin(pin) });
+export const adminResolveDispute = (pin: string, id: string, status: 'resolu' | 'rejete', resolution: string) =>
+  call<{ dispute: NonNullable<MpOrder['dispute']> }>(`/api/admin/mp/disputes/${id}`, {
+    method: 'PATCH',
+    headers: admin(pin),
+    body: JSON.stringify({ status, resolution }),
   });

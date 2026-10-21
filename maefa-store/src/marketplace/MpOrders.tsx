@@ -6,6 +6,7 @@ import { MP, mpPath } from './config';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from './format';
 import { useAccount } from '../context/AccountContext';
 import { usePageTitle } from '../utils/usePageTitle';
+import { AfterSale, DriverTracking } from './AfterSale';
 
 const STEPS: MpOrder['status'][] = ['nouvelle', 'acceptee', 'prete', 'en_livraison', 'livree'];
 
@@ -136,6 +137,11 @@ export default function MpOrders() {
                 </button>
               )}
             </div>
+            {o.trip?.driver && ['prete', 'en_livraison'].includes(o.status) && <DriverTracking order={o} />}
+            <AfterSale
+              order={o}
+              onChange={patch => setOrders(list => (list ?? []).map(x => (x.id === o.id ? { ...x, ...patch } : x)))}
+            />
           </article>
         );
       })}

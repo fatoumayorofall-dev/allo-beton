@@ -24,6 +24,7 @@ import {
 } from './pricing.js';
 import { SHARE_WAITS, createTripService } from './trips.js';
 import { publicDriver, registerDriverRoutes } from './drivers.js';
+import { publicReviews, ratingOf, registerAfterSaleRoutes } from './aftersale.js';
 import { CONTACT_REFUSED, findContact } from './contact.js';
 import { SIGNALS, bump, cleanTaste, rankFeed } from './ranking.js';
 
@@ -224,7 +225,13 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const dropped = mine.filter(
       o => ['refusee', 'annulee'].includes(o.status) && o.history?.at(-1)?.by === 'vendeur',
     ).length;
-    return Math.min(1, 0.4 + 0.06 * done) * (1 - dropped / mine.length);
+    // Avis vérifiés : à partir de 3 avis, la note compte dans le classement
+    const r = ratingOf(
+      mine.filter(o => o.status === 'livree'),
+      'seller',
+    );
+    const stars = r.count >= 3 ? 0.6 + (0.4 * r.average) / 5 : 1;
+    return Math.min(1, 0.4 + 0.06 * done) * (1 - dropped / mine.length) * stars;
   };
   /** Formule Pro : mise en avant dans le fil */
   const boost = seller => (sellerPlan(seller) === 'pro' ? 0.15 : 0);
@@ -311,7 +318,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       .filter(l => l.sellerId === found.seller.id && l.id !== found.listing.id && l.status === 'publiee')
       .slice(0, 8)
       .map(l => publicListing(l, null));
-    res.json({ listing: publicListing(found.listing, found.seller), more });
+    const view = publicListing(found.listing, found.seller);
+    const delivered = store.listMpOrders().filter(o => o.sellerId === found.seller.id && o.status === 'livree');
+    res.json({ listing: { ...view, seller: { ...view.seller, rating: ratingOf(delivered, 'seller') } }, more });
   });
 
   app.get('/api/mp/sellers/:slug', (req, res) => {
@@ -321,8 +330,12 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       .listMpListings()
       .filter(l => l.sellerId === seller.id && l.status === 'publiee')
       .map(l => publicListing(l, null));
-    const sold = store.listMpOrders().filter(o => o.sellerId === seller.id && o.status === 'livree').length;
-    res.json({ seller: { ...publicSeller(seller), sales: sold }, listings });
+    const delivered = store.listMpOrders().filter(o => o.sellerId === seller.id && o.status === 'livree');
+    res.json({
+      seller: { ...publicSeller(seller), sales: delivered.length, rating: ratingOf(delivered, 'seller') },
+      listings,
+      reviews: publicReviews(delivered),
+    });
   });
 
   /**
@@ -1023,6 +1036,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.json({ settings: r.settings });
   });
 
+  // Après la livraison : avis vérifiés, signalement d'un problème, position du livreur
+  registerAfterSaleRoutes(app, { limit, isAdmin, store, currentUser, notify });
   // Livreurs : inscription, courses, arrêts, argent (méthode A), gestion par la gérante
   const drivers = registerDriverRoutes(app, { limit, isAdmin, store, currentUser, trips, settings, notify });
 }

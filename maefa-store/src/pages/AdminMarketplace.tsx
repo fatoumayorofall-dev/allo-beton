@@ -1,6 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { BadgeCheck, ExternalLink, Loader2 } from 'lucide-react';
 import {
+  adminDisputes,
+  adminResolveDispute,
+  type AdminDispute,
   adminActivatePro,
   adminCloseTrip,
   adminDriverPayment,
@@ -26,7 +29,7 @@ import {
 import { MP, mpPath } from '../marketplace/config';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from '../marketplace/format';
 
-type Sub = 'verifier' | 'vendeurs' | 'livreurs' | 'courses' | 'commandes' | 'reglages';
+type Sub = 'verifier' | 'litiges' | 'vendeurs' | 'livreurs' | 'courses' | 'commandes' | 'reglages';
 type PendingListing = MyListing & { seller: (MpSeller & { status: string }) | null };
 const SELLER_STATUS: Record<string, [string, string]> = {
   en_attente: ['À valider', 'bg-amber-100 text-amber-900'],
@@ -47,6 +50,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
   const [orders, setOrders] = useState<MpOrder[]>([]);
   const [drivers, setDrivers] = useState<AdminDriver[]>([]);
   const [trips, setTrips] = useState<AdminTrip[]>([]);
+  const [disputes, setDisputes] = useState<AdminDispute[]>([]);
   const [driversOn, setDriversOn] = useState(false);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState<Record<string, string>>({});
@@ -60,6 +64,8 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
       adminDrivers(pin),
       adminTrips(pin),
     ]);
+    const dz = await adminDisputes(pin);
+    if (dz.ok) setDisputes(dz.data.disputes);
     if (d.ok) setDrivers(d.data.drivers);
     if (t.ok) setTrips(t.data.trips);
     if (o.ok) {
@@ -143,6 +149,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
     ['Abonnements Pro', F(overview.subscriptions)],
     ['Livreurs disponibles', `${overview.drivers.online} / ${overview.drivers.active}`],
     ['Courses en cours', overview.tripsOpen],
+    ['Signalements ouverts', disputes.filter(d => d.status === 'ouvert').length],
   ];
 
   return (
@@ -172,6 +179,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
         {(
           [
             ['verifier', `À vérifier (${pending.length})`],
+            ['litiges', `Signalements (${disputes.filter(d => d.status === 'ouvert').length})`],
             ['vendeurs', `Vendeurs (${sellers.length})`],
             ['commandes', `Commandes (${orders.length})`],
             ['livreurs', `Livreurs (${drivers.length})`],
@@ -351,6 +359,63 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 </span>
               </span>
             </div>
+          ))}
+        </div>
+      )}
+
+      {sub === 'litiges' && (
+        <div className="space-y-3" data-testid="admin-mp-disputes">
+          {!disputes.length && <p className="text-sm text-ink/70">Aucun problème signalé.</p>}
+          {disputes.map(d => (
+            <article
+              key={d.orderId}
+              className="bg-white rounded-2xl border border-ink/[0.06] p-4"
+              data-testid="admin-mp-dispute"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold">
+                  {d.problem}{' '}
+                  <span className="text-ink/55 font-normal text-sm">
+                    · {d.orderId} · {d.shopName} · {d.buyer.name} ({d.buyer.phone}) · {F(d.total)} · {ago(d.at)}
+                  </span>
+                </p>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ${d.status === 'ouvert' ? 'bg-amber-100 text-amber-900' : 'bg-ink/10'}`}
+                >
+                  {d.status === 'ouvert' ? 'À traiter' : d.status === 'resolu' ? 'Résolu' : 'Rejeté'}
+                </span>
+              </div>
+              {d.text && <p className="text-sm mt-1">« {d.text} »</p>}
+              {d.resolution && <p className="text-sm mt-1 text-ink/70">Solution : {d.resolution}</p>}
+              {d.status === 'ouvert' && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(['resolu', 'rejete'] as const).map(st => (
+                    <button
+                      key={st}
+                      onClick={async () => {
+                        const resolution = window.prompt(
+                          st === 'resolu'
+                            ? 'Solution trouvée (envoyée à la cliente) : échange, remboursement par le vendeur…'
+                            : 'Raison (envoyée à la cliente)',
+                        );
+                        if (!resolution) return;
+                        const r = await adminResolveDispute(pin, d.orderId, st, resolution);
+                        if (!r.ok) return setMessage(r.error);
+                        load();
+                      }}
+                      className={
+                        st === 'resolu'
+                          ? 'btn-dark !h-10 !px-5'
+                          : 'h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold'
+                      }
+                      data-testid={`admin-mp-dispute-${st}`}
+                    >
+                      {st === 'resolu' ? 'Résolu' : 'Rejeter'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </article>
           ))}
         </div>
       )}

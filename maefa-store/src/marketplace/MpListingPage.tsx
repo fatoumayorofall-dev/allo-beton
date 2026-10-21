@@ -235,7 +235,8 @@ export default function MpListingPage() {
               <Truck className="w-4 h-4 text-gold-dark" /> Livraison calculée selon la distance, payée à la réception
             </li>
             <li className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-gold-dark" /> Vous payez quand vous recevez l'article
+              <ShieldCheck className="w-4 h-4 text-gold-dark" /> Vous payez quand vous recevez l'article ; un problème ?
+              Signalez-le sous 72 h, l'équipe s'en occupe
             </li>
           </ul>
 
@@ -266,7 +267,12 @@ export default function MpListingPage() {
                     <BadgeCheck className="w-4 h-4 text-emerald-700" aria-label="Vendeur vérifié" />
                   )}
                 </span>
-                <span className="text-xs text-ink/60">{l.seller.zone || 'Sénégal'} · Voir la boutique</span>
+                <span className="text-xs text-ink/60">
+                  {l.seller.rating?.count
+                    ? `★ ${l.seller.rating.average?.toLocaleString('fr-FR')} (${l.seller.rating.count} avis) · `
+                    : ''}
+                  {l.seller.zone || 'Sénégal'} · Voir la boutique
+                </span>
               </span>
             </Link>
           )}

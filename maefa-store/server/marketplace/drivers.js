@@ -9,6 +9,7 @@
 // ============================================================
 import crypto from 'node:crypto';
 import { roadKm, settlement } from './pricing.js';
+import { ratingOf } from './aftersale.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const code = n => Array.from(crypto.randomBytes(n), b => ALPHABET[b % ALPHABET.length]).join('');
@@ -292,7 +293,15 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
       drivers: store
         .listMpDrivers()
         .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-        .map(d => ({ ...d, balance: balanceOf(d), current: currentTrip(d)?.id ?? null })),
+        .map(d => ({
+          ...d,
+          balance: balanceOf(d),
+          current: currentTrip(d)?.id ?? null,
+          rating: ratingOf(
+            store.listMpOrders().filter(o => o.driverId === d.id),
+            'driver',
+          ),
+        })),
     });
   });
 

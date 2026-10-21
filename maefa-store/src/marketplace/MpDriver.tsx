@@ -197,6 +197,22 @@ export default function MpDriver() {
   useEffect(() => {
     if (status === 'user') load();
   }, [status, load]);
+  // Pendant une course : la position est envoyée (au plus toutes les 20 s) pour que la cliente suive son livreur
+  useEffect(() => {
+    if (!trip || !navigator.geolocation) return;
+    let last = 0;
+    const id = navigator.geolocation.watchPosition(
+      p => {
+        if (Date.now() - last < 20000) return;
+        last = Date.now();
+        setPresence(true, { lat: p.coords.latitude, lng: p.coords.longitude });
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 15000 },
+    );
+    return () => navigator.geolocation.clearWatch(id);
+  }, [trip]);
+
   // Nouvelles courses toutes les 20 secondes quand on est disponible
   useEffect(() => {
     if (!driver?.online || trip) return;

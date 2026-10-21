@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BadgeCheck, Loader2, MapPin } from 'lucide-react';
-import { fetchShop, type MpListing, type MpSeller } from './api';
+import { fetchShop, type MpListing, type MpSeller, type PublicReview } from './api';
+import { Stars } from '../components/Stars';
 import { ListingCard } from './ListingCard';
 import { MP, mpPath } from './config';
 import { usePageTitle } from '../utils/usePageTitle';
 
 export default function MpShop() {
   const { slug = '' } = useParams();
-  const [data, setData] = useState<{ seller: MpSeller; listings: MpListing[] } | null | 'absent'>(null);
+  const [data, setData] = useState<
+    { seller: MpSeller; listings: MpListing[]; reviews: PublicReview[] } | null | 'absent'
+  >(null);
   const s = data && data !== 'absent' ? data.seller : null;
   usePageTitle(s ? `${s.shopName} · ${MP.name}` : MP.name, s?.description.slice(0, 150));
   useEffect(() => {
@@ -56,6 +59,12 @@ export default function MpShop() {
                 {s.sales} vente{s.sales > 1 ? 's' : ''} livrée{s.sales > 1 ? 's' : ''}
               </span>
             )}
+            {!!s.rating?.count && (
+              <span className="inline-flex items-center gap-1" data-testid="mp-shop-rating">
+                <Stars rating={s.rating.average ?? 0} size={13} /> {s.rating.average?.toLocaleString('fr-FR')} (
+                {s.rating.count} avis)
+              </span>
+            )}
           </p>
           {s.description && <p className="mt-3 text-[15px] text-ink/85 whitespace-pre-line">{s.description}</p>}
         </div>
@@ -68,6 +77,26 @@ export default function MpShop() {
           <ListingCard key={l.id} listing={{ ...l, seller: s }} showSeller={false} />
         ))}
       </div>
+      {data.reviews.length > 0 && (
+        <section className="mt-10" data-testid="mp-shop-reviews">
+          <h2 className="font-display text-2xl">Avis des clientes</h2>
+          <p className="text-xs text-ink/60 mt-1">
+            Avis vérifiés : seules les clientes qui ont reçu leur commande sur {MP.name} peuvent noter.
+          </p>
+          <ul className="mt-3 space-y-3">
+            {data.reviews.map((r, i) => (
+              <li key={i} className="bg-white rounded-2xl border border-ink/[0.06] p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <strong className="text-sm">{r.name}</strong>
+                  <Stars rating={r.stars} size={12} />
+                </div>
+                {r.text && <p className="mt-1 text-[15px]">{r.text}</p>}
+                <p className="text-[11px] text-ink/55 mt-1">{new Date(r.at).toLocaleDateString('fr-FR')}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   );
 }
