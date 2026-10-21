@@ -363,6 +363,24 @@ Le vendeur choisit comment il remet ses colis (`pickupMode`) :
 - **Limite** : en livraison par le vendeur lui-même (livreurs de la plateforme désactivés), le vendeur voit
   l'adresse de l'acheteuse pour livrer ; l'anonymat complet suppose les livreurs de la plateforme.
 
+### 4.8 Anti-fraude (`server/marketplace/fraud.js`)
+
+Aucune technique ne garantit 100 % ; le but est que frauder coûte plus que d'être honnête, et que chaque
+fraude se voie. La blockchain n'a pas été retenue : elle garantit qu'un écrit n'est plus modifié, pas qu'il
+est vrai, et les fraudes d'une place de marché ont lieu dans la vraie vie (faux vendeur, colis, argent liquide).
+
+| Risque | Parade |
+|---|---|
+| Livreur qui dit avoir enlevé ou livré sans l'avoir fait | **Codes de remise** à 4 chiffres (`crypto.randomInt`) : le vendeur (ou le relais, par WhatsApp) donne le sien à l'enlèvement, l'acheteuse le sien au dépôt ; 5 codes faux bloquent le colis jusqu'à la gérante |
+| Livreur qui part avec l'argent liquide | **Plafond** (`driverCashCap`, 30 000 F par défaut, ou propre au livreur après une caution) : commissions dues + parts des vendeurs non reçues ; au-delà, plus de course |
+| Livreur qui dit avoir payé le vendeur | Le vendeur confirme ou signale « pas reçu » ; une part envoyée compte dans le plafond 48 h, ou jusqu'à confirmation si elle est signalée |
+| Faux acheteur (commande puis absent ou refus) | **Livraison ratée** : le colis repart chez le vendeur (arrêt « retour », code du vendeur) ; à 2 ratées, l'acheteur est bloqué jusqu'à ce que la gérante le débloque ; 5 commandes en cours au plus au premier achat |
+| Faux vendeur, ventes gonflées | **Nouvelle boutique** limitée par commande (`newSellerMaxOrder`) jusqu'à 3 ventes livrées ; achat dans sa propre boutique refusé ; livreur qui serait l'acheteur ou le vendeur refusé |
+| Montants trafiqués dans la base | **Registre infalsifiable** (`createLedger`) : chaque mouvement d'argent (livraison, envoi au vendeur, versements, abonnements, échecs) porte l'empreinte HMAC-SHA256 de la ligne précédente, avec une clé tirée de `AUTH_SECRET` (hors de la base) ; JSON canonique (clés triées) pour résister au réordonnancement de PostgreSQL ; table `mp_ledger` (migration 0004) |
+
+L'onglet « Sécurité » de la gérante montre l'état du registre, les acheteurs aux livraisons ratées, l'argent
+gardé par chaque livreur, les vendeurs pas payés et les colis bloqués.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |
@@ -425,6 +443,8 @@ flowchart LR
 - **En-têtes** : Content-Security-Policy stricte, `X-Frame-Options`, `nosniff`,
   `Referrer-Policy`, `Permissions-Policy`.
 - **Authenticité** : marques secrètes jamais stockées dans le dépôt.
+- **Place de marché** : codes de remise, plafond d'argent des livreurs, limites acheteurs et nouvelles
+  boutiques, registre des mouvements d'argent scellé par HMAC (section 4.8).
 
 ---
 

@@ -249,6 +249,7 @@ const mp = () => {
   state.mp.drivers ??= {};
   state.mp.trips ??= {};
   state.mp.relays ??= {};
+  state.mp.ledger ??= [];
   return state.mp;
 };
 export const getMpSeller = id => mp().sellers[id] ?? null;
@@ -311,6 +312,13 @@ export function saveMpRelay(relay) {
   mp().relays[relay.id] = { ...relay, updatedAt: new Date().toISOString() };
   persist();
   return mp().relays[relay.id];
+}
+/* Registre infalsifiable des mouvements d'argent : on ajoute, on ne modifie jamais */
+export const listMpLedger = () => mp().ledger;
+export function appendMpLedger(entry) {
+  mp().ledger.push(entry);
+  persist();
+  return entry;
 }
 export const getMpSettings = () => mp().settings;
 export function saveMpSettings(settings) {

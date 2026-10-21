@@ -208,10 +208,17 @@ const login = async phone => {
   await L.waitForSelector('[data-testid="mp-driver-trip"]', { timeout: 10000 });
   check('4 arrêts dans l’ordre (2 enlèvements, 2 dépôts)', (await L.getByTestId('mp-stop').count()) === 4);
   await shot(L, '5-arrets');
-  // Il fait chaque arrêt dans l'ordre affiché
+  // Il fait chaque arrêt dans l'ordre affiché, avec le code de remise donné par le vendeur ou la cliente
+  const codeFor = async () => {
+    const t = (await j('/api/admin/mp/trips', { headers: A })).body.trips.find(x => x.id === trip.id);
+    const st = t.stops.find(x => !x.done);
+    const o = (await j('/api/admin/mp/orders', { headers: A })).body.orders.find(x => x.id === st.orderId);
+    return st.kind === 'depot' ? o.handover.dropoff : o.handover.pickup;
+  };
   for (let i = 0; i < 4; i++) {
-    const btn = L.locator('[data-testid="mp-stop"] button.btn-dark').first();
-    await btn.click();
+    const card = L.locator('[data-testid="mp-stop"]:has([data-testid="mp-stop-code"])').first();
+    await card.getByTestId('mp-stop-code').fill(await codeFor());
+    await card.locator('button.btn-dark').click();
     await L.waitForTimeout(900);
   }
   check('course terminée', (await L.getByTestId('mp-driver-trip').count()) === 0);

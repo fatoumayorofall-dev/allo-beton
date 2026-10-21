@@ -94,6 +94,26 @@ export default function MpOrders() {
               </li>
             </ul>
             {o.reason && <p className="mt-2 text-sm text-wine">Raison : {o.reason}</p>}
+            {o.handoverCode && (
+              <p
+                className="mt-2 rounded-xl bg-ivory px-3 py-2 text-sm flex flex-wrap items-center gap-x-3"
+                data-testid="mp-handover-code"
+              >
+                <span>
+                  Code de remise : <strong className="text-xl tracking-[0.3em]">{o.handoverCode}</strong>
+                </span>
+                <span className="text-xs text-ink/65">
+                  Donnez-le au livreur seulement quand vous avez votre colis en main. Sans ce code, la commande ne peut
+                  pas être marquée « livrée ».
+                </span>
+              </p>
+            )}
+            {o.status === 'retour' && (
+              <p className="mt-2 text-sm text-orange-900">
+                Le livreur n'a pas pu vous remettre le colis : il retourne chez le vendeur. Après deux livraisons
+                ratées, il faut passer par le service client pour commander à nouveau.
+              </p>
+            )}
             {o.trip && !['livree', 'annulee', 'refusee'].includes(o.status) && (
               <p
                 className="mt-2 text-sm bg-emerald-50 text-emerald-900 rounded-xl px-3 py-2"

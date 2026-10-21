@@ -177,6 +177,8 @@ export function registerAfterSaleRoutes(app, { limit, isAdmin, store, currentUse
           total: o.total,
           orderStatus: o.status,
           driverId: o.driverId ?? null,
+          // Livrée avec le code de la cliente : preuve qu'elle a bien reçu un colis
+          codeChecked: !!o.handover && o.status === 'livree',
           problem: PROBLEMS[o.dispute.kind],
           ...o.dispute,
         })),

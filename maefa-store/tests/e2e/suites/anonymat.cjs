@@ -202,6 +202,7 @@ const publish = async (H, title) => {
   // ── 5. Les vendeuses acceptent ; Awa dépose au relais, Bineta dit où elle est (seulement au livreur)
   const saleA = (await j('/api/mp/me/sales', { headers: HA })).body.orders[0];
   check('vendeuse relais : rappel du dépôt au relais', saleA.delivery.relay?.name === 'Boutique Fatou');
+  check('vendeuse relais : pas de code de remise (c’est le relais qui le reçoit)', saleA.pickupCode === null);
   for (const s of ['acceptee', 'prete'])
     await j(`/api/mp/me/sales/${saleA.id}`, { method: 'PATCH', headers: HA, body: JSON.stringify({ status: s }) });
 
@@ -270,6 +271,11 @@ const publish = async (H, title) => {
   check('livreur : ni le nom ni le numéro de la vendeuse', !/Awa|\+22177510/.test(JSON.stringify(pickA)));
 
   // Suivi de la cliente : pas de position tant que le colis n'est pas enlevé (sinon on verrait le relais)
+  // Codes de remise (le relais les reçoit par WhatsApp, la cliente les voit dans ses commandes)
+  const codeOf = async (orderId, kind) => {
+    const h = (await j('/api/admin/mp/orders', { headers: A })).body.orders.find(o => o.id === orderId).handover;
+    return kind === 'depot' ? h.dropoff : h.pickup;
+  };
   const track = async id => (await j(`/api/mp/me/orders/${id}/driver`, { headers: X })).body.tracking;
   const before = await track(saleA.id);
   check(
@@ -279,7 +285,7 @@ const publish = async (H, title) => {
   await j(`/api/mp/driver/trips/${tA}/stop`, {
     method: 'POST',
     headers: L,
-    body: JSON.stringify({ orderId: saleA.id, kind: 'enlevement' }),
+    body: JSON.stringify({ orderId: saleA.id, kind: 'enlevement', code: await codeOf(saleA.id, 'enlevement') }),
   });
   await j('/api/mp/me/driver/presence', {
     method: 'POST',
@@ -292,7 +298,7 @@ const publish = async (H, title) => {
   await j(`/api/mp/driver/trips/${tA}/stop`, {
     method: 'POST',
     headers: L,
-    body: JSON.stringify({ orderId: saleA.id, kind: 'depot' }),
+    body: JSON.stringify({ orderId: saleA.id, kind: 'depot', code: await codeOf(saleA.id, 'depot') }),
   });
 
   // ── 7. Le livreur chez Bineta : il va au point donné quand le colis était prêt

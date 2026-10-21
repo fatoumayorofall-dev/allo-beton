@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bike, Car, CheckCircle2, Footprints, Loader2, MapPin, Package, Phone, RefreshCw, Wallet } from 'lucide-react';
 import {
   acceptTrip,
+  deliveryFailed,
   fetchMyDriver,
   fetchTripOffers,
   payoutSent,
@@ -11,6 +12,7 @@ import {
   stopDone,
   type Driver,
   type DriverBalance,
+  type DriverCash,
   type DriverTrip,
   type TripOffer,
   type TripStop,
@@ -102,72 +104,142 @@ const SignupForm: React.FC<{ initial?: Driver; onSaved: () => void }> = ({ initi
 };
 
 /** Un arrêt de la course : ce qu'il faut faire, qui appeler, combien encaisser et envoyer. */
-const StopCard: React.FC<{ stop: TripStop; index: number; onDone: () => void; busy: boolean }> = ({
-  stop: s,
-  index,
-  onDone,
-  busy,
-}) => (
-  <li
-    className={`rounded-2xl border p-4 ${s.done ? 'bg-ivory border-transparent opacity-70' : 'bg-white border-ink/[0.08]'}`}
-    data-testid="mp-stop"
-  >
-    <p className="text-xs uppercase tracking-[0.16em] font-semibold text-ink/55">
-      Arrêt {index + 1} · {s.kind === 'enlevement' ? 'Récupérer' : 'Livrer'}
-    </p>
-    <p className="mt-1 font-semibold text-lg">{s.kind === 'enlevement' ? `📦 ${s.shopName}` : `🏠 ${s.buyerName}`}</p>
-    <p className="text-sm text-ink/75">
-      {s.at.label}
-      {s.at.landmark && ` · ${s.at.landmark}`}
-    </p>
-    {s.items && <p className="text-sm mt-1">{s.items.join(', ')}</p>}
-    {s.money && (
-      <dl className="mt-2 grid grid-cols-2 gap-2 text-sm" data-testid="mp-stop-money">
-        <div className="rounded-xl bg-emerald-50 p-2">
-          <dt className="text-xs text-ink/60">À encaisser ({PAYMENT_LABELS[s.payment ?? 'especes']})</dt>
-          <dd className="font-bold text-lg">{F(s.money.collect)}</dd>
-        </div>
-        <div className="rounded-xl bg-ivory p-2">
-          <dt className="text-xs text-ink/60">À envoyer au vendeur</dt>
-          <dd className="font-bold">{F(s.money.sellerGets)}</dd>
-        </div>
-        <div className="rounded-xl bg-ivory p-2">
-          <dt className="text-xs text-ink/60">Vous gardez</dt>
-          <dd className="font-bold">{F(s.money.driverKeeps)}</dd>
-        </div>
-        <div className="rounded-xl bg-ivory p-2">
-          <dt className="text-xs text-ink/60">Pour {MP.name}</dt>
-          <dd className="font-bold">{F(s.money.platformGets)}</dd>
-        </div>
-      </dl>
-    )}
-    {s.note && <p className="mt-2 text-sm italic">« {s.note} »</p>}
-    {!s.done && (
-      <div className="mt-3 flex flex-wrap gap-2">
-        {s.phone && (
-          <a
-            href={`tel:${s.phone}`}
-            className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold inline-flex items-center gap-1.5"
-          >
-            <Phone className="w-4 h-4" /> Appeler
-          </a>
-        )}
-        <a
-          href={mapsLink(s.at)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold inline-flex items-center gap-1.5"
-        >
-          <MapPin className="w-4 h-4" /> Itinéraire
-        </a>
-        <button disabled={busy} onClick={onDone} className="btn-dark !h-10 !px-5" data-testid={`mp-stop-${s.kind}`}>
-          {s.kind === 'enlevement' ? 'Colis récupéré' : `Livré, ${F(s.money?.collect ?? 0)} encaissés`}
-        </button>
-      </div>
-    )}
-    {s.done && <p className="mt-2 text-sm text-emerald-800 font-semibold">✓ Fait</p>}
-  </li>
-);
+const StopCard: React.FC<{
+  stop: TripStop;
+  index: number;
+  onDone: (code: string) => void;
+  onFail: (reason: 'absent' | 'refus') => void;
+  busy: boolean;
+}> = ({ stop: s, index, onDone, onFail, busy }) => {
+  const [code, setCode] = useState('');
+  const title = { enlevement: 'Récupérer', depot: 'Livrer', retour: 'Rapporter au vendeur' }[s.kind];
+  const ready = !s.needsCode || code.length === 4;
+  return (
+    <li
+      className={`rounded-2xl border p-4 ${s.done ? 'bg-ivory border-transparent opacity-70' : 'bg-white border-ink/[0.08]'}`}
+      data-testid="mp-stop"
+    >
+      <p className="text-xs uppercase tracking-[0.16em] font-semibold text-ink/55">
+        Arrêt {index + 1} · {title}
+      </p>
+      <p className="mt-1 font-semibold text-lg">
+        {s.kind === 'depot' ? `🏠 ${s.buyerName}` : `${s.kind === 'retour' ? '↩️' : '📦'} ${s.shopName}`}
+      </p>
+      <p className="text-sm text-ink/75">
+        {s.at.label}
+        {s.at.landmark && ` · ${s.at.landmark}`}
+      </p>
+      {s.items && <p className="text-sm mt-1">{s.items.join(', ')}</p>}
+      {s.money && s.kind === 'depot' && !s.failed && (
+        <dl className="mt-2 grid grid-cols-2 gap-2 text-sm" data-testid="mp-stop-money">
+          <div className="rounded-xl bg-emerald-50 p-2">
+            <dt className="text-xs text-ink/60">À encaisser ({PAYMENT_LABELS[s.payment ?? 'especes']})</dt>
+            <dd className="font-bold text-lg">{F(s.money.collect)}</dd>
+          </div>
+          <div className="rounded-xl bg-ivory p-2">
+            <dt className="text-xs text-ink/60">À envoyer au vendeur</dt>
+            <dd className="font-bold">{F(s.money.sellerGets)}</dd>
+          </div>
+          <div className="rounded-xl bg-ivory p-2">
+            <dt className="text-xs text-ink/60">Vous gardez</dt>
+            <dd className="font-bold">{F(s.money.driverKeeps)}</dd>
+          </div>
+          <div className="rounded-xl bg-ivory p-2">
+            <dt className="text-xs text-ink/60">Pour {MP.name}</dt>
+            <dd className="font-bold">{F(s.money.platformGets)}</dd>
+          </div>
+        </dl>
+      )}
+      {s.note && <p className="mt-2 text-sm italic">« {s.note} »</p>}
+      {!s.done && (
+        <>
+          {s.needsCode && (
+            <label className="mt-3 block">
+              <span className="block text-sm text-ink/75">
+                {s.kind === 'depot'
+                  ? 'Donnez le colis, puis demandez le code de remise à la personne (il est sur son téléphone).'
+                  : s.kind === 'retour'
+                    ? 'Rendez le colis, puis demandez le code de remise au vendeur (ou au point relais).'
+                    : 'En prenant le colis, demandez le code de remise au vendeur (ou au point relais).'}
+              </span>
+              <input
+                value={code}
+                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="····"
+                aria-label="Code de remise"
+                className="field mt-1 !w-44 tracking-[0.4em] text-center text-lg"
+                data-testid="mp-stop-code"
+              />
+            </label>
+          )}
+          <div className="mt-3 flex flex-wrap gap-2">
+            {s.phone && (
+              <a
+                href={`tel:${s.phone}`}
+                className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold inline-flex items-center gap-1.5"
+              >
+                <Phone className="w-4 h-4" /> Appeler
+              </a>
+            )}
+            <a
+              href={mapsLink(s.at)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold inline-flex items-center gap-1.5"
+            >
+              <MapPin className="w-4 h-4" /> Itinéraire
+            </a>
+            <button
+              disabled={busy || !ready}
+              onClick={() => onDone(code)}
+              className="btn-dark !h-10 !px-5"
+              data-testid={`mp-stop-${s.kind}`}
+            >
+              {s.kind === 'enlevement'
+                ? 'Colis récupéré'
+                : s.kind === 'retour'
+                  ? 'Colis rendu'
+                  : `Livré, ${F(s.money?.collect ?? 0)} encaissés`}
+            </button>
+          </div>
+          {s.kind === 'depot' && (
+            <div className="mt-2 flex flex-wrap gap-2 text-sm">
+              {(
+                [
+                  ['absent', 'Client absent'],
+                  ['refus', 'Refuse le colis'],
+                ] as const
+              ).map(([reason, label]) => (
+                <button
+                  key={reason}
+                  disabled={busy}
+                  onClick={() =>
+                    window.confirm(`${label} : le colis sera rapporté au vendeur. Vous l'avez bien appelé ?`) &&
+                    onFail(reason)
+                  }
+                  className="h-9 px-3 rounded-full border border-wine/30 text-wine font-semibold"
+                  data-testid={`mp-stop-${reason}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+      {s.done &&
+        (s.failed ? (
+          <p className="mt-2 text-sm text-wine font-semibold">
+            ✗ Non livré ({s.failed === 'absent' ? 'client absent' : 'refus'}) : colis à rapporter
+          </p>
+        ) : (
+          <p className="mt-2 text-sm text-emerald-800 font-semibold">✓ Fait</p>
+        ))}
+    </li>
+  );
+};
 
 /**
  * Espace livreur : disponibilité, courses proposées (express ou moitié-moitié), arrêts dans l'ordre,
@@ -178,6 +250,7 @@ export default function MpDriver() {
   const { status } = useAccount();
   const [driver, setDriver] = useState<Driver | null | undefined>(undefined);
   const [balance, setBalance] = useState<DriverBalance | null>(null);
+  const [cash, setCash] = useState<DriverCash | null>(null);
   const [trip, setTrip] = useState<DriverTrip | null>(null);
   const [offers, setOffers] = useState<TripOffer[]>([]);
   const [busy, setBusy] = useState(false);
@@ -188,6 +261,7 @@ export default function MpDriver() {
     if (!r.ok) return setDriver(null);
     setDriver(r.data.driver);
     setBalance(r.data.balance ?? null);
+    setCash(r.data.cash ?? null);
     setTrip(r.data.trip ?? null);
     if (r.data.driver?.status === 'active') {
       const o = await fetchTripOffers();
@@ -314,7 +388,8 @@ export default function MpDriver() {
                 stop={s}
                 index={i}
                 busy={busy}
-                onDone={() => act(() => stopDone(trip.id, s.orderId, s.kind))}
+                onDone={code => act(() => stopDone(trip.id, s.orderId, s.kind, code))}
+                onFail={reason => act(() => deliveryFailed(trip.id, s.orderId, reason))}
               />
             ))}
           </ol>
@@ -331,6 +406,12 @@ export default function MpDriver() {
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
+          {cash?.blocked && (
+            <p className="rounded-2xl bg-amber-50 text-amber-950 p-3 text-sm" data-testid="mp-driver-blocked">
+              Vous gardez {F(cash.held)} (plafond {F(cash.cap)}) : envoyez leur part aux vendeurs et versez les
+              commissions à {MP.name} pour recevoir de nouvelles courses.
+            </p>
+          )}
           {!offers.length && (
             <p className="text-sm text-ink/70">
               Aucune course prête pour l'instant.{' '}
@@ -408,8 +489,14 @@ export default function MpDriver() {
               </ul>
             </div>
           )}
+          {cash && (
+            <p className="text-sm" data-testid="mp-driver-cash">
+              Argent que vous gardez pour les autres : <strong>{F(cash.held)}</strong> sur {F(cash.cap)} autorisés.
+            </p>
+          )}
           <p className="text-xs text-ink/60">
-            Réglez ce que vous devez à {MP.name} par Wave chaque semaine ; la gérante l'enregistre à réception.
+            Réglez ce que vous devez à {MP.name} par Wave chaque semaine ; la gérante l'enregistre à réception. Au-delà
+            du plafond, vous ne recevez plus de course.
           </p>
         </section>
       )}

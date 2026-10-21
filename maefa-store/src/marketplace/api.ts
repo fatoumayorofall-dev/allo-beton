@@ -100,7 +100,8 @@ export interface PublicDriver {
   phone: string;
   vehicle: 'moto' | 'voiture' | 'velo' | 'pied';
 }
-export type OrderStatus = 'nouvelle' | 'acceptee' | 'prete' | 'en_livraison' | 'livree' | 'refusee' | 'annulee';
+export type OrderStatus =
+  'nouvelle' | 'acceptee' | 'prete' | 'en_livraison' | 'retour' | 'livree' | 'refusee' | 'annulee';
 export interface MpOrder {
   id: string;
   sellerId: string;
@@ -132,6 +133,14 @@ export interface MpOrder {
   reason?: string;
   history: { status: OrderStatus; at: string; by: string }[];
   createdAt: string;
+  /** Vue acheteur : code à donner au livreur quand on a le colis en main */
+  handoverCode?: string | null;
+  /** Vue vendeur : code à donner au livreur en lui remettant le colis (ou en le récupérant) */
+  pickupCode?: string | null;
+  /** Livraison ratée (client absent ou refus) : le colis est rapporté au vendeur */
+  failedDelivery?: { reason: 'absent' | 'refus'; at: string; forgiven?: string } | null;
+  /** Vue gérante : codes de remise et essais faux */
+  handover?: { pickup: string; dropoff: string; tries: number };
   /** Vue acheteur */
   seller?: MpSeller | null;
   sellerPhone?: string | null;
@@ -156,7 +165,7 @@ export interface MpOrder {
   /** Vue vendeur : livreur de la course et montant qu'il vous envoie */
   driver?: PublicDriver | null;
   sellerGets?: number | null;
-  payout?: { sentAt?: string; receivedAt?: string; amount?: number };
+  payout?: { sentAt?: string; receivedAt?: string; amount?: number; missing?: string | null };
   /** Vue vendeur */
   platformFee?: number;
   buyerFeeToPay?: number;
@@ -181,6 +190,10 @@ export interface MpSettings {
   freeListings: number;
   proPrice: number;
   proRate: number;
+  /** Argent qu'un livreur peut garder avant d'être bloqué */
+  driverCashCap: number;
+  /** Nouvelle boutique : montant d'articles au plus par commande */
+  newSellerMaxOrder: number;
 }
 export interface MySeller extends MpSeller {
   status: 'en_attente' | 'active' | 'suspendue' | 'fermee';
@@ -308,8 +321,12 @@ export const moveSale = (
 ) => post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}`, { status, reason, pickup }, 'PATCH');
 export const fetchRelays = () => call<{ relays: Relay[] }>('/api/mp/relays');
 
-export const confirmPayout = (id: string) =>
-  post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}/payout`, { received: true }, 'PATCH');
+export const confirmPayout = (id: string, missing = false) =>
+  post<{ order: MpOrder; balance: Balance }>(
+    `/api/mp/me/sales/${id}/payout`,
+    missing ? { missing: true } : { received: true },
+    'PATCH',
+  );
 export const requestPro = () => post<{ seller: MySeller }>('/api/mp/me/plan-request', {});
 
 /* ---------- Livreur ---------- */
@@ -333,6 +350,12 @@ export interface DriverBalance {
   payments: { id: string; amount: number; note: string; at: string }[];
   payoutsToSend: { orderId: string; shopName: string; amount: number }[];
 }
+/** Argent que garde le livreur (commissions dues + parts des vendeurs) et son plafond */
+export interface DriverCash {
+  held: number;
+  cap: number;
+  blocked: boolean;
+}
 export interface TripOffer {
   id: string;
   mode: 'express' | 'partagee';
@@ -344,8 +367,12 @@ export interface TripOffer {
 }
 export interface TripStop {
   orderId: string;
-  kind: 'enlevement' | 'depot';
+  kind: 'enlevement' | 'depot' | 'retour';
   done: boolean;
+  /** Livraison ratée : raison */
+  failed?: 'absent' | 'refus';
+  /** Le code de remise est demandé pour valider l'arrêt */
+  needsCode?: boolean;
   phone: string | null;
   at: DeliveryLocation & { landmark?: string };
   shopName?: string;
@@ -365,19 +392,30 @@ export interface DriverTrip {
   stops: TripStop[];
 }
 export const fetchMyDriver = () =>
-  call<{ driver: Driver | null; balance?: DriverBalance; trip?: DriverTrip | null; driverRate?: number }>(
-    '/api/mp/me/driver',
-  );
+  call<{
+    driver: Driver | null;
+    balance?: DriverBalance;
+    cash?: DriverCash;
+    trip?: DriverTrip | null;
+    driverRate?: number;
+  }>('/api/mp/me/driver');
 export const saveMyDriver = (body: { name: string; vehicle: string; zone: string }) =>
   post<{ driver: Driver; balance: DriverBalance }>('/api/mp/me/driver', body);
 export const setPresence = (online: boolean, location?: { lat: number; lng: number }) =>
   post<{ driver: Driver }>('/api/mp/me/driver/presence', { online, location });
-export const fetchTripOffers = () => call<{ trips: TripOffer[]; current: DriverTrip | null }>('/api/mp/driver/trips');
+export const fetchTripOffers = () =>
+  call<{ trips: TripOffer[]; current: DriverTrip | null; cash: DriverCash }>('/api/mp/driver/trips');
 export const acceptTrip = (id: string) => post<{ trip: DriverTrip }>(`/api/mp/driver/trips/${id}/accept`, {});
-export const stopDone = (id: string, orderId: string, kind: TripStop['kind']) =>
-  post<{ trip: DriverTrip; balance: DriverBalance }>(`/api/mp/driver/trips/${id}/stop`, { orderId, kind });
+export const stopDone = (id: string, orderId: string, kind: TripStop['kind'], code?: string) =>
+  post<{ trip: DriverTrip; balance: DriverBalance; cash: DriverCash }>(`/api/mp/driver/trips/${id}/stop`, {
+    orderId,
+    kind,
+    code,
+  });
+export const deliveryFailed = (id: string, orderId: string, reason: 'absent' | 'refus') =>
+  post<{ trip: DriverTrip }>(`/api/mp/driver/trips/${id}/fail`, { orderId, reason });
 export const payoutSent = (orderId: string) =>
-  post<{ balance: DriverBalance }>(`/api/mp/driver/orders/${orderId}/payout`, {});
+  post<{ balance: DriverBalance; cash: DriverCash }>(`/api/mp/driver/orders/${orderId}/payout`, {});
 
 /* ---------- Gérante ---------- */
 const admin = (pin: string) => ({ 'x-admin-pin': pin });
@@ -391,6 +429,9 @@ export interface AdminSeller extends MySeller {
 export interface AdminDriver extends Driver {
   ownerPhone: string | null;
   balance: DriverBalance;
+  cash: DriverCash;
+  /** Plafond propre au livreur (après une caution) ; sinon le plafond général */
+  cashCap?: number | null;
   current: string | null;
 }
 export interface AdminTrip {
@@ -453,11 +494,11 @@ export const adminSettings = (pin: string, body: Partial<MpSettings>) =>
   });
 export const adminDrivers = (pin: string) =>
   call<{ drivers: AdminDriver[] }>('/api/admin/mp/drivers', { headers: admin(pin) });
-export const adminPatchDriver = (pin: string, id: string, status: string) =>
+export const adminPatchDriver = (pin: string, id: string, body: { status?: string; cashCap?: number | null }) =>
   call<{ driver: Driver }>(`/api/admin/mp/drivers/${id}`, {
     method: 'PATCH',
     headers: admin(pin),
-    body: JSON.stringify({ status }),
+    body: JSON.stringify(body),
   });
 export const adminDriverPayment = (pin: string, id: string, amount: number) =>
   call<{ balance: DriverBalance }>(`/api/admin/mp/drivers/${id}/payments`, {
@@ -481,6 +522,8 @@ export interface AdminDispute {
   total: number;
   orderStatus: OrderStatus;
   driverId: string | null;
+  /** Livrée avec le code de la cliente */
+  codeChecked: boolean;
   problem: string;
   kind: ProblemKind;
   text: string;
@@ -514,3 +557,43 @@ export const adminSaveRelay = (pin: string, body: Partial<AdminRelay> & { locati
     headers: admin(pin),
     body: JSON.stringify(body),
   });
+
+/* ---------- Sécurité : fraudes et registre ---------- */
+export interface LedgerCheck {
+  ok: boolean;
+  count: number;
+  head: string | null;
+  brokenAt: number | null;
+}
+export interface Security {
+  buyers: {
+    phone: string;
+    name: string;
+    strikes: number;
+    blocked: boolean;
+    failures: { orderId: string; reason: 'absent' | 'refus'; at: string }[];
+  }[];
+  unpaidSellers: { orderId: string; shopName: string; amount: number; driver: PublicDriver | null; at: string }[];
+  drivers: ({ id: string; name: string; phone: string } & DriverCash)[];
+  lockedCodes: { orderId: string; shopName: string; status: OrderStatus }[];
+  newSellers: number;
+  ledger: LedgerCheck;
+}
+export interface LedgerEntry {
+  seq: number;
+  at: string;
+  type: string;
+  data: Record<string, unknown>;
+  hash: string;
+}
+export const adminSecurity = (pin: string) => call<Security>('/api/admin/mp/security', { headers: admin(pin) });
+export const adminForgiveBuyer = (pin: string, phone: string) =>
+  call<{ forgiven: number }>('/api/admin/mp/buyers/forgive', {
+    method: 'POST',
+    headers: admin(pin),
+    body: JSON.stringify({ phone }),
+  });
+export const adminUnlockOrder = (pin: string, id: string) =>
+  call<{ ok: true }>(`/api/admin/mp/orders/${id}/unlock`, { method: 'POST', headers: admin(pin) });
+export const adminLedger = (pin: string) =>
+  call<{ check: LedgerCheck; entries: LedgerEntry[] }>('/api/admin/mp/ledger', { headers: admin(pin) });

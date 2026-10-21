@@ -5,11 +5,14 @@
 //  - il suit les arrêts dans l'ordre calculé : enlèvement chez chaque vendeur, dépôt chez chaque acheteur ;
 //  - argent (méthode A) : il encaisse l'acheteur, envoie au vendeur sa part par Wave, garde la sienne
 //    et doit à la plateforme ses commissions ; l'application lui affiche chaque montant ;
-//  - le vendeur ne voit jamais le numéro de l'acheteur : seul le livreur l'a, pendant la course.
+//  - le vendeur ne voit jamais le numéro de l'acheteur : seul le livreur l'a, pendant la course ;
+//  - anti-fraude : code de remise à chaque enlèvement et chaque dépôt, livraison ratée (absent, refus)
+//    avec retour du colis au vendeur, plafond d'argent gardé, pas de course sur sa propre commande.
 // ============================================================
 import crypto from 'node:crypto';
 import { roadKm, settlement } from './pricing.js';
 import { ratingOf } from './aftersale.js';
+import { cashHeld, checkHandover } from './fraud.js';
 
 const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const code = n => Array.from(crypto.randomBytes(n), b => ALPHABET[b % ALPHABET.length]).join('');
@@ -17,11 +20,15 @@ const clip = (v, n) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().sl
 const VEHICLES = new Set(['moto', 'voiture', 'velo', 'pied']);
 const F = n => `${Math.round(n).toLocaleString('fr-FR')} F`;
 const DEAD = new Set(['annulee', 'refusee']);
+const FAIL_REASONS = { absent: 'Client absent ou injoignable', refus: 'Client a refusé le colis' };
 
 /** Ce que l'acheteur et le vendeur voient du livreur. */
 export const publicDriver = d => (d ? { name: d.name, phone: d.phone, vehicle: d.vehicle } : null);
 
-export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, trips, settings, notify }) {
+export function registerDriverRoutes(
+  app,
+  { limit, isAdmin, store, currentUser, trips, settings, notify, ledger, restock },
+) {
   const now = () => new Date().toISOString();
   const tooMany = (req, res, key, max, ms) => {
     if (limit(key, max, ms)) return false;
@@ -59,6 +66,14 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
     };
   }
 
+  /** Argent que garde le livreur et son plafond : au-delà, plus de nouvelle course. */
+  function cashOf(d) {
+    const delivered = store.listMpOrders().filter(o => o.driverId === d.id && o.status === 'livree');
+    const held = cashHeld(balanceOf(d).balance, delivered);
+    const cap = d.cashCap ?? settings().driverCashCap;
+    return { held, cap, blocked: held >= cap };
+  }
+
   /** Course proposée (avant acceptation) : pas d'adresse exacte ni de numéro, la distance et le gain. */
   function offerView(t, d) {
     const orders = trips.live(t);
@@ -88,11 +103,12 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
       .map(st => {
         const o = orders.get(st.orderId);
         const seller = store.getMpSeller(o.sellerId);
-        if (st.kind === 'enlevement') {
+        if (st.kind === 'enlevement' || st.kind === 'retour') {
           // Point relais : le livreur s'adresse au relais, il ne voit ni ne contacte le vendeur
           const relay = o.delivery.relay ? store.getMpRelay(o.delivery.relay.id) : null;
           return {
             ...st,
+            needsCode: !!o.handover,
             shopName: relay ? `Point relais ${relay.name} (colis ${o.id})` : o.shopName,
             phone: relay ? relay.phone : (seller?.contactPhone ?? seller?.ownerPhone ?? null),
             at: relay
@@ -108,6 +124,7 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
         );
         return {
           ...st,
+          needsCode: !!o.handover,
           buyerName: o.buyer.name,
           phone: o.buyer.phone,
           at: o.delivery.to,
@@ -129,7 +146,13 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
     const d = store.findMpDriverByOwner(user.phone);
     if (!d || d.status === 'fermee') return res.json({ driver: null });
     const t = currentTrip(d);
-    res.json({ driver: d, balance: balanceOf(d), trip: t ? tripView(t) : null, driverRate: settings().driverRate });
+    res.json({
+      driver: d,
+      balance: balanceOf(d),
+      cash: cashOf(d),
+      trip: t ? tripView(t) : null,
+      driverRate: settings().driverRate,
+    });
   });
 
   app.post('/api/mp/me/driver', (req, res) => {
@@ -186,7 +209,7 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
       .map(t => offerView(t, d))
       .sort((a, b) => (a.toFirstKm ?? 99) - (b.toFirstKm ?? 99));
     const t = currentTrip(d);
-    res.json({ trips: list, current: t ? tripView(t) : null });
+    res.json({ trips: list, current: t ? tripView(t) : null, cash: cashOf(d) });
   });
 
   app.post('/api/mp/driver/trips/:id/accept', (req, res) => {
@@ -195,6 +218,19 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
     if (currentTrip(d)) return res.status(409).json({ error: "Terminez d'abord votre course en cours" });
     const t = trips.available().find(x => x.id === clip(req.params.id, 20));
     if (!t) return res.status(409).json({ error: 'Course déjà prise ou plus disponible' });
+    const cash = cashOf(d);
+    if (cash.blocked)
+      return res.status(409).json({
+        error: `Vous gardez ${F(cash.held)} (plafond ${F(cash.cap)}) : envoyez leur part aux vendeurs et versez les commissions avant une nouvelle course.`,
+      });
+    // Pas de course sur une commande où le livreur est lui-même l'acheteur ou le vendeur
+    const mine = new Set([d.phone, d.ownerPhone]);
+    const involved = trips.live(t).some(o => {
+      const v = store.getMpSeller(o.sellerId);
+      return [o.buyerPhone, v?.ownerPhone, v?.contactPhone].some(p => p && mine.has(p));
+    });
+    if (involved)
+      return res.status(409).json({ error: 'Vous ne pouvez pas livrer une commande où vous êtes acheteur ou vendeur' });
     const saved = store.saveMpTrip({
       ...t,
       driverId: d.id,
@@ -220,17 +256,39 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
     const orderId = clip(req.body?.orderId, 20);
     const kind = req.body?.kind;
     const stop = (t.stops ?? []).find(s => s.orderId === orderId && s.kind === kind);
-    const o = store.getMpOrder(orderId);
+    let o = store.getMpOrder(orderId);
     if (!stop || !o || DEAD.has(o.status)) return res.status(404).json({ error: 'Arrêt introuvable' });
     if (stop.done) return res.status(409).json({ error: 'Déjà fait' });
+    if (kind === 'retour' && o.status !== 'retour') return res.status(409).json({ error: 'Pas de colis à rendre' });
+    if (kind === 'enlevement' && o.status !== 'prete')
+      return res.status(409).json({ error: "Le vendeur n'a pas encore préparé ce colis" });
+    if (kind === 'depot' && o.status !== 'en_livraison')
+      return res.status(409).json({ error: "Récupérez d'abord le colis" });
+    // Code de remise : donné par le vendeur ou le relais (enlèvement, retour), par l'acheteur (dépôt)
+    const check = checkHandover(o.handover, kind, req.body?.code);
+    if (!check.ok) {
+      if (check.handover) store.saveMpOrder({ ...o, handover: check.handover });
+      if (check.status === 423 && check.handover?.tries === 5 && process.env.OWNER_WHATSAPP)
+        notify(process.env.OWNER_WHATSAPP, `🔒 Colis ${o.id} bloqué : 5 codes faux saisis par ${d.name}.`);
+      return res.status(check.status).json({ error: check.error });
+    }
+    if (o.handover?.tries) o = { ...o, handover: { ...o.handover, tries: 0 } };
     const history = s => [...(o.history ?? []), { status: s, at: now(), by: 'livreur' }];
-    if (kind === 'enlevement') {
-      if (o.status !== 'prete') return res.status(409).json({ error: "Le vendeur n'a pas encore préparé ce colis" });
+    if (kind === 'retour') {
+      store.saveMpOrder({
+        ...o,
+        status: 'annulee',
+        reason: `Livraison impossible : ${FAIL_REASONS[o.failedDelivery?.reason] ?? 'colis rendu'}`,
+        history: history('annulee'),
+      });
+      restock(o);
+      ledger.append('colis_rendu', { orderId: o.id, driverId: d.id, sellerId: o.sellerId });
+      const seller = store.getMpSeller(o.sellerId);
+      notify(seller?.contactPhone ?? seller?.ownerPhone, `↩️ Colis ${o.id} rendu. La commande est annulée.`);
+    } else if (kind === 'enlevement') {
       store.saveMpOrder({ ...o, status: 'en_livraison', driverId: d.id, history: history('en_livraison') });
       notify(o.buyerPhone, `📦 Votre commande ${o.id} est en route avec ${d.name}.`);
     } else {
-      const picked = t.stops.find(s => s.orderId === orderId && s.kind === 'enlevement')?.done;
-      if (!picked || o.status !== 'en_livraison') return res.status(409).json({ error: "Récupérez d'abord le colis" });
       const money = settlement(
         {
           subtotal: o.subtotal,
@@ -249,6 +307,15 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
         deliveredAt: now(),
         history: history('livree'),
       });
+      ledger.append('livraison', {
+        orderId: o.id,
+        driverId: d.id,
+        sellerId: o.sellerId,
+        collect: money.collect,
+        sellerGets: money.sellerGets,
+        driverKeeps: money.driverKeeps,
+        platformGets: money.platformGets,
+      });
       const seller = store.getMpSeller(o.sellerId);
       notify(
         seller?.contactPhone ?? seller?.ownerPhone,
@@ -263,7 +330,56 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
       stops,
       ...(left.length ? {} : { status: 'terminee', doneAt: now() }),
     });
-    res.json({ trip: tripView(saved), balance: balanceOf(d) });
+    res.json({ trip: tripView(saved), balance: balanceOf(d), cash: cashOf(d) });
+  });
+
+  // Livraison impossible : client absent ou refus. Le colis repart chez le vendeur (ou au relais) ;
+  // au 2e échec, l'acheteur doit passer par le service client pour commander à nouveau.
+  app.post('/api/mp/driver/trips/:id/fail', (req, res) => {
+    const d = driverOf(req, res);
+    if (!d) return;
+    const t = store.getMpTrip(clip(req.params.id, 20));
+    if (!t || t.driverId !== d.id || t.status !== 'acceptee')
+      return res.status(404).json({ error: 'Course introuvable' });
+    const orderId = clip(req.body?.orderId, 20);
+    const reason = req.body?.reason;
+    if (!(reason in FAIL_REASONS)) return res.status(400).json({ error: 'Choisissez la raison' });
+    const o = store.getMpOrder(orderId);
+    const stop = (t.stops ?? []).find(s => s.orderId === orderId && s.kind === 'depot');
+    if (!o || !stop || stop.done || o.status !== 'en_livraison')
+      return res.status(409).json({ error: 'Ce colis ne peut pas être déclaré non livré' });
+    const at = now();
+    store.saveMpOrder({
+      ...o,
+      status: 'retour',
+      failedDelivery: { reason, at, driverId: d.id },
+      history: [...(o.history ?? []), { status: 'retour', at, by: 'livreur', reason: FAIL_REASONS[reason] }],
+    });
+    const saved = store.saveMpTrip({
+      ...t,
+      stops: [
+        ...t.stops.map(s => (s === stop ? { ...s, done: true, failed: reason, at } : s)),
+        { orderId, kind: 'retour', done: false },
+      ],
+    });
+    ledger.append('livraison_ratee', { orderId, driverId: d.id, buyerPhone: o.buyerPhone, reason });
+    notify(
+      o.buyerPhone,
+      `Commande ${o.id} : le livreur n'a pas pu vous la remettre (${FAIL_REASONS[reason].toLowerCase()}). Le colis retourne au vendeur.`,
+    );
+    const seller = store.getMpSeller(o.sellerId);
+    notify(
+      seller?.contactPhone ?? seller?.ownerPhone,
+      `↩️ Commande ${o.id} non livrée (${FAIL_REASONS[reason].toLowerCase()}) : ${d.name} vous rapporte le colis. Vérifiez-le, puis donnez-lui votre code de remise.`,
+    );
+    if (o.delivery.relay) {
+      const relay = store.getMpRelay(o.delivery.relay.id);
+      notify(
+        relay?.phone,
+        `↩️ Colis ${o.id} : le livreur le ramène. Gardez-le pour le vendeur et donnez au livreur le code ${o.handover?.pickup}.`,
+      );
+    }
+    res.json({ trip: tripView(saved) });
   });
 
   // Part du vendeur envoyée (Wave, Orange Money…) : le vendeur confirme ensuite la réception
@@ -273,16 +389,18 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
     const o = store.getMpOrder(clip(req.params.id, 20));
     if (!o || o.driverId !== d.id || o.status !== 'livree')
       return res.status(404).json({ error: 'Commande introuvable' });
+    if (o.payout?.sentAt) return res.status(409).json({ error: 'Déjà indiqué comme envoyé' });
     const saved = store.saveMpOrder({
       ...o,
-      payout: { ...(o.payout ?? {}), sentAt: o.payout?.sentAt ?? now(), amount: o.settlement.sellerGets },
+      payout: { ...(o.payout ?? {}), sentAt: now(), amount: o.settlement.sellerGets },
     });
+    ledger.append('envoi_vendeur', { orderId: o.id, driverId: d.id, amount: o.settlement.sellerGets });
     const seller = store.getMpSeller(o.sellerId);
     notify(
       seller?.contactPhone ?? seller?.ownerPhone,
       `💸 ${d.name} indique vous avoir envoyé ${F(o.settlement.sellerGets)} (commande ${o.id}). Confirmez la réception dans votre espace.`,
     );
-    res.json({ order: { id: saved.id, payout: saved.payout }, balance: balanceOf(d) });
+    res.json({ order: { id: saved.id, payout: saved.payout }, balance: balanceOf(d), cash: cashOf(d) });
   });
 
   /* ---------- Gérante ---------- */
@@ -301,6 +419,7 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
         .map(d => ({
           ...d,
           balance: balanceOf(d),
+          cash: cashOf(d),
           current: currentTrip(d)?.id ?? null,
           rating: ratingOf(
             store.listMpOrders().filter(o => o.driverId === d.id),
@@ -314,10 +433,18 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
     if (!guard(req, res)) return;
     const d = store.getMpDriver(clip(req.params.id, 20));
     if (!d) return res.status(404).json({ error: 'Livreur introuvable' });
-    const status = req.body?.status;
-    if (!['en_attente', 'active', 'suspendue'].includes(status))
+    const { status, cashCap } = req.body ?? {};
+    if (status !== undefined && !['en_attente', 'active', 'suspendue'].includes(status))
       return res.status(400).json({ error: 'Statut invalide' });
-    const saved = store.saveMpDriver({ ...d, status, ...(status !== 'active' ? { online: false } : {}) });
+    // Plafond propre au livreur (ex. : après une caution) ; null = plafond général
+    const cap = cashCap === null ? null : Math.round(Number(cashCap));
+    if (cashCap !== undefined && cap !== null && !(cap >= 0 && cap <= 10_000_000))
+      return res.status(400).json({ error: 'Plafond invalide' });
+    const saved = store.saveMpDriver({
+      ...d,
+      ...(status ? { status, ...(status !== 'active' ? { online: false } : {}) } : {}),
+      ...(cashCap !== undefined ? { cashCap: cap } : {}),
+    });
     if (status === 'active' && d.status !== 'active')
       notify(d.phone, '✅ Votre inscription de livreur est validée : ouvrez votre espace pour voir les courses.');
     res.json({ driver: saved });
@@ -332,7 +459,8 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
       return res.status(400).json({ error: 'Montant invalide' });
     const payment = { id: code(6), amount, note: clip(req.body?.note, 120), at: now() };
     const saved = store.saveMpDriver({ ...d, payments: [...(d.payments ?? []), payment] });
-    res.status(201).json({ payment, balance: balanceOf(saved) });
+    ledger.append('versement_livreur', { driverId: d.id, paymentId: payment.id, amount });
+    res.status(201).json({ payment, balance: balanceOf(saved), cash: cashOf(saved) });
   });
 
   app.get('/api/admin/mp/trips', (req, res) => {
@@ -358,5 +486,5 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
     res.json({ trip: trips.close(t, 'lancée par la gérante') });
   });
 
-  return { balanceOf, currentTrip };
+  return { balanceOf, currentTrip, cashOf };
 }

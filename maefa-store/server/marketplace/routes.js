@@ -27,6 +27,16 @@ import { publicDriver, registerDriverRoutes } from './drivers.js';
 import { publicReviews, ratingOf, registerAfterSaleRoutes } from './aftersale.js';
 import { CONTACT_REFUSED, findContact } from './contact.js';
 import { SIGNALS, bump, cleanTaste, rankFeed } from './ranking.js';
+import {
+  MAX_STRIKES,
+  PROVEN_SALES,
+  buyerLimit,
+  buyerStrikes,
+  createLedger,
+  newHandover,
+  sellerLimit,
+} from './fraud.js';
+import { shopSecret } from '../brandSecurity.js';
 
 /** Rayons de la place de marché (les restaurants viendront avec la livraison rapide). */
 export const MP_CATEGORIES = [
@@ -41,8 +51,17 @@ export const MP_CATEGORIES = [
 ];
 const CATEGORY_IDS = new Set(MP_CATEGORIES.map(c => c.id));
 const CONDITIONS = new Set(['neuf', 'occasion']);
-export const ORDER_STATUSES = ['nouvelle', 'acceptee', 'prete', 'en_livraison', 'livree', 'refusee', 'annulee'];
-const ACTIVE = new Set(['nouvelle', 'acceptee', 'prete', 'en_livraison']);
+export const ORDER_STATUSES = [
+  'nouvelle',
+  'acceptee',
+  'prete',
+  'en_livraison',
+  'retour',
+  'livree',
+  'refusee',
+  'annulee',
+];
+const ACTIVE = new Set(['nouvelle', 'acceptee', 'prete', 'en_livraison', 'retour']);
 /** Ce que le vendeur peut faire à chaque étape */
 const SELLER_MOVES = {
   nouvelle: ['acceptee', 'refusee'],
@@ -174,6 +193,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   };
   const site = req => `${req.protocol}://${req.get('host')}`;
   const trips = createTripService({ store, settings, notify });
+  // Registre infalsifiable des mouvements d'argent (scellé avec la clé du serveur, gardée hors de la base)
+  const ledger = createLedger({ store, secret: shopSecret() });
   const tooMany = (req, res, key, max, windowMs) => {
     if (limit(key, max, windowMs)) return false;
     res.status(429).json({ error: 'Trop de demandes, réessayez dans un moment.' });
@@ -375,7 +396,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       const found = visibleListing(clip(it?.listingId, 20));
       if (!found) return { error: "Un article n'est plus disponible : retirez-le du panier" };
       const { listing, seller } = found;
-      if (buyerPhone && seller.ownerPhone === buyerPhone)
+      if (buyerPhone && (seller.ownerPhone === buyerPhone || seller.contactPhone === buyerPhone))
         return { error: 'Vous ne pouvez pas commander dans votre propre boutique' };
       const qty = Math.round(Number(it.qty));
       if (!Number.isInteger(qty) || qty < 1 || qty > 20) return { error: 'Quantité invalide' };
@@ -401,6 +422,14 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         variantLabel: listing.variantLabel || null,
       });
       groups.set(seller.id, g);
+    }
+    // Nouvelle boutique : montant limité tant qu'elle n'a pas livré quelques commandes
+    const all = store.listMpOrders();
+    for (const { seller, lines } of groups.values()) {
+      const delivered = all.filter(o => o.sellerId === seller.id && o.status === 'livree').length;
+      const subtotal = lines.reduce((t, l) => t + l.price * l.qty, 0);
+      const tooBig = sellerLimit(seller, delivered, subtotal, s.newSellerMaxOrder);
+      if (tooBig) return { error: tooBig };
     }
     const orders = [...groups.values()].map(({ seller, lines }) => {
       const subtotal = lines.reduce((t, l) => t + l.price * l.qty, 0);
@@ -461,6 +490,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const to = b.to;
     const r = prepare(b.items, to, user.phone);
     if (r.error) return res.status(400).json({ error: r.error });
+    // Faux acheteurs : livraisons ratées, trop de commandes en cours
+    const blocked = buyerLimit(store.listMpOrders(), user.phone, r.orders.length);
+    if (blocked) return res.status(403).json({ error: blocked });
     const payment = ['especes', 'wave', 'orange_money'].includes(b.payment) ? b.payment : 'especes';
     // Livraison : par le vendeur (sans livreurs de la plateforme), sinon express ou moitié-moitié
     const mode = !settings().drivers ? 'vendeur' : b.mode === 'partagee' ? 'partagee' : 'express';
@@ -497,6 +529,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         commissions: o.commissions,
         // Qui encaisse l'argent à la livraison (et doit donc les commissions à la plateforme)
         collector: mode === 'vendeur' ? 'vendeur' : 'livreur',
+        // Codes de remise : le livreur ne peut enlever ni livrer sans eux
+        ...(mode === 'vendeur' ? {} : { handover: newHandover() }),
         status: 'nouvelle',
         history: [{ status: 'nouvelle', at: now(), by: 'acheteur' }],
         createdAt: now(),
@@ -519,7 +553,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   function buyerView(o) {
     const seller = store.getMpSeller(o.sellerId);
     const accepted = ['acceptee', 'prete', 'en_livraison', 'livree'].includes(o.status);
-    const { commissions: _c, collector: _k, settlement: _s, payout: _p, ...rest } = o;
+    const { commissions: _c, collector: _k, settlement: _s, payout: _p, handover, ...rest } = o;
     const trip = o.delivery?.tripId ? store.getMpTrip(o.delivery.tripId) : null;
     // Jamais la position du vendeur (adresse, point de remise, point relais) : seule la livreuse ou le livreur la voit
     const { from: _from, relay: _relay, ...delivery } = o.delivery ?? {};
@@ -527,6 +561,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       ...rest,
       delivery,
       seller: seller ? publicSeller(seller) : null,
+      // Code à donner au livreur seulement quand on a le colis en main
+      handoverCode: handover && ACTIVE.has(o.status) && o.status !== 'retour' ? handover.dropoff : null,
       // Livreur de la plateforme : c'est lui l'interlocuteur, pas le vendeur
       sellerPhone: accepted && !byDriver(o) ? (seller?.contactPhone ?? seller?.ownerPhone ?? null) : null,
       trip: trip
@@ -819,7 +855,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
    */
   const CONTACT_STEPS = new Set(['acceptee', 'prete', 'en_livraison']);
   const sellerOrderView = o => {
-    const { commissions: c, settlement: st, ...rest } = o;
+    const { commissions: c, settlement: st, handover, ...rest } = o;
     // Livreur de la plateforme : le vendeur ne voit jamais le numéro ni l'adresse de l'acheteur
     const open = CONTACT_STEPS.has(o.status) && !byDriver(o);
     const trip = byDriver(o) && o.delivery.tripId ? store.getMpTrip(o.delivery.tripId) : null;
@@ -839,6 +875,10 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
           },
       platformFee: c.seller,
       buyerFeeToPay: c.buyer,
+      // Code à donner au livreur en lui remettant le colis (ou en le récupérant après un échec) ;
+      // pour un point relais, c'est le relais qui le reçoit
+      pickupCode:
+        handover && !o.delivery.relay && ['acceptee', 'prete', 'retour'].includes(o.status) ? handover.pickup : null,
       driver: trip?.driverId ? publicDriver(store.getMpDriver(trip.driverId)) : null,
       // Ce que le livreur vous envoie après la livraison (articles moins la commission)
       sellerGets: st?.sellerGets ?? (byDriver(o) ? o.subtotal - c.seller : null),
@@ -891,6 +931,21 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       if (t && !t.driverId) trips.reprice(t, { announce: false });
     }
     const saved = move(ready, status, 'vendeur', reason);
+    if (status === 'livree')
+      ledger.append('vente_livree', {
+        orderId: o.id,
+        sellerId: o.sellerId,
+        subtotal: o.subtotal,
+        commission: o.commissions.seller + o.commissions.buyer,
+      });
+    // Point relais : il reçoit le code à donner au livreur (il ne sait pas de quel vendeur vient le colis)
+    if (status === 'prete' && o.delivery.relay && o.handover) {
+      const relay = store.getMpRelay(o.delivery.relay.id);
+      notify(
+        relay?.phone,
+        `📦 Colis ${o.id} déposé chez vous. Remettez-le au livreur qui vient le chercher et donnez-lui le code ${o.handover.pickup}.`,
+      );
+    }
     notify(
       o.buyerPhone,
       `Commande ${o.id} chez ${o.shopName} : ${STATUS_TEXT[status]}${reason ? ` (${reason})` : ''}\nSuivi : ${site(req)}/m/commandes`,
@@ -915,7 +970,23 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const o = store.getMpOrder(clip(req.params.id, 20));
     if (!o || o.sellerId !== me.seller.id || o.collector !== 'livreur' || o.status !== 'livree')
       return res.status(404).json({ error: 'Commande introuvable' });
-    const saved = store.saveMpOrder({ ...o, payout: { ...(o.payout ?? {}), receivedAt: now() } });
+    // « Pas reçu » : l'argent compte dans le plafond du livreur et la gérante est prévenue
+    const missing = req.body?.missing === true;
+    if (o.payout?.receivedAt) return res.status(409).json({ error: 'Déjà confirmé' });
+    const saved = store.saveMpOrder({
+      ...o,
+      payout: { ...(o.payout ?? {}), ...(missing ? { missing: now() } : { receivedAt: now(), missing: null }) },
+    });
+    ledger.append(missing ? 'vendeur_non_paye' : 'vendeur_paye', {
+      orderId: o.id,
+      sellerId: o.sellerId,
+      amount: o.settlement?.sellerGets ?? null,
+    });
+    if (missing && process.env.OWNER_WHATSAPP)
+      notify(
+        process.env.OWNER_WHATSAPP,
+        `⚠️ « ${me.seller.shopName} » n'a pas reçu ${o.settlement?.sellerGets ?? ''} F du livreur (commande ${o.id}).`,
+      );
     res.json({ order: sellerOrderView(saved), balance: balanceOf(me.seller) });
   });
 
@@ -1033,6 +1104,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       return res.status(400).json({ error: 'Montant invalide' });
     const payment = { id: code(6), amount, note: clip(req.body?.note, 120), at: now() };
     const saved = store.saveMpSeller({ ...v, payments: [...(v.payments ?? []), payment] });
+    ledger.append('reglement_vendeur', { sellerId: v.id, paymentId: payment.id, amount });
     res.status(201).json({ payment, balance: balanceOf(saved) });
   });
 
@@ -1078,13 +1150,15 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const until = new Date(from);
     until.setMonth(until.getMonth() + months);
     const amount = settings().proPrice * months;
+    const subscriptionId = code(6);
+    ledger.append('abonnement', { sellerId: v.id, subscriptionId, months, amount });
     const saved = store.saveMpSeller({
       ...v,
       plan: { id: 'pro', until: until.toISOString() },
       planRequestedAt: null,
       subscriptions: [
         ...(v.subscriptions ?? []),
-        { id: code(6), months, amount, at: now(), until: until.toISOString() },
+        { id: subscriptionId, months, amount, at: now(), until: until.toISOString() },
       ],
     });
     notify(
@@ -1139,6 +1213,82 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.json({ orders: store.listMpOrders().slice(0, 500) });
   });
 
+  /* ---------- Sécurité : fraudes et registre ---------- */
+  app.get('/api/admin/mp/security', (req, res) => {
+    if (!guard(req, res)) return;
+    const orders = store.listMpOrders();
+    const failed = orders.filter(o => o.failedDelivery);
+    const buyers = [...new Set(failed.map(o => o.buyerPhone))].map(phone => {
+      const mine = failed.filter(o => o.buyerPhone === phone);
+      const strikes = buyerStrikes(orders, phone);
+      return {
+        phone,
+        name: mine[0].buyer.name,
+        strikes,
+        blocked: strikes >= MAX_STRIKES,
+        failures: mine.map(o => ({ orderId: o.id, reason: o.failedDelivery.reason, at: o.failedDelivery.at })),
+      };
+    });
+    res.json({
+      buyers: buyers.filter(b => b.strikes > 0),
+      unpaidSellers: orders
+        .filter(o => o.payout?.missing && !o.payout.receivedAt)
+        .map(o => ({
+          orderId: o.id,
+          shopName: o.shopName,
+          amount: o.settlement?.sellerGets ?? 0,
+          driver: o.driverId ? publicDriver(store.getMpDriver(o.driverId)) : null,
+          at: o.payout.missing,
+        })),
+      drivers: store
+        .listMpDrivers()
+        .map(d => ({ id: d.id, name: d.name, phone: d.phone, ...drivers.cashOf(d) }))
+        .filter(d => d.held > 0)
+        .sort((a, b) => b.held / b.cap - a.held / a.cap),
+      lockedCodes: orders
+        .filter(o => (o.handover?.tries ?? 0) >= 5 && ACTIVE.has(o.status))
+        .map(o => ({ orderId: o.id, shopName: o.shopName, status: o.status })),
+      newSellers: store
+        .listMpSellers()
+        .filter(v => v.status === 'active' && !v.trusted)
+        .map(v => ({
+          id: v.id,
+          shopName: v.shopName,
+          sales: orders.filter(o => o.sellerId === v.id && o.status === 'livree').length,
+        }))
+        .filter(v => v.sales < PROVEN_SALES).length,
+      ledger: ledger.verify(),
+    });
+  });
+
+  // Pardonner les livraisons ratées d'un acheteur (après explication ou paiement de la course perdue)
+  app.post('/api/admin/mp/buyers/forgive', (req, res) => {
+    if (!guard(req, res)) return;
+    const phone = clip(req.body?.phone, 20);
+    const list = store
+      .listMpOrders()
+      .filter(o => o.buyerPhone === phone && o.failedDelivery && !o.failedDelivery.forgiven);
+    if (!list.length) return res.status(404).json({ error: 'Aucune livraison ratée à pardonner' });
+    for (const o of list) store.saveMpOrder({ ...o, failedDelivery: { ...o.failedDelivery, forgiven: now() } });
+    ledger.append('acheteur_debloque', { buyerPhone: phone, orders: list.map(o => o.id) });
+    res.json({ forgiven: list.length });
+  });
+
+  // Débloquer un colis après 5 codes faux (la gérante a vérifié par téléphone)
+  app.post('/api/admin/mp/orders/:id/unlock', (req, res) => {
+    if (!guard(req, res)) return;
+    const o = store.getMpOrder(clip(req.params.id, 20));
+    if (!o?.handover) return res.status(404).json({ error: 'Commande introuvable' });
+    store.saveMpOrder({ ...o, handover: { ...o.handover, tries: 0 } });
+    res.json({ ok: true });
+  });
+
+  // Registre : vérification de toute la chaîne et dernières lignes
+  app.get('/api/admin/mp/ledger', (req, res) => {
+    if (!guard(req, res)) return;
+    res.json({ check: ledger.verify(), entries: store.listMpLedger().slice(-200).reverse() });
+  });
+
   app.patch('/api/admin/mp/settings', (req, res) => {
     if (!guard(req, res)) return;
     const r = patchSettings(store.getMpSettings(), req.body ?? {});
@@ -1150,5 +1300,15 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   // Après la livraison : avis vérifiés, signalement d'un problème, position du livreur
   registerAfterSaleRoutes(app, { limit, isAdmin, store, currentUser, notify });
   // Livreurs : inscription, courses, arrêts, argent (méthode A), gestion par la gérante
-  const drivers = registerDriverRoutes(app, { limit, isAdmin, store, currentUser, trips, settings, notify });
+  const drivers = registerDriverRoutes(app, {
+    limit,
+    isAdmin,
+    store,
+    currentUser,
+    trips,
+    settings,
+    notify,
+    ledger,
+    restock,
+  });
 }

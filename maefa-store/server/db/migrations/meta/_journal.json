@@ -29,6 +29,13 @@
       "when": 1792544099788,
       "tag": "0003_livreurs_et_courses",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792579102005,
+      "tag": "0004_registre_infalsifiable",
+      "breakpoints": true
     }
   ]
 }

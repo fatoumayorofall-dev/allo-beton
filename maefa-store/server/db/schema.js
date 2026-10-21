@@ -344,6 +344,22 @@ export const mpTrips = pgTable(
   ],
 );
 
+/**
+ * Registre infalsifiable des mouvements d'argent de la place de marché : on ajoute des lignes, jamais
+ * on ne les modifie ; chaque ligne porte l'empreinte scellée de la précédente (voir marketplace/fraud.js).
+ */
+export const mpLedger = pgTable(
+  'mp_ledger',
+  {
+    seq: integer('seq').primaryKey(),
+    at: timestamp('at', { withTimezone: true, mode: 'string' }).notNull(),
+    type: text('type').notNull(),
+    hash: text('hash').notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [index('mp_ledger_type_idx').on(t.type)],
+);
+
 /** Réglages et petits documents (vitrine, visites, réglages du Marché, date du catalogue). */
 export const appSettings = pgTable('app_settings', {
   key: text('key').primaryKey(),

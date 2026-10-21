@@ -33,6 +33,11 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG22 | Seule l'acheteuse d'une commande livrée peut laisser un avis (vendeur, livreur), une fois, dans les 30 jours ; la note d'un vendeur est la moyenne de ses avis non masqués. |
 | RG23 | Un problème (non conforme, abîmé, incomplet) se signale sous 72 h après la livraison ; « non reçu » tant que la commande n'est pas livrée ; la gérante le résout ou le rejette avec une explication. |
 | RG24 | Un vendeur remet ses colis au livreur de trois façons : à son adresse (fixe), là où il se trouve quand le colis est prêt (sans adresse fixe : il donne sa position à chaque commande), ou dans un point relais actif choisi par lui. L'acheteur ne voit jamais la position, le point relais ni le numéro du vendeur ; seul le livreur de la course voit le point de remise. Le prix de livraison part de la position du vendeur arrondie (~500 m). |
+| RG25 | Chaque commande livrée par un livreur a deux codes de remise à 4 chiffres : celui du vendeur (ou du point relais) valide l'enlèvement et le retour, celui de l'acheteur valide le dépôt. 5 codes faux bloquent le colis jusqu'à la gérante. |
+| RG26 | Un livreur ne prend plus de course quand l'argent qu'il garde (commissions dues + parts des vendeurs non reçues) atteint son plafond ; il ne livre jamais une commande dont il est l'acheteur ou le vendeur. |
+| RG27 | Une livraison ratée (absent, refus) renvoie le colis au vendeur ; à 2 livraisons ratées non pardonnées, l'acheteur ne peut plus commander ; 5 commandes en cours au plus tant qu'il n'a jamais été livré, 15 ensuite. |
+| RG28 | Tant qu'une boutique (non « de confiance ») a moins de 3 ventes livrées, une commande ne dépasse pas le montant fixé par la gérante ; nul ne commande dans sa propre boutique. |
+| RG29 | Chaque mouvement d'argent est ajouté au registre (jamais modifié) avec l'empreinte scellée de la ligne précédente. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
 ## 2. Dictionnaire des données (extrait)
@@ -62,6 +67,10 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | mode_remise | fixe, variable, relais | A | 10 | VENDEUR, COMMANDE_MARCHE |
 | id_relais | Référence R-XXXXX | AN | 7 | POINT_RELAIS |
 | horaires | « 9 h – 20 h » | AN | 80 | POINT_RELAIS |
+| code_enlevement, code_depot | Codes de remise à 4 chiffres | N | 4 | COMMANDE_MARCHE |
+| motif_echec | absent, refus | A | 10 | COMMANDE_MARCHE |
+| plafond_argent | Argent qu'un livreur peut garder | N | 9 | LIVREUR |
+| num_operation, empreinte | Ligne du registre et son empreinte HMAC | N / AN | 9 / 64 | OPERATION |
 
 ## 3. MCD — Modèle conceptuel des données
 
@@ -79,14 +88,15 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **SESSION** (<u>empreinte_jeton</u>, date)
 - **VENDEUR** (<u>id_vendeur</u>, nom_boutique, slug, rayon, quartier, latitude, longitude, mode_remise, statut, de_confiance, date_creation)
 - **ANNONCE** (<u>id_annonce</u>, titre, description, prix, rayon, etat, photos, stock, choix, statut, raison_refus, vues, date)
-- **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, mode_remise, latitude_remise, longitude_remise, repere_remise, date)
+- **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, mode_remise, latitude_remise, longitude_remise, repere_remise, code_enlevement, code_depot, essais_code, motif_echec, date)
 - **REGLEMENT** (<u>id_reglement</u>, montant, note, date)
-- **LIVREUR** (<u>id_livreur</u>, nom, telephone, vehicule, quartier, statut, disponible, latitude, longitude, date_creation)
+- **LIVREUR** (<u>id_livreur</u>, nom, telephone, vehicule, quartier, statut, disponible, latitude, longitude, plafond_argent, date_creation)
 - **COURSE** (<u>id_course</u>, mode, statut, heure_depart, distance_km, prix_total, date)
 - **ABONNEMENT** (<u>id_abonnement</u>, mois, montant, date, fin)
 - **AVIS_MARCHE** (<u>#id_commande_marche</u>, note_vendeur, texte, note_livreur, masque, date) — 0 ou 1 par commande
 - **SIGNALEMENT** (<u>#id_commande_marche</u>, type, texte, statut, solution, date, date_resolution) — 0 ou 1 en cours par commande
 - **POINT_RELAIS** (<u>id_relais</u>, nom, quartier, horaires, telephone, latitude, longitude, adresse, repere, actif, date_creation)
+- **OPERATION** (<u>num_operation</u>, date, type, donnees, empreinte_precedente, empreinte) — registre infalsifiable
 
 ### Associations et cardinalités
 
@@ -176,6 +186,7 @@ des clés ; ses propriétés deviennent des colonnes.
 - **mp_orders** (<u>id</u>, #seller_id, buyer_phone, status, total, created_at, data) — COMMANDE_MARCHE et ses lignes
 - **mp_drivers** (<u>id</u>, owner_phone, status, created_at, data) — LIVREUR et ses versements
 - **mp_trips** (<u>id</u>, mode, status, #driver_id, created_at, data) — COURSE, ses arrêts et les parts de chacun
+- **mp_ledger** (<u>seq</u>, at, type, hash, data) — OPERATION (registre : lignes ajoutées, jamais modifiées)
 - **app_settings**(clé `mpRelays`) — POINT_RELAIS (peu nombreux : un document JSON) ; `mp_sellers.data.relayId` et
   `mp_orders.data.delivery.relay` portent les associations DEPOSER et PASSER_PAR
 

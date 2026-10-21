@@ -48,13 +48,13 @@ export function createTripService({ store, settings, notify }) {
       km = r.km;
       stops = r.stops;
     }
-    // Garder ce qui est déjà fait (colis enlevé, déposé) quand le trajet est recalculé
-    const done = new Set((trip.stops ?? []).filter(s => s.done).map(s => `${s.orderId}|${s.kind}`));
-    const newStops = stops.map(s => ({
-      orderId: s.orderId,
-      kind: s.kind,
-      done: done.has(`${s.orderId}|${s.kind}`),
-    }));
+    // Garder ce qui est déjà fait (colis enlevé, déposé, livraison ratée) quand le trajet est recalculé,
+    // et les retours de colis chez le vendeur (ajoutés après une livraison ratée)
+    const previous = new Map((trip.stops ?? []).map(s => [`${s.orderId}|${s.kind}`, s]));
+    const newStops = stops
+      .map(s => ({ ...(previous.get(`${s.orderId}|${s.kind}`) ?? {}), orderId: s.orderId, kind: s.kind }))
+      .map(s => ({ ...s, done: !!s.done }))
+      .concat((trip.stops ?? []).filter(s => s.kind === 'retour' && orders.some(o => o.id === s.orderId)));
     for (const o of orders) {
       const before = o.delivery.share ?? o.delivery.fee;
       const share = shares[o.id];

@@ -270,7 +270,7 @@ const ShopForm: React.FC<{
 const SaleCard: React.FC<{
   order: MpOrder;
   onMove: (o: MpOrder, to: OrderStatus) => void;
-  onReceived: (o: MpOrder) => void;
+  onReceived: (o: MpOrder, missing?: boolean) => void;
   busy: boolean;
 }> = ({ order: o, onMove, onReceived, busy }) => (
   <article className="bg-white rounded-2xl border border-ink/[0.06] p-4" data-testid="mp-sale">
@@ -305,6 +305,19 @@ const SaleCard: React.FC<{
             touchez « Colis prêt ».
           </p>
         )}
+        {o.pickupCode && (
+          <p className="rounded-xl bg-ivory px-3 py-2" data-testid="mp-pickup-code">
+            Code de remise : <strong className="text-lg tracking-[0.3em]">{o.pickupCode}</strong>
+            <span className="block text-xs text-ink/65">
+              {o.status === 'retour'
+                ? 'La cliente n’a pas pris le colis : quand le livreur vous le rend, vérifiez-le puis donnez-lui ce code.'
+                : 'Donnez-le au livreur seulement quand il prend le colis : c’est la preuve que vous le lui avez remis.'}
+            </span>
+          </p>
+        )}
+        {o.delivery.relay && ['prete', 'retour'].includes(o.status) && (
+          <p className="text-xs text-ink/65">Le point relais a reçu le code de remise à donner au livreur.</p>
+        )}
         {o.delivery.pickupMode === 'variable' && o.status === 'acceptee' && (
           <p className="text-ink/70">
             En touchant « Colis prêt », votre position actuelle est envoyée au livreur seulement (jamais à la cliente).
@@ -325,10 +338,23 @@ const SaleCard: React.FC<{
         {o.status === 'livree' &&
           (o.payout?.receivedAt ? (
             <p className="text-emerald-800 font-semibold">✓ Argent reçu</p>
+          ) : o.payout?.missing ? (
+            <p className="text-wine font-semibold" data-testid="mp-payout-missing">
+              Signalé : argent pas reçu. L'équipe s'en occupe.
+            </p>
           ) : o.payout?.sentAt ? (
-            <button onClick={() => onReceived(o)} className="btn-dark !h-10 !px-5" data-testid="mp-payout-received">
-              J'ai bien reçu {F(o.sellerGets ?? 0)}
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={() => onReceived(o)} className="btn-dark !h-10 !px-5" data-testid="mp-payout-received">
+                J'ai bien reçu {F(o.sellerGets ?? 0)}
+              </button>
+              <button
+                onClick={() => window.confirm('Signaler que vous n’avez pas reçu cet argent ?') && onReceived(o, true)}
+                className="h-10 px-4 rounded-full border border-wine/30 text-wine font-semibold"
+                data-testid="mp-payout-not-received"
+              >
+                Pas reçu
+              </button>
+            </div>
           ) : (
             <p className="text-amber-900">En attente de l'envoi du livreur</p>
           ))}
@@ -634,8 +660,8 @@ export default function MpSell() {
               order={o}
               onMove={move}
               busy={busy}
-              onReceived={async x => {
-                const r = await confirmPayout(x.id);
+              onReceived={async (x, missing) => {
+                const r = await confirmPayout(x.id, missing);
                 if (!r.ok) return setMessage(r.error);
                 setSales(list => list.map(y => (y.id === x.id ? r.data.order : y)));
                 setBalance(r.data.balance);

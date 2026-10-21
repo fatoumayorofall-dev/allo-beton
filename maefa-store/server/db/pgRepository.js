@@ -282,6 +282,12 @@ const TABLES = [
       })),
   },
   {
+    table: t.mpLedger,
+    pk: [t.mpLedger.seq],
+    key: r => String(r.seq),
+    rows: s => (s.mp?.ledger ?? []).map(e => ({ seq: e.seq, at: e.at, type: e.type, hash: e.hash, data: e })),
+  },
+  {
     table: t.appSettings,
     pk: [t.appSettings.key],
     key: r => r.key,
@@ -363,6 +369,10 @@ export async function createPgRepository(url) {
         trips: Object.fromEntries(all.get(t.mpTrips).map(x => [x.id, x.data])),
         settings: settings.mpSettings ?? null,
         relays: settings.mpRelays ?? {},
+        ledger: all
+          .get(t.mpLedger)
+          .sort((a, b) => a.seq - b.seq)
+          .map(r => r.data),
       },
     };
     // Point de départ des différences : ce qui est en base (les lignes inchangées ne seront pas réécrites)

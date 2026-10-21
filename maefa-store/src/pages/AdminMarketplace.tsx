@@ -33,8 +33,10 @@ import {
 import { MP, mpPath } from '../marketplace/config';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from '../marketplace/format';
 
-type Sub = 'verifier' | 'litiges' | 'vendeurs' | 'livreurs' | 'courses' | 'relais' | 'commandes' | 'reglages';
+type Sub =
+  'verifier' | 'litiges' | 'vendeurs' | 'livreurs' | 'courses' | 'relais' | 'securite' | 'commandes' | 'reglages';
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
+const SecurityPanel = lazy(() => import('./AdminSecurity'));
 
 /** Ajouter un point relais : boutique partenaire où les vendeurs déposent leurs colis. */
 const RelayForm: React.FC<{ pin: string; onSaved: () => void }> = ({ pin, onSaved }) => {
@@ -151,6 +153,8 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
         freeListings: String(st.freeListings),
         proPrice: String(st.proPrice),
         proRate: String(Math.round(st.proRate * 1000) / 10),
+        driverCashCap: String(st.driverCashCap),
+        newSellerMaxOrder: String(st.newSellerMaxOrder),
       });
       setDriversOn(st.drivers);
     }
@@ -202,6 +206,8 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
       freeListings: n('freeListings'),
       proPrice: n('proPrice'),
       proRate: n('proRate') / 100,
+      driverCashCap: n('driverCashCap'),
+      newSellerMaxOrder: n('newSellerMaxOrder'),
       drivers: driversOn,
     });
     setMessage(r.ok ? 'Réglages enregistrés' : r.error);
@@ -254,6 +260,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
             ['livreurs', `Livreurs (${drivers.length})`],
             ['courses', `Courses (${trips.length})`],
             ['relais', `Points relais (${relays.filter(r => r.active).length})`],
+            ['securite', 'Sécurité'],
             ['reglages', 'Commissions & livraison'],
           ] as [Sub, string][]
         ).map(([id, label]) => (
@@ -448,6 +455,11 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                   <span className="text-ink/55 font-normal text-sm">
                     · {d.orderId} · {d.shopName} · {d.buyer.name} ({d.buyer.phone}) · {F(d.total)} · {ago(d.at)}
                   </span>
+                  {d.codeChecked && (
+                    <span className="block text-xs font-normal text-emerald-800">
+                      Remise confirmée avec le code de la cliente
+                    </span>
+                  )}
                 </p>
                 <span
                   className={`px-3 py-1 rounded-full text-xs font-semibold ${d.status === 'ouvert' ? 'bg-amber-100 text-amber-900' : 'bg-ink/10'}`}
@@ -520,11 +532,16 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                   </span>
                 )}
               </p>
+              <p className={`text-sm ${d.cash.blocked ? 'text-wine font-semibold' : 'text-ink/70'}`}>
+                Argent gardé : {F(d.cash.held)} sur un plafond de {F(d.cash.cap)}
+                {d.cashCap != null && ' (plafond propre à ce livreur)'}
+                {d.cash.blocked && ' · plus de nouvelle course'}
+              </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {d.status !== 'active' && d.status !== 'fermee' && (
                   <button
                     onClick={async () => {
-                      const r = await adminPatchDriver(pin, d.id, 'active');
+                      const r = await adminPatchDriver(pin, d.id, { status: 'active' });
                       if (!r.ok) return setMessage(r.error);
                       load();
                     }}
@@ -537,7 +554,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 {d.status === 'active' && (
                   <button
                     onClick={async () => {
-                      await adminPatchDriver(pin, d.id, 'suspendue');
+                      await adminPatchDriver(pin, d.id, { status: 'suspendue' });
                       load();
                     }}
                     className="h-10 px-4 rounded-full border border-wine/30 text-wine text-sm font-semibold"
@@ -561,10 +578,31 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                     Paiement reçu
                   </button>
                 )}
+                <button
+                  onClick={async () => {
+                    const cap = window.prompt(
+                      `Plafond d'argent pour ${d.name} (F CFA). Laissez vide pour le plafond général.`,
+                      d.cashCap != null ? String(d.cashCap) : '',
+                    );
+                    if (cap === null) return;
+                    const r = await adminPatchDriver(pin, d.id, { cashCap: cap.trim() ? Number(cap) : null });
+                    if (!r.ok) return setMessage(r.error);
+                    load();
+                  }}
+                  className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold"
+                >
+                  Plafond
+                </button>
               </div>
             </article>
           ))}
         </div>
+      )}
+
+      {sub === 'securite' && (
+        <Suspense fallback={<Loader2 className="w-6 h-6 animate-spin text-ink/40" />}>
+          <SecurityPanel pin={pin} onMessage={setMessage} />
+        </Suspense>
       )}
 
       {sub === 'relais' && (
@@ -646,6 +684,8 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 ['freeListings', 'Formule Découverte : articles au plus'],
                 ['proPrice', 'Formule Pro : prix par mois (F)'],
                 ['proRate', 'Formule Pro : commission (%)'],
+                ['driverCashCap', 'Livreur : argent gardé au plus (F)'],
+                ['newSellerMaxOrder', 'Nouvelle boutique : commande au plus (F)'],
               ] as [string, string][]
             ).map(([k, label]) => (
               <label key={k} className="block">

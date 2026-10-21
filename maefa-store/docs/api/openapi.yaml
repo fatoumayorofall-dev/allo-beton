@@ -573,10 +573,23 @@ paths:
   /api/mp/driver/trips/{id}/stop:
     post:
       tags: [Livreurs]
-      summary: 'Arrêt fait : colis enlevé, ou déposé et encaissé (partage de l’argent calculé)'
+      summary: 'Arrêt fait : colis enlevé, déposé et encaissé, ou rendu au vendeur. Exige le code de remise à 4 chiffres (vendeur ou relais pour enlèvement et retour, acheteur pour le dépôt) ; 5 codes faux bloquent le colis'
       security: [{ session: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
-      responses: { '200': { description: OK }, '409': { description: Étape impossible } }
+      responses:
+        {
+          '200': { description: OK },
+          '400': { description: 'Code faux (essais restants)' },
+          '409': { description: Étape impossible },
+          '423': { description: 'Colis bloqué : la gérante doit débloquer' },
+        }
+  /api/mp/driver/trips/{id}/fail:
+    post:
+      tags: [Livreurs]
+      summary: 'Livraison impossible (reason absent | refus) : arrêt « retour » ajouté, le colis repart chez le vendeur ; compte comme livraison ratée pour l’acheteur'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '409': { description: 'Colis pas en route' } }
   /api/mp/driver/orders/{id}/payout:
     post:
       tags: [Livreurs]
@@ -587,7 +600,7 @@ paths:
   /api/mp/me/sales/{id}/payout:
     patch:
       tags: [Place de marché]
-      summary: 'Vendeur : argent du livreur bien reçu'
+      summary: 'Vendeur : argent du livreur bien reçu ({ received: true }) ou pas reçu ({ missing: true } : compte dans le plafond du livreur, gérante prévenue)'
       security: [{ session: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses: { '200': { description: OK } }
@@ -613,7 +626,7 @@ paths:
   /api/admin/mp/drivers/{id}:
     patch:
       tags: [Livreurs]
-      summary: 'Gérante : valider ou suspendre un livreur'
+      summary: 'Gérante : valider ou suspendre un livreur ; cashCap = plafond d’argent propre (null = plafond général)'
       security: [{ admin: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses: { '200': { description: OK } }
@@ -687,6 +700,31 @@ paths:
           '200': { description: Modifié },
           '400': { description: 'Nom ou emplacement manquant' },
         }
+  /api/admin/mp/security:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : acheteurs aux livraisons ratées, vendeurs pas payés, argent gardé par les livreurs, colis bloqués, état du registre'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/buyers/forgive:
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : pardonner les livraisons ratées d’un acheteur (body : phone)'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK }, '404': { description: Rien à pardonner } }
+  /api/admin/mp/orders/{id}/unlock:
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : débloquer un colis après 5 codes faux'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/ledger:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : registre infalsifiable (vérification de toute la chaîne HMAC et 200 dernières lignes)'
+      security: [{ admin: [] }]
+      responses: { '200': { description: 'check { ok, count, head, brokenAt } et entries' } }
   /api/admin/mp/reviews/{id}:
     patch:
       tags: [Place de marché]

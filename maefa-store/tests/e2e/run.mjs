@@ -31,6 +31,7 @@ const EXTRA_ENV = {
   donnees: { OTP_DEV_MODE: '1' },
   avis: { OTP_DEV_MODE: '1' },
   anonymat: { OTP_DEV_MODE: '1' },
+  fraude: { OTP_DEV_MODE: '1' },
 };
 const GEO = 'http://localhost:9922';
 const DB_URL = process.env.E2E_DATABASE_URL;

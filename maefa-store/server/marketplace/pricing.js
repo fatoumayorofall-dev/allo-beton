@@ -25,6 +25,10 @@ export const DEFAULT_MP_SETTINGS = Object.freeze({
   /** Formule « Pro » : abonnement mensuel, commission réduite, articles illimités, mise en avant */
   proPrice: 5000,
   proRate: 0.03,
+  /** Argent qu'un livreur peut garder (commissions dues + parts des vendeurs) avant d'être bloqué */
+  driverCashCap: 30000,
+  /** Nouvelle boutique (moins de 3 ventes livrées) : montant d'articles au plus par commande */
+  newSellerMaxOrder: 100000,
 });
 
 /** Bornes acceptées pour chaque réglage (contrôle des modifications de la gérante). */
@@ -39,6 +43,8 @@ const BOUNDS = {
   freeListings: [1, 1000],
   proPrice: [0, 100000],
   proRate: [0, 0.3],
+  driverCashCap: [5000, 2000000],
+  newSellerMaxOrder: [5000, 10000000],
 };
 
 /** Réglages complets à partir de ceux enregistrés (les champs manquants prennent la valeur par défaut). */
