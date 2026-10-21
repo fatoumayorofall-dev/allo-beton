@@ -37,7 +37,9 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
     await p.waitForTimeout(1200);
     await p.getByLabel('Votre prénom').fill(firstName);
     await p.getByRole('button', { name: /Entrer dans mon espace/ }).click();
-    await p.waitForTimeout(1500);
+    // Retour à la page demandée (« retour=… ») : attendre la fin de la connexion, même sur une machine lente
+    await p.waitForURL(u => !u.pathname.startsWith('/m/compte'), { timeout: 15000 }).catch(() => {});
+    await p.waitForTimeout(800);
   };
   const pickHere = async p => {
     await p
