@@ -13,7 +13,17 @@
 import crypto from 'node:crypto';
 import express from 'express';
 import { MEDIA_URL, PHOTO_URL, sniffImage, sniffVideo, storeMedia } from '../media.js';
-import { commissions, deliveryFee, inSenegal, patchSettings, resolveSettings } from './pricing.js';
+import {
+  commissions,
+  deliveryFee,
+  inSenegal,
+  patchSettings,
+  resolveSettings,
+  sellerPlan,
+  sellerRateFor,
+} from './pricing.js';
+import { SHARE_WAITS, createTripService } from './trips.js';
+import { publicDriver, registerDriverRoutes } from './drivers.js';
 import { CONTACT_REFUSED, findContact } from './contact.js';
 import { SIGNALS, bump, cleanTaste, rankFeed } from './ranking.js';
 
@@ -39,6 +49,13 @@ const SELLER_MOVES = {
   prete: ['en_livraison', 'annulee'],
   en_livraison: ['livree'],
 };
+/** Livraison par un livreur de la plateforme : le vendeur prépare, le livreur enlève et livre */
+const SELLER_MOVES_DRIVER = {
+  nouvelle: ['acceptee', 'refusee'],
+  acceptee: ['prete', 'annulee'],
+  prete: ['annulee'],
+};
+const byDriver = o => o.delivery?.mode === 'express' || o.delivery?.mode === 'partagee';
 const STATUS_TEXT = {
   acceptee: 'acceptée par le vendeur',
   prete: 'prête, elle part bientôt',
@@ -132,6 +149,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     if (phone) wa.sendWhatsApp(phone, text).catch(() => {});
   };
   const site = req => `${req.protocol}://${req.get('host')}`;
+  const trips = createTripService({ store, settings, notify });
   const tooMany = (req, res, key, max, windowMs) => {
     if (limit(key, max, windowMs)) return false;
     res.status(429).json({ error: 'Trop de demandes, réessayez dans un moment.' });
@@ -156,7 +174,15 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
 
   app.get('/api/mp/config', (_req, res) => {
     const s = settings();
-    res.json({ categories: MP_CATEGORIES, sellerRate: s.sellerRate, buyerFee: s.buyerFee, delivery: s.delivery });
+    res.json({
+      categories: MP_CATEGORIES,
+      sellerRate: s.sellerRate,
+      buyerFee: s.buyerFee,
+      delivery: s.delivery,
+      drivers: s.drivers,
+      shareWaits: SHARE_WAITS,
+      plans: { freeListings: s.freeListings, proPrice: s.proPrice, proRate: s.proRate },
+    });
   });
 
   /* ---------- Fil « Pour vous » ---------- */
@@ -200,6 +226,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     ).length;
     return Math.min(1, 0.4 + 0.06 * done) * (1 - dropped / mine.length);
   };
+  /** Formule Pro : mise en avant dans le fil */
+  const boost = seller => (sellerPlan(seller) === 'pro' ? 0.15 : 0);
 
   app.post('/api/mp/feed', (req, res) => {
     if (tooMany(req, res, `mp-feed:${req.ip}`, 300, 600e3)) return;
@@ -218,7 +246,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const quality = new Map();
     const ranked = rankFeed(
       visible.map(({ l, s }) => {
-        if (!quality.has(s.id)) quality.set(s.id, qualityOf(s.id, orders));
+        if (!quality.has(s.id)) quality.set(s.id, Math.min(1, qualityOf(s.id, orders) + boost(s)));
         return {
           id: l.id,
           category: l.category,
@@ -341,7 +369,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const orders = [...groups.values()].map(({ seller, lines }) => {
       const subtotal = lines.reduce((t, l) => t + l.price * l.qty, 0);
       const { km, fee } = deliveryFee(seller.location, to, s);
-      const c = commissions({ subtotal, deliveryFee: fee }, s);
+      const c = commissions({ subtotal, deliveryFee: fee }, s, sellerRateFor(seller, s));
       return {
         seller,
         lines,
@@ -368,7 +396,17 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const user = currentUser(req);
     const r = prepare(req.body?.items, req.body?.to, user?.phone);
     if (r.error) return res.status(400).json({ error: r.error });
-    res.json({ orders: r.orders.map(quoteView), total: r.orders.reduce((t, o) => t + o.total, 0) });
+    const s = settings();
+    const wait = SHARE_WAITS.includes(Number(req.body?.wait)) ? Number(req.body.wait) : 60;
+    res.json({
+      drivers: s.drivers,
+      orders: r.orders.map(o => ({
+        ...quoteView(o),
+        // Moitié-moitié : part si la commande rejoignait maintenant un groupe qui va dans sa direction
+        shared: s.drivers ? trips.preview({ id: 'devis', from: o.seller.location, to: req.body.to }, wait) : null,
+      })),
+      total: r.orders.reduce((t, o) => t + o.total, 0),
+    });
   });
 
   /* ==================== ACHETEUR ==================== */
@@ -386,6 +424,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const r = prepare(b.items, to, user.phone);
     if (r.error) return res.status(400).json({ error: r.error });
     const payment = ['especes', 'wave', 'orange_money'].includes(b.payment) ? b.payment : 'especes';
+    // Livraison : par le vendeur (sans livreurs de la plateforme), sinon express ou moitié-moitié
+    const mode = !settings().drivers ? 'vendeur' : b.mode === 'partagee' ? 'partagee' : 'express';
+    const wait = SHARE_WAITS.includes(Number(b.wait)) ? Number(b.wait) : 60;
     const created = r.orders.map(o => {
       const order = store.saveMpOrder({
         id: `C-${code(6)}`,
@@ -397,6 +438,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         subtotal: o.subtotal,
         delivery: {
           ...o.delivery,
+          mode,
+          share: o.delivery.fee,
           from: { lat: o.seller.location.lat, lng: o.seller.location.lng, label: o.seller.location.label ?? '' },
           to: {
             lat: to.lat,
@@ -411,7 +454,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         note: clip(b.note, 300),
         commissions: o.commissions,
         // Qui encaisse l'argent à la livraison (et doit donc les commissions à la plateforme)
-        collector: 'vendeur',
+        collector: mode === 'vendeur' ? 'vendeur' : 'livreur',
         status: 'nouvelle',
         history: [{ status: 'nouvelle', at: now(), by: 'acheteur' }],
         createdAt: now(),
@@ -423,9 +466,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       }
       notify(
         o.seller.contactPhone ?? o.seller.ownerPhone,
-        `🛍️ Nouvelle commande ${order.id} : ${o.lines.reduce((t, l) => t + l.qty, 0)} article(s), ${order.total.toLocaleString('fr-FR')} F.\nAcceptez-la ici : ${site(req)}/m/vendre`,
+        `🛍️ Nouvelle commande ${order.id} : ${o.lines.reduce((t, l) => t + l.qty, 0)} article(s), ${o.subtotal.toLocaleString('fr-FR')} F d'articles.\nAcceptez-la ici : ${site(req)}/m/vendre`,
       );
-      return order;
+      return mode === 'vendeur' ? order : trips.attach(order, mode, wait);
     });
     res.status(201).json({ orders: created.map(buyerView) });
   });
@@ -434,11 +477,22 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   function buyerView(o) {
     const seller = store.getMpSeller(o.sellerId);
     const accepted = ['acceptee', 'prete', 'en_livraison', 'livree'].includes(o.status);
-    const { commissions: _c, collector: _k, ...rest } = o;
+    const { commissions: _c, collector: _k, settlement: _s, payout: _p, ...rest } = o;
+    const trip = o.delivery?.tripId ? store.getMpTrip(o.delivery.tripId) : null;
     return {
       ...rest,
       seller: seller ? publicSeller(seller) : null,
-      sellerPhone: accepted ? (seller?.contactPhone ?? seller?.ownerPhone ?? null) : null,
+      // Livreur de la plateforme : c'est lui l'interlocuteur, pas le vendeur
+      sellerPhone: accepted && !byDriver(o) ? (seller?.contactPhone ?? seller?.ownerPhone ?? null) : null,
+      trip: trip
+        ? {
+            status: trip.status,
+            mode: trip.mode,
+            members: trips.live(trip).length,
+            deadline: trip.deadline,
+            driver: trip.driverId ? publicDriver(store.getMpDriver(trip.driverId)) : null,
+          }
+        : null,
     };
   }
 
@@ -467,7 +521,10 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       ...(reason ? { reason } : {}),
       history: [...(order.history ?? []), { status, at: now(), by }],
     });
-    if (status === 'refusee' || status === 'annulee') restock(order);
+    if (status === 'refusee' || status === 'annulee') {
+      restock(order);
+      if (byDriver(order)) trips.detach(saved);
+    }
     return saved;
   }
 
@@ -500,6 +557,15 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       paid,
       balance: due - paid,
       payments: seller.payments ?? [],
+      // Commandes livrées par un livreur : ce qu'il doit vous envoyer (commission déjà retirée)
+      payouts: delivered
+        .filter(o => o.collector === 'livreur' && o.settlement)
+        .map(o => ({
+          orderId: o.id,
+          amount: o.settlement.sellerGets,
+          sentAt: o.payout?.sentAt ?? null,
+          receivedAt: o.payout?.receivedAt ?? null,
+        })),
     };
   }
   const sellerView = v => ({
@@ -508,6 +574,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     trusted: !!v.trusted,
     location: v.location,
     contactPhone: v.contactPhone ?? v.ownerPhone,
+    plan: sellerPlan(v),
+    planUntil: sellerPlan(v) === 'pro' ? v.plan.until : null,
+    planRequestedAt: v.planRequestedAt ?? null,
   });
 
   app.get('/api/mp/me/seller', (req, res) => {
@@ -633,6 +702,10 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     if (tooMany(req, res, `mp-listing:${me.user.phone}`, 60, 3600e3)) return;
     const count = store.listMpListings().filter(l => l.sellerId === me.seller.id && l.status !== 'retiree').length;
     if (count >= 500) return res.status(409).json({ error: '500 articles au plus par boutique' });
+    if (sellerPlan(me.seller) !== 'pro' && count >= settings().freeListings)
+      return res.status(409).json({
+        error: `Formule Découverte : ${settings().freeListings} articles au plus. Passez à la formule Pro pour en publier davantage.`,
+      });
     const r = cleanListing(req.body ?? {});
     if (r.error) return res.status(400).json({ error: r.error });
     const auto = me.seller.trusted && settings().autoPublishTrusted;
@@ -687,14 +760,21 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
    */
   const CONTACT_STEPS = new Set(['acceptee', 'prete', 'en_livraison']);
   const sellerOrderView = o => {
-    const { commissions: c, ...rest } = o;
-    const open = CONTACT_STEPS.has(o.status);
+    const { commissions: c, settlement: st, ...rest } = o;
+    // Livreur de la plateforme : le vendeur ne voit jamais le numéro ni l'adresse de l'acheteur
+    const open = CONTACT_STEPS.has(o.status) && !byDriver(o);
+    const trip = byDriver(o) && o.delivery.tripId ? store.getMpTrip(o.delivery.tripId) : null;
     return {
       ...rest,
       buyer: { name: o.buyer.name, phone: open ? o.buyer.phone : null },
-      delivery: open ? o.delivery : { km: o.delivery.km, fee: o.delivery.fee, from: o.delivery.from, to: null },
+      delivery: open
+        ? o.delivery
+        : { km: o.delivery.km, fee: o.delivery.fee, mode: o.delivery.mode, from: o.delivery.from, to: null },
       platformFee: c.seller,
       buyerFeeToPay: c.buyer,
+      driver: trip?.driverId ? publicDriver(store.getMpDriver(trip.driverId)) : null,
+      // Ce que le livreur vous envoie après la livraison (articles moins la commission)
+      sellerGets: st?.sellerGets ?? (byDriver(o) ? o.subtotal - c.seller : null),
     };
   };
 
@@ -716,8 +796,14 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const o = store.getMpOrder(clip(req.params.id, 20));
     if (!o || o.sellerId !== me.seller.id) return res.status(404).json({ error: 'Commande introuvable' });
     const status = req.body?.status;
-    if (!(SELLER_MOVES[o.status] ?? []).includes(status))
+    const moves = byDriver(o) ? SELLER_MOVES_DRIVER : SELLER_MOVES;
+    if (!(moves[o.status] ?? []).includes(status))
       return res.status(409).json({ error: 'Cette étape ne peut pas suivre la précédente' });
+    if (status === 'annulee' && byDriver(o)) {
+      const t = store.getMpTrip(o.delivery.tripId);
+      if (t?.stops?.some(st => st.orderId === o.id && st.kind === 'enlevement' && st.done))
+        return res.status(409).json({ error: 'Le livreur a déjà récupéré le colis' });
+    }
     const reason = clip(req.body?.reason, 200);
     if ((status === 'refusee' || status === 'annulee') && reason.length < 3)
       return res.status(400).json({ error: "Expliquez la raison à l'acheteur" });
@@ -727,6 +813,31 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       `Commande ${o.id} chez ${o.shopName} : ${STATUS_TEXT[status]}${reason ? ` (${reason})` : ''}\nSuivi : ${site(req)}/m/commandes`,
     );
     res.json({ order: sellerOrderView(saved), balance: balanceOf(me.seller) });
+  });
+
+  // Le vendeur confirme avoir reçu l'argent envoyé par le livreur
+  app.patch('/api/mp/me/sales/:id/payout', (req, res) => {
+    const me = sellerOf(req, res);
+    if (!me) return;
+    const o = store.getMpOrder(clip(req.params.id, 20));
+    if (!o || o.sellerId !== me.seller.id || o.collector !== 'livreur' || o.status !== 'livree')
+      return res.status(404).json({ error: 'Commande introuvable' });
+    const saved = store.saveMpOrder({ ...o, payout: { ...(o.payout ?? {}), receivedAt: now() } });
+    res.json({ order: sellerOrderView(saved), balance: balanceOf(me.seller) });
+  });
+
+  // Demande de passage à la formule Pro (la gérante active après le paiement Wave)
+  app.post('/api/mp/me/plan-request', (req, res) => {
+    const me = sellerOf(req, res);
+    if (!me) return;
+    if (tooMany(req, res, `mp-plan:${me.user.phone}`, 5, 3600e3)) return;
+    const saved = store.saveMpSeller({ ...me.seller, planRequestedAt: now() });
+    if (process.env.OWNER_WHATSAPP)
+      notify(
+        process.env.OWNER_WHATSAPP,
+        `⭐ « ${me.seller.shopName} » veut passer à la formule Pro (${settings().proPrice} F/mois).`,
+      );
+    res.json({ seller: sellerView(saved) });
   });
 
   /* ==================== GÉRANTE ==================== */
@@ -764,8 +875,20 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       ordersActive: orders.filter(o => ACTIVE.has(o.status)).length,
       ordersDelivered: delivered.length,
       sales: delivered.reduce((t, o) => t + o.subtotal, 0),
-      earned: delivered.reduce((t, o) => t + o.commissions.seller + o.commissions.buyer, 0),
-      outstanding: sellers.reduce((t, v) => t + balanceOf(v).balance, 0),
+      earned: delivered.reduce(
+        (t, o) => t + (o.settlement ? o.settlement.platformGets : o.commissions.seller + o.commissions.buyer),
+        0,
+      ),
+      subscriptions: sellers.reduce((t, v) => t + (v.subscriptions ?? []).reduce((u, x) => u + x.amount, 0), 0),
+      outstanding:
+        sellers.reduce((t, v) => t + balanceOf(v).balance, 0) +
+        store.listMpDrivers().reduce((t, d) => t + drivers.balanceOf(d).balance, 0),
+      drivers: {
+        en_attente: store.listMpDrivers().filter(d => d.status === 'en_attente').length,
+        active: store.listMpDrivers().filter(d => d.status === 'active').length,
+        online: store.listMpDrivers().filter(d => d.status === 'active' && d.online).length,
+      },
+      tripsOpen: store.listMpTrips().filter(t => ['ouverte', 'fermee', 'acceptee'].includes(t.status)).length,
       settings: settings(),
     });
   });
@@ -820,6 +943,33 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.status(201).json({ payment, balance: balanceOf(saved) });
   });
 
+  // Formule Pro payée : activée pour N mois (le paiement est noté avec les règlements du vendeur)
+  app.post('/api/admin/mp/sellers/:id/plan', (req, res) => {
+    if (!guard(req, res)) return;
+    const v = store.getMpSeller(clip(req.params.id, 20));
+    if (!v) return res.status(404).json({ error: 'Vendeur introuvable' });
+    const months = Math.round(Number(req.body?.months));
+    if (!Number.isInteger(months) || months < 1 || months > 24) return res.status(400).json({ error: '1 à 24 mois' });
+    const from = sellerPlan(v) === 'pro' ? new Date(v.plan.until) : new Date();
+    const until = new Date(from);
+    until.setMonth(until.getMonth() + months);
+    const amount = settings().proPrice * months;
+    const saved = store.saveMpSeller({
+      ...v,
+      plan: { id: 'pro', until: until.toISOString() },
+      planRequestedAt: null,
+      subscriptions: [
+        ...(v.subscriptions ?? []),
+        { id: code(6), months, amount, at: now(), until: until.toISOString() },
+      ],
+    });
+    notify(
+      v.contactPhone ?? v.ownerPhone,
+      `⭐ Formule Pro activée jusqu'au ${until.toLocaleDateString('fr-FR')} : commission réduite, articles illimités, mise en avant.`,
+    );
+    res.json({ seller: sellerView(saved) });
+  });
+
   app.get('/api/admin/mp/listings', (req, res) => {
     if (!guard(req, res)) return;
     const status = clip(req.query.status, 20);
@@ -872,4 +1022,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     store.saveMpSettings(r.settings);
     res.json({ settings: r.settings });
   });
+
+  // Livreurs : inscription, courses, arrêts, argent (méthode A), gestion par la gérante
+  const drivers = registerDriverRoutes(app, { limit, isAdmin, store, currentUser, trips, settings, notify });
 }

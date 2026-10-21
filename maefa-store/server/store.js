@@ -37,7 +37,7 @@ let state = {
   comments: {},
   adminPasskeys: [],
   // Place de marché : vendeurs, articles publiés par eux, commandes passées chez eux, réglages
-  mp: { sellers: {}, listings: {}, orders: {}, settings: null },
+  mp: { sellers: {}, listings: {}, orders: {}, drivers: {}, trips: {}, settings: null },
 };
 // Changements de nom (Fabima → EFA → Maefa) : les références « FAB-… » et « EFA-… » des pièces
 // deviennent « MAE-… » (catalogue, commandes, alertes, étiquettes), au démarrage.
@@ -237,11 +237,19 @@ export function deleteUserAccount(phone) {
       });
       for (const l of Object.values(state.mp.listings)) if (l.sellerId === shop.id) l.status = 'retiree';
     }
+  for (const d of Object.values(state.mp?.drivers ?? {}))
+    if (d.ownerPhone === phone)
+      Object.assign(d, { status: 'fermee', ownerPhone: null, phone: null, online: false, location: null });
   persist();
 }
 
 /* ---------- Place de marché ---------- */
-const mp = () => (state.mp ??= { sellers: {}, listings: {}, orders: {}, settings: null });
+const mp = () => {
+  state.mp ??= { sellers: {}, listings: {}, orders: {}, settings: null };
+  state.mp.drivers ??= {};
+  state.mp.trips ??= {};
+  return state.mp;
+};
 export const getMpSeller = id => mp().sellers[id] ?? null;
 export const listMpSellers = () => Object.values(mp().sellers);
 export const findMpSellerByOwner = phone => listMpSellers().find(s => s.ownerPhone === phone) ?? null;
@@ -278,6 +286,22 @@ export function saveMpOrder(order) {
   mp().orders[order.id] = { ...order, updatedAt: new Date().toISOString() };
   persist();
   return mp().orders[order.id];
+}
+/* Livreurs et courses (livraison express ou moitié-moitié) */
+export const getMpDriver = id => mp().drivers[id] ?? null;
+export const listMpDrivers = () => Object.values(mp().drivers);
+export const findMpDriverByOwner = phone => listMpDrivers().find(d => d.ownerPhone === phone) ?? null;
+export function saveMpDriver(driver) {
+  mp().drivers[driver.id] = { ...driver, updatedAt: new Date().toISOString() };
+  persist();
+  return mp().drivers[driver.id];
+}
+export const getMpTrip = id => mp().trips[id] ?? null;
+export const listMpTrips = () => Object.values(mp().trips).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+export function saveMpTrip(trip) {
+  mp().trips[trip.id] = { ...trip, updatedAt: new Date().toISOString() };
+  persist();
+  return mp().trips[trip.id];
 }
 export const getMpSettings = () => mp().settings;
 export function saveMpSettings(settings) {

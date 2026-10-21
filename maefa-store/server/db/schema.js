@@ -310,6 +310,40 @@ export const mpOrders = pgTable(
   ],
 );
 
+/** Livreur de la plateforme (entité LIVREUR, rattachée au compte qui s'est inscrit). */
+export const mpDrivers = pgTable(
+  'mp_drivers',
+  {
+    id: text('id').primaryKey(),
+    ownerPhone: text('owner_phone'),
+    status: text('status').notNull(),
+    createdAt: createdAt().notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [
+    index('mp_drivers_owner_idx').on(t.ownerPhone),
+    check('statut_livreur', sql`${t.status} in ('en_attente', 'active', 'suspendue', 'fermee')`),
+  ],
+);
+
+/** Course : une ou plusieurs commandes livrées ensemble (entité COURSE, livraison moitié-moitié). */
+export const mpTrips = pgTable(
+  'mp_trips',
+  {
+    id: text('id').primaryKey(),
+    mode: text('mode').notNull(),
+    status: text('status').notNull(),
+    driverId: text('driver_id').references(() => mpDrivers.id),
+    createdAt: createdAt().notNull(),
+    data: jsonb('data').notNull(),
+  },
+  t => [
+    index('mp_trips_status_idx').on(t.status),
+    index('mp_trips_driver_idx').on(t.driverId),
+    check('mode_course', sql`${t.mode} in ('express', 'partagee')`),
+  ],
+);
+
 /** Réglages et petits documents (vitrine, visites, réglages du Marché, date du catalogue). */
 export const appSettings = pgTable('app_settings', {
   key: text('key').primaryKey(),

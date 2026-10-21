@@ -1,6 +1,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { BadgeCheck, ExternalLink, Loader2 } from 'lucide-react';
 import {
+  adminActivatePro,
+  adminCloseTrip,
+  adminDriverPayment,
+  adminDrivers,
+  adminPatchDriver,
+  adminTrips,
+  type AdminDriver,
+  type AdminTrip,
   adminListings,
   adminModerate,
   adminOrders,
@@ -18,7 +26,7 @@ import {
 import { MP, mpPath } from '../marketplace/config';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from '../marketplace/format';
 
-type Sub = 'verifier' | 'vendeurs' | 'commandes' | 'reglages';
+type Sub = 'verifier' | 'vendeurs' | 'livreurs' | 'courses' | 'commandes' | 'reglages';
 type PendingListing = MyListing & { seller: (MpSeller & { status: string }) | null };
 const SELLER_STATUS: Record<string, [string, string]> = {
   en_attente: ['À valider', 'bg-amber-100 text-amber-900'],
@@ -37,16 +45,23 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
   const [pending, setPending] = useState<PendingListing[]>([]);
   const [sellers, setSellers] = useState<AdminSeller[]>([]);
   const [orders, setOrders] = useState<MpOrder[]>([]);
+  const [drivers, setDrivers] = useState<AdminDriver[]>([]);
+  const [trips, setTrips] = useState<AdminTrip[]>([]);
+  const [driversOn, setDriversOn] = useState(false);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState<Record<string, string>>({});
 
   const load = useCallback(async () => {
-    const [o, l, s, c] = await Promise.all([
+    const [o, l, s, c, d, t] = await Promise.all([
       adminOverview(pin),
       adminListings(pin, 'en_attente'),
       adminSellers(pin),
       adminOrders(pin),
+      adminDrivers(pin),
+      adminTrips(pin),
     ]);
+    if (d.ok) setDrivers(d.data.drivers);
+    if (t.ok) setTrips(t.data.trips);
     if (o.ok) {
       setOverview(o.data);
       const st = o.data.settings;
@@ -58,7 +73,11 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
         perKm: String(st.delivery.perKm),
         min: String(st.delivery.min),
         max: String(st.delivery.max),
+        freeListings: String(st.freeListings),
+        proPrice: String(st.proPrice),
+        proRate: String(Math.round(st.proRate * 1000) / 10),
       });
+      setDriversOn(st.drivers);
     }
     if (l.ok) setPending(l.data.listings);
     if (s.ok) setSellers(s.data.sellers);
@@ -105,6 +124,10 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
       buyerFee: n('buyerFee'),
       driverRate: n('driverRate') / 100,
       delivery: { base: n('base'), perKm: n('perKm'), min: n('min'), max: n('max') },
+      freeListings: n('freeListings'),
+      proPrice: n('proPrice'),
+      proRate: n('proRate') / 100,
+      drivers: driversOn,
     });
     setMessage(r.ok ? 'Réglages enregistrés' : r.error);
     if (r.ok) load();
@@ -117,6 +140,9 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
     ['Ventes livrées', F(overview.sales)],
     ['Commissions gagnées', F(overview.earned)],
     ['Reste à encaisser', F(overview.outstanding)],
+    ['Abonnements Pro', F(overview.subscriptions)],
+    ['Livreurs disponibles', `${overview.drivers.online} / ${overview.drivers.active}`],
+    ['Courses en cours', overview.tripsOpen],
   ];
 
   return (
@@ -148,6 +174,8 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
             ['verifier', `À vérifier (${pending.length})`],
             ['vendeurs', `Vendeurs (${sellers.length})`],
             ['commandes', `Commandes (${orders.length})`],
+            ['livreurs', `Livreurs (${drivers.length})`],
+            ['courses', `Courses (${trips.length})`],
             ['reglages', 'Commissions & livraison'],
           ] as [Sub, string][]
         ).map(([id, label]) => (
@@ -233,6 +261,19 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                   {SELLER_STATUS[v.status][0]}
                 </span>
               </div>
+              <p className="text-sm mt-1">
+                Formule :{' '}
+                <strong>
+                  {v.plan === 'pro'
+                    ? `Pro jusqu'au ${new Date(v.planUntil!).toLocaleDateString('fr-FR')}`
+                    : 'Découverte'}
+                </strong>
+                {v.planRequestedAt && v.plan !== 'pro' && (
+                  <span className="ml-2 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
+                    Demande de formule Pro
+                  </span>
+                )}
+              </p>
               {v.description && <p className="text-sm text-ink/70 mt-1">{v.description}</p>}
               {v.risk.alert && (
                 <p className="text-sm mt-2 text-wine font-semibold" data-testid="admin-mp-risk">
@@ -268,6 +309,18 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 >
                   {v.trusted ? 'Retirer la confiance' : 'Vendeur de confiance'}
                 </button>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`Paiement de la formule Pro reçu de « ${v.shopName} » ? (1 mois)`)) return;
+                    const r = await adminActivatePro(pin, v.id, 1);
+                    if (!r.ok) return setMessage(r.error);
+                    load();
+                  }}
+                  className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold"
+                  data-testid="admin-mp-pro"
+                >
+                  {v.plan === 'pro' ? 'Prolonger Pro (1 mois)' : 'Activer Pro (1 mois)'}
+                </button>
                 {v.balance.balance > 0 && (
                   <button
                     onClick={() => payment(v)}
@@ -302,6 +355,117 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
         </div>
       )}
 
+      {sub === 'livreurs' && (
+        <div className="space-y-3">
+          {!drivers.length && <p className="text-sm text-ink/70">Aucun livreur inscrit.</p>}
+          {drivers.map(d => (
+            <article
+              key={d.id}
+              className="bg-white rounded-2xl border border-ink/[0.06] p-4"
+              data-testid="admin-mp-driver"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="font-semibold">
+                  {d.name}{' '}
+                  <span className="text-ink/55 font-normal text-sm">
+                    · {d.vehicle} · {d.zone} · {d.phone} {d.online && '· ● disponible'}
+                  </span>
+                </p>
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${SELLER_STATUS[d.status][1]}`}>
+                  {SELLER_STATUS[d.status][0]}
+                </span>
+              </div>
+              <p className="text-sm mt-1">
+                {d.balance.deliveries} livraison(s) · gagné {F(d.balance.earned)} · doit à la plateforme{' '}
+                <strong>{F(d.balance.balance)}</strong>
+                {d.balance.payoutsToSend.length > 0 && (
+                  <span className="text-wine">
+                    {' '}
+                    · {d.balance.payoutsToSend.length} versement(s) aux vendeurs en attente
+                  </span>
+                )}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {d.status !== 'active' && d.status !== 'fermee' && (
+                  <button
+                    onClick={async () => {
+                      const r = await adminPatchDriver(pin, d.id, 'active');
+                      if (!r.ok) return setMessage(r.error);
+                      load();
+                    }}
+                    className="btn-dark !h-10 !px-5"
+                    data-testid="admin-mp-driver-validate"
+                  >
+                    Valider (pièce d'identité vue)
+                  </button>
+                )}
+                {d.status === 'active' && (
+                  <button
+                    onClick={async () => {
+                      await adminPatchDriver(pin, d.id, 'suspendue');
+                      load();
+                    }}
+                    className="h-10 px-4 rounded-full border border-wine/30 text-wine text-sm font-semibold"
+                  >
+                    Suspendre
+                  </button>
+                )}
+                {d.balance.balance > 0 && (
+                  <button
+                    onClick={async () => {
+                      const amount = Number(
+                        window.prompt(`Montant reçu de ${d.name} (F CFA)`, String(d.balance.balance)),
+                      );
+                      if (!amount) return;
+                      const r = await adminDriverPayment(pin, d.id, amount);
+                      if (!r.ok) return setMessage(r.error);
+                      load();
+                    }}
+                    className="h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold"
+                  >
+                    Paiement reçu
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {sub === 'courses' && (
+        <div
+          className="bg-white rounded-2xl border border-ink/[0.06] divide-y divide-ink/[0.06]"
+          data-testid="admin-mp-trips"
+        >
+          {!trips.length && <p className="p-4 text-sm text-ink/70">Aucune course.</p>}
+          {trips.map(t => (
+            <div key={t.id} className="p-4 text-sm flex flex-wrap items-center justify-between gap-2">
+              <span>
+                <strong>{t.id}</strong> ·{' '}
+                {t.mode === 'partagee' ? `moitié-moitié (${t.orders.length} colis)` : 'express'} · {t.status}
+                {t.price && ` · ${F(t.price.total)} · ${t.price.km.toLocaleString('fr-FR')} km`}
+                {t.driver && ` · ${t.driver.name}`}
+                {t.status === 'ouverte' &&
+                  t.deadline &&
+                  ` · départ ${new Date(t.deadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+              </span>
+              {t.status === 'ouverte' && (
+                <button
+                  onClick={async () => {
+                    await adminCloseTrip(pin, t.id);
+                    load();
+                  }}
+                  className="h-9 px-4 rounded-full border border-ink/15 font-semibold"
+                  data-testid="admin-mp-close-trip"
+                >
+                  Lancer maintenant
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {sub === 'reglages' && (
         <form onSubmit={saveSettings} className="bg-white rounded-2xl border border-ink/[0.06] p-5 space-y-4">
           <div className="grid sm:grid-cols-3 gap-3">
@@ -314,6 +478,9 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
                 ['perKm', 'Livraison : prix au km (F)'],
                 ['min', 'Livraison : minimum (F)'],
                 ['max', 'Livraison : maximum (F)'],
+                ['freeListings', 'Formule Découverte : articles au plus'],
+                ['proPrice', 'Formule Pro : prix par mois (F)'],
+                ['proRate', 'Formule Pro : commission (%)'],
               ] as [string, string][]
             ).map(([k, label]) => (
               <label key={k} className="block">
@@ -327,6 +494,19 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
               </label>
             ))}
           </div>
+          <label className="flex items-start gap-3 p-3 rounded-2xl bg-ivory" data-testid="admin-mp-drivers-toggle">
+            <input
+              type="checkbox"
+              checked={driversOn}
+              onChange={e => setDriversOn(e.target.checked)}
+              className="mt-1 w-5 h-5"
+            />
+            <span className="text-sm">
+              <strong>Livreurs de la plateforme</strong> (express et moitié-moitié). Activez quand des livreurs sont
+              validés : le vendeur ne voit plus le client, le livreur encaisse et vous verse les commissions. Sinon, le
+              vendeur livre lui-même.
+            </span>
+          </label>
           <p className="text-sm text-ink/70">
             Exemple avec ces réglages : un article de 10 000 F livré à 5 km rapporte{' '}
             {F(Number(form.sellerRate) * 100 + Number(form.buyerFee))} (vendeur + acheteur), plus la commission du

@@ -72,3 +72,27 @@ test('anti-contournement : numéros, liens, e-mails et réseaux refusés ; prix 
   for (const t of ['Robe taille 38 39 40 41 42', 'Dimensions 33 x 25 cm, 12 000 F', 'Prix 70 000 F, livraison 2 500 F'])
     assert.equal(findContact(t), null, t);
 });
+
+test('méthode A : le livreur encaisse et chacun reçoit sa part, sans un franc de trop ni de moins', async () => {
+  const { settlement } = await import('../../server/marketplace/pricing.js');
+  // Robe à 12 000 F, livraison partagée 2 300 F, frais 150 F, commission vendeur 7 % (840 F)
+  const s = settlement({ subtotal: 12000, share: 2300, buyerFee: 150, sellerCommission: 840 });
+  assert.equal(s.collect, 14450);
+  assert.equal(s.sellerGets, 11160);
+  assert.equal(s.driverCommission, 230);
+  assert.equal(s.driverKeeps, 2070);
+  assert.equal(s.platformGets, 1220);
+  assert.equal(s.sellerGets + s.driverKeeps + s.platformGets, s.collect);
+});
+
+test('formules : Pro tant que l’abonnement court, commission réduite', async () => {
+  const { sellerPlan, sellerRateFor } = await import('../../server/marketplace/pricing.js');
+  const now = Date.parse('2026-10-21T00:00:00Z');
+  const pro = { plan: { id: 'pro', until: '2026-11-21T00:00:00Z' } };
+  const expired = { plan: { id: 'pro', until: '2026-10-01T00:00:00Z' } };
+  assert.equal(sellerPlan(pro, now), 'pro');
+  assert.equal(sellerPlan(expired, now), 'decouverte');
+  assert.equal(sellerPlan({}, now), 'decouverte');
+  assert.equal(sellerRateFor(pro, null, now), 0.03);
+  assert.equal(sellerRateFor(expired, null, now), 0.07);
+});

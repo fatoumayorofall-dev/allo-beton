@@ -301,6 +301,36 @@ réglages (taux, prix au km, minimum, maximum) modifiables par la gérante dans 
 - **Affichage** (`MpFeed.tsx`) : un article par écran, défilement aimanté, vidéo lancée seulement à
   l'écran (IntersectionObserver), photos qui défilent sinon, pages chargées par 8.
 
+### 4.5 Livreurs et livraison moitié-moitié
+
+```mermaid
+sequenceDiagram
+  actor C1 as Cliente 1
+  actor C2 as Cliente 2
+  participant A as API (trips.js)
+  actor V as Vendeurs
+  actor L as Livreur
+  C1->>A: commande « moitié-moitié », départ au plus tard 1 h
+  A-->>C1: nouveau groupe, prix maximum = course seule
+  C2->>A: commande dans la même direction
+  A->>A: canJoin : personne ne paie plus, détour raisonnable
+  A-->>C1: WhatsApp « votre livraison passe à … »
+  V->>A: commandes acceptées puis prêtes (sans voir les clientes)
+  A->>A: groupe fermé à l'heure (ou complet, ou lancé par la gérante)
+  L->>A: accepte la course ; arrêts dans l'ordre optimal
+  L->>A: enlèvements, puis dépôts : encaisse, partage calculé (settlement)
+  L->>V: envoie la part du vendeur (Wave) ; le vendeur confirme
+  L->>A: doit ses commissions à la plateforme (solde suivi par la gérante)
+```
+
+- `server/marketplace/trips.js` : création des courses, rattachement au meilleur groupe ouvert
+  (`bestGroup` / `canJoin`), recalcul des parts, fermeture à l'heure (balayage toutes les 30 s).
+- `server/marketplace/drivers.js` : inscription, présence, courses disponibles (les plus proches d'abord),
+  arrêts, versements, gestion par la gérante.
+- `settlement()` (fonction pure) : payé = part vendeur + part livreur + part plateforme, au franc près.
+- Formules vendeurs : Découverte (gratuite, 30 articles, 7 %) et Pro (abonnement mensuel, 3 %, mise en avant
+  dans le fil « Pour vous ») ; taux et prix réglables par la gérante.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

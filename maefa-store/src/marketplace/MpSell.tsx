@@ -2,12 +2,14 @@ import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Loader2, MapPin, Pencil, Phone, Plus, Store, Trash2, Wallet } from 'lucide-react';
 import {
+  confirmPayout,
   fetchConfig,
   fetchMyListings,
   fetchMySeller,
   fetchSales,
   moveSale,
   removeListing,
+  requestPro,
   saveMySeller,
   type Balance,
   type MpCategory,
@@ -49,6 +51,14 @@ const NEXT: Partial<Record<OrderStatus, { to: OrderStatus; label: string; danger
   ],
   en_livraison: [{ to: 'livree', label: 'Livrée et payée' }],
 };
+/** Livraison par un livreur de la plateforme : le vendeur prépare le colis, le livreur fait le reste */
+const NEXT_DRIVER: Partial<Record<OrderStatus, { to: OrderStatus; label: string; danger?: boolean }[]>> = {
+  nouvelle: NEXT.nouvelle,
+  acceptee: NEXT.acceptee,
+  prete: [{ to: 'annulee', label: 'Annuler', danger: true }],
+};
+const byDriver = (o: MpOrder) => o.delivery.mode === 'express' || o.delivery.mode === 'partagee';
+const nextFor = (o: MpOrder) => (byDriver(o) ? NEXT_DRIVER : NEXT)[o.status];
 
 /* ---------- Ouvrir / modifier sa boutique ---------- */
 const ShopForm: React.FC<{
@@ -183,11 +193,12 @@ const ShopForm: React.FC<{
 };
 
 /* ---------- Commandes reçues ---------- */
-const SaleCard: React.FC<{ order: MpOrder; onMove: (o: MpOrder, to: OrderStatus) => void; busy: boolean }> = ({
-  order: o,
-  onMove,
-  busy,
-}) => (
+const SaleCard: React.FC<{
+  order: MpOrder;
+  onMove: (o: MpOrder, to: OrderStatus) => void;
+  onReceived: (o: MpOrder) => void;
+  busy: boolean;
+}> = ({ order: o, onMove, onReceived, busy }) => (
   <article className="bg-white rounded-2xl border border-ink/[0.06] p-4" data-testid="mp-sale">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <p className="font-semibold">
@@ -208,18 +219,49 @@ const SaleCard: React.FC<{ order: MpOrder; onMove: (o: MpOrder, to: OrderStatus)
         </li>
       ))}
     </ul>
-    <div className="mt-2 text-sm grid sm:grid-cols-2 gap-x-6 gap-y-1 text-ink/80">
-      <p>
-        À encaisser : <strong>{F(o.total)}</strong> ({PAYMENT_LABELS[o.payment]})
-      </p>
-      <p>
-        Dont livraison {F(o.delivery.fee)} · {o.delivery.km.toLocaleString('fr-FR')} km
-      </p>
-      <p>
-        Commission {MP.name} : {F((o.platformFee ?? 0) + (o.buyerFeeToPay ?? 0))}
-      </p>
-    </div>
-    {o.status === 'nouvelle' && (
+    {byDriver(o) ? (
+      <div className="mt-2 text-sm space-y-1 text-ink/80" data-testid="mp-sale-driver">
+        <p>
+          🛵 Livraison {o.delivery.mode === 'partagee' ? 'moitié-moitié' : 'express'} par un livreur {MP.name} :
+          préparez le colis, il vient le chercher. {o.driver && <strong>Livreur : {o.driver.name}</strong>}
+        </p>
+        <p>
+          Le livreur vous enverra <strong data-testid="mp-seller-gets">{F(o.sellerGets ?? 0)}</strong> (articles moins
+          la commission de {F(o.platformFee ?? 0)}) dès la livraison.
+        </p>
+        {o.driver && !['livree', 'annulee', 'refusee'].includes(o.status) && (
+          <a
+            href={`tel:${o.driver.phone}`}
+            className="inline-flex items-center gap-1 h-9 px-3 rounded-full border border-ink/15 font-semibold"
+          >
+            <Phone className="w-3.5 h-3.5" /> Appeler le livreur
+          </a>
+        )}
+        {o.status === 'livree' &&
+          (o.payout?.receivedAt ? (
+            <p className="text-emerald-800 font-semibold">✓ Argent reçu</p>
+          ) : o.payout?.sentAt ? (
+            <button onClick={() => onReceived(o)} className="btn-dark !h-10 !px-5" data-testid="mp-payout-received">
+              J'ai bien reçu {F(o.sellerGets ?? 0)}
+            </button>
+          ) : (
+            <p className="text-amber-900">En attente de l'envoi du livreur</p>
+          ))}
+      </div>
+    ) : (
+      <div className="mt-2 text-sm grid sm:grid-cols-2 gap-x-6 gap-y-1 text-ink/80">
+        <p>
+          À encaisser : <strong>{F(o.total)}</strong> ({PAYMENT_LABELS[o.payment]})
+        </p>
+        <p>
+          Dont livraison {F(o.delivery.fee)} · {o.delivery.km.toLocaleString('fr-FR')} km
+        </p>
+        <p>
+          Commission {MP.name} : {F((o.platformFee ?? 0) + (o.buyerFeeToPay ?? 0))}
+        </p>
+      </div>
+    )}
+    {o.status === 'nouvelle' && !byDriver(o) && (
       <p className="mt-2 text-xs text-ink/60">
         Le numéro et l'adresse de l'acheteur s'affichent dès que vous acceptez la commande.
       </p>
@@ -248,9 +290,9 @@ const SaleCard: React.FC<{ order: MpOrder; onMove: (o: MpOrder, to: OrderStatus)
     )}
     {o.note && <p className="mt-2 text-sm italic text-ink/75">« {o.note} »</p>}
     {o.reason && <p className="mt-2 text-sm text-wine">Raison : {o.reason}</p>}
-    {NEXT[o.status] && (
+    {nextFor(o) && (
       <div className="mt-3 flex flex-wrap gap-2">
-        {NEXT[o.status]!.map(a => (
+        {nextFor(o)!.map(a => (
           <button
             key={a.to}
             disabled={busy}
@@ -482,7 +524,18 @@ export default function MpSell() {
         <div className="space-y-3">
           {!sales.length && <p className="text-ink/70 text-sm">Pas encore de commande.</p>}
           {sales.map(o => (
-            <SaleCard key={o.id} order={o} onMove={move} busy={busy} />
+            <SaleCard
+              key={o.id}
+              order={o}
+              onMove={move}
+              busy={busy}
+              onReceived={async x => {
+                const r = await confirmPayout(x.id);
+                if (!r.ok) return setMessage(r.error);
+                setSales(list => list.map(y => (y.id === x.id ? r.data.order : y)));
+                setBalance(r.data.balance);
+              }}
+            />
           ))}
         </div>
       )}
@@ -513,6 +566,24 @@ export default function MpSell() {
             payés par l'acheteur (que vous encaissez avec la commande). Réglez par Wave ou Orange Money au{' '}
             {SITE_CONFIG.phone}, en indiquant le nom de votre boutique.
           </p>
+          {!!balance.payouts?.length && (
+            <div>
+              <h3 className="font-semibold mt-2">Envoyé par les livreurs</h3>
+              <p className="text-xs text-ink/60">
+                Commandes livrées par un livreur {MP.name} : la commission est déjà retirée, vous ne devez rien.
+              </p>
+              <ul className="text-sm divide-y divide-ink/[0.06] mt-1">
+                {balance.payouts.map(p => (
+                  <li key={p.orderId} className="py-2 flex justify-between gap-3">
+                    <span>
+                      {p.orderId} · {p.receivedAt ? '✓ reçu' : p.sentAt ? 'envoyé, à confirmer' : 'pas encore envoyé'}
+                    </span>
+                    <span className="font-semibold">{F(p.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {!!balance.payments.length && (
             <ul className="text-sm divide-y divide-ink/[0.06]">
               {balance.payments.map(p => (
@@ -524,6 +595,44 @@ export default function MpSell() {
                 </li>
               ))}
             </ul>
+          )}
+        </section>
+      )}
+      {tab === 'solde' && (
+        <section className="bg-white rounded-3xl border border-ink/[0.06] p-5 space-y-2" data-testid="mp-plan">
+          <h2 className="font-display text-2xl">Ma formule : {seller.plan === 'pro' ? 'Pro ⭐' : 'Découverte'}</h2>
+          {seller.plan === 'pro' ? (
+            <p className="text-sm text-ink/75">
+              Active jusqu'au {new Date(seller.planUntil!).toLocaleDateString('fr-FR')} : commission de{' '}
+              {Math.round((settings?.proRate ?? 0.03) * 100)} %, articles illimités, mise en avant dans le fil « Pour
+              vous ».
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-ink/75">
+                Gratuite : {settings?.freeListings ?? 30} articles, commission de {rate} %. Formule Pro :{' '}
+                {F(settings?.proPrice ?? 5000)} par mois, commission de {Math.round((settings?.proRate ?? 0.03) * 100)}{' '}
+                %, articles illimités et mise en avant dans le fil « Pour vous ».
+              </p>
+              {seller.planRequestedAt ? (
+                <p className="text-sm text-emerald-800">
+                  Demande envoyée : réglez {F(settings?.proPrice ?? 5000)} par Wave au {SITE_CONFIG.phone}, la formule
+                  sera activée à réception.
+                </p>
+              ) : (
+                <button
+                  onClick={async () => {
+                    const r = await requestPro();
+                    if (r.ok) setSeller(r.data.seller);
+                    else setMessage(r.error);
+                  }}
+                  className="btn-dark !h-11 !px-5"
+                  data-testid="mp-request-pro"
+                >
+                  Passer à la formule Pro
+                </button>
+              )}
+            </>
           )}
         </section>
       )}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { LogOut, Package, Store } from 'lucide-react';
+import { Bike, LogOut, Package, Store } from 'lucide-react';
 import { useAccount } from '../context/AccountContext';
 import { Login, NameStep } from '../pages/Account';
 import { FaceIdPanel } from '../components/FaceIdPanel';
@@ -55,6 +55,12 @@ export default function MpAccount() {
             className="h-14 rounded-2xl border border-ink/10 flex items-center justify-center gap-2 font-semibold text-sm"
           >
             <Store className="w-4 h-4" /> Ma boutique
+          </Link>
+          <Link
+            to={mpPath('/livreur')}
+            className="col-span-2 h-14 rounded-2xl border border-ink/10 flex items-center justify-center gap-2 font-semibold text-sm"
+          >
+            <Bike className="w-4 h-4" /> Espace livreur
           </Link>
         </div>
       </section>

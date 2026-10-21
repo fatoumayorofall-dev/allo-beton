@@ -79,6 +79,12 @@ export interface OrderLine {
   variant: string | null;
   variantLabel: string | null;
 }
+export type DeliveryMode = 'vendeur' | 'express' | 'partagee';
+export interface PublicDriver {
+  name: string;
+  phone: string;
+  vehicle: 'moto' | 'voiture' | 'velo' | 'pied';
+}
 export type OrderStatus = 'nouvelle' | 'acceptee' | 'prete' | 'en_livraison' | 'livree' | 'refusee' | 'annulee';
 export interface MpOrder {
   id: string;
@@ -89,7 +95,18 @@ export interface MpOrder {
   lines: OrderLine[];
   subtotal: number;
   /** Adresse exacte : seulement pendant la livraison (vue vendeur) */
-  delivery: { km: number; fee: number; to: (DeliveryLocation & { landmark?: string }) | null; from: DeliveryLocation };
+  delivery: {
+    km: number;
+    /** Prix de la course seule : le maximum garanti */
+    fee: number;
+    /** Part réellement payée (moitié-moitié : baisse quand d'autres commandes rejoignent) */
+    share?: number;
+    mode?: DeliveryMode;
+    tripId?: string;
+    deadline?: string | null;
+    to: (DeliveryLocation & { landmark?: string }) | null;
+    from: DeliveryLocation;
+  };
   buyerFee: number;
   total: number;
   payment: 'especes' | 'wave' | 'orange_money';
@@ -101,6 +118,17 @@ export interface MpOrder {
   /** Vue acheteur */
   seller?: MpSeller | null;
   sellerPhone?: string | null;
+  trip?: {
+    status: 'ouverte' | 'fermee' | 'acceptee' | 'terminee' | 'annulee';
+    mode: 'express' | 'partagee';
+    members: number;
+    deadline: string | null;
+    driver: PublicDriver | null;
+  } | null;
+  /** Vue vendeur : livreur de la course et montant qu'il vous envoie */
+  driver?: PublicDriver | null;
+  sellerGets?: number | null;
+  payout?: { sentAt?: string; receivedAt?: string; amount?: number };
   /** Vue vendeur */
   platformFee?: number;
   buyerFeeToPay?: number;
@@ -112,6 +140,8 @@ export interface Balance {
   paid: number;
   balance: number;
   payments: { id: string; amount: number; note: string; at: string }[];
+  /** Commandes livrées par un livreur : ce qu'il doit vous envoyer */
+  payouts?: { orderId: string; amount: number; sentAt: string | null; receivedAt: string | null }[];
 }
 export interface MpSettings {
   sellerRate: number;
@@ -119,12 +149,19 @@ export interface MpSettings {
   driverRate: number;
   delivery: { base: number; perKm: number; min: number; max: number };
   autoPublishTrusted: boolean;
+  drivers: boolean;
+  freeListings: number;
+  proPrice: number;
+  proRate: number;
 }
 export interface MySeller extends MpSeller {
   status: 'en_attente' | 'active' | 'suspendue' | 'fermee';
   trusted: boolean;
   location: DeliveryLocation;
   contactPhone: string;
+  plan: 'decouverte' | 'pro';
+  planUntil: string | null;
+  planRequestedAt: string | null;
 }
 export interface QuoteOrder {
   seller: MpSeller;
@@ -133,6 +170,8 @@ export interface QuoteOrder {
   delivery: { km: number; fee: number };
   buyerFee: number;
   total: number;
+  /** Moitié-moitié : part si la commande rejoint maintenant un groupe dans sa direction */
+  shared: { share: number; with: number; deadline: string } | null;
 }
 export interface CartLine {
   listingId: string;
@@ -142,9 +181,15 @@ export interface CartLine {
 
 /* ---------- Public ---------- */
 export const fetchConfig = () =>
-  call<{ categories: MpCategory[]; sellerRate: number; buyerFee: number; delivery: MpSettings['delivery'] }>(
-    '/api/mp/config',
-  );
+  call<{
+    categories: MpCategory[];
+    sellerRate: number;
+    buyerFee: number;
+    delivery: MpSettings['delivery'];
+    drivers: boolean;
+    shareWaits: number[];
+    plans: { freeListings: number; proPrice: number; proRate: number };
+  }>('/api/mp/config');
 export const fetchListings = (params: Record<string, string>) =>
   call<{ total: number; page: number; listings: MpListing[] }>(`/api/mp/listings?${new URLSearchParams(params)}`);
 export const fetchListing = (id: string) =>
@@ -161,8 +206,8 @@ export const fetchFeed = (body: {
   page: number;
   per?: number;
 }) => post<{ total: number; page: number; items: FeedItem[] }>('/api/mp/feed', body);
-export const fetchQuote = (items: CartLine[], to: DeliveryLocation) =>
-  post<{ orders: QuoteOrder[]; total: number }>('/api/mp/quote', { items, to });
+export const fetchQuote = (items: CartLine[], to: DeliveryLocation, wait?: number) =>
+  post<{ drivers: boolean; orders: QuoteOrder[]; total: number }>('/api/mp/quote', { items, to, wait });
 
 /* ---------- Acheteur ---------- */
 export const placeOrders = (body: {
@@ -171,6 +216,8 @@ export const placeOrders = (body: {
   name: string;
   payment: MpOrder['payment'];
   note: string;
+  mode?: 'express' | 'partagee';
+  wait?: number;
 }) => post<{ orders: MpOrder[] }>('/api/mp/orders', body);
 export const fetchMyOrders = () => call<{ orders: MpOrder[] }>('/api/mp/me/orders');
 export const cancelMyOrder = (id: string) => post<{ order: MpOrder }>(`/api/mp/me/orders/${id}/cancel`, {});
@@ -201,6 +248,77 @@ export const fetchSales = () => call<{ orders: MpOrder[]; balance: Balance }>('/
 export const moveSale = (id: string, status: OrderStatus, reason?: string) =>
   post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}`, { status, reason }, 'PATCH');
 
+export const confirmPayout = (id: string) =>
+  post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}/payout`, { received: true }, 'PATCH');
+export const requestPro = () => post<{ seller: MySeller }>('/api/mp/me/plan-request', {});
+
+/* ---------- Livreur ---------- */
+export interface Driver {
+  id: string;
+  name: string;
+  phone: string;
+  vehicle: PublicDriver['vehicle'];
+  zone: string;
+  status: 'en_attente' | 'active' | 'suspendue' | 'fermee';
+  online: boolean;
+  location: { lat: number; lng: number; at: string } | null;
+  createdAt: string;
+}
+export interface DriverBalance {
+  deliveries: number;
+  earned: number;
+  due: number;
+  paid: number;
+  balance: number;
+  payments: { id: string; amount: number; note: string; at: string }[];
+  payoutsToSend: { orderId: string; shopName: string; amount: number }[];
+}
+export interface TripOffer {
+  id: string;
+  mode: 'express' | 'partagee';
+  orders: number;
+  km: number;
+  earn: number;
+  shops: string[];
+  toFirstKm: number | null;
+}
+export interface TripStop {
+  orderId: string;
+  kind: 'enlevement' | 'depot';
+  done: boolean;
+  phone: string | null;
+  at: DeliveryLocation & { landmark?: string };
+  shopName?: string;
+  items?: string[];
+  buyerName?: string;
+  payment?: MpOrder['payment'];
+  note?: string;
+  money?: { collect: number; sellerGets: number; driverKeeps: number; platformGets: number; driverCommission: number };
+  sellerPhone?: string | null;
+  payoutSent?: boolean;
+}
+export interface DriverTrip {
+  id: string;
+  mode: 'express' | 'partagee';
+  status: string;
+  km: number;
+  stops: TripStop[];
+}
+export const fetchMyDriver = () =>
+  call<{ driver: Driver | null; balance?: DriverBalance; trip?: DriverTrip | null; driverRate?: number }>(
+    '/api/mp/me/driver',
+  );
+export const saveMyDriver = (body: { name: string; vehicle: string; zone: string }) =>
+  post<{ driver: Driver; balance: DriverBalance }>('/api/mp/me/driver', body);
+export const setPresence = (online: boolean, location?: { lat: number; lng: number }) =>
+  post<{ driver: Driver }>('/api/mp/me/driver/presence', { online, location });
+export const fetchTripOffers = () => call<{ trips: TripOffer[]; current: DriverTrip | null }>('/api/mp/driver/trips');
+export const acceptTrip = (id: string) => post<{ trip: DriverTrip }>(`/api/mp/driver/trips/${id}/accept`, {});
+export const stopDone = (id: string, orderId: string, kind: TripStop['kind']) =>
+  post<{ trip: DriverTrip; balance: DriverBalance }>(`/api/mp/driver/trips/${id}/stop`, { orderId, kind });
+export const payoutSent = (orderId: string) =>
+  post<{ balance: DriverBalance }>(`/api/mp/driver/orders/${orderId}/payout`, {});
+
 /* ---------- Gérante ---------- */
 const admin = (pin: string) => ({ 'x-admin-pin': pin });
 export interface AdminSeller extends MySeller {
@@ -209,6 +327,21 @@ export interface AdminSeller extends MySeller {
   balance: Balance;
   /** Refus et annulations du vendeur : signal de vente hors application */
   risk: { orders: number; dropped: number; rate: number; alert: boolean };
+}
+export interface AdminDriver extends Driver {
+  ownerPhone: string | null;
+  balance: DriverBalance;
+  current: string | null;
+}
+export interface AdminTrip {
+  id: string;
+  mode: 'express' | 'partagee';
+  status: string;
+  deadline: string | null;
+  price: { total: number; km: number; shares: Record<string, number> } | null;
+  orders: { id: string; status: OrderStatus; shopName: string }[];
+  driver: PublicDriver | null;
+  createdAt: string;
 }
 export interface Overview {
   sellers: Record<'en_attente' | 'active' | 'suspendue' | 'fermee', number>;
@@ -219,6 +352,9 @@ export interface Overview {
   sales: number;
   earned: number;
   outstanding: number;
+  subscriptions: number;
+  drivers: { en_attente: number; active: number; online: number };
+  tripsOpen: number;
   settings: MpSettings;
 }
 export const adminOverview = (pin: string) => call<Overview>('/api/admin/mp/overview', { headers: admin(pin) });
@@ -254,4 +390,27 @@ export const adminSettings = (pin: string, body: Partial<MpSettings>) =>
     method: 'PATCH',
     headers: admin(pin),
     body: JSON.stringify(body),
+  });
+export const adminDrivers = (pin: string) =>
+  call<{ drivers: AdminDriver[] }>('/api/admin/mp/drivers', { headers: admin(pin) });
+export const adminPatchDriver = (pin: string, id: string, status: string) =>
+  call<{ driver: Driver }>(`/api/admin/mp/drivers/${id}`, {
+    method: 'PATCH',
+    headers: admin(pin),
+    body: JSON.stringify({ status }),
+  });
+export const adminDriverPayment = (pin: string, id: string, amount: number) =>
+  call<{ balance: DriverBalance }>(`/api/admin/mp/drivers/${id}/payments`, {
+    method: 'POST',
+    headers: admin(pin),
+    body: JSON.stringify({ amount, note: 'Commissions reçues' }),
+  });
+export const adminTrips = (pin: string) => call<{ trips: AdminTrip[] }>('/api/admin/mp/trips', { headers: admin(pin) });
+export const adminCloseTrip = (pin: string, id: string) =>
+  call<{ trip: AdminTrip }>(`/api/admin/mp/trips/${id}/close`, { method: 'POST', headers: admin(pin) });
+export const adminActivatePro = (pin: string, id: string, months: number) =>
+  call<{ seller: MySeller }>(`/api/admin/mp/sellers/${id}/plan`, {
+    method: 'POST',
+    headers: admin(pin),
+    body: JSON.stringify({ months }),
   });

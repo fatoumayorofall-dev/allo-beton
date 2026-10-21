@@ -18,6 +18,13 @@ export const DEFAULT_MP_SETTINGS = Object.freeze({
   delivery: Object.freeze({ base: 1000, perKm: 200, min: 1000, max: 15000 }),
   /** Vendeurs de confiance : leurs nouveaux articles sont publiés sans attendre la vérification */
   autoPublishTrusted: true,
+  /** Livreurs de la plateforme (express et moitié-moitié) ; sinon le vendeur livre lui-même */
+  drivers: false,
+  /** Formule « Découverte » (gratuite) : nombre d'articles en ligne au plus */
+  freeListings: 30,
+  /** Formule « Pro » : abonnement mensuel, commission réduite, articles illimités, mise en avant */
+  proPrice: 5000,
+  proRate: 0.03,
 });
 
 /** Bornes acceptées pour chaque réglage (contrôle des modifications de la gérante). */
@@ -29,6 +36,9 @@ const BOUNDS = {
   'delivery.perKm': [0, 2000],
   'delivery.min': [0, 10000],
   'delivery.max': [1000, 50000],
+  freeListings: [1, 1000],
+  proPrice: [0, 100000],
+  proRate: [0, 0.3],
 };
 
 /** Réglages complets à partir de ceux enregistrés (les champs manquants prennent la valeur par défaut). */
@@ -54,6 +64,7 @@ export function patchSettings(current, patch) {
     else next[a] = n;
   }
   if (patch?.autoPublishTrusted !== undefined) next.autoPublishTrusted = !!patch.autoPublishTrusted;
+  if (patch?.drivers !== undefined) next.drivers = !!patch.drivers;
   if (next.delivery.min > next.delivery.max) return { error: 'Le minimum dépasse le maximum' };
   return { settings: next };
 }
@@ -83,12 +94,40 @@ export function deliveryFee(from, to, settings) {
  * Commissions de la plateforme sur une commande.
  * deliveryFee : prix total de la course (le livreur paie sa commission dessus).
  */
-export function commissions({ subtotal, deliveryFee: fee = 0 }, settings) {
+export function commissions({ subtotal, deliveryFee: fee = 0 }, settings, sellerRate) {
   const s = resolveSettings(settings);
-  const seller = Math.round(subtotal * s.sellerRate);
+  const seller = Math.round(subtotal * (sellerRate ?? s.sellerRate));
   const buyer = s.buyerFee;
   const driver = Math.round(fee * s.driverRate);
   return { seller, buyer, driver, total: seller + buyer + driver };
+}
+
+/** Formule du vendeur à une date : « pro » tant que l'abonnement court, sinon « decouverte ». */
+export const sellerPlan = (seller, now = Date.now()) =>
+  seller?.plan?.id === 'pro' && Date.parse(seller.plan.until) > now ? 'pro' : 'decouverte';
+
+/** Commission du vendeur selon sa formule. */
+export const sellerRateFor = (seller, settings, now = Date.now()) => {
+  const s = resolveSettings(settings);
+  return sellerPlan(seller, now) === 'pro' ? s.proRate : s.sellerRate;
+};
+
+/**
+ * Partage de l'argent quand le livreur encaisse (méthode A) :
+ * - l'acheteur paie au livreur : articles + sa part de livraison + frais de service ;
+ * - le livreur envoie au vendeur : articles − commission du vendeur ;
+ * - le livreur garde : sa part de livraison − sa commission ;
+ * - la plateforme reçoit du livreur : commission vendeur + frais de service + commission livreur.
+ * La somme des trois parts est toujours égale à ce que l'acheteur a payé.
+ */
+export function settlement({ subtotal, share, buyerFee, sellerCommission }, settings) {
+  const s = resolveSettings(settings);
+  const driverCommission = Math.round(share * s.driverRate);
+  const collect = subtotal + share + buyerFee;
+  const sellerGets = subtotal - sellerCommission;
+  const driverKeeps = share - driverCommission;
+  const platformGets = sellerCommission + buyerFee + driverCommission;
+  return { collect, sellerGets, driverKeeps, platformGets, driverCommission };
 }
 
 /** Le point est-il au Sénégal (cadre large) ? Évite les positions absurdes. */

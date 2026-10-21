@@ -539,6 +539,104 @@ paths:
       summary: 'Vidéo d’un article (MP4, MOV ou WebM, 40 Mo au plus, format contrôlé au contenu)'
       security: [{ session: [] }]
       responses: { '201': { description: Adresse de la vidéo }, '415': { description: Pas une vidéo } }
+  /api/mp/me/driver:
+    get:
+      tags: [Livreurs]
+      summary: 'Mon espace livreur : profil, solde, course en cours'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Livreurs]
+      summary: 'S’inscrire comme livreur (validation par la gérante)'
+      security: [{ session: [] }]
+      responses: { '201': { description: Inscrit }, '400': { description: Champ invalide } }
+  /api/mp/me/driver/presence:
+    post:
+      tags: [Livreurs]
+      summary: 'Disponible ou non, avec la position (courses les plus proches d’abord)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/driver/trips:
+    get:
+      tags: [Livreurs]
+      summary: 'Courses prêtes : mode, colis, distance, gain (sans adresse exacte)'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK }, '423': { description: Inscription pas encore validée } }
+  /api/mp/driver/trips/{id}/accept:
+    post:
+      tags: [Livreurs]
+      summary: 'Prendre une course (une seule à la fois)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses:
+        { '200': { description: 'Arrêts dans l’ordre, contacts, montants' }, '409': { description: Déjà prise } }
+  /api/mp/driver/trips/{id}/stop:
+    post:
+      tags: [Livreurs]
+      summary: 'Arrêt fait : colis enlevé, ou déposé et encaissé (partage de l’argent calculé)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '409': { description: Étape impossible } }
+  /api/mp/driver/orders/{id}/payout:
+    post:
+      tags: [Livreurs]
+      summary: 'Part du vendeur envoyée (Wave, Orange Money)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/sales/{id}/payout:
+    patch:
+      tags: [Place de marché]
+      summary: 'Vendeur : argent du livreur bien reçu'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/plan-request:
+    post:
+      tags: [Place de marché]
+      summary: 'Vendeur : demander la formule Pro'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/sellers/{id}/plan:
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : activer ou prolonger la formule Pro (N mois, paiement enregistré)'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/drivers:
+    get:
+      tags: [Livreurs]
+      summary: 'Gérante : livreurs, gains, sommes dues, versements en attente'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/drivers/{id}:
+    patch:
+      tags: [Livreurs]
+      summary: 'Gérante : valider ou suspendre un livreur'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/drivers/{id}/payments:
+    post:
+      tags: [Livreurs]
+      summary: 'Gérante : commissions reçues du livreur'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: OK } }
+  /api/admin/mp/trips:
+    get:
+      tags: [Livreurs]
+      summary: 'Gérante : courses (groupes moitié-moitié, express)'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/trips/{id}/close:
+    post:
+      tags: [Livreurs]
+      summary: 'Gérante : lancer un groupe moitié-moitié sans attendre l’heure'
+      security: [{ admin: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
   /api/mp/config:
     get:
       tags: [Place de marché]

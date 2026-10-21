@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
+import { Bike, CheckCircle2, Loader2, Minus, Plus, ShoppingBag, Trash2, Users } from 'lucide-react';
 import { fetchQuote, placeOrders, type MpOrder, type QuoteOrder } from './api';
 import { useMpCart } from './cart';
 import { MP, mpPath } from './config';
@@ -11,6 +11,8 @@ import { usePageTitle } from '../utils/usePageTitle';
 
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
 const DAKAR = { lat: 14.7167, lng: -17.4677 };
+const hour = (iso?: string | null) =>
+  iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'l’heure prévue';
 
 export default function MpCart() {
   usePageTitle(`Panier · ${MP.name}`);
@@ -18,7 +20,10 @@ export default function MpCart() {
   const { status, user } = useAccount();
   const navigate = useNavigate();
   const [to, setTo] = useState<DeliveryLocation | undefined>(user?.location ?? undefined);
-  const [quote, setQuote] = useState<{ orders: QuoteOrder[]; total: number } | null>(null);
+  const [quote, setQuote] = useState<{ drivers: boolean; orders: QuoteOrder[]; total: number } | null>(null);
+  // Livraison par les livreurs : moitié-moitié (par défaut, moins cher) ou express
+  const [mode, setMode] = useState<'partagee' | 'express'>('partagee');
+  const [wait, setWait] = useState(60);
   const [quoteError, setQuoteError] = useState('');
   const [name, setName] = useState('');
   const [payment, setPayment] = useState<MpOrder['payment']>('especes');
@@ -36,7 +41,7 @@ export default function MpCart() {
     if (!to || !lines.length) return setQuote(null);
     let alive = true;
     const t = setTimeout(() => {
-      fetchQuote(lines, to).then(r => {
+      fetchQuote(lines, to, wait).then(r => {
         if (!alive) return;
         if (r.ok) {
           setQuote(r.data);
@@ -51,7 +56,7 @@ export default function MpCart() {
       alive = false;
       clearTimeout(t);
     };
-  }, [lines, to]);
+  }, [lines, to, wait]);
 
   const groups = useMemo(() => {
     const m = new Map<string, typeof items>();
@@ -74,9 +79,22 @@ export default function MpCart() {
           {done.map(o => (
             <li key={o.id}>
               <strong>{o.id}</strong> · {o.shopName} · {F(o.total)}
+              {o.delivery.mode === 'partagee' && (o.delivery.share ?? o.delivery.fee) < o.delivery.fee && (
+                <span className="text-emerald-800">
+                  {' '}
+                  (livraison partagée : −{F(o.delivery.fee - (o.delivery.share ?? 0))})
+                </span>
+              )}
             </li>
           ))}
         </ul>
+        {done.some(o => o.delivery.mode === 'partagee') && (
+          <p className="mt-4 text-sm text-ink/75 bg-emerald-50 rounded-2xl p-3">
+            Livraison moitié-moitié : votre prix peut encore baisser si d'autres commandes partent dans votre direction
+            d'ici {hour(done.find(o => o.delivery.deadline)?.delivery.deadline)}. Il ne montera jamais au-dessus du prix
+            affiché.
+          </p>
+        )}
         <Link to={mpPath('/commandes')} className="btn-dark mt-6 inline-flex !h-12 !px-6">
           Suivre mes commandes
         </Link>
@@ -100,7 +118,14 @@ export default function MpCart() {
     if (name.trim().length < 2) return setError('Indiquez votre prénom');
     setBusy(true);
     setError('');
-    const r = await placeOrders({ items: lines, to, name: name.trim(), payment, note });
+    const r = await placeOrders({
+      items: lines,
+      to,
+      name: name.trim(),
+      payment,
+      note,
+      ...(quote?.drivers ? { mode, wait } : {}),
+    });
     setBusy(false);
     if (!r.ok) return setError(r.error);
     clear();
@@ -190,7 +215,19 @@ export default function MpCart() {
                 </p>
                 <p className="flex justify-between">
                   <span>Livraison ({o.delivery.km.toLocaleString('fr-FR')} km)</span>
-                  <span data-testid="mp-delivery-fee">{F(o.delivery.fee)}</span>
+                  {quote.drivers && mode === 'partagee' && o.shared ? (
+                    <span>
+                      <s className="text-ink/45 mr-1.5">{F(o.delivery.fee)}</s>
+                      <strong className="text-emerald-800" data-testid="mp-delivery-fee">
+                        {F(o.shared.share)}
+                      </strong>
+                    </span>
+                  ) : (
+                    <span data-testid="mp-delivery-fee">
+                      {quote.drivers && mode === 'partagee' && 'au plus '}
+                      {F(o.delivery.fee)}
+                    </span>
+                  )}
                 </p>
                 <p className="flex justify-between">
                   <span>Frais de service</span>
@@ -199,10 +236,69 @@ export default function MpCart() {
               </div>
             ))}
             <p className="flex justify-between text-lg font-bold">
-              <span>Total à payer</span>
-              <span data-testid="mp-total">{F(quote.total)}</span>
+              <span>{quote.drivers && mode === 'partagee' ? 'Total, au plus' : 'Total à payer'}</span>
+              <span data-testid="mp-total">
+                {F(
+                  quote.total -
+                    (quote.drivers && mode === 'partagee'
+                      ? quote.orders.reduce((t, o) => t + (o.shared ? o.delivery.fee - o.shared.share : 0), 0)
+                      : 0),
+                )}
+              </span>
             </p>
           </div>
+        )}
+
+        {quote?.drivers && (
+          <fieldset className="space-y-2" data-testid="mp-delivery-mode">
+            <legend className="field-label">Livraison</legend>
+            <button
+              type="button"
+              aria-pressed={mode === 'partagee'}
+              onClick={() => setMode('partagee')}
+              data-testid="mp-mode-partagee"
+              className={`w-full text-left p-3 rounded-2xl border-2 ${mode === 'partagee' ? 'border-emerald-700 bg-emerald-50' : 'border-ink/10'}`}
+            >
+              <span className="font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4" /> Moitié-moitié (moins cher)
+              </span>
+              <span className="block text-xs text-ink/70 mt-1">
+                {quote.orders.some(o => o.shared)
+                  ? (n =>
+                      `Déjà ${n} commande${n > 1 ? 's' : ''} sur votre trajet : vous partagez le livreur et payez moins.`)(
+                      Math.max(...quote.orders.map(o => o.shared?.with ?? 0)),
+                    )
+                  : "On attend d'autres commandes qui vont dans votre direction : le prix baisse pour chacun. Jamais plus que le prix affiché."}
+              </span>
+            </button>
+            {mode === 'partagee' && (
+              <div className="flex flex-wrap gap-1.5 pl-1" role="group" aria-label="Départ au plus tard">
+                {[30, 60, 120, 240].map(m => (
+                  <button
+                    key={m}
+                    type="button"
+                    aria-pressed={wait === m}
+                    onClick={() => setWait(m)}
+                    className={`px-3 h-8 rounded-full text-xs font-semibold border ${wait === m ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/15'}`}
+                  >
+                    Départ au plus tard {m < 60 ? `${m} min` : `${m / 60} h`}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button
+              type="button"
+              aria-pressed={mode === 'express'}
+              onClick={() => setMode('express')}
+              data-testid="mp-mode-express"
+              className={`w-full text-left p-3 rounded-2xl border-2 ${mode === 'express' ? 'border-ink bg-ivory' : 'border-ink/10'}`}
+            >
+              <span className="font-semibold flex items-center gap-2">
+                <Bike className="w-4 h-4" /> Express
+              </span>
+              <span className="block text-xs text-ink/70 mt-1">Le livreur part dès que le colis est prêt.</span>
+            </button>
+          </fieldset>
         )}
 
         <label className="block">

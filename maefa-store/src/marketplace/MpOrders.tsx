@@ -72,8 +72,20 @@ export default function MpOrders() {
                 </li>
               ))}
               <li className="flex justify-between text-ink/70">
-                <span>Livraison + frais</span>
-                <span>{F(o.delivery.fee + o.buyerFee)}</span>
+                <span>
+                  Livraison
+                  {o.delivery.mode === 'partagee' ? ' moitié-moitié' : o.delivery.mode === 'express' ? ' express' : ''}
+                </span>
+                <span>
+                  {(o.delivery.share ?? o.delivery.fee) < o.delivery.fee && (
+                    <s className="text-ink/45 mr-1.5">{F(o.delivery.fee)}</s>
+                  )}
+                  <span data-testid="mp-order-share">{F(o.delivery.share ?? o.delivery.fee)}</span>
+                </span>
+              </li>
+              <li className="flex justify-between text-ink/70">
+                <span>Frais de service</span>
+                <span>{F(o.buyerFee)}</span>
               </li>
               <li className="flex justify-between font-bold">
                 <span>Total à la livraison</span>
@@ -81,8 +93,28 @@ export default function MpOrders() {
               </li>
             </ul>
             {o.reason && <p className="mt-2 text-sm text-wine">Raison : {o.reason}</p>}
+            {o.trip && !['livree', 'annulee', 'refusee'].includes(o.status) && (
+              <p
+                className="mt-2 text-sm bg-emerald-50 text-emerald-900 rounded-xl px-3 py-2"
+                data-testid="mp-order-trip"
+              >
+                {o.trip.driver
+                  ? `🛵 ${o.trip.driver.name} livre votre commande.`
+                  : o.trip.status === 'ouverte'
+                    ? `Moitié-moitié : ${o.trip.members > 1 ? `vous partagez le livreur avec ${o.trip.members - 1} autre(s) commande(s)` : "en attente d'autres commandes dans votre direction"} jusqu'à ${o.trip.deadline ? new Date(o.trip.deadline).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : 'bientôt'}. Le prix ne peut que baisser.`
+                    : 'Un livreur va être choisi dès que le colis est prêt.'}
+              </p>
+            )}
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink/60">
               <span>Commandée {ago(o.createdAt)}</span>
+              {o.trip?.driver && !['livree', 'annulee', 'refusee'].includes(o.status) && (
+                <a
+                  href={`tel:${o.trip.driver.phone}`}
+                  className="inline-flex items-center gap-1 h-9 px-3 rounded-full border border-ink/15 text-ink font-semibold"
+                >
+                  <Phone className="w-3.5 h-3.5" /> Appeler le livreur
+                </a>
+              )}
               {o.sellerPhone && (
                 <a
                   href={`tel:${o.sellerPhone}`}

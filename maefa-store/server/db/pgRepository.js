@@ -255,6 +255,33 @@ const TABLES = [
       })),
   },
   {
+    table: t.mpDrivers,
+    pk: [t.mpDrivers.id],
+    key: r => r.id,
+    rows: s =>
+      Object.values(s.mp?.drivers ?? {}).map(d => ({
+        id: d.id,
+        ownerPhone: nn(d.ownerPhone),
+        status: d.status,
+        createdAt: d.createdAt,
+        data: d,
+      })),
+  },
+  {
+    table: t.mpTrips,
+    pk: [t.mpTrips.id],
+    key: r => r.id,
+    rows: s =>
+      Object.values(s.mp?.trips ?? {}).map(x => ({
+        id: x.id,
+        mode: x.mode,
+        status: x.status,
+        driverId: nn(x.driverId),
+        createdAt: x.createdAt,
+        data: x,
+      })),
+  },
+  {
     table: t.appSettings,
     pk: [t.appSettings.key],
     key: r => r.key,
@@ -331,6 +358,8 @@ export async function createPgRepository(url) {
         sellers: Object.fromEntries(all.get(t.mpSellers).map(v => [v.id, v.data])),
         listings: Object.fromEntries(all.get(t.mpListings).map(l => [l.id, l.data])),
         orders: Object.fromEntries(all.get(t.mpOrders).map(o => [o.id, o.data])),
+        drivers: Object.fromEntries(all.get(t.mpDrivers).map(d => [d.id, d.data])),
+        trips: Object.fromEntries(all.get(t.mpTrips).map(x => [x.id, x.data])),
         settings: settings.mpSettings ?? null,
       },
     };

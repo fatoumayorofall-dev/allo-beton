@@ -26,6 +26,10 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG14 | Une annonce appartient à un seul vendeur ; elle n'est visible qu'une fois vérifiée (« publiée ») et tant que la boutique est validée. |
 | RG15 | Une commande de la place de marché concerne un seul vendeur : un panier avec plusieurs vendeurs donne une commande par vendeur. |
 | RG16 | Le prix, le stock et les frais viennent toujours du serveur ; la livraison dépend de la distance vendeur → acheteur (prise en charge + prix au km, minimum et maximum). |
+| RG18 | Un livreur (compte validé par la gérante) prend au plus une course à la fois ; une course regroupe 1 à 4 commandes (express : 1). |
+| RG19 | Moitié-moitié : une commande ne rejoint une course que si aucun membre ne paie plus et que le détour reste raisonnable ; chacun paie au plus le prix de sa course seule. |
+| RG20 | Livraison par livreur (méthode A) : le livreur encaisse l'acheteur, envoie au vendeur le prix des articles moins sa commission, garde sa part moins sa commission, et doit le reste à la plateforme. |
+| RG21 | Un vendeur a la formule Découverte (gratuite, articles limités) ou Pro (abonnement mensuel, commission réduite) ; chaque abonnement payé est enregistré. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
 ## 2. Dictionnaire des données (extrait)
@@ -71,6 +75,9 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **ANNONCE** (<u>id_annonce</u>, titre, description, prix, rayon, etat, photos, stock, choix, statut, raison_refus, vues, date)
 - **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, date)
 - **REGLEMENT** (<u>id_reglement</u>, montant, note, date)
+- **LIVREUR** (<u>id_livreur</u>, nom, telephone, vehicule, quartier, statut, disponible, latitude, longitude, date_creation)
+- **COURSE** (<u>id_course</u>, mode, statut, heure_depart, distance_km, prix_total, date)
+- **ABONNEMENT** (<u>id_abonnement</u>, mois, montant, date, fin)
 
 ### Associations et cardinalités
 
@@ -93,6 +100,10 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RECEVOIR | VENDEUR (0,n) | COMMANDE_MARCHE (1,1) | — |
 | COMPRENDRE | COMMANDE_MARCHE (1,n) | ANNONCE (0,n) | quantite, choix, prix |
 | REGLER | VENDEUR (0,n) | REGLEMENT (1,1) | — |
+| REGROUPER | COURSE (1,n) | COMMANDE_MARCHE (0,1) | part_livraison, ordre_enlevement, ordre_depot |
+| EFFECTUER | LIVREUR (0,n) | COURSE (0,1) | date_acceptation |
+| VERSER | LIVREUR (0,n) | REGLEMENT (1,1) | — |
+| SOUSCRIRE | VENDEUR (0,n) | ABONNEMENT (1,1) | — |
 
 ### Schéma
 
@@ -152,6 +163,8 @@ des clés ; ses propriétés deviennent des colonnes.
 - **mp_sellers** (<u>id</u>, owner_phone, slug, status, created_at, data) — VENDEUR et ses RÈGLEMENTS
 - **mp_listings** (<u>id</u>, #seller_id, status, price, created_at, data) — ANNONCE
 - **mp_orders** (<u>id</u>, #seller_id, buyer_phone, status, total, created_at, data) — COMMANDE_MARCHE et ses lignes
+- **mp_drivers** (<u>id</u>, owner_phone, status, created_at, data) — LIVREUR et ses versements
+- **mp_trips** (<u>id</u>, mode, status, #driver_id, created_at, data) — COURSE, ses arrêts et les parts de chacun
 
 `#` = clé étrangère ; <u>souligné</u> = clé primaire. Les colonnes `data` (JSONB) gardent les détails
 variables (couleurs, photos, étapes de livraison) sans multiplier les tables.

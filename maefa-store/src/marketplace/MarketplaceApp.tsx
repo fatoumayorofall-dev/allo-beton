@@ -6,6 +6,7 @@ import { MP, mpPath } from './config';
 
 const MpHome = lazy(() => import('./MpHome'));
 const MpFeed = lazy(() => import('./MpFeed'));
+const MpDriver = lazy(() => import('./MpDriver'));
 const MpListingPage = lazy(() => import('./MpListingPage'));
 const MpShop = lazy(() => import('./MpShop'));
 const MpCart = lazy(() => import('./MpCart'));
@@ -126,6 +127,7 @@ export default function MarketplaceApp() {
               <Route path="commandes" element={<MpOrders />} />
               <Route path="vendre" element={<MpSell />} />
               <Route path="compte" element={<MpAccount />} />
+              <Route path="livreur" element={<MpDriver />} />
               <Route path="*" element={<MpHome />} />
             </Routes>
           </Suspense>
