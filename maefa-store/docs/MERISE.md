@@ -32,6 +32,7 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG21 | Un vendeur a la formule Découverte (gratuite, articles limités) ou Pro (abonnement mensuel, commission réduite) ; chaque abonnement payé est enregistré. |
 | RG22 | Seule l'acheteuse d'une commande livrée peut laisser un avis (vendeur, livreur), une fois, dans les 30 jours ; la note d'un vendeur est la moyenne de ses avis non masqués. |
 | RG23 | Un problème (non conforme, abîmé, incomplet) se signale sous 72 h après la livraison ; « non reçu » tant que la commande n'est pas livrée ; la gérante le résout ou le rejette avec une explication. |
+| RG24 | Un vendeur remet ses colis au livreur de trois façons : à son adresse (fixe), là où il se trouve quand le colis est prêt (sans adresse fixe : il donne sa position à chaque commande), ou dans un point relais actif choisi par lui. L'acheteur ne voit jamais la position, le point relais ni le numéro du vendeur ; seul le livreur de la course voit le point de remise. Le prix de livraison part de la position du vendeur arrondie (~500 m). |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
 ## 2. Dictionnaire des données (extrait)
@@ -58,6 +59,9 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | total | Montant total en FCFA | N | 10 | COMMANDE |
 | nom_zone, frais_zone | Zone de livraison et frais | A / N | 60 / 6 | ZONE |
 | id_tournee, rang | Tournée et ordre de passage | AN / N | 20 / 3 | TOURNEE, DESSERVIR |
+| mode_remise | fixe, variable, relais | A | 10 | VENDEUR, COMMANDE_MARCHE |
+| id_relais | Référence R-XXXXX | AN | 7 | POINT_RELAIS |
+| horaires | « 9 h – 20 h » | AN | 80 | POINT_RELAIS |
 
 ## 3. MCD — Modèle conceptuel des données
 
@@ -73,15 +77,16 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **TOURNEE** (<u>id_tournee</u>, jeton, date, distance)
 - **AVIS** (<u>id_avis</u>, note, commentaire, date)
 - **SESSION** (<u>empreinte_jeton</u>, date)
-- **VENDEUR** (<u>id_vendeur</u>, nom_boutique, slug, rayon, quartier, latitude, longitude, statut, de_confiance, date_creation)
+- **VENDEUR** (<u>id_vendeur</u>, nom_boutique, slug, rayon, quartier, latitude, longitude, mode_remise, statut, de_confiance, date_creation)
 - **ANNONCE** (<u>id_annonce</u>, titre, description, prix, rayon, etat, photos, stock, choix, statut, raison_refus, vues, date)
-- **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, date)
+- **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, mode_remise, latitude_remise, longitude_remise, repere_remise, date)
 - **REGLEMENT** (<u>id_reglement</u>, montant, note, date)
 - **LIVREUR** (<u>id_livreur</u>, nom, telephone, vehicule, quartier, statut, disponible, latitude, longitude, date_creation)
 - **COURSE** (<u>id_course</u>, mode, statut, heure_depart, distance_km, prix_total, date)
 - **ABONNEMENT** (<u>id_abonnement</u>, mois, montant, date, fin)
 - **AVIS_MARCHE** (<u>#id_commande_marche</u>, note_vendeur, texte, note_livreur, masque, date) — 0 ou 1 par commande
 - **SIGNALEMENT** (<u>#id_commande_marche</u>, type, texte, statut, solution, date, date_resolution) — 0 ou 1 en cours par commande
+- **POINT_RELAIS** (<u>id_relais</u>, nom, quartier, horaires, telephone, latitude, longitude, adresse, repere, actif, date_creation)
 
 ### Associations et cardinalités
 
@@ -108,6 +113,8 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | EFFECTUER | LIVREUR (0,n) | COURSE (0,1) | date_acceptation |
 | VERSER | LIVREUR (0,n) | REGLEMENT (1,1) | — |
 | SOUSCRIRE | VENDEUR (0,n) | ABONNEMENT (1,1) | — |
+| DEPOSER | VENDEUR (0,1) | POINT_RELAIS (0,n) | — (seulement en mode « relais ») |
+| PASSER_PAR | COMMANDE_MARCHE (0,1) | POINT_RELAIS (0,n) | — (relais retenu à la commande) |
 
 ### Schéma
 
@@ -169,6 +176,8 @@ des clés ; ses propriétés deviennent des colonnes.
 - **mp_orders** (<u>id</u>, #seller_id, buyer_phone, status, total, created_at, data) — COMMANDE_MARCHE et ses lignes
 - **mp_drivers** (<u>id</u>, owner_phone, status, created_at, data) — LIVREUR et ses versements
 - **mp_trips** (<u>id</u>, mode, status, #driver_id, created_at, data) — COURSE, ses arrêts et les parts de chacun
+- **app_settings**(clé `mpRelays`) — POINT_RELAIS (peu nombreux : un document JSON) ; `mp_sellers.data.relayId` et
+  `mp_orders.data.delivery.relay` portent les associations DEPOSER et PASSER_PAR
 
 `#` = clé étrangère ; <u>souligné</u> = clé primaire. Les colonnes `data` (JSONB) gardent les détails
 variables (couleurs, photos, étapes de livraison) sans multiplier les tables.

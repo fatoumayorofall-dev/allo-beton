@@ -4,6 +4,7 @@ import { Eye, Loader2, MapPin, Pencil, Phone, Plus, Store, Trash2, Wallet } from
 import {
   confirmPayout,
   fetchConfig,
+  fetchRelays,
   fetchMyListings,
   fetchMySeller,
   fetchSales,
@@ -18,6 +19,8 @@ import {
   type MyListing,
   type MySeller,
   type OrderStatus,
+  type PickupMode,
+  type Relay,
 } from './api';
 import { ListingForm } from './ListingForm';
 import { MP, mpPath } from './config';
@@ -74,11 +77,23 @@ const ShopForm: React.FC<{
   const [description, setDescription] = useState(initial?.description ?? '');
   const [location, setLocation] = useState<DeliveryLocation | undefined>(initial?.location);
   const [contactPhone, setContactPhone] = useState(initial?.contactPhone?.replace(/^\+221/, '') ?? '');
+  const [pickupMode, setPickupMode] = useState<PickupMode>(initial?.pickupMode ?? 'fixe');
+  const [relayId, setRelayId] = useState(initial?.relay?.id ?? '');
+  const [relays, setRelays] = useState<Relay[]>([]);
+  useEffect(() => {
+    fetchRelays().then(r => r.ok && setRelays(r.data.relays));
+  }, []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!location) return setError('Indiquez sur la carte où le livreur récupère les colis');
+    if (pickupMode === 'relais' && !relayId) return setError('Choisissez votre point relais');
+    if (pickupMode !== 'relais' && !location)
+      return setError(
+        pickupMode === 'variable'
+          ? 'Indiquez votre quartier sur la carte (approximatif)'
+          : 'Indiquez sur la carte où le livreur récupère les colis',
+      );
     setBusy(true);
     setError('');
     const r = await saveMySeller({
@@ -86,9 +101,11 @@ const ShopForm: React.FC<{
       category,
       zone,
       description,
-      location,
+      ...(pickupMode === 'relais' ? {} : { location }),
       contactPhone: contactPhone || undefined,
-    });
+      pickupMode,
+      ...(pickupMode === 'relais' ? { relayId } : {}),
+    } as Partial<MySeller>);
     setBusy(false);
     if (!r.ok) return setError(r.error);
     onSaved(r.data.seller);
@@ -165,14 +182,71 @@ const ShopForm: React.FC<{
           className="field"
         />
       </label>
-      <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin text-ink/40" />}>
-        <LocationPicker
-          label="Où récupérer les colis ? *"
-          value={location}
-          onChange={setLocation}
-          initialCenter={location ?? DAKAR}
-        />
-      </Suspense>
+      <fieldset className="space-y-2" data-testid="mp-pickup-mode">
+        <legend className="field-label">Remise des colis au livreur *</legend>
+        <p className="text-xs text-ink/65">
+          Votre adresse n'est jamais montrée aux clients : seul le livreur la voit, le temps de la course.
+        </p>
+        {(
+          [
+            ['fixe', 'À mon adresse', 'Le livreur vient chercher les colis chez vous ou à votre boutique.'],
+            [
+              'variable',
+              "Je n'ai pas d'adresse fixe",
+              'Quand un colis est prêt, vous indiquez où vous êtes ; le livreur vient à ce point. Le quartier sert juste au prix.',
+            ],
+            [
+              'relais',
+              'Je dépose mes colis dans un point relais',
+              'Une boutique partenaire garde vos colis : le livreur les récupère là-bas, il ne vous voit jamais.',
+            ],
+          ] as [PickupMode, string, string][]
+        ).map(([id, title, text]) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={pickupMode === id}
+            onClick={() => setPickupMode(id)}
+            data-testid={`mp-pickup-${id}`}
+            className={`w-full text-left p-3 rounded-2xl border-2 ${pickupMode === id ? 'border-ink bg-ivory' : 'border-ink/10'}`}
+          >
+            <span className="font-semibold text-sm">{title}</span>
+            <span className="block text-xs text-ink/70 mt-0.5">{text}</span>
+          </button>
+        ))}
+      </fieldset>
+      {pickupMode === 'relais' ? (
+        <label className="block">
+          <span className="field-label">Point relais *</span>
+          <select
+            value={relayId}
+            onChange={e => setRelayId(e.target.value)}
+            className="field"
+            data-testid="mp-relay-select"
+          >
+            <option value="">{relays.length ? 'Choisir…' : 'Aucun point relais pour le moment'}</option>
+            {relays.map(r => (
+              <option key={r.id} value={r.id}>
+                {r.name} · {r.zone} {r.hours && `· ${r.hours}`}
+              </option>
+            ))}
+          </select>
+          {relays.find(r => r.id === relayId) && (
+            <span className="block text-xs text-ink/65 mt-1">
+              {relays.find(r => r.id === relayId)!.address} {relays.find(r => r.id === relayId)!.landmark}
+            </span>
+          )}
+        </label>
+      ) : (
+        <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin text-ink/40" />}>
+          <LocationPicker
+            label={pickupMode === 'variable' ? 'Votre quartier (approximatif) *' : 'Où récupérer les colis ? *'}
+            value={location}
+            onChange={setLocation}
+            initialCenter={location ?? DAKAR}
+          />
+        </Suspense>
+      )}
       {error && (
         <p className="text-sm text-wine" role="alert">
           {error}
@@ -225,6 +299,17 @@ const SaleCard: React.FC<{
           🛵 Livraison {o.delivery.mode === 'partagee' ? 'moitié-moitié' : 'express'} par un livreur {MP.name} :
           préparez le colis, il vient le chercher. {o.driver && <strong>Livreur : {o.driver.name}</strong>}
         </p>
+        {o.delivery.relay && ['acceptee', 'prete'].includes(o.status) && (
+          <p className="text-emerald-900" data-testid="mp-sale-relay">
+            Déposez le colis au point relais <strong>{o.delivery.relay.name}</strong> (avec le numéro {o.id}), puis
+            touchez « Colis prêt ».
+          </p>
+        )}
+        {o.delivery.pickupMode === 'variable' && o.status === 'acceptee' && (
+          <p className="text-ink/70">
+            En touchant « Colis prêt », votre position actuelle est envoyée au livreur seulement (jamais à la cliente).
+          </p>
+        )}
         <p>
           Le livreur vous enverra <strong data-testid="mp-seller-gets">{F(o.sellerGets ?? 0)}</strong> (articles moins
           la commission de {F(o.platformFee ?? 0)}) dès la livraison.
@@ -390,8 +475,28 @@ export default function MpSell() {
       reason = window.prompt("Expliquez la raison à l'acheteur (ex. : article épuisé)") ?? undefined;
       if (!reason) return;
     }
+    // Sans adresse fixe : le livreur viendra là où se trouve le vendeur quand le colis est prêt
+    let pickup: { lat: number; lng: number; landmark?: string } | undefined;
+    if (
+      to === 'prete' &&
+      o.delivery.pickupMode === 'variable' &&
+      (o.delivery.mode === 'express' || o.delivery.mode === 'partagee')
+    ) {
+      const landmark =
+        window.prompt('Le livreur viendra là où vous êtes maintenant. Un repère pour vous trouver ?') ?? undefined;
+      const pos = await new Promise<GeolocationPosition | null>(resolve =>
+        navigator.geolocation
+          ? navigator.geolocation.getCurrentPosition(resolve, () => resolve(null), {
+              enableHighAccuracy: true,
+              timeout: 15000,
+            })
+          : resolve(null),
+      );
+      if (!pos) return setMessage('Autorisez la position du téléphone pour indiquer où le livreur récupère le colis.');
+      pickup = { lat: pos.coords.latitude, lng: pos.coords.longitude, landmark };
+    }
     setBusy(true);
-    const r = await moveSale(o.id, to, reason);
+    const r = await moveSale(o.id, to, reason, pickup);
     setBusy(false);
     if (!r.ok) return setMessage(r.error);
     setSales(list => list.map(x => (x.id === o.id ? r.data.order : x)));

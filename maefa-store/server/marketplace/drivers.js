@@ -88,14 +88,19 @@ export function registerDriverRoutes(app, { limit, isAdmin, store, currentUser, 
       .map(st => {
         const o = orders.get(st.orderId);
         const seller = store.getMpSeller(o.sellerId);
-        if (st.kind === 'enlevement')
+        if (st.kind === 'enlevement') {
+          // Point relais : le livreur s'adresse au relais, il ne voit ni ne contacte le vendeur
+          const relay = o.delivery.relay ? store.getMpRelay(o.delivery.relay.id) : null;
           return {
             ...st,
-            shopName: o.shopName,
-            phone: seller?.contactPhone ?? seller?.ownerPhone ?? null,
-            at: o.delivery.from,
+            shopName: relay ? `Point relais ${relay.name} (colis ${o.id})` : o.shopName,
+            phone: relay ? relay.phone : (seller?.contactPhone ?? seller?.ownerPhone ?? null),
+            at: relay
+              ? { ...relay.location, landmark: [relay.location.landmark, relay.hours].filter(Boolean).join(' · ') }
+              : o.delivery.from,
             items: o.lines.map(l => `${l.qty} × ${l.title}${l.variant ? ` (${l.variant})` : ''}`),
           };
+        }
         const share = o.delivery.share ?? o.delivery.fee;
         const money = settlement(
           { subtotal: o.subtotal, share, buyerFee: o.buyerFee, sellerCommission: o.commissions.seller },

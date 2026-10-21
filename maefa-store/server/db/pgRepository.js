@@ -294,6 +294,7 @@ const TABLES = [
       { key: 'stockAlerts', value: s.stockAlerts },
       { key: 'adminPasskeys', value: s.adminPasskeys ?? [] },
       { key: 'mpSettings', value: s.mp?.settings ?? null },
+      { key: 'mpRelays', value: s.mp?.relays ?? {} },
     ],
   },
 ];
@@ -361,6 +362,7 @@ export async function createPgRepository(url) {
         drivers: Object.fromEntries(all.get(t.mpDrivers).map(d => [d.id, d.data])),
         trips: Object.fromEntries(all.get(t.mpTrips).map(x => [x.id, x.data])),
         settings: settings.mpSettings ?? null,
+        relays: settings.mpRelays ?? {},
       },
     };
     // Point de départ des différences : ce qui est en base (les lignes inchangées ne seront pas réécrites)

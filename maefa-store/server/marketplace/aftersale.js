@@ -139,17 +139,19 @@ export function registerAfterSaleRoutes(app, { limit, isAdmin, store, currentUse
     const d = trip?.driverId ? store.getMpDriver(trip.driverId) : null;
     if (!d || !['prete', 'en_livraison'].includes(o.status) || trip.status !== 'acceptee')
       return res.json({ tracking: null });
-    const fresh = d.location && Date.now() - Date.parse(d.location.at) < 10 * 60e3;
-    const target = o.status === 'en_livraison' ? o.delivery.to : o.delivery.from;
+    // Position montrée seulement quand tous les colis de la course sont enlevés : sinon, la cliente
+    // verrait où le livreur s'arrête chez le vendeur (ou chez un autre vendeur du groupe)
+    const pickedUp = (trip.stops ?? []).filter(s => s.kind === 'enlevement').every(s => s.done);
+    const onWay = o.status === 'en_livraison' && pickedUp;
+    const fresh = onWay && d.location && Date.now() - Date.parse(d.location.at) < 10 * 60e3;
     res.set('Cache-Control', 'no-store');
     res.json({
       tracking: {
         name: d.name,
         vehicle: d.vehicle,
-        phase: o.status === 'en_livraison' ? 'vers_vous' : 'chez_vendeur',
+        phase: onWay ? 'vers_vous' : 'chez_vendeur',
         position: fresh ? { lat: d.location.lat, lng: d.location.lng, at: d.location.at } : null,
         ...(fresh ? eta(d.location, o.delivery.to, d.vehicle) : {}),
-        to: target ? { lat: target.lat, lng: target.lng } : null,
       },
     });
   });

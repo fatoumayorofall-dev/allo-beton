@@ -57,6 +57,29 @@ const SELLER_MOVES_DRIVER = {
   prete: ['annulee'],
 };
 const byDriver = o => o.delivery?.mode === 'express' || o.delivery?.mode === 'partagee';
+/** Où le livreur récupère les colis : adresse du vendeur, point donné à chaque commande, ou point relais */
+const PICKUP_MODES = new Set(['fixe', 'variable', 'relais']);
+/** Ce que les vendeurs voient d'un point relais */
+const relayView = r =>
+  r
+    ? {
+        id: r.id,
+        name: r.name,
+        zone: r.zone,
+        hours: r.hours,
+        address: r.location?.label ?? '',
+        landmark: r.location?.landmark ?? '',
+      }
+    : null;
+/**
+ * Point de départ utilisé pour le prix : la position du vendeur arrondie (~500 m). Sinon, en essayant
+ * plusieurs adresses dans le panier, on retrouverait son domicile à partir des distances affichées.
+ */
+const PRICE_GRID = 0.005;
+const pricePoint = p => ({
+  lat: Math.round(p.lat / PRICE_GRID) * PRICE_GRID,
+  lng: Math.round(p.lng / PRICE_GRID) * PRICE_GRID,
+});
 const STATUS_TEXT = {
   acceptee: 'acceptée par le vendeur',
   prete: 'prête, elle part bientôt',
@@ -381,7 +404,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     }
     const orders = [...groups.values()].map(({ seller, lines }) => {
       const subtotal = lines.reduce((t, l) => t + l.price * l.qty, 0);
-      const { km, fee } = deliveryFee(seller.location, to, s);
+      const { km, fee } = deliveryFee(pricePoint(seller.location), to, s);
       const c = commissions({ subtotal, deliveryFee: fee }, s, sellerRateFor(seller, s));
       return {
         seller,
@@ -416,7 +439,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       orders: r.orders.map(o => ({
         ...quoteView(o),
         // Moitié-moitié : part si la commande rejoignait maintenant un groupe qui va dans sa direction
-        shared: s.drivers ? trips.preview({ id: 'devis', from: o.seller.location, to: req.body.to }, wait) : null,
+        shared: s.drivers
+          ? trips.preview({ id: 'devis', from: pricePoint(o.seller.location), to: req.body.to }, wait)
+          : null,
       })),
       total: r.orders.reduce((t, o) => t + o.total, 0),
     });
@@ -453,6 +478,10 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
           ...o.delivery,
           mode,
           share: o.delivery.fee,
+          pickupMode: o.seller.pickupMode ?? 'fixe',
+          ...(o.seller.pickupMode === 'relais' && o.seller.relayId
+            ? { relay: { id: o.seller.relayId, name: store.getMpRelay(o.seller.relayId)?.name ?? '' } }
+            : {}),
           from: { lat: o.seller.location.lat, lng: o.seller.location.lng, label: o.seller.location.label ?? '' },
           to: {
             lat: to.lat,
@@ -492,8 +521,11 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const accepted = ['acceptee', 'prete', 'en_livraison', 'livree'].includes(o.status);
     const { commissions: _c, collector: _k, settlement: _s, payout: _p, ...rest } = o;
     const trip = o.delivery?.tripId ? store.getMpTrip(o.delivery.tripId) : null;
+    // Jamais la position du vendeur (adresse, point de remise, point relais) : seule la livreuse ou le livreur la voit
+    const { from: _from, relay: _relay, ...delivery } = o.delivery ?? {};
     return {
       ...rest,
+      delivery,
       seller: seller ? publicSeller(seller) : null,
       // Livreur de la plateforme : c'est lui l'interlocuteur, pas le vendeur
       sellerPhone: accepted && !byDriver(o) ? (seller?.contactPhone ?? seller?.ownerPhone ?? null) : null,
@@ -590,6 +622,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     plan: sellerPlan(v),
     planUntil: sellerPlan(v) === 'pro' ? v.plan.until : null,
     planRequestedAt: v.planRequestedAt ?? null,
+    pickupMode: v.pickupMode ?? 'fixe',
+    relay: v.relayId ? relayView(store.getMpRelay(v.relayId)) : null,
   });
 
   app.get('/api/mp/me/seller', (req, res) => {
@@ -613,13 +647,23 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const description = clipText(b.description ?? existing?.description ?? '', 600);
     const category = b.category ?? existing?.category;
     const zone = clip(b.zone ?? existing?.zone, 60);
-    const loc = b.location ?? existing?.location;
+    const pickupMode = b.pickupMode ?? existing?.pickupMode ?? 'fixe';
+    if (!PICKUP_MODES.has(pickupMode)) return res.status(400).json({ error: 'Mode de remise invalide' });
+    const relay = pickupMode === 'relais' ? store.getMpRelay(clip(b.relayId ?? existing?.relayId, 20)) : null;
+    if (pickupMode === 'relais' && !relay?.active) return res.status(400).json({ error: 'Choisissez un point relais' });
+    // Point relais : ses coordonnées servent au prix et à l'enlèvement ; sinon l'adresse (ou le quartier) du vendeur
+    const loc = relay ? relay.location : (b.location ?? existing?.location);
     if (shopName.length < 2) return res.status(400).json({ error: 'Donnez un nom à votre boutique' });
     const contactInShop = findContact(shopName, description);
     if (contactInShop) return res.status(400).json({ error: CONTACT_REFUSED(contactInShop) });
     if (!CATEGORY_IDS.has(category)) return res.status(400).json({ error: 'Choisissez votre rayon principal' });
     if (!inSenegal(loc))
-      return res.status(400).json({ error: "Indiquez où se trouve la boutique (point d'enlèvement des colis)" });
+      return res.status(400).json({
+        error:
+          pickupMode === 'variable'
+            ? 'Indiquez votre quartier sur la carte (approximatif : il sert au prix de la livraison)'
+            : "Indiquez où se trouve la boutique (point d'enlèvement des colis)",
+      });
     if (b.logo !== undefined && b.logo !== null && !PHOTO_URL.test(b.logo))
       return res.status(400).json({ error: 'Logo invalide' });
     const contact = b.contactPhone ? wa.toE164(b.contactPhone) : null;
@@ -652,6 +696,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       },
       logo: b.logo !== undefined ? b.logo : (existing?.logo ?? null),
       contactPhone: contact ?? existing?.contactPhone ?? null,
+      pickupMode,
+      relayId: relay?.id ?? null,
     });
     res.status(existing ? 200 : 201).json({ seller: sellerView(seller), balance: balanceOf(seller) });
   });
@@ -782,7 +828,15 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       buyer: { name: o.buyer.name, phone: open ? o.buyer.phone : null },
       delivery: open
         ? o.delivery
-        : { km: o.delivery.km, fee: o.delivery.fee, mode: o.delivery.mode, from: o.delivery.from, to: null },
+        : {
+            km: o.delivery.km,
+            fee: o.delivery.fee,
+            mode: o.delivery.mode,
+            pickupMode: o.delivery.pickupMode ?? 'fixe',
+            relay: o.delivery.relay ?? null,
+            from: o.delivery.from,
+            to: null,
+          },
       platformFee: c.seller,
       buyerFeeToPay: c.buyer,
       driver: trip?.driverId ? publicDriver(store.getMpDriver(trip.driverId)) : null,
@@ -820,12 +874,38 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const reason = clip(req.body?.reason, 200);
     if ((status === 'refusee' || status === 'annulee') && reason.length < 3)
       return res.status(400).json({ error: "Expliquez la raison à l'acheteur" });
-    const saved = move(o, status, 'vendeur', reason);
+    // Sans adresse fixe : le vendeur dit où le livreur récupère ce colis-là (vu par le livreur seulement)
+    let ready = o;
+    if (status === 'prete' && byDriver(o) && o.delivery.pickupMode === 'variable') {
+      const p = req.body?.pickup;
+      if (!inSenegal(p))
+        return res.status(400).json({ error: 'Indiquez où le livreur récupère le colis (votre position actuelle)' });
+      ready = store.saveMpOrder({
+        ...o,
+        delivery: {
+          ...o.delivery,
+          from: { lat: Number(p.lat), lng: Number(p.lng), label: clip(p.label, 200), landmark: clip(p.landmark, 160) },
+        },
+      });
+      const t = store.getMpTrip(o.delivery.tripId);
+      if (t && !t.driverId) trips.reprice(t, { announce: false });
+    }
+    const saved = move(ready, status, 'vendeur', reason);
     notify(
       o.buyerPhone,
       `Commande ${o.id} chez ${o.shopName} : ${STATUS_TEXT[status]}${reason ? ` (${reason})` : ''}\nSuivi : ${site(req)}/m/commandes`,
     );
     res.json({ order: sellerOrderView(saved), balance: balanceOf(me.seller) });
+  });
+
+  /* ---------- Points relais ---------- */
+  app.get('/api/mp/relays', (_req, res) => {
+    res.json({
+      relays: store
+        .listMpRelays()
+        .filter(r => r.active)
+        .map(relayView),
+    });
   });
 
   // Le vendeur confirme avoir reçu l'argent envoyé par le livreur
@@ -954,6 +1034,37 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const payment = { id: code(6), amount, note: clip(req.body?.note, 120), at: now() };
     const saved = store.saveMpSeller({ ...v, payments: [...(v.payments ?? []), payment] });
     res.status(201).json({ payment, balance: balanceOf(saved) });
+  });
+
+  app.get('/api/admin/mp/relays', (req, res) => {
+    if (!guard(req, res)) return;
+    res.json({ relays: store.listMpRelays() });
+  });
+  // Ajouter ou modifier un point relais (boutique partenaire, kiosque, station…)
+  app.post('/api/admin/mp/relays', (req, res) => {
+    if (!guard(req, res)) return;
+    const b = req.body ?? {};
+    const existing = b.id ? store.getMpRelay(clip(b.id, 20)) : null;
+    const name = clip(b.name ?? existing?.name, 60);
+    const loc = b.location ?? existing?.location;
+    if (name.length < 2) return res.status(400).json({ error: 'Nom du point relais requis' });
+    if (!inSenegal(loc)) return res.status(400).json({ error: 'Placez le point relais sur la carte' });
+    const phone = b.phone ? wa.toE164(b.phone) : (existing?.phone ?? null);
+    const relay = store.saveMpRelay({
+      ...(existing ?? { id: `R-${code(5)}`, createdAt: now() }),
+      name,
+      zone: clip(b.zone ?? existing?.zone, 60),
+      hours: clip(b.hours ?? existing?.hours, 80),
+      phone,
+      location: {
+        lat: Number(loc.lat),
+        lng: Number(loc.lng),
+        label: clip(loc.label, 200),
+        landmark: clip(loc.landmark, 160),
+      },
+      active: b.active !== undefined ? !!b.active : (existing?.active ?? true),
+    });
+    res.status(existing ? 200 : 201).json({ relay });
   });
 
   // Formule Pro payée : activée pour N mois (le paiement est noté avec les règlements du vendeur)

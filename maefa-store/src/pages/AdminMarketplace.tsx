@@ -1,6 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import type { DeliveryLocation } from '../data/types';
 import { BadgeCheck, ExternalLink, Loader2 } from 'lucide-react';
 import {
+  adminRelays,
+  adminSaveRelay,
+  type AdminRelay,
   adminDisputes,
   adminResolveDispute,
   type AdminDispute,
@@ -29,7 +33,70 @@ import {
 import { MP, mpPath } from '../marketplace/config';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from '../marketplace/format';
 
-type Sub = 'verifier' | 'litiges' | 'vendeurs' | 'livreurs' | 'courses' | 'commandes' | 'reglages';
+type Sub = 'verifier' | 'litiges' | 'vendeurs' | 'livreurs' | 'courses' | 'relais' | 'commandes' | 'reglages';
+const LocationPicker = lazy(() => import('../components/LocationPicker'));
+
+/** Ajouter un point relais : boutique partenaire où les vendeurs déposent leurs colis. */
+const RelayForm: React.FC<{ pin: string; onSaved: () => void }> = ({ pin, onSaved }) => {
+  const [name, setName] = useState('');
+  const [zone, setZone] = useState('');
+  const [hours, setHours] = useState('');
+  const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState<DeliveryLocation | undefined>();
+  const [error, setError] = useState('');
+  return (
+    <form
+      className="bg-white rounded-2xl border border-ink/[0.06] p-5 space-y-3"
+      data-testid="admin-mp-relay-form"
+      onSubmit={async e => {
+        e.preventDefault();
+        const r = await adminSaveRelay(pin, { name, zone, hours, phone: phone || null, location });
+        if (!r.ok) return setError(r.error);
+        setName('');
+        setZone('');
+        setHours('');
+        setPhone('');
+        setLocation(undefined);
+        setError('');
+        onSaved();
+      }}
+    >
+      <h3 className="font-display text-xl">Nouveau point relais</h3>
+      <div className="grid sm:grid-cols-2 gap-3">
+        <label className="block">
+          <span className="field-label">Nom *</span>
+          <input value={name} onChange={e => setName(e.target.value)} className="field" placeholder="Boutique Fatou" />
+        </label>
+        <label className="block">
+          <span className="field-label">Quartier</span>
+          <input value={zone} onChange={e => setZone(e.target.value)} className="field" placeholder="Médina" />
+        </label>
+        <label className="block">
+          <span className="field-label">Horaires</span>
+          <input value={hours} onChange={e => setHours(e.target.value)} className="field" placeholder="9 h – 20 h" />
+        </label>
+        <label className="block">
+          <span className="field-label">Téléphone (pour les livreurs)</span>
+          <input value={phone} onChange={e => setPhone(e.target.value)} className="field" inputMode="tel" />
+        </label>
+      </div>
+      <Suspense fallback={<Loader2 className="w-5 h-5 animate-spin text-ink/40" />}>
+        <LocationPicker
+          label="Emplacement *"
+          value={location}
+          onChange={setLocation}
+          initialCenter={location ?? { lat: 14.6937, lng: -17.4441 }}
+        />
+      </Suspense>
+      {error && (
+        <p className="text-sm text-wine" role="alert">
+          {error}
+        </p>
+      )}
+      <button className="btn-dark !h-11 !px-6">Ajouter</button>
+    </form>
+  );
+};
 type PendingListing = MyListing & { seller: (MpSeller & { status: string }) | null };
 const SELLER_STATUS: Record<string, [string, string]> = {
   en_attente: ['À valider', 'bg-amber-100 text-amber-900'],
@@ -51,6 +118,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
   const [drivers, setDrivers] = useState<AdminDriver[]>([]);
   const [trips, setTrips] = useState<AdminTrip[]>([]);
   const [disputes, setDisputes] = useState<AdminDispute[]>([]);
+  const [relays, setRelays] = useState<AdminRelay[]>([]);
   const [driversOn, setDriversOn] = useState(false);
   const [message, setMessage] = useState('');
   const [form, setForm] = useState<Record<string, string>>({});
@@ -64,8 +132,9 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
       adminDrivers(pin),
       adminTrips(pin),
     ]);
-    const dz = await adminDisputes(pin);
+    const [dz, rl] = await Promise.all([adminDisputes(pin), adminRelays(pin)]);
     if (dz.ok) setDisputes(dz.data.disputes);
+    if (rl.ok) setRelays(rl.data.relays);
     if (d.ok) setDrivers(d.data.drivers);
     if (t.ok) setTrips(t.data.trips);
     if (o.ok) {
@@ -184,6 +253,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
             ['commandes', `Commandes (${orders.length})`],
             ['livreurs', `Livreurs (${drivers.length})`],
             ['courses', `Courses (${trips.length})`],
+            ['relais', `Points relais (${relays.filter(r => r.active).length})`],
             ['reglages', 'Commissions & livraison'],
           ] as [Sub, string][]
         ).map(([id, label]) => (
@@ -494,6 +564,36 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
               </div>
             </article>
           ))}
+        </div>
+      )}
+
+      {sub === 'relais' && (
+        <div className="space-y-3" data-testid="admin-mp-relays">
+          <p className="text-sm text-ink/70">
+            Boutiques partenaires où les vendeurs sans adresse fixe (ou qui veulent rester discrets) déposent leurs
+            colis. Le livreur récupère le colis au relais : il ne voit jamais le vendeur.
+          </p>
+          {relays.map(r => (
+            <article
+              key={r.id}
+              className="bg-white rounded-2xl border border-ink/[0.06] p-4 flex flex-wrap items-center justify-between gap-2"
+            >
+              <span className="text-sm">
+                <strong>{r.name}</strong> · {r.zone} · {r.location.label} {r.hours && `· ${r.hours}`}{' '}
+                {r.phone && `· ${r.phone}`}
+              </span>
+              <button
+                onClick={async () => {
+                  await adminSaveRelay(pin, { id: r.id, active: !r.active });
+                  load();
+                }}
+                className="h-9 px-4 rounded-full border border-ink/15 text-sm font-semibold"
+              >
+                {r.active ? 'Désactiver' : 'Réactiver'}
+              </button>
+            </article>
+          ))}
+          <RelayForm pin={pin} onSaved={load} />
         </div>
       )}
 

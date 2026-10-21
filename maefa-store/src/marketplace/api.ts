@@ -117,6 +117,8 @@ export interface MpOrder {
     /** Part réellement payée (moitié-moitié : baisse quand d'autres commandes rejoignent) */
     share?: number;
     mode?: DeliveryMode;
+    pickupMode?: PickupMode;
+    relay?: { id: string; name: string } | null;
     tripId?: string;
     deadline?: string | null;
     to: (DeliveryLocation & { landmark?: string }) | null;
@@ -188,6 +190,18 @@ export interface MySeller extends MpSeller {
   plan: 'decouverte' | 'pro';
   planUntil: string | null;
   planRequestedAt: string | null;
+  /** Où le livreur récupère les colis : adresse, point donné à chaque commande, ou point relais */
+  pickupMode: PickupMode;
+  relay: Relay | null;
+}
+export type PickupMode = 'fixe' | 'variable' | 'relais';
+export interface Relay {
+  id: string;
+  name: string;
+  zone: string;
+  hours: string;
+  address: string;
+  landmark: string;
 }
 export interface QuoteOrder {
   seller: MpSeller;
@@ -286,8 +300,13 @@ export const updateListing = (id: string, body: Partial<ListingInput>) =>
   post<{ listing: MyListing }>(`/api/mp/me/listings/${id}`, body, 'PATCH');
 export const removeListing = (id: string) => post<{ ok: true }>(`/api/mp/me/listings/${id}`, undefined, 'DELETE');
 export const fetchSales = () => call<{ orders: MpOrder[]; balance: Balance }>('/api/mp/me/sales');
-export const moveSale = (id: string, status: OrderStatus, reason?: string) =>
-  post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}`, { status, reason }, 'PATCH');
+export const moveSale = (
+  id: string,
+  status: OrderStatus,
+  reason?: string,
+  pickup?: { lat: number; lng: number; landmark?: string },
+) => post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}`, { status, reason, pickup }, 'PATCH');
+export const fetchRelays = () => call<{ relays: Relay[] }>('/api/mp/relays');
 
 export const confirmPayout = (id: string) =>
   post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}/payout`, { received: true }, 'PATCH');
@@ -477,4 +496,21 @@ export const adminResolveDispute = (pin: string, id: string, status: 'resolu' | 
     method: 'PATCH',
     headers: admin(pin),
     body: JSON.stringify({ status, resolution }),
+  });
+export interface AdminRelay {
+  id: string;
+  name: string;
+  zone: string;
+  hours: string;
+  phone: string | null;
+  location: DeliveryLocation;
+  active: boolean;
+}
+export const adminRelays = (pin: string) =>
+  call<{ relays: AdminRelay[] }>('/api/admin/mp/relays', { headers: admin(pin) });
+export const adminSaveRelay = (pin: string, body: Partial<AdminRelay> & { location?: DeliveryLocation }) =>
+  call<{ relay: AdminRelay }>('/api/admin/mp/relays', {
+    method: 'POST',
+    headers: admin(pin),
+    body: JSON.stringify(body),
   });

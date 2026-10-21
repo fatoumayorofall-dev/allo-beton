@@ -654,7 +654,7 @@ paths:
   /api/mp/me/orders/{id}/driver:
     get:
       tags: [Place de marché]
-      summary: 'Où est mon livreur ? Distance et temps estimés (pendant la livraison seulement)'
+      summary: 'Où est mon livreur ? Position seulement quand tous les colis de la course sont enlevés (jamais le point d’enlèvement)'
       security: [{ session: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses: { '200': { description: 'tracking ou null' } }
@@ -671,6 +671,22 @@ paths:
       security: [{ admin: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses: { '200': { description: OK } }
+  /api/admin/mp/relays:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : points relais (avec téléphone et état)'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : ajouter (sans id) ou modifier / désactiver (avec id) un point relais'
+      security: [{ admin: [] }]
+      responses:
+        {
+          '201': { description: Ajouté },
+          '200': { description: Modifié },
+          '400': { description: 'Nom ou emplacement manquant' },
+        }
   /api/admin/mp/reviews/{id}:
     patch:
       tags: [Place de marché]
@@ -732,9 +748,19 @@ paths:
       responses: { '200': { description: OK } }
     post:
       tags: [Place de marché]
-      summary: 'Ouvrir ou modifier ma boutique (validation par la gérante)'
+      summary: 'Ouvrir ou modifier ma boutique (validation par la gérante) ; remise des colis : pickupMode fixe | variable | relais (+ relayId)'
       security: [{ session: [] }]
-      responses: { '201': { description: Ouverte }, '200': { description: Modifiée } }
+      responses:
+        {
+          '201': { description: Ouverte },
+          '200': { description: Modifiée },
+          '400': { description: 'Position ou point relais manquant' },
+        }
+  /api/mp/relays:
+    get:
+      tags: [Place de marché]
+      summary: 'Points relais actifs (nom, quartier, horaires, adresse ; sans numéro de téléphone)'
+      responses: { '200': { description: OK } }
   /api/mp/me/photos:
     post:
       tags: [Place de marché]
@@ -774,10 +800,15 @@ paths:
   /api/mp/me/sales/{id}:
     patch:
       tags: [Place de marché]
-      summary: 'Étape suivante : acceptée, refusée, prête, en livraison, livrée, annulée (raison exigée)'
+      summary: 'Étape suivante : acceptée, refusée, prête, en livraison, livrée, annulée (raison exigée). Vendeur sans adresse fixe : « prête » exige pickup {lat, lng, landmark}, vu par le livreur seulement'
       security: [{ session: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
-      responses: { '200': { description: OK }, '409': { description: Étape impossible } }
+      responses:
+        {
+          '200': { description: OK },
+          '400': { description: 'Point de remise manquant' },
+          '409': { description: Étape impossible },
+        }
   /api/admin/mp/overview:
     get:
       tags: [Place de marché]

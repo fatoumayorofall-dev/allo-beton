@@ -340,7 +340,28 @@ sequenceDiagram
   envoyée à la cliente.
 - **Suivi du livreur** : position envoyée par son téléphone pendant la course (au plus toutes les 20 s),
   distance et temps estimés (`eta`, vitesse moyenne dans Dakar selon le véhicule) ; visible seulement par
-  les acheteuses de la course, seulement pendant la livraison.
+  les acheteuses de la course, et seulement quand tous les colis de la course sont enlevés (sinon on
+  verrait où le livreur s'arrête chez un vendeur).
+
+### 4.7 Anonymat des vendeurs (vendeurs sans adresse fixe, ou discrets)
+
+Le vendeur choisit comment il remet ses colis (`pickupMode`) :
+
+| Mode | Le livreur va… | Ce que le vendeur donne |
+|---|---|---|
+| `fixe` | à l'adresse du vendeur | sa position une fois, à l'ouverture de la boutique |
+| `variable` | là où le vendeur se trouve quand il touche « Colis prêt » | un quartier approximatif (pour le prix), puis à chaque commande sa position GPS et un repère |
+| `relais` | dans une boutique partenaire (point relais) | rien : il dépose le colis avec le numéro de commande |
+
+- **Ce que voit l'acheteuse** (`buyerView`) : jamais `delivery.from` ni `delivery.relay`, jamais le numéro
+  du vendeur quand un livreur de la plateforme livre ; les annonces publiques n'ont que le quartier.
+- **Prix** : la distance part de la position du vendeur arrondie à 0,005° (≈ 500 m, `pricePoint`) ;
+  sans cet arrondi, trois devis depuis trois adresses suffiraient à retrouver le domicile.
+- **Livreur** (`tripView`) : voit le point de remise de sa course ; pour un relais, le nom, le numéro et les
+  horaires du relais, jamais le vendeur. Il garde le numéro du vendeur pour lui envoyer son argent (Wave).
+- **Points relais** : gérés par la gérante (onglet « Points relais »), enregistrés dans `app_settings.mpRelays`.
+- **Limite** : en livraison par le vendeur lui-même (livreurs de la plateforme désactivés), le vendeur voit
+  l'adresse de l'acheteuse pour livrer ; l'anonymat complet suppose les livreurs de la plateforme.
 
 ## 5. Algorithmes notables
 

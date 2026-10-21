@@ -248,6 +248,7 @@ const mp = () => {
   state.mp ??= { sellers: {}, listings: {}, orders: {}, settings: null };
   state.mp.drivers ??= {};
   state.mp.trips ??= {};
+  state.mp.relays ??= {};
   return state.mp;
 };
 export const getMpSeller = id => mp().sellers[id] ?? null;
@@ -302,6 +303,14 @@ export function saveMpTrip(trip) {
   mp().trips[trip.id] = { ...trip, updatedAt: new Date().toISOString() };
   persist();
   return mp().trips[trip.id];
+}
+/* Points relais : boutiques partenaires où les vendeurs déposent leurs colis */
+export const getMpRelay = id => mp().relays[id] ?? null;
+export const listMpRelays = () => Object.values(mp().relays);
+export function saveMpRelay(relay) {
+  mp().relays[relay.id] = { ...relay, updatedAt: new Date().toISOString() };
+  persist();
+  return mp().relays[relay.id];
 }
 export const getMpSettings = () => mp().settings;
 export function saveMpSettings(settings) {
