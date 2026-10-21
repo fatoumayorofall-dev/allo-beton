@@ -119,7 +119,7 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
   const a = await mk({ latitude: 14.765, longitude: -17.44 });
   await a.goto(B + '/m');
   await a.waitForTimeout(1200);
-  check('accueil : article affiché', (await a.getByTestId('mp-card').count()) === 1);
+  check('accueil : article affiché', (await a.getByTestId('mp-grid').getByTestId('mp-card').count()) === 1);
   await shot(a, '4-accueil');
   await a.getByPlaceholder(/Robe, téléphone/).fill('robe');
   await a.getByRole('button', { name: 'Chercher' }).click();

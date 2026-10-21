@@ -37,7 +37,7 @@ export function storeMedia(dataDir, buf, ext) {
 }
 
 /** Reconnaît le format au contenu du fichier (et non à son nom, qui peut mentir). */
-function sniff(buf) {
+export function sniffVideo(buf) {
   if (buf.length < 16) return null;
   // MP4 et MOV (QuickTime) : une « boîte » ftyp, moov, mdat… à partir du 5e octet
   if (/^(ftyp|moov|mdat|wide|free|skip|pnot)$/.test(buf.subarray(4, 8).toString('latin1'))) return 'mp4';
@@ -57,7 +57,7 @@ export function registerMediaRoutes(app, { limit, isAdmin, dataDir }) {
       return res.status(429).json({ error: "Trop d'envois, réessayez dans une heure" });
     const buf = req.body;
     if (!Buffer.isBuffer(buf) || !buf.length) return res.status(400).json({ error: 'Fichier vide' });
-    const ext = sniff(buf);
+    const ext = sniffVideo(buf);
     if (!ext) return res.status(415).json({ error: 'Format non pris en charge : envoyez une vidéo MP4, MOV ou WebM' });
     res.json({ url: storeMedia(dataDir, buf, ext), bytes: buf.length });
   });

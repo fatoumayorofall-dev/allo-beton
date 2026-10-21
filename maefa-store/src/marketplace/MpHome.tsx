@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Loader2, Search, Store, Truck, Users } from 'lucide-react';
-import { fetchConfig, fetchListings, type MpCategory, type MpListing } from './api';
+import { Clapperboard, Loader2, Search, Store, Truck, Users } from 'lucide-react';
+import { fetchConfig, fetchFeed, fetchListings, type FeedItem, type MpCategory, type MpListing } from './api';
+import { getSeen, getTaste } from './taste';
+import { useAccount } from '../context/AccountContext';
+import { visitorId } from '../utils/track';
 import { ListingCard } from './ListingCard';
 import { MP, mpPath } from './config';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -23,10 +26,19 @@ export default function MpHome() {
   const [listings, setListings] = useState<MpListing[] | null>(null);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState('');
+  const [forYou, setForYou] = useState<FeedItem[]>([]);
+  const { user } = useAccount();
 
   useEffect(() => {
     fetchConfig().then(r => r.ok && setCategories(r.data.categories));
   }, []);
+  // « Pour vous » : les 8 premiers du fil personnalisé
+  useEffect(() => {
+    const near = user?.location ? { lat: user.location.lat, lng: user.location.lng } : null;
+    fetchFeed({ v: visitorId(), taste: getTaste(), seen: getSeen(), near, page: 1, per: 8 }).then(
+      r => r.ok && setForYou(r.data.items),
+    );
+  }, [user?.location]);
   useEffect(() => {
     let alive = true;
     setListings(null);
@@ -76,6 +88,27 @@ export default function MpHome() {
           >
             <Store className="w-4 h-4" /> Vendre mes articles
           </Link>
+        </section>
+      )}
+
+      {!q && !cat && forYou.length > 0 && (
+        <section className="mt-6" data-testid="mp-for-you">
+          <div className="flex items-end justify-between gap-3">
+            <h2 className="font-display text-2xl">Pour vous</h2>
+            <Link
+              to={mpPath('/pour-vous')}
+              className="inline-flex items-center gap-1.5 text-sm font-semibold underline underline-offset-4"
+            >
+              <Clapperboard className="w-4 h-4" /> Voir en vidéo
+            </Link>
+          </div>
+          <div className="mt-3 flex gap-3 overflow-x-auto no-scrollbar pb-1 snap-x">
+            {forYou.map(l => (
+              <div key={l.id} className="w-40 sm:w-48 shrink-0 snap-start">
+                <ListingCard listing={l} why={l.why} />
+              </div>
+            ))}
+          </div>
         </section>
       )}
 

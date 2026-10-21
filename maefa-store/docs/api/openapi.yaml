@@ -523,6 +523,22 @@ paths:
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses:
         '200': { description: OK }
+  /api/mp/events:
+    post:
+      tags: [Place de marché]
+      summary: 'Gestes anonymes (vue, regard, j’aime, panier, partage, passé) : tendance des articles'
+      responses: { '204': { description: Reçus }, '400': { description: Identifiant de visite invalide } }
+  /api/mp/feed:
+    post:
+      tags: [Place de marché]
+      summary: 'Fil « Pour vous » : classement selon les goûts (envoyés par le téléphone), la tendance, la distance'
+      responses: { '200': { description: 'Articles avec leur raison (why)' } }
+  /api/mp/me/videos:
+    post:
+      tags: [Place de marché]
+      summary: 'Vidéo d’un article (MP4, MOV ou WebM, 40 Mo au plus, format contrôlé au contenu)'
+      security: [{ session: [] }]
+      responses: { '201': { description: Adresse de la vidéo }, '415': { description: Pas une vidéo } }
   /api/mp/config:
     get:
       tags: [Place de marché]

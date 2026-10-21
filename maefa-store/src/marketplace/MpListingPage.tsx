@@ -1,11 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { BadgeCheck, ChevronLeft, Loader2, Minus, Plus, ShieldCheck, ShoppingBag, Truck } from 'lucide-react';
+import {
+  BadgeCheck,
+  ChevronLeft,
+  Heart,
+  Loader2,
+  Minus,
+  Plus,
+  Share2,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+} from 'lucide-react';
 import { fetchListing, type MpListing } from './api';
 import { useMpCart } from './cart';
 import { ListingCard } from './ListingCard';
 import { MP, mpPath } from './config';
 import { F } from './format';
+import { isLiked, note } from './taste';
 import { usePageTitle } from '../utils/usePageTitle';
 
 export default function MpListingPage() {
@@ -18,6 +30,7 @@ export default function MpListingPage() {
   const [qty, setQty] = useState(1);
   const [error, setError] = useState('');
   const [added, setAdded] = useState(false);
+  const [liked, setLiked] = useState(false);
   const l = data && data !== 'absent' ? data.listing : null;
   usePageTitle(l ? `${l.title} · ${MP.name}` : MP.name, l?.description.slice(0, 150));
 
@@ -27,8 +40,18 @@ export default function MpListingPage() {
     setVariant(null);
     setQty(1);
     setAdded(false);
+    setLiked(isLiked(id));
     fetchListing(id).then(r => setData(r.ok ? r.data : 'absent'));
   }, [id]);
+
+  // Goûts : vue à l'ouverture, « regardé » après 5 secondes sur la fiche
+  const listingForTaste = data && data !== 'absent' ? data.listing : null;
+  useEffect(() => {
+    if (!listingForTaste) return;
+    note(listingForTaste, 'view');
+    const t = setTimeout(() => note(listingForTaste, 'dwell'), 5000);
+    return () => clearTimeout(t);
+  }, [listingForTaste]);
 
   if (data === null)
     return (
@@ -51,6 +74,7 @@ export default function MpListingPage() {
     if (l.variants.length && !variant) return setError(`Choisissez : ${l.variantLabel}`);
     setError('');
     add(l, qty, variant);
+    note(l, 'cart');
     setAdded(true);
     if (go) navigate(mpPath('/panier'));
   };
@@ -63,10 +87,33 @@ export default function MpListingPage() {
       <div className="grid md:grid-cols-2 gap-6 lg:gap-10">
         <div>
           <div className="aspect-square rounded-3xl overflow-hidden bg-white border border-ink/[0.06]">
-            <img src={l.photos[photo]} alt={l.title} className="w-full h-full object-contain" />
+            {l.video && photo === -1 ? (
+              <video
+                src={l.video}
+                poster={l.photos[0]}
+                controls
+                playsInline
+                autoPlay
+                muted
+                loop
+                className="w-full h-full object-contain bg-black"
+                data-testid="mp-listing-video"
+              />
+            ) : (
+              <img src={l.photos[Math.max(0, photo)]} alt={l.title} className="w-full h-full object-contain" />
+            )}
           </div>
-          {l.photos.length > 1 && (
+          {(l.photos.length > 1 || l.video) && (
             <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+              {l.video && (
+                <button
+                  onClick={() => setPhoto(-1)}
+                  aria-label="Vidéo"
+                  className={`shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 bg-black text-white grid place-items-center text-xs font-semibold ${photo === -1 ? 'border-ink' : 'border-transparent'}`}
+                >
+                  ▶ Vidéo
+                </button>
+              )}
               {l.photos.map((p, i) => (
                 <button
                   key={p}
@@ -86,9 +133,39 @@ export default function MpListingPage() {
             {l.condition === 'occasion' ? 'Occasion' : 'Neuf'}
           </p>
           <h1 className="font-display text-3xl sm:text-4xl mt-1 leading-tight">{l.title}</h1>
-          <p className="mt-3 text-3xl font-bold" data-testid="mp-price">
-            {F(l.price)}
-          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <p className="text-3xl font-bold" data-testid="mp-price">
+              {F(l.price)}
+            </p>
+            <button
+              onClick={() => {
+                note(l, liked ? 'unlike' : 'like');
+                setLiked(!liked);
+              }}
+              aria-pressed={liked}
+              aria-label={liked ? 'Je n’aime plus' : 'J’aime'}
+              className="ml-auto w-11 h-11 rounded-full border border-ink/15 grid place-items-center"
+            >
+              <Heart className={`w-5 h-5 ${liked ? 'fill-wine text-wine' : ''}`} />
+            </button>
+            <button
+              onClick={async () => {
+                note(l, 'share');
+                const url = location.href;
+                if (navigator.share) await navigator.share({ title: l.title, url }).catch(() => {});
+                else
+                  window.open(
+                    `https://wa.me/?text=${encodeURIComponent(`${l.title} · ${F(l.price)}\n${url}`)}`,
+                    '_blank',
+                    'noopener',
+                  );
+              }}
+              aria-label="Partager"
+              className="w-11 h-11 rounded-full border border-ink/15 grid place-items-center"
+            >
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
 
           {l.variants.length > 0 && (
             <div className="mt-5">

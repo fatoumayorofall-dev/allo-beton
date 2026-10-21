@@ -1,6 +1,14 @@
 import React, { useRef, useState } from 'react';
-import { ArrowLeft, ArrowRight, ImagePlus, Loader2, X } from 'lucide-react';
-import { createListing, updateListing, uploadPhoto, type ListingInput, type MpCategory, type MyListing } from './api';
+import { ArrowLeft, ArrowRight, Clapperboard, ImagePlus, Loader2, X } from 'lucide-react';
+import {
+  createListing,
+  updateListing,
+  uploadPhoto,
+  uploadVideo,
+  type ListingInput,
+  type MpCategory,
+  type MyListing,
+} from './api';
 import { shrinkPhoto } from './photo';
 
 /** Ajout ou modification d'un article par le vendeur (photos prises au téléphone). */
@@ -11,6 +19,9 @@ export const ListingForm: React.FC<{
   onCancel: () => void;
 }> = ({ categories, initial, onDone, onCancel }) => {
   const [photos, setPhotos] = useState<string[]>(initial?.photos ?? []);
+  const [video, setVideo] = useState<string | null>(initial?.video ?? null);
+  const [videoBusy, setVideoBusy] = useState(false);
+  const videoRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(initial?.title ?? '');
   const [price, setPrice] = useState(initial ? String(initial.price) : '');
   const [category, setCategory] = useState(initial?.category ?? '');
@@ -38,6 +49,17 @@ export const ListingForm: React.FC<{
       else setError(r.error);
     }
   };
+  const addVideo = async (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 40 * 1024 * 1024)
+      return setError('Vidéo trop lourde : 40 Mo au plus (environ 1 minute). Filmez plus court.');
+    setError('');
+    setVideoBusy(true);
+    const r = await uploadVideo(file);
+    setVideoBusy(false);
+    if (r.ok) setVideo(r.data.url);
+    else setError(r.error);
+  };
   const moveTo = (i: number, d: -1 | 1) =>
     setPhotos(p => {
       const n = [...p];
@@ -55,6 +77,7 @@ export const ListingForm: React.FC<{
       category,
       condition,
       photos,
+      video,
       stock: stock.trim() === '' ? null : Number(stock),
       variantLabel: variants.trim() ? variantLabel.trim() : '',
       variants: variants
@@ -145,6 +168,45 @@ export const ListingForm: React.FC<{
             }}
           />
         </div>
+      </div>
+      <div>
+        <p className="field-label">Vidéo (facultative, façon TikTok : 1 minute au plus)</p>
+        {video ? (
+          <div className="flex items-center gap-3">
+            <video src={video} muted playsInline className="w-24 h-32 rounded-xl object-cover bg-black" />
+            <button
+              type="button"
+              onClick={() => setVideo(null)}
+              className="h-10 px-4 rounded-full border border-ink/15 text-sm"
+            >
+              Retirer la vidéo
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => videoRef.current?.click()}
+            disabled={videoBusy}
+            className="h-12 px-5 rounded-xl border-2 border-dashed border-ink/20 text-sm text-ink/70 inline-flex items-center gap-2"
+          >
+            {videoBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Clapperboard className="w-4 h-4" />}
+            {videoBusy ? 'Envoi de la vidéo…' : 'Ajouter une vidéo'}
+          </button>
+        )}
+        <input
+          ref={videoRef}
+          type="file"
+          accept="video/*"
+          hidden
+          data-testid="mp-video-input"
+          onChange={e => {
+            addVideo(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
+        <p className="text-[11px] text-ink/60 mt-1">
+          Les articles avec vidéo apparaissent dans le fil « Pour vous » et se vendent mieux.
+        </p>
       </div>
       <label className="block">
         <span className="field-label">Titre *</span>
@@ -251,7 +313,7 @@ export const ListingForm: React.FC<{
         <button type="button" onClick={onCancel} className="btn-outline !h-12">
           Annuler
         </button>
-        <button disabled={busy || uploading > 0} className="btn-dark !h-12" data-testid="mp-listing-save">
+        <button disabled={busy || uploading > 0 || videoBusy} className="btn-dark !h-12" data-testid="mp-listing-save">
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : initial ? 'Enregistrer' : 'Envoyer pour vérification'}
         </button>
       </div>

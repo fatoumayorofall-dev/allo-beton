@@ -15,7 +15,8 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<Result<T>>
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...init.headers,
       },
-      signal: AbortSignal.timeout(30000),
+      // Envoi de photo ou de vidéo : jusqu'à 3 minutes sur un réseau lent
+      signal: AbortSignal.timeout(init.body instanceof Blob ? 180000 : 30000),
     });
     const body = await res.json().catch(() => null);
     return res.ok
@@ -53,6 +54,10 @@ export interface MpListing {
   category: string;
   condition: 'neuf' | 'occasion';
   photos: string[];
+  /** Vidéo courte façon TikTok (facultative) */
+  video: string | null;
+  /** Nombre de « j'aime » */
+  likes: number;
   variantLabel: string | null;
   variants: string[];
   soldOut: boolean;
@@ -146,6 +151,16 @@ export const fetchListing = (id: string) =>
   call<{ listing: MpListing; more: MpListing[] }>(`/api/mp/listings/${encodeURIComponent(id)}`);
 export const fetchShop = (slug: string) =>
   call<{ seller: MpSeller; listings: MpListing[] }>(`/api/mp/sellers/${encodeURIComponent(slug)}`);
+/** Fil « Pour vous » : articles classés selon les goûts (gardés sur le téléphone), la tendance et la distance */
+export type FeedItem = MpListing & { why: string };
+export const fetchFeed = (body: {
+  v: string;
+  taste: unknown;
+  seen: string[];
+  near?: { lat: number; lng: number } | null;
+  page: number;
+  per?: number;
+}) => post<{ total: number; page: number; items: FeedItem[] }>('/api/mp/feed', body);
 export const fetchQuote = (items: CartLine[], to: DeliveryLocation) =>
   post<{ orders: QuoteOrder[]; total: number }>('/api/mp/quote', { items, to });
 
@@ -167,10 +182,16 @@ export const saveMySeller = (body: Partial<MySeller>) =>
   post<{ seller: MySeller; balance: Balance }>('/api/mp/me/seller', body);
 export const uploadPhoto = (blob: Blob) =>
   call<{ url: string }>('/api/mp/me/photos', { method: 'POST', body: blob, headers: { 'Content-Type': blob.type } });
+export const uploadVideo = (blob: Blob) =>
+  call<{ url: string }>('/api/mp/me/videos', {
+    method: 'POST',
+    body: blob,
+    headers: { 'Content-Type': blob.type || 'video/mp4' },
+  });
 export const fetchMyListings = () => call<{ listings: MyListing[] }>('/api/mp/me/listings');
 export type ListingInput = Pick<
   MyListing,
-  'title' | 'description' | 'price' | 'category' | 'condition' | 'photos' | 'stock' | 'variants'
+  'title' | 'description' | 'price' | 'category' | 'condition' | 'photos' | 'video' | 'stock' | 'variants'
 > & { variantLabel: string };
 export const createListing = (body: ListingInput) => post<{ listing: MyListing }>('/api/mp/me/listings', body);
 export const updateListing = (id: string, body: Partial<ListingInput>) =>

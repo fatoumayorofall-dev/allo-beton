@@ -26,6 +26,7 @@ const EXTRA_ENV = {
   compte: { OTP_DEV_MODE: '1' },
   faceid: { OTP_DEV_MODE: '1' },
   placemarche: { OTP_DEV_MODE: '1' },
+  pourvous: { OTP_DEV_MODE: '1' },
   donnees: { OTP_DEV_MODE: '1' },
   avis: { OTP_DEV_MODE: '1' },
 };

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BadgeCheck } from 'lucide-react';
+import { BadgeCheck, Play, Sparkles } from 'lucide-react';
 import type { MpListing } from './api';
 import { mpPath } from './config';
 import { F } from './format';
 
-export const ListingCard: React.FC<{ listing: MpListing; showSeller?: boolean }> = ({
+export const ListingCard: React.FC<{ listing: MpListing; showSeller?: boolean; why?: string }> = ({
   listing: l,
   showSeller = true,
+  why,
 }) => (
   <Link
     to={mpPath(`/annonce/${l.id}`)}
@@ -21,6 +22,19 @@ export const ListingCard: React.FC<{ listing: MpListing; showSeller?: boolean }>
         loading="lazy"
         className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
       />
+      {l.video && (
+        <span
+          className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/55 text-white grid place-items-center"
+          aria-label="Vidéo"
+        >
+          <Play className="w-3.5 h-3.5 fill-white" />
+        </span>
+      )}
+      {why && (
+        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-semibold">
+          <Sparkles className="w-3 h-3 text-gold-dark" /> {why}
+        </span>
+      )}
       {l.condition === 'occasion' && (
         <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-white/95 text-[10px] font-bold uppercase tracking-wide">
           Occasion

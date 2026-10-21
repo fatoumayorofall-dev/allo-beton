@@ -1,10 +1,11 @@
 import React, { Suspense, lazy } from 'react';
 import { NavLink, Link, Route, Routes } from 'react-router-dom';
-import { Home, Loader2, Package, ShoppingBag, Store, UserRound } from 'lucide-react';
+import { Clapperboard, Home, Loader2, ShoppingBag, Store, UserRound } from 'lucide-react';
 import { MpCartProvider, useMpCart } from './cart';
 import { MP, mpPath } from './config';
 
 const MpHome = lazy(() => import('./MpHome'));
+const MpFeed = lazy(() => import('./MpFeed'));
 const MpListingPage = lazy(() => import('./MpListingPage'));
 const MpShop = lazy(() => import('./MpShop'));
 const MpCart = lazy(() => import('./MpCart'));
@@ -35,6 +36,12 @@ const Header: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
         <MpLogo />
         <nav className="flex items-center gap-1" aria-label="Menu">
+          <NavLink
+            to={mpPath('/pour-vous')}
+            className="hidden sm:inline-flex items-center gap-2 h-10 px-4 rounded-full text-sm font-semibold hover:bg-ivory"
+          >
+            <Clapperboard className="w-4 h-4" /> Pour vous
+          </NavLink>
           <NavLink
             to={mpPath('/vendre')}
             className="hidden sm:inline-flex items-center gap-2 h-10 px-4 rounded-full border border-ink/15 text-sm font-semibold hover:border-ink"
@@ -67,14 +74,14 @@ const Header: React.FC = () => {
   );
 };
 
-/** Barre du bas sur téléphone : les 5 gestes essentiels. */
+/** Barre du bas sur téléphone : les 5 gestes essentiels (les achats sont dans « Compte »). */
 const TabBar: React.FC = () => {
   const { count } = useMpCart();
   const tabs = [
     { to: mpPath(), label: 'Accueil', Icon: Home, end: true },
+    { to: mpPath('/pour-vous'), label: 'Pour vous', Icon: Clapperboard },
     { to: mpPath('/vendre'), label: 'Vendre', Icon: Store },
     { to: mpPath('/panier'), label: count ? `Panier (${count})` : 'Panier', Icon: ShoppingBag },
-    { to: mpPath('/commandes'), label: 'Commandes', Icon: Package },
     { to: mpPath('/compte'), label: 'Compte', Icon: UserRound },
   ];
   return (
@@ -112,6 +119,7 @@ export default function MarketplaceApp() {
           <Suspense fallback={<Wait />}>
             <Routes>
               <Route index element={<MpHome />} />
+              <Route path="pour-vous" element={<MpFeed />} />
               <Route path="annonce/:id" element={<MpListingPage />} />
               <Route path="boutique/:slug" element={<MpShop />} />
               <Route path="panier" element={<MpCart />} />

@@ -265,6 +265,13 @@ export function countMpView(id) {
   l.views = (l.views ?? 0) + 1;
   persist();
 }
+/** Tendance d'un article (vues, « j'aime », paniers…) : calculée par le fil « Pour vous ». */
+export function setMpStats(id, stats) {
+  const l = mp().listings[id];
+  if (!l) return;
+  l.stats = stats;
+  persist();
+}
 export const getMpOrder = id => mp().orders[id] ?? null;
 export const listMpOrders = () => Object.values(mp().orders).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 export function saveMpOrder(order) {

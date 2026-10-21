@@ -12,9 +12,10 @@
 // ============================================================
 import crypto from 'node:crypto';
 import express from 'express';
-import { PHOTO_URL, sniffImage, storeMedia } from '../media.js';
+import { MEDIA_URL, PHOTO_URL, sniffImage, sniffVideo, storeMedia } from '../media.js';
 import { commissions, deliveryFee, inSenegal, patchSettings, resolveSettings } from './pricing.js';
 import { CONTACT_REFUSED, findContact } from './contact.js';
+import { SIGNALS, bump, cleanTaste, rankFeed } from './ranking.js';
 
 /** Rayons de la place de marché (les restaurants viendront avec la livraison rapide). */
 export const MP_CATEGORIES = [
@@ -47,6 +48,7 @@ const STATUS_TEXT = {
   annulee: 'annulée',
 };
 const MAX_PHOTO_MB = 6;
+const MAX_VIDEO_MB = 40;
 
 const clip = (v, n) => (typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, n) : '');
 const clipText = (v, n) => (typeof v === 'string' ? v.replace(/\r/g, '').trim().slice(0, n) : '');
@@ -84,6 +86,8 @@ export const publicListing = (l, seller) => ({
   category: l.category,
   condition: l.condition,
   photos: l.photos,
+  video: l.video ?? null,
+  likes: l.stats?.likes ?? 0,
   variantLabel: l.variantLabel || null,
   variants: l.variants ?? [],
   soldOut: l.stock !== null && l.stock !== undefined && l.stock <= 0,
@@ -99,6 +103,7 @@ function cleanListing(b, existing) {
   const category = b.category ?? existing?.category;
   const condition = b.condition ?? existing?.condition ?? 'neuf';
   const photos = Array.isArray(b.photos) ? b.photos : (existing?.photos ?? []);
+  const video = b.video !== undefined ? b.video || null : (existing?.video ?? null);
   const stockRaw = b.stock !== undefined ? b.stock : existing?.stock;
   const stock = stockRaw === null || stockRaw === '' || stockRaw === undefined ? null : Math.round(Number(stockRaw));
   const variants = Array.isArray(b.variants)
@@ -112,12 +117,13 @@ function cleanListing(b, existing) {
   if (!photos.length) return { error: 'Ajoutez au moins une photo' };
   if (photos.length > 6 || photos.some(u => typeof u !== 'string' || !PHOTO_URL.test(u)))
     return { error: 'Photos invalides (6 au maximum)' };
+  if (video !== null && (typeof video !== 'string' || !MEDIA_URL.test(video))) return { error: 'Vidéo invalide' };
   if (stock !== null && (!Number.isInteger(stock) || stock < 0 || stock > 100_000))
     return { error: 'Quantité en stock invalide' };
   if (variants.length && !variantLabel) return { error: 'Précisez le choix proposé (ex. : Taille, Couleur)' };
   const contact = findContact(title, description, variantLabel, ...variants);
   if (contact) return { error: CONTACT_REFUSED(contact) };
-  return { value: { title, description, price, category, condition, photos, stock, variants, variantLabel } };
+  return { value: { title, description, price, category, condition, photos, video, stock, variants, variantLabel } };
 }
 
 export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentUser, wa, dataDir }) {
@@ -151,6 +157,89 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   app.get('/api/mp/config', (_req, res) => {
     const s = settings();
     res.json({ categories: MP_CATEGORIES, sellerRate: s.sellerRate, buyerFee: s.buyerFee, delivery: s.delivery });
+  });
+
+  /* ---------- Fil « Pour vous » ---------- */
+
+  /**
+   * Gestes anonymes (vue, regard de plus de 5 s, « j'aime », panier, partage, passé vite) : ils font
+   * monter ou descendre la tendance des articles. Identifiant de visite tiré au hasard, rien de personnel.
+   * Une même visite ne compte qu'une fois par article et par geste et par heure.
+   */
+  const counted = new Map(); // `${visite}|${article}|${geste}` → heure
+  setInterval(() => {
+    const old = Date.now() - 3600e3;
+    for (const [k, t] of counted) if (t < old) counted.delete(k);
+  }, 600e3).unref();
+  app.post('/api/mp/events', (req, res) => {
+    const v = clip(req.body?.v, 40);
+    const events = req.body?.events;
+    if (!/^[\w-]{8,40}$/.test(v) || !Array.isArray(events)) return res.status(400).end();
+    if (!limit(`mp-events:${req.ip}`, 600, 600e3)) return res.status(429).end();
+    for (const e of events.slice(0, 40)) {
+      const kind = String(e?.t ?? '');
+      const id = clip(e?.id, 20);
+      if (!(kind in SIGNALS) || kind === 'order' || !visibleListing(id)) continue;
+      const key = `${v}|${id}|${kind === 'unlike' ? 'like' : kind}`;
+      if (kind !== 'unlike' && counted.has(key)) continue;
+      if (kind === 'unlike' && !counted.has(key)) continue; // on ne retire qu'un « j'aime » donné
+      if (kind === 'unlike') counted.delete(key);
+      else counted.set(key, Date.now());
+      store.setMpStats(id, bump(store.getMpListing(id).stats, kind));
+    }
+    res.status(204).end();
+  });
+
+  /** Sérieux d'un vendeur (0 à 1) : ventes livrées et peu de refus. */
+  const qualityOf = (sellerId, orders) => {
+    const mine = orders.filter(o => o.sellerId === sellerId);
+    if (!mine.length) return 0.5;
+    const done = mine.filter(o => o.status === 'livree').length;
+    const dropped = mine.filter(
+      o => ['refusee', 'annulee'].includes(o.status) && o.history?.at(-1)?.by === 'vendeur',
+    ).length;
+    return Math.min(1, 0.4 + 0.06 * done) * (1 - dropped / mine.length);
+  };
+
+  app.post('/api/mp/feed', (req, res) => {
+    if (tooMany(req, res, `mp-feed:${req.ip}`, 300, 600e3)) return;
+    const b = req.body ?? {};
+    const taste = cleanTaste(b.taste, CATEGORY_IDS);
+    const near = inSenegal(b.near) ? { lat: Number(b.near.lat), lng: Number(b.near.lng) } : null;
+    const seen = new Set((Array.isArray(b.seen) ? b.seen : []).slice(0, 200).map(x => clip(x, 20)));
+    const page = Math.max(1, Math.min(100, Number(b.page) || 1));
+    const per = Math.max(4, Math.min(24, Number(b.per) || 12));
+    const orders = store.listMpOrders();
+    const visible = store
+      .listMpListings()
+      .map(l => ({ l, s: store.getMpSeller(l.sellerId) }))
+      .filter(({ l, s }) => isVisible(l, s) && !(l.stock !== null && l.stock !== undefined && l.stock <= 0));
+    const byId = new Map(visible.map(x => [x.l.id, x]));
+    const quality = new Map();
+    const ranked = rankFeed(
+      visible.map(({ l, s }) => {
+        if (!quality.has(s.id)) quality.set(s.id, qualityOf(s.id, orders));
+        return {
+          id: l.id,
+          category: l.category,
+          sellerId: s.id,
+          price: l.price,
+          createdAt: l.publishedAt ?? l.createdAt,
+          stats: l.stats,
+          sellerLocation: s.location,
+          sellerQuality: quality.get(s.id),
+        };
+      }),
+      { taste, near, seen, seed: `${clip(b.v, 40)}|${new Date().toISOString().slice(0, 10)}` },
+    );
+    res.json({
+      total: ranked.length,
+      page,
+      items: ranked.slice((page - 1) * per, page * per).map(r => {
+        const { l, s } = byId.get(r.id);
+        return { ...publicListing(l, s), why: r.why };
+      }),
+    });
   });
 
   app.get('/api/mp/listings', (req, res) => {
@@ -330,6 +419,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       for (const line of o.lines) {
         const l = store.getMpListing(line.listingId);
         if (l.stock !== null && l.stock !== undefined) store.saveMpListing({ ...l, stock: l.stock - line.qty });
+        store.setMpStats(l.id, bump(store.getMpListing(l.id).stats, 'order'));
       }
       notify(
         o.seller.contactPhone ?? o.seller.ownerPhone,
@@ -503,6 +593,25 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     },
   );
 
+  // Vidéo d'un article (façon TikTok) : filmée au téléphone, 40 Mo au plus
+  app.post(
+    '/api/mp/me/videos',
+    express.raw({ type: () => true, limit: `${MAX_VIDEO_MB}mb` }),
+    (req, res) => {
+      const me = sellerOf(req, res);
+      if (!me) return;
+      if (tooMany(req, res, `mp-video:${me.user.phone}`, 30, 3600e3)) return;
+      const ext = sniffVideo(req.body);
+      if (!ext) return res.status(415).json({ error: 'Envoyez une vidéo (MP4, MOV d’iPhone ou WebM)' });
+      res.status(201).json({ url: storeMedia(dataDir, req.body, ext) });
+    },
+    (err, _req, res, next) => {
+      if (err?.type === 'entity.too.large')
+        return res.status(413).json({ error: `Vidéo trop lourde (${MAX_VIDEO_MB} Mo au maximum, environ 1 minute)` });
+      next(err);
+    },
+  );
+
   const sellerListingView = l => ({ ...publicListing(l, null), status: l.status, stock: l.stock, reason: l.reason });
 
   app.get('/api/mp/me/listings', (req, res) => {
@@ -548,7 +657,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const r = cleanListing(req.body ?? {}, l);
     if (r.error) return res.status(400).json({ error: r.error });
     // Titre, texte, photos ou rayon changés : nouvelle vérification (le prix et le stock, non)
-    const content = ['title', 'description', 'photos', 'category', 'condition'].some(
+    const content = ['title', 'description', 'photos', 'video', 'category', 'condition'].some(
       k => JSON.stringify(r.value[k]) !== JSON.stringify(l[k]),
     );
     const auto = me.seller.trusted && settings().autoPublishTrusted;

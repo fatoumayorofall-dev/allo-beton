@@ -285,6 +285,22 @@ réglages (taux, prix au km, minimum, maximum) modifiables par la gérante dans 
 
 ---
 
+### 4.4 Fil « Pour vous » (vidéos façon TikTok)
+
+- **Goûts sur le téléphone** (`src/marketplace/taste.ts`) : poids par rayon et par vendeur (vue 1, regard
+  de plus de 5 s 2, « j'aime » 4, panier 5, commande 8, passé en moins de 2 s −1), moyenne du logarithme des
+  prix aimés ; effacement de 3 % par jour. Rien de personnel n'est envoyé.
+- **Tendance côté serveur** (`POST /api/mp/events`) : gestes anonymes, comptés une fois par visite, par
+  article et par heure ; score à décroissance exponentielle (demi-vie de 3 jours).
+- **Classement** (`server/marketplace/ranking.js`, fonction pure testée) :
+  `0,35 goûts + 0,08 prix + 0,20 tendance + 0,12 nouveauté + 0,15 proximité + 0,10 sérieux du vendeur`
+  (sans goûts connus : tendance, nouveauté et proximité seulement) ; ×0,35 pour un article déjà vu ;
+  une place sur six réservée à la découverte (hors des rayons préférés, pour ne pas enfermer le client) ;
+  diversité (pas deux fois de suite le même vendeur). Chaque carte affiche sa raison : « Pour vous »,
+  « Tendance », « Nouveau », « Près de chez vous », « À découvrir ».
+- **Affichage** (`MpFeed.tsx`) : un article par écran, défilement aimanté, vidéo lancée seulement à
+  l'écran (IntersectionObserver), photos qui défilent sinon, pages chargées par 8.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

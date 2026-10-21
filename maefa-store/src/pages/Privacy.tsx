@@ -80,6 +80,12 @@ export const Privacy: React.FC = () => {
             identifiant tiré au hasard (ni nom, ni numéro). Il sert aux statistiques de la boutique et aux suggestions «
             Vous aimerez aussi ».
           </li>
+          <li>
+            <strong>Place de marché, fil « Pour vous »</strong> : vos goûts (rayons et boutiques que vous regardez,
+            aimez ou mettez au panier, gamme de prix) sont calculés et gardés <em>sur votre téléphone</em>. Le serveur
+            ne reçoit que des gestes anonymes (vue, « j'aime », panier), qui servent à repérer les articles en tendance.
+            Effacer les données du site sur votre téléphone remet le fil à zéro.
+          </li>
         </ul>
       </Section>
 

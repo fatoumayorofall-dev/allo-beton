@@ -12,7 +12,7 @@ let visitor: string | null = null;
 const queue: { t: TrackType; p: string }[] = [];
 let timer: ReturnType<typeof setTimeout> | null = null;
 
-function visitorId(): string {
+export function visitorId(): string {
   if (visitor) return visitor;
   try {
     visitor = localStorage.getItem(KEY);
