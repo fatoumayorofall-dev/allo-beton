@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-21",
+  "code": {
+    "lignesInterface": 38049,
+    "lignesInterfacePlaceDeMarche": 9169,
+    "lignesServeur": 11428,
+    "lignesServeurPlaceDeMarche": 5259,
+    "fichiersInterface": 151,
+    "fichiersServeur": 41,
+    "ecransPlaceDeMarche": 13
+  },
+  "api": {
+    "routes": 196,
+    "routesPlaceDeMarche": 103,
+    "routesDocumenteesOpenAPI": 178
+  },
+  "donnees": {
+    "tablesPostgreSQL": 23,
+    "reglesDeGestion": 50,
+    "typesEcrituresRegistre": [
+      "acheteur_debloque",
+      "colis_rendu",
+      "envoi_vendeur",
+      "livraison",
+      "livraison_ratee",
+      "mise_en_avant",
+      "paiement_en_ligne",
+      "partage",
+      "reglement_vendeur",
+      "remboursement",
+      "vente_livree",
+      "versement",
+      "versement_livreur"
+    ]
+  },
+  "tests": {
+    "testsUnitaires": 88,
+    "fichiersTestsUnitaires": 16,
+    "scenariosNavigateur": 37,
+    "verificationsNavigateur": 702
+  },
+  "dependances": 17
+}
