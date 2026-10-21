@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Loader2, Package, Phone, Users } from 'lucide-react';
 import { cancelMyOrder, fetchMyOrders, type MpOrder } from './api';
 import { MP, mpPath } from './config';
-import { F, STATUS_LABELS, STATUS_STYLES, ago } from './format';
+import { F, PAYMENT_LABELS, STATUS_LABELS, STATUS_STYLES, ago } from './format';
 import { useAccount } from '../context/AccountContext';
 import { usePageTitle } from '../utils/usePageTitle';
 import { AfterSale, DriverTracking } from './AfterSale';
@@ -157,6 +157,37 @@ export default function MpOrders() {
                   </a>
                 )}
               </p>
+            )}
+            {o.onlinePayment && (
+              <div
+                className={`mt-2 rounded-xl px-3 py-2 text-sm ${o.onlinePayment.status === 'en_attente' ? 'bg-amber-50 text-amber-950' : 'bg-emerald-50 text-emerald-900'}`}
+                data-testid="mp-order-paid"
+              >
+                {o.onlinePayment.status === 'en_attente' ? (
+                  <span className="flex flex-wrap items-center justify-between gap-2">
+                    <span>Paiement {PAYMENT_LABELS[o.onlinePayment.method]} en attente</span>
+                    <Link
+                      to={mpPath(`/paiement/${o.onlinePayment.id}`)}
+                      className="h-8 px-3 rounded-full bg-ink text-white text-xs font-semibold inline-flex items-center"
+                      data-testid="mp-order-pay"
+                    >
+                      Payer maintenant
+                    </Link>
+                  </span>
+                ) : o.refund ? (
+                  <>
+                    💸 Remboursement de {F(o.refund.amount)}{' '}
+                    {o.refund.status === 'versee' ? 'envoyé sur votre Wave' : 'en cours'}
+                  </>
+                ) : o.onlinePayment.status === 'payee' ? (
+                  <>
+                    ✓ Payée en ligne ({PAYMENT_LABELS[o.onlinePayment.method]}) : l'argent est gardé jusqu'à la
+                    livraison
+                  </>
+                ) : (
+                  'Paiement non abouti'
+                )}
+              </div>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink/60">
               <span>Commandée {ago(o.createdAt)}</span>

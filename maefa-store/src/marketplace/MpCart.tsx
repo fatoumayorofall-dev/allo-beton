@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Bike, CheckCircle2, Clapperboard, Loader2, Minus, Plus, ShoppingBag, Trash2, Users } from 'lucide-react';
-import { fetchQuote, placeOrders, type MpOrder, type QuoteOrder } from './api';
+import { fetchConfig, fetchQuote, placeOrders, type MpOrder, type OnlineMethod, type QuoteOrder } from './api';
 import { useMpCart } from './cart';
 import { MP, mpPath } from './config';
 import { LiveRow } from './LiveRow';
@@ -28,6 +28,17 @@ export default function MpCart() {
   const [quoteError, setQuoteError] = useState('');
   const [name, setName] = useState('');
   const [payment, setPayment] = useState<MpOrder['payment']>('especes');
+  // Payer maintenant (Wave, Orange Money en ligne : l'argent est gardé jusqu'à la livraison) ou à la livraison
+  const [when, setWhen] = useState<'livraison' | 'en_ligne'>('livraison');
+  const [onlinePay, setOnlinePay] = useState<OnlineMethod[]>([]);
+  const [payTest, setPayTest] = useState(false);
+  useEffect(() => {
+    fetchConfig().then(r => {
+      if (!r.ok) return;
+      setOnlinePay(r.data.onlinePay ?? []);
+      setPayTest(!!r.data.payTest);
+    });
+  }, []);
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -135,17 +146,26 @@ export default function MpCart() {
     if (name.trim().length < 2) return setError('Indiquez votre prénom');
     setBusy(true);
     setError('');
+    const online = when === 'en_ligne' && onlinePay.includes(payment as OnlineMethod);
     const r = await placeOrders({
       items: lines,
       to,
       name: name.trim(),
       payment,
+      pay: online ? 'en_ligne' : 'livraison',
       note,
       ...(quote?.drivers ? { mode, wait } : {}),
     });
     setBusy(false);
     if (!r.ok) return setError(r.error);
     clear();
+    // Paiement en ligne : direction la page de paiement (Wave s'ouvre ; en mode test, la page simulée)
+    if (r.data.payment) {
+      const url = r.data.payment.url;
+      if (url.startsWith('/')) return navigate(url);
+      window.location.href = url;
+      return;
+    }
     setDone(r.data.orders);
     window.scrollTo({ top: 0 });
   };
@@ -322,21 +342,55 @@ export default function MpCart() {
           <span className="field-label">Votre prénom</span>
           <input value={name} onChange={e => setName(e.target.value)} className="field" autoComplete="given-name" />
         </label>
-        <fieldset>
-          <legend className="field-label">Paiement à la livraison</legend>
-          <div className="grid grid-cols-3 gap-2">
-            {(Object.keys(PAYMENT_LABELS) as MpOrder['payment'][]).map(p => (
+        <fieldset data-testid="mp-pay">
+          <legend className="field-label">Paiement</legend>
+          {onlinePay.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 mb-2" role="radiogroup" aria-label="Quand payer">
+              {(
+                [
+                  ['en_ligne', 'Payer maintenant', 'Argent gardé jusqu’à la livraison'],
+                  ['livraison', 'À la livraison', 'Espèces, Wave ou Orange Money'],
+                ] as const
+              ).map(([k, title, sub]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="radio"
+                  aria-checked={when === k}
+                  onClick={() => {
+                    setWhen(k);
+                    setPayment(k === 'en_ligne' ? onlinePay[0] : 'especes');
+                  }}
+                  className={`rounded-2xl border p-3 text-left ${when === k ? 'border-ink ring-1 ring-ink bg-white' : 'border-ink/15 bg-white'}`}
+                  data-testid={`mp-pay-${k}`}
+                >
+                  <span className="block text-sm font-semibold">{title}</span>
+                  <span className="block text-[11px] text-ink/60 mt-0.5">{sub}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className={`grid gap-2 ${when === 'en_ligne' ? 'grid-cols-2' : 'grid-cols-3'}`}>
+            {(when === 'en_ligne' ? onlinePay : (Object.keys(PAYMENT_LABELS) as MpOrder['payment'][])).map(p => (
               <button
                 key={p}
                 type="button"
                 aria-pressed={payment === p}
                 onClick={() => setPayment(p)}
                 className={`h-11 rounded-xl border text-xs font-semibold ${payment === p ? 'bg-ink text-ivory border-ink' : 'bg-white border-ink/15'}`}
+                data-testid={`mp-pay-method-${p}`}
               >
                 {PAYMENT_LABELS[p]}
               </button>
             ))}
           </div>
+          {when === 'en_ligne' && (
+            <p className="mt-2 text-xs text-ink/65">
+              Vous payez maintenant ; l'argent est gardé par {MP.name} et versé à la boutique seulement quand vous
+              donnez votre code de remise, colis en main. Commande annulée : vous êtes remboursée.
+              {payTest && <strong className="block mt-1 text-amber-800">Mode test : aucun argent réel.</strong>}
+            </p>
+          )}
         </fieldset>
         <label className="block">
           <span className="field-label">Message au vendeur (facultatif)</span>
@@ -362,7 +416,11 @@ export default function MpCart() {
           {busy ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : status === 'user' ? (
-            'Valider la commande'
+            when === 'en_ligne' ? (
+              `Payer ${quote ? F(quote.total) : ''} · ${PAYMENT_LABELS[payment]}`
+            ) : (
+              'Valider la commande'
+            )
           ) : (
             'Me connecter pour commander'
           )}

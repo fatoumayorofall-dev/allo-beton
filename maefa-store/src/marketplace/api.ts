@@ -152,6 +152,18 @@ export interface MpOrder {
   handoverCode?: string | null;
   /** Vue vendeur : code à donner au livreur en lui remettant le colis (ou en le récupérant) */
   pickupCode?: string | null;
+  /** Vue acheteur : paiement en ligne (lien pour payer tant que ce n'est pas fait) et remboursement */
+  onlinePayment?: {
+    id: string;
+    method: OnlineMethod;
+    status: PaymentStatus;
+    amount: number;
+    url: string | null;
+  } | null;
+  refund?: { amount: number; status: PayoutStatus } | null;
+  /** Vue vendeur : commande payée en ligne, et la part que la plateforme lui verse */
+  paidOnline?: { status: PaymentStatus; method: OnlineMethod } | null;
+  payoutToMe?: { amount: number; status: PayoutStatus | 'apres_livraison' } | null;
   /** Livraison ratée (client absent ou refus) : le colis est rapporté au vendeur */
   failedDelivery?: { reason: 'absent' | 'refus'; at: string; forgiven?: string } | null;
   /** Vue gérante : codes de remise et essais faux */
@@ -223,6 +235,8 @@ export interface MySeller extends MpSeller {
   /** Où le livreur récupère les colis : adresse, point donné à chaque commande, ou point relais */
   pickupMode: PickupMode;
   relay: Relay | null;
+  /** Numéro Wave qui reçoit l'argent des ventes payées en ligne */
+  payoutPhone?: string;
   /** Parrainage : code à partager, boutiques venues grâce à lui, mois Pro gagnés */
   referralCode: string | null;
   referrals: number;
@@ -266,6 +280,9 @@ export const fetchConfig = () =>
     drivers: boolean;
     shareWaits: number[];
     plans: { freeListings: number; proPrice: number; proRate: number };
+    /** Paiement en ligne proposé (vide : seulement à la livraison) ; payTest : sans argent réel */
+    onlinePay?: OnlineMethod[];
+    payTest?: boolean;
   }>('/api/mp/config');
 export const fetchListings = (params: Record<string, string>) =>
   call<{ total: number; page: number; listings: MpListing[] }>(`/api/mp/listings?${new URLSearchParams(params)}`);
@@ -313,10 +330,32 @@ export const placeOrders = (body: {
   to: DeliveryLocation;
   name: string;
   payment: MpOrder['payment'];
+  /** Payer maintenant (en ligne) ou à la livraison */
+  pay?: 'en_ligne' | 'livraison';
   note: string;
   mode?: 'express' | 'partagee';
   wait?: number;
-}) => post<{ orders: MpOrder[] }>('/api/mp/orders', body);
+}) => post<{ orders: MpOrder[]; payment?: { id: string; url: string } }>('/api/mp/orders', body);
+
+/* ---------- Paiement en ligne ---------- */
+export type OnlineMethod = 'wave' | 'orange_money';
+export type PaymentStatus = 'en_attente' | 'payee' | 'expiree' | 'annulee' | 'echec' | 'remboursee';
+export interface PaymentSummary {
+  id: string;
+  method: OnlineMethod;
+  provider: string;
+  status: PaymentStatus;
+  amount: number;
+  url: string | null;
+  createdAt: string;
+  paidAt: string | null;
+  orders: string[];
+  /** Mode test : aucun argent réel */
+  test: boolean;
+}
+export const fetchPayment = (id: string) => call<{ payment: PaymentSummary }>(`/api/mp/payments/${id}`);
+export const simulatePayment = (id: string, ok: boolean) =>
+  post<{ payment: PaymentSummary }>(`/api/mp/payments/${id}/simulate`, { ok });
 export const fetchMyOrders = () => call<{ orders: MpOrder[] }>('/api/mp/me/orders');
 export const cancelMyOrder = (id: string) => post<{ order: MpOrder }>(`/api/mp/me/orders/${id}/cancel`, {});
 export const reviewOrder = (id: string, body: { sellerStars: number; text: string; driverStars?: number }) =>
@@ -361,7 +400,9 @@ export const moveSale = (
   status: OrderStatus,
   reason?: string,
   pickup?: { lat: number; lng: number; landmark?: string },
-) => post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}`, { status, reason, pickup }, 'PATCH');
+  /** Payée en ligne et livrée par la vendeuse : le code de remise de la cliente */
+  code?: string,
+) => post<{ order: MpOrder; balance: Balance }>(`/api/mp/me/sales/${id}`, { status, reason, pickup, code }, 'PATCH');
 export const fetchRelays = () => call<{ relays: Relay[] }>('/api/mp/relays');
 
 export const confirmPayout = (id: string, missing = false) =>
@@ -468,6 +509,8 @@ export interface TripStop {
   items?: string[];
   buyerName?: string;
   payment?: MpOrder['payment'];
+  /** Payée en ligne : rien à encaisser */
+  paidOnline?: boolean;
   note?: string;
   money?: { collect: number; sellerGets: number; driverKeeps: number; platformGets: number; driverCommission: number };
   sellerPhone?: string | null;
@@ -605,6 +648,34 @@ export const adminCloseTrip = (pin: string, id: string) =>
   call<{ trip: AdminTrip }>(`/api/admin/mp/trips/${id}/close`, { method: 'POST', headers: admin(pin) });
 export const adminSellerDashboard = (pin: string, id: string, days: DashboardDays) =>
   call<{ dashboard: Dashboard }>(`/api/admin/mp/sellers/${id}/dashboard?jours=${days}`, { headers: admin(pin) });
+export type PayoutStatus = 'a_faire' | 'a_verser' | 'en_cours' | 'versee' | 'echec';
+export interface AdminPayout {
+  id: string;
+  kind: 'vendeur' | 'livreur' | 'remboursement';
+  to: string;
+  name: string;
+  amount: number;
+  reason: string;
+  status: PayoutStatus;
+  error?: string | null;
+  createdAt: string;
+  sentAt?: string;
+  orderId: string;
+  shopName: string;
+}
+export interface AdminPayments {
+  config: { provider: string | null; methods: OnlineMethod[]; test: boolean; automaticPayouts: boolean };
+  totals: { collected: number; paidOut: number; toPay: number; kept: number; holding: number };
+  payments: (PaymentSummary & { buyerPhone: string })[];
+  payouts: AdminPayout[];
+}
+export const adminPayments = (pin: string) => call<AdminPayments>('/api/admin/mp/payments', { headers: admin(pin) });
+export const adminPayoutAction = (pin: string, id: string, action: 'sent' | 'retry', reference = '') =>
+  call<{ ok?: true }>(`/api/admin/mp/payouts/${id}/${action}`, {
+    method: 'POST',
+    headers: admin(pin),
+    body: JSON.stringify({ reference }),
+  });
 export const adminLives = (pin: string) => call<{ lives: AdminLive[] }>('/api/admin/mp/lives', { headers: admin(pin) });
 export const adminStopLive = (pin: string, id: string, reason: string) =>
   call<{ live: LiveSummary }>(`/api/admin/mp/lives/${id}/stop`, {

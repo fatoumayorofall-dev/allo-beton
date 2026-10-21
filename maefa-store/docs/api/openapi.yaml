@@ -1058,9 +1058,43 @@ paths:
   /api/mp/orders:
     post:
       tags: [Place de marché]
-      summary: 'Commander (paiement à la livraison) ; stock réservé ; vendeur prévenu sur WhatsApp'
+      summary: 'Commander ; stock réservé. pay = livraison (vendeur prévenu sur WhatsApp) ou en_ligne + payment = wave | orange_money (renvoie payment { id, url } ; vendeur prévenu une fois payé)'
       security: [{ session: [] }]
       responses: { '201': { description: Commandes créées }, '401': { description: Non connectée } }
+  /api/mp/payments/{id}:
+    get:
+      tags: [Place de marché]
+      summary: 'Paiement en ligne de la cliente connectée : état (vérifié auprès de Wave si en attente), montant, commandes'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '404': { description: Introuvable } }
+  /api/mp/payments/{id}/simulate:
+    post:
+      tags: [Place de marché]
+      summary: 'Mode test seulement : payer ({ ok: true }) ou abandonner ({ ok: false }) sans argent réel'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK }, '403': { description: Pas en mode test } }
+  /api/mp/payments/wave/webhook:
+    post:
+      tags: [Place de marché]
+      summary: 'Confirmation de Wave (checkout.session.completed / payment_failed), signée Wave-Signature (HMAC-SHA256)'
+      responses: { '200': { description: Reçu }, '401': { description: Signature invalide } }
+  /api/admin/mp/payments:
+    get:
+      tags: [Place de marché]
+      summary: 'Gérante : paiements en ligne, totaux (encaissé, gardé jusqu’à la livraison, versé, à verser, commission gardée) et versements'
+      security: [{ admin: [] }]
+      responses: { '200': { description: OK } }
+  /api/admin/mp/payouts/{id}/{action}:
+    post:
+      tags: [Place de marché]
+      summary: 'Gérante : versement fait à la main (sent, référence facultative) ou nouvel essai automatique (retry)'
+      security: [{ admin: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: action, in: path, required: true, schema: { type: string, enum: [sent, retry] } }
+      responses: { '200': { description: OK }, '404': { description: Introuvable } }
   /api/mp/me/orders:
     get:
       tags: [Place de marché]

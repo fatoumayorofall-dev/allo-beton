@@ -27,7 +27,7 @@ export const publicDriver = d => (d ? { name: d.name, phone: d.phone, vehicle: d
 
 export function registerDriverRoutes(
   app,
-  { limit, isAdmin, store, currentUser, trips, settings, notify, notifyCode, ledger, restock, onDelivered },
+  { limit, isAdmin, store, currentUser, trips, settings, notify, notifyCode, ledger, restock, onDelivered, onReturned },
 ) {
   const now = () => new Date().toISOString();
   const tooMany = (req, res, key, max, ms) => {
@@ -50,7 +50,10 @@ export function registerDriverRoutes(
 
   /** Ce que le livreur doit à la plateforme : commissions des commandes livrées moins ses versements. */
   function balanceOf(d) {
-    const done = store.listMpOrders().filter(o => o.driverId === d.id && o.status === 'livree' && o.settlement);
+    // Commandes payées en ligne : rien encaissé, rien à rendre (sa course lui est versée par la plateforme)
+    const done = store
+      .listMpOrders()
+      .filter(o => o.driverId === d.id && o.status === 'livree' && o.settlement && o.collector !== 'plateforme');
     const due = done.reduce((t, o) => t + o.settlement.platformGets, 0);
     const paid = (d.payments ?? []).reduce((t, p) => t + p.amount, 0);
     return {
@@ -68,7 +71,9 @@ export function registerDriverRoutes(
 
   /** Argent que garde le livreur et son plafond : au-delà, plus de nouvelle course. */
   function cashOf(d) {
-    const delivered = store.listMpOrders().filter(o => o.driverId === d.id && o.status === 'livree');
+    const delivered = store
+      .listMpOrders()
+      .filter(o => o.driverId === d.id && o.status === 'livree' && o.collector !== 'plateforme');
     const held = cashHeld(balanceOf(d).balance, delivered);
     const cap = d.cashCap ?? settings().driverCashCap;
     return { held, cap, blocked: held >= cap };
@@ -118,10 +123,12 @@ export function registerDriverRoutes(
           };
         }
         const share = o.delivery.share ?? o.delivery.fee;
-        const money = settlement(
+        const computed = settlement(
           { subtotal: o.subtotal, share, buyerFee: o.buyerFee, sellerCommission: o.commissions.seller },
           s,
         );
+        // Payée en ligne : rien à encaisser ni à envoyer à la vendeuse
+        const money = o.onlinePayment ? { ...computed, collect: 0, sellerGets: 0 } : computed;
         return {
           ...st,
           needsCode: !!o.handover,
@@ -129,6 +136,7 @@ export function registerDriverRoutes(
           phone: o.buyer.phone,
           at: o.delivery.to,
           payment: o.payment,
+          paidOnline: !!o.onlinePayment,
           note: o.note,
           money,
           sellerPhone: seller?.contactPhone ?? seller?.ownerPhone ?? null,
@@ -288,6 +296,8 @@ export function registerDriverRoutes(
         history: history('annulee'),
       });
       restock(o);
+      // Payée en ligne : la cliente récupère le prix des articles, le livreur garde sa course
+      onReturned(store.getMpOrder(o.id));
       ledger.append('colis_rendu', { orderId: o.id, driverId: d.id, sellerId: o.sellerId });
       const seller = store.getMpSeller(o.sellerId);
       notify(seller?.contactPhone ?? seller?.ownerPhone, `↩️ Colis ${o.id} rendu. La commande est annulée.`);
@@ -304,12 +314,13 @@ export function registerDriverRoutes(
         },
         settings(),
       );
+      const online = !!o.onlinePayment;
       store.saveMpOrder({
         ...o,
         status: 'livree',
         driverId: d.id,
-        collector: 'livreur',
-        settlement: money,
+        collector: online ? 'plateforme' : 'livreur',
+        settlement: online ? { ...money, collect: 0, online: true } : money,
         deliveredAt: now(),
         history: history('livree'),
       });
@@ -326,7 +337,9 @@ export function registerDriverRoutes(
       const seller = store.getMpSeller(o.sellerId);
       notify(
         seller?.contactPhone ?? seller?.ownerPhone,
-        `✅ Commande ${o.id} livrée. ${d.name} vous envoie ${F(money.sellerGets)} par Wave.`,
+        online
+          ? `✅ Commande ${o.id} livrée. Payée en ligne : la plateforme vous verse ${F(money.sellerGets)}.`
+          : `✅ Commande ${o.id} livrée. ${d.name} vous envoie ${F(money.sellerGets)} par Wave.`,
       );
       notify(o.buyerPhone, `✅ Commande ${o.id} livrée. Merci et à bientôt !`);
     }

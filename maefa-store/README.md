@@ -55,6 +55,10 @@ Copiez `server/.env.example` en `server/.env`, puis renseignez :
 | `TWILIO_SMS_FROM` | Facultatif : envoie aussi par SMS les codes de remise de la place de marché (un SMS arrive sans connexion internet). |
 | `MP_DEMO` | `1` : au démarrage, si la place de marché est vide, crée des données d'exemple (boutiques, articles, livreurs, commandes à toutes les étapes) par les vraies routes du serveur. Par défaut actif quand `NOINDEX=1` (site de test). Comptes d'exemple : `server/marketplace/demo.js`. |
 | `TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL` | Facultatif : relais TURN pour les appels par internet de la place de marché (certains réseaux mobiles bloquent les appels directs). Ex. : `turn:relay.exemple.com:3478`. |
+| `WAVE_CHECKOUT_KEY` | Paiement en ligne de la place de marché : clé « Checkout » de votre compte **Wave Business** (à mettre seulement sur Render, jamais dans le code ni dans un message). Les clientes paient au panier ou depuis un live ; l'argent arrive sur le compte de la plateforme et reste gardé jusqu'à la livraison. |
+| `WAVE_WEBHOOK_SECRET` | Secret de confirmation de Wave. Dans Wave Business, déclarez l'adresse `https://votre-site/api/mp/payments/wave/webhook` (événements `checkout.session.completed` et `checkout.session.payment_failed`). Sans lui, le serveur vérifie directement auprès de Wave. |
+| `WAVE_PAYOUT_KEY` | Facultatif : clé « Payout » de Wave Business. Avec elle, la part de la vendeuse et celle du livreur partent toutes seules sur leur Wave dès que la cliente donne son code de remise. Sans elle, ces versements apparaissent « À verser » dans l'espace gérante (onglet Place de marché → Paiements en ligne) : vous les envoyez avec votre application Wave, puis touchez « Versé ». |
+| `PAYMENTS_SIMULATION` | Site de test : `1` = paiement en ligne simulé (aucun argent réel) avec versements automatiques simulés ; `manuel` = simulé, versements « À verser ». Ignoré quand `WAVE_CHECKOUT_KEY` est présent. |
 | `CALL_RING_SECONDS` | Durée de la sonnerie avant « appel manqué » (45 s par défaut). |
 | `OWNER_WHATSAPP` | Votre numéro : vous y recevez chaque nouvelle commande. |
 | `ADMIN_PIN` | **Code de l'espace gérant**, vérifié uniquement par le serveur (il n'apparaît nulle part dans le site). À la connexion, le serveur remet un jeton signé valable 12 h ; 10 essais ratés en 15 min bloquent l'adresse. Changer ce code déconnecte tous les appareils. Sans lui, l'espace gérant reste fermé. |
@@ -353,8 +357,10 @@ puis déclarez `https://votre-domaine/sitemap.xml` dans Google Search Console.
 - **Données** : catalogue, stocks, avis, commandes, comptes et Marché sont gardés par le serveur dans un fichier
   (`DATA_DIR`, à placer sur un disque persistant). Panier et favoris restent sur le téléphone de la cliente.
   Pour un gros volume, passer à une vraie base de données.
-- **Paiement** : la passerelle est simulée dans `pages/Checkout.tsx` (fonction `pay`). À remplacer par l'API Wave Business,
-  Orange Money ou un agrégateur (PayDunya, CinetPay…).
+- **Paiement** : boutique Maefa : la passerelle est simulée dans `pages/Checkout.tsx` (fonction `pay`). Place de marché :
+  paiement en ligne Wave Business branché (`server/marketplace/payments.js`, variables `WAVE_*` ci-dessus) avec partage
+  automatique (commission gardée, part de la vendeuse et du livreur versée à la livraison) ; Orange Money en ligne se
+  branche quand le compte marchand Orange est ouvert (en attendant, il n'est proposé qu'en mode test).
 - **Commandes** : elles sont gardées par le serveur dans un fichier JSON (`DATA_DIR`) ; il vérifie le format et limite
   les envois, mais ne recalcule pas les montants. Pour un gros volume, passer à une vraie base de données.
 - **Espace gérant** : le PIN est vérifié côté navigateur, il ne protège donc qu'une démo. Une authentification serveur est nécessaire en production.

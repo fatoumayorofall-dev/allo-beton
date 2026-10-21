@@ -37,7 +37,15 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 // Pages, code et données compressés (≈ 3 fois moins de données mobiles) ; jamais la réponse en direct de l'assistante
 app.use(compression({ filter: (req, res) => req.path !== '/api/chat' && compression.filter(req, res) }));
-app.use(express.json({ limit: '300kb' }));
+// Corps brut gardé pour les confirmations de paiement (la signature porte sur les octets exacts)
+app.use(
+  express.json({
+    limit: '300kb',
+    verify: (req, _res, buf) => {
+      if (req.url.startsWith('/api/mp/payments/')) req.rawBody = buf;
+    },
+  }),
+);
 
 /* ---------- En-têtes de sécurité (clickjacking, injection de scripts, fuite d'adresses) ---------- */
 const CSP = [

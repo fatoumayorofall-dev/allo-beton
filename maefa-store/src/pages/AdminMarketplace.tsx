@@ -38,6 +38,7 @@ import {
 } from '../marketplace/api';
 import { MP, mpPath } from '../marketplace/config';
 import { SellerDashboard } from '../marketplace/SellerDashboard';
+import { PaymentsTab } from './AdminPayments';
 import { F, STATUS_LABELS, STATUS_STYLES, ago } from '../marketplace/format';
 
 type Sub =
@@ -49,6 +50,7 @@ type Sub =
   | 'courses'
   | 'relais'
   | 'securite'
+  | 'paiements'
   | 'commandes'
   | 'reglages';
 const LocationPicker = lazy(() => import('../components/LocationPicker'));
@@ -292,6 +294,7 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
             ['livreurs', `Livreurs (${drivers.length})`],
             ['courses', `Courses (${trips.length})`],
             ['relais', `Points relais (${relays.filter(r => r.active).length})`],
+            ['paiements', 'Paiements en ligne'],
             ['securite', 'Sécurité'],
             ['reglages', 'Commissions & livraison'],
           ] as [Sub, string][]
@@ -738,6 +741,8 @@ export const MarketplaceTab: React.FC<{ pin: string }> = ({ pin }) => {
           ))}
         </div>
       )}
+
+      {sub === 'paiements' && <PaymentsTab pin={pin} />}
 
       {sub === 'securite' && (
         <Suspense fallback={<Loader2 className="w-6 h-6 animate-spin text-ink/40" />}>

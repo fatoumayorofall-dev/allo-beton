@@ -509,6 +509,45 @@ de ses lives (gardé dans la boutique à la fin de chaque live). Export pour Exc
 sans données de clientes. Calcul pur, testé seul (`tests/unit/dashboard.test.mjs`) ; la gérante ouvre le même
 tableau depuis la fiche d'une boutique (`GET /api/admin/mp/sellers/:id/dashboard`). Scénario `tableau`.
 
+### 4.17 Paiement en ligne et partage automatique de l'argent (`server/marketplace/payments.js`)
+
+La cliente choisit au panier (ou depuis un live, qui passe par le même panier) « Payer maintenant » (Wave ;
+Orange Money en mode test) ou « À la livraison ». Payer maintenant :
+
+1. `POST /api/mp/orders` avec `pay: 'en_ligne'` : les commandes sont créées (stock réservé) avec
+   `onlinePayment { id, method, status: 'en_attente', amount }`, `collector: 'plateforme'` et toujours un
+   code de remise. La vendeuse n'en est pas prévenue et aucune course n'est proposée tant que ce n'est pas
+   payé. Wave : session de paiement (`POST https://api.wave.com/v1/checkout/sessions`, montant, référence
+   `PAY-…`, adresses de retour) ; la cliente est envoyée sur l'application Wave, puis revient sur
+   `/m/paiement/:id`, qui vérifie toutes les 3 s.
+2. Confirmation : par Wave (`POST /api/mp/payments/wave/webhook`, signature `Wave-Signature`
+   HMAC-SHA256 de « horodatage + corps brut », 5 min au plus) ou en interrogeant Wave
+   (`GET /api/mp/payments/:id`, et toutes les minutes par la tâche de fond). Payé : la vendeuse est
+   prévenue, la course est lancée. Non payé ou 30 minutes passées : commandes annulées, articles remis en
+   vente ; paiement confirmé par Wave après cette annulation : la cliente est remboursée d'office.
+3. L'argent reste sur le compte marchand de la plateforme (« séquestre ») jusqu'à la livraison confirmée par
+   le code de la cliente (livreur ou vendeuse qui livre elle-même). Alors `release()` calcule le partage
+   (`splitOf`, même calcul que `settlement()` des livraisons payées en espèces) : la vendeuse reçoit articles
+   − commission (+ livraison si elle livre), le livreur sa course − sa commission, la plateforme garde
+   commission vendeur + frais de service + commission livreur ; moitié-moitié moins cher que prévu : la
+   différence est rendue à la cliente.
+4. Versements (`payouts[]` dans la commande, pas de nouvelle table) : automatiques avec `WAVE_PAYOUT_KEY`
+   (`POST /v1/payout`, clé d'idempotence = identifiant du versement : jamais deux fois), sinon « À verser »
+   dans l'espace gérante, qui envoie avec son application Wave puis touche « Versé » (référence
+   facultative). Numéro de versement de la vendeuse : `payout.phone` de sa boutique (à défaut son numéro).
+5. Refusée ou annulée après paiement : remboursement total ; livraison ratée (colis rendu) : la cliente
+   récupère le prix des articles, le livreur garde sa course.
+
+Chaque étape est notée au registre infalsifiable (`paiement_en_ligne`, `partage`, `versement`,
+`remboursement`). Une commande payée en ligne ne compte ni dans l'argent que garde le livreur (plafond) ni
+dans les commissions dues par la vendeuse : il n'y a rien à reverser. Mode test (`PAYMENTS_SIMULATION`) :
+écran de paiement simulé, tout le reste à l'identique. Tests : `tests/unit/payments.test.mjs` (partage,
+signature, appel Wave simulé, versements uniques, remboursement) et scénario `paiement`.
+
+Réglementation : garder l'argent des clientes pour le compte des vendeuses relève de la BCEAO (paiement /
+monnaie électronique). Wave Business encaisse et verse ; la plateforme ne détient pas elle-même de monnaie
+électronique, mais un avis juridique est conseillé avant un gros volume.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

@@ -39,6 +39,8 @@ const EXTRA_ENV = {
   live: { OTP_DEV_MODE: '1' },
   tableau: { OTP_DEV_MODE: '1' },
   live2: { OTP_DEV_MODE: '1' },
+  // Paiement en ligne simulé ; versements « à verser » (faits par la gérante)
+  paiement: { OTP_DEV_MODE: '1', PAYMENTS_SIMULATION: 'manuel' },
   // Appels : sonnerie raccourcie pour tester l'appel manqué
   appel: { OTP_DEV_MODE: '1', CALL_RING_SECONDS: '6' },
   // Données d'exemple créées au démarrage ; connexion par code secret (sans code par message)

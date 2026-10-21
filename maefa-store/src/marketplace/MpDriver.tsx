@@ -133,7 +133,13 @@ const StopCard: React.FC<{
         {s.at.landmark && ` · ${s.at.landmark}`}
       </p>
       {s.items && <p className="text-sm mt-1">{s.items.join(', ')}</p>}
-      {s.money && s.kind === 'depot' && !s.failed && (
+      {s.money && s.kind === 'depot' && !s.failed && s.paidOnline && (
+        <p className="mt-2 rounded-xl bg-emerald-50 text-emerald-900 text-sm p-2" data-testid="mp-stop-paid">
+          ✓ <strong>Déjà payé en ligne</strong> : rien à encaisser. Demandez seulement le code de remise ; votre course
+          ({F(s.money.driverKeeps)}) vous est versée par {MP.name} après la livraison.
+        </p>
+      )}
+      {s.money && s.kind === 'depot' && !s.failed && !s.paidOnline && (
         <dl className="mt-2 grid grid-cols-2 gap-2 text-sm" data-testid="mp-stop-money">
           <div className="rounded-xl bg-emerald-50 p-2">
             <dt className="text-xs text-ink/60">À encaisser ({PAYMENT_LABELS[s.payment ?? 'especes']})</dt>
@@ -204,7 +210,9 @@ const StopCard: React.FC<{
                 ? 'Colis récupéré'
                 : s.kind === 'retour'
                   ? 'Colis rendu'
-                  : `Livré, ${F(s.money?.collect ?? 0)} encaissés`}
+                  : s.paidOnline
+                    ? 'Livré (déjà payé)'
+                    : `Livré, ${F(s.money?.collect ?? 0)} encaissés`}
             </button>
           </div>
           {s.kind === 'depot' && (

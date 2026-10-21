@@ -110,6 +110,7 @@ const ShopForm: React.FC<{
   const [description, setDescription] = useState(initial?.description ?? '');
   const [location, setLocation] = useState<DeliveryLocation | undefined>(initial?.location);
   const [contactPhone, setContactPhone] = useState(initial?.contactPhone?.replace(/^\+221/, '') ?? '');
+  const [payoutPhone, setPayoutPhone] = useState(initial?.payoutPhone?.replace(/^\+221/, '') ?? '');
   const [pickupMode, setPickupMode] = useState<PickupMode>(initial?.pickupMode ?? 'fixe');
   const [relayId, setRelayId] = useState(initial?.relay?.id ?? '');
   const [relays, setRelays] = useState<Relay[]>([]);
@@ -149,6 +150,7 @@ const ShopForm: React.FC<{
       description,
       ...(pickupMode === 'relais' ? {} : { location }),
       contactPhone: contactPhone || undefined,
+      payoutPhone: payoutPhone || undefined,
       pickupMode,
       ...(pickupMode === 'relais' ? { relayId } : {}),
       logo,
@@ -237,6 +239,20 @@ const ShopForm: React.FC<{
           placeholder="77 123 45 67"
           className="field"
         />
+      </label>
+      <label className="block">
+        <span className="field-label">Numéro Wave pour recevoir l'argent des ventes payées en ligne</span>
+        <input
+          value={payoutPhone}
+          onChange={e => setPayoutPhone(e.target.value)}
+          inputMode="tel"
+          placeholder="77 123 45 67"
+          className="field"
+          data-testid="mp-shop-payout"
+        />
+        <span className="block mt-1 text-xs text-ink/60">
+          Après chaque livraison payée en ligne, la plateforme y verse votre part (articles moins la commission).
+        </span>
       </label>
       <fieldset className="space-y-3" data-testid="mp-shop-look">
         <legend className="field-label">Vitrine de ma boutique en ligne</legend>
@@ -391,6 +407,18 @@ const SaleCard: React.FC<{
         {STATUS_LABELS[o.status]}
       </span>
     </div>
+    {o.paidOnline && (
+      <p className="mt-2 rounded-xl bg-emerald-50 text-emerald-900 text-sm px-3 py-2" data-testid="mp-sale-paid">
+        ✓ <strong>Payée en ligne</strong> ({PAYMENT_LABELS[o.paidOnline.method]}).{' '}
+        {o.payoutToMe?.status === 'versee'
+          ? `${F(o.payoutToMe.amount)} vous ont été versés.`
+          : o.payoutToMe?.status === 'apres_livraison'
+            ? `Vous recevez ${F(o.payoutToMe.amount)} dès que la cliente vous donne son code, colis en main.`
+            : o.payoutToMe
+              ? `${F(o.payoutToMe.amount)} en cours de versement sur votre Wave.`
+              : ''}
+      </p>
+    )}
     <ul className="mt-2 text-sm space-y-0.5">
       {o.lines.map(l => (
         <li key={`${l.listingId}-${l.variant}`}>
@@ -429,10 +457,12 @@ const SaleCard: React.FC<{
             En touchant « Colis prêt », votre position actuelle est envoyée au livreur seulement (jamais à la cliente).
           </p>
         )}
-        <p>
-          Le livreur vous enverra <strong data-testid="mp-seller-gets">{F(o.sellerGets ?? 0)}</strong> (articles moins
-          la commission de {F(o.platformFee ?? 0)}) dès la livraison.
-        </p>
+        {!o.paidOnline && (
+          <p>
+            Le livreur vous enverra <strong data-testid="mp-seller-gets">{F(o.sellerGets ?? 0)}</strong> (articles moins
+            la commission de {F(o.platformFee ?? 0)}) dès la livraison.
+          </p>
+        )}
         {o.driver && !['livree', 'annulee', 'refusee'].includes(o.status) && (
           <a
             href={`tel:${o.driver.phone}`}
@@ -442,6 +472,7 @@ const SaleCard: React.FC<{
           </a>
         )}
         {o.status === 'livree' &&
+          !o.paidOnline &&
           (o.payout?.receivedAt ? (
             <p className="text-emerald-800 font-semibold">✓ Argent reçu</p>
           ) : o.payout?.missing ? (
@@ -468,7 +499,13 @@ const SaleCard: React.FC<{
     ) : (
       <div className="mt-2 text-sm grid sm:grid-cols-2 gap-x-6 gap-y-1 text-ink/80">
         <p>
-          À encaisser : <strong>{F(o.total)}</strong> ({PAYMENT_LABELS[o.payment]})
+          {o.paidOnline ? (
+            <>Rien à encaisser : déjà payée en ligne</>
+          ) : (
+            <>
+              À encaisser : <strong>{F(o.total)}</strong> ({PAYMENT_LABELS[o.payment]})
+            </>
+          )}
         </p>
         <p>
           Dont livraison {F(o.delivery.fee)} · {o.delivery.km.toLocaleString('fr-FR')} km
@@ -776,8 +813,14 @@ export default function MpSell() {
       if (!pos) return setMessage('Autorisez la position du téléphone pour indiquer où le livreur récupère le colis.');
       pickup = { lat: pos.coords.latitude, lng: pos.coords.longitude, landmark };
     }
+    // Payée en ligne : la cliente donne son code de remise, colis en main (il libère l'argent de la vente)
+    let code: string | undefined;
+    if (to === 'livree' && o.paidOnline) {
+      code = window.prompt('Code de remise donné par la cliente (4 chiffres), colis en main') ?? undefined;
+      if (!code) return;
+    }
     setBusy(true);
-    const r = await moveSale(o.id, to, reason, pickup);
+    const r = await moveSale(o.id, to, reason, pickup, code);
     setBusy(false);
     if (!r.ok) return setMessage(r.error);
     setSales(list => list.map(x => (x.id === o.id ? r.data.order : x)));

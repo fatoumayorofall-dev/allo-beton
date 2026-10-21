@@ -32,6 +32,7 @@ import {
   PROVEN_SALES,
   buyerLimit,
   buyerStrikes,
+  checkHandover,
   createLedger,
   newHandover,
   sellerLimit,
@@ -41,6 +42,7 @@ import { priceBandLabel } from '../prices.js';
 import { registerChatRoutes } from './chat.js';
 import { registerLiveRoutes } from './live.js';
 import { PERIODS, sellerDashboard } from './dashboard.js';
+import { ONLINE_METHODS, createPayments } from './payments.js';
 
 /** Rayons de la place de marché (les restaurants viendront avec la livraison rapide). */
 export const MP_CATEGORIES = [
@@ -225,6 +227,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   const chats = registerChatRoutes(app, { limit, store, currentUser, notify, publicListing });
   // Registre infalsifiable des mouvements d'argent (scellé avec la clé du serveur, gardée hors de la base)
   const ledger = createLedger({ store, secret: shopSecret() });
+  // Paiement en ligne (Wave, Orange Money) : l'argent est gardé jusqu'à la livraison, puis partagé
+  const payments = createPayments({ store, settings, ledger, notify, siteUrl });
   const tooMany = (req, res, key, max, windowMs) => {
     if (limit(key, max, windowMs)) return false;
     res.status(429).json({ error: 'Trop de demandes, réessayez dans un moment.' });
@@ -269,6 +273,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       drivers: s.drivers,
       shareWaits: SHARE_WAITS,
       plans: { freeListings: s.freeListings, proPrice: s.proPrice, proRate: s.proRate },
+      // Paiement en ligne : moyens proposés (vide : seulement à la livraison) ; test = sans argent réel
+      onlinePay: payments.methods(),
+      payTest: payments.test,
     });
   });
 
@@ -593,7 +600,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
 
   /* ==================== ACHETEUR ==================== */
 
-  app.post('/api/mp/orders', (req, res) => {
+  app.post('/api/mp/orders', async (req, res) => {
     const user = currentUser(req);
     if (!user) return res.status(401).json({ error: 'Connectez-vous avec votre numéro pour commander' });
     if (tooMany(req, res, `mp-order:${user.phone}`, 20, 3600e3)) return;
@@ -609,6 +616,13 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const blocked = buyerLimit(store.listMpOrders(), user.phone, r.orders.length);
     if (blocked) return res.status(403).json({ error: blocked });
     const payment = ['especes', 'wave', 'orange_money'].includes(b.payment) ? b.payment : 'especes';
+    // Payer maintenant : Wave ou Orange Money en ligne ; l'argent est gardé par la plateforme jusqu'à la livraison
+    const online = b.pay === 'en_ligne';
+    if (online && (!ONLINE_METHODS.includes(payment) || !payments.methods().includes(payment)))
+      return res
+        .status(400)
+        .json({ error: 'Ce paiement en ligne n’est pas encore disponible : payez à la livraison.' });
+    const payId = online ? `PAY-${code(10)}` : null;
     // Livraison : par le vendeur (sans livreurs de la plateforme), sinon express ou moitié-moitié
     const mode = !settings().drivers ? 'vendeur' : b.mode === 'partagee' ? 'partagee' : 'express';
     const wait = SHARE_WAITS.includes(Number(b.wait)) ? Number(b.wait) : 60;
@@ -642,10 +656,22 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         payment,
         note: clip(b.note, 300),
         commissions: o.commissions,
-        // Qui encaisse l'argent à la livraison (et doit donc les commissions à la plateforme)
-        collector: mode === 'vendeur' ? 'vendeur' : 'livreur',
-        // Codes de remise : le livreur ne peut enlever ni livrer sans eux
-        ...(mode === 'vendeur' ? {} : { handover: newHandover() }),
+        // Qui encaisse l'argent (et doit donc les commissions à la plateforme) : la plateforme si payé en ligne
+        collector: online ? 'plateforme' : mode === 'vendeur' ? 'vendeur' : 'livreur',
+        // Codes de remise : le livreur ne peut enlever ni livrer sans eux ; payé en ligne, la vendeuse qui livre
+        // elle-même demande aussi le code de la cliente (c'est lui qui libère son argent)
+        ...(mode === 'vendeur' && !online ? {} : { handover: newHandover() }),
+        ...(online
+          ? {
+              onlinePayment: {
+                id: payId,
+                method: payment,
+                status: 'en_attente',
+                amount: o.total,
+                createdAt: now(),
+              },
+            }
+          : {}),
         status: 'nouvelle',
         history: [{ status: 'nouvelle', at: now(), by: 'acheteur' }],
         createdAt: now(),
@@ -653,36 +679,85 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       // Prix convenu utilisé : une commande par accord
       for (const chatId of o.deals) chats.useDeal(chatId, order.id);
       lives.onOrder(order);
-      if (order.handover)
-        notifyCode(
-          user.phone,
-          `Commande ${order.id} (${o.seller.shopName}) : votre code de remise est ${order.handover.dropoff}. Donnez-le au livreur seulement quand vous avez votre colis en main.`,
-        );
       for (const line of o.lines) {
         const l = store.getMpListing(line.listingId);
         if (l.stock !== null && l.stock !== undefined) store.saveMpListing({ ...l, stock: l.stock - line.qty });
         store.setMpStats(l.id, bump(store.getMpListing(l.id).stats, 'order'));
       }
-      notify(
-        o.seller.contactPhone ?? o.seller.ownerPhone,
-        `🛍️ Nouvelle commande ${order.id} : ${o.lines.reduce((t, l) => t + l.qty, 0)} article(s), ${o.subtotal.toLocaleString('fr-FR')} F d'articles.\nAcceptez-la ici : ${site(req)}/m/vendre`,
-      );
+      // Payé en ligne : la vendeuse et le livreur ne voient la commande qu'une fois l'argent reçu
+      if (online) return store.saveMpOrder({ ...order, delivery: { ...order.delivery, wait } });
+      announceOrder(order);
       return mode === 'vendeur' ? order : trips.attach(order, mode, wait);
     });
-    res.status(201).json({ orders: created.map(buyerView) });
+    if (!online) return res.status(201).json({ orders: created.map(buyerView) });
+    try {
+      const pay = await payments.start(created, payment);
+      res.status(201).json({ orders: created.map(o => buyerView(store.getMpOrder(o.id))), payment: pay });
+    } catch (e) {
+      for (const o of created) move(store.getMpOrder(o.id), 'annulee', 'systeme', 'Paiement en ligne impossible');
+      res.status(502).json({
+        error: `Paiement en ligne impossible pour le moment (${e.message}). Réessayez ou payez à la livraison.`,
+      });
+    }
   });
+
+  /** Nouvelle commande prête à préparer : la vendeuse est prévenue, la cliente reçoit son code de remise */
+  function announceOrder(order) {
+    const seller = store.getMpSeller(order.sellerId);
+    if (order.handover && order.delivery.mode !== 'vendeur')
+      notifyCode(
+        order.buyerPhone,
+        `Commande ${order.id} (${order.shopName}) : votre code de remise est ${order.handover.dropoff}. Donnez-le au livreur seulement quand vous avez votre colis en main.`,
+      );
+    else if (order.handover)
+      notifyCode(
+        order.buyerPhone,
+        `Commande ${order.id} (${order.shopName}) payée : votre code de remise est ${order.handover.dropoff}. Donnez-le à la vendeuse seulement quand vous avez votre colis en main.`,
+      );
+    notify(
+      seller?.contactPhone ?? seller?.ownerPhone,
+      `🛍️ Nouvelle commande ${order.id}${order.onlinePayment ? ' (déjà payée en ligne)' : ''} : ${order.lines.reduce((t, l) => t + l.qty, 0)} article(s), ${order.subtotal.toLocaleString('fr-FR')} F d'articles.\nAcceptez-la ici : ${siteUrl()}/m/vendre`,
+    );
+  }
+  // Paiement reçu : la commande part chez la vendeuse (et chez les livreurs) ; pas reçu : annulée
+  payments.hooks.onPaid = orders => {
+    for (const o of orders) {
+      announceOrder(o);
+      if (o.delivery.mode !== 'vendeur') trips.attach(o, o.delivery.mode, o.delivery.wait ?? 60);
+    }
+    notify(
+      orders[0].buyerPhone,
+      `✅ Paiement reçu (${orders.reduce((t, o) => t + o.onlinePayment.amount, 0).toLocaleString('fr-FR')} F). Il est gardé par ${'la plateforme'} jusqu'à la livraison de votre colis.`,
+    );
+  };
+  payments.hooks.onUnpaid = (o, status) => {
+    if (ACTIVE.has(o.status))
+      move(o, 'annulee', 'systeme', status === 'expiree' ? 'Paiement non reçu' : 'Paiement annulé');
+  };
 
   /** Vue de l'acheteur : le téléphone du vendeur seulement une fois la commande acceptée. */
   function buyerView(o) {
     const seller = store.getMpSeller(o.sellerId);
     const accepted = ['acceptee', 'prete', 'en_livraison', 'livree'].includes(o.status);
-    const { commissions: _c, collector: _k, settlement: _s, payout: _p, handover, ...rest } = o;
+    const { commissions: _c, collector: _k, settlement: _s, payout: _p, handover, payouts, onlinePayment, ...rest } = o;
     const trip = o.delivery?.tripId ? store.getMpTrip(o.delivery.tripId) : null;
+    const refund = payouts?.find(x => x.kind === 'remboursement');
     // Jamais la position du vendeur (adresse, point de remise, point relais) : seule la livreuse ou le livreur la voit
     const { from: _from, relay: _relay, ...delivery } = o.delivery ?? {};
     return {
       ...rest,
       delivery,
+      // Paiement en ligne : état, et lien pour payer tant que ce n'est pas fait ; remboursement éventuel
+      onlinePayment: onlinePayment
+        ? {
+            id: onlinePayment.id,
+            method: onlinePayment.method,
+            status: onlinePayment.status,
+            amount: onlinePayment.amount,
+            url: onlinePayment.status === 'en_attente' ? onlinePayment.url : null,
+          }
+        : null,
+      refund: refund ? { amount: refund.amount, status: refund.status } : null,
       seller: seller ? publicSeller(seller) : null,
       // Code à donner au livreur seulement quand on a le colis en main
       handoverCode: handover && ACTIVE.has(o.status) && o.status !== 'retour' ? handover.dropoff : null,
@@ -727,7 +802,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     });
     if (status === 'refusee' || status === 'annulee') {
       restock(order);
-      if (byDriver(order)) trips.detach(saved);
+      if (byDriver(order) && order.delivery.tripId) trips.detach(saved);
+      if (saved.onlinePayment?.status === 'payee') payments.refund(saved);
     }
     return saved;
   }
@@ -743,6 +819,43 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const seller = store.getMpSeller(o.sellerId);
     notify(seller?.contactPhone ?? seller?.ownerPhone, `Commande ${o.id} annulée par l'acheteur.`);
     res.json({ order: buyerView(saved) });
+  });
+
+  /* ---------- Paiement en ligne ---------- */
+  const myPayment = (req, res) => {
+    const user = currentUser(req);
+    if (!user) return void res.status(401).json({ error: 'Connectez-vous' });
+    const p = payments.summary(clip(req.params.id, 20));
+    if (!p || p.buyerPhone !== user.phone) return void res.status(404).json({ error: 'Paiement introuvable' });
+    return p;
+  };
+  const paymentView = ({ buyerPhone: _b, ...p }) => p;
+  // Retour de la cliente (ou vérification) : l'état est demandé au prestataire si besoin
+  app.get('/api/mp/payments/:id', async (req, res) => {
+    const p = myPayment(req, res);
+    if (!p) return;
+    const fresh = await payments.refresh(p.id).catch(() => p);
+    res.set('Cache-Control', 'no-store').json({ payment: paymentView(fresh) });
+  });
+  // Mode test : la cliente « paie » (ou annule) sur la page simulée, sans argent réel
+  app.post('/api/mp/payments/:id/simulate', (req, res) => {
+    const p = myPayment(req, res);
+    if (!p) return;
+    const r = payments.simulate(p.id, req.body?.ok !== false);
+    if (!r) return res.status(403).json({ error: 'Paiement de test désactivé' });
+    res.json({ payment: paymentView(r) });
+  });
+  // Confirmation envoyée par Wave (adresse à donner dans l'espace Wave Business)
+  app.post('/api/mp/payments/wave/webhook', (req, res) => {
+    const provider = payments.provider();
+    if (provider?.name !== 'wave' || !provider.verify(req.rawBody?.toString('utf8') ?? '', req.headers))
+      return res.status(401).json({ error: 'Signature invalide' });
+    const ev = provider.event(req.body);
+    if (ev?.ref) {
+      if (ev.status === 'payee') payments.markPaid(clip(ev.ref, 20), 'wave');
+      else payments.markUnpaid(clip(ev.ref, 20), 'annulee');
+    }
+    res.json({ ok: true });
   });
 
   /* ==================== VENDEUR ==================== */
@@ -781,6 +894,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     plan: sellerPlan(v),
     planUntil: sellerPlan(v) === 'pro' ? v.plan.until : null,
     planRequestedAt: v.planRequestedAt ?? null,
+    // Numéro Wave qui reçoit l'argent des ventes payées en ligne (par défaut : le numéro de contact)
+    payoutPhone: v.payout?.phone ?? v.contactPhone ?? v.ownerPhone,
     pickupMode: v.pickupMode ?? 'fixe',
     relay: v.relayId ? relayView(store.getMpRelay(v.relayId)) : null,
     // Parrainage : son code, les boutiques parrainées et les mois Pro gagnés
@@ -820,6 +935,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
    * à la boutique qui l'a fait venir (une seule fois, et seulement sur une vraie vente livrée).
    */
   function onDelivered(order) {
+    payments.release(order);
     const v = store.getMpSeller(order.sellerId);
     if (!v?.referredBy || v.referralRewardedAt) return;
     const parrain = store.getMpSeller(v.referredBy);
@@ -903,6 +1019,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     const contact = b.contactPhone ? wa.toE164(b.contactPhone) : null;
     if (b.contactPhone && !/^\+221(7[05678])\d{7}$/.test(contact ?? ''))
       return res.status(400).json({ error: 'Numéro de contact invalide' });
+    const payoutPhone = b.payoutPhone ? wa.toE164(b.payoutPhone) : null;
+    if (b.payoutPhone && !/^\+221(7[05678])\d{7}$/.test(payoutPhone ?? ''))
+      return res.status(400).json({ error: 'Numéro Wave pour recevoir vos ventes invalide' });
     let slug = existing?.slug;
     if (!slug) {
       slug = slugify(shopName);
@@ -937,6 +1056,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       cover: b.cover !== undefined ? b.cover : (existing?.cover ?? null),
       accent: b.accent ?? existing?.accent ?? 'prune',
       contactPhone: contact ?? existing?.contactPhone ?? null,
+      payout: payoutPhone ? { phone: payoutPhone, method: 'wave' } : (existing?.payout ?? null),
       pickupMode,
       relayId: relay?.id ?? null,
     });
@@ -1068,7 +1188,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
    */
   const CONTACT_STEPS = new Set(['acceptee', 'prete', 'en_livraison']);
   const sellerOrderView = o => {
-    const { commissions: c, settlement: st, handover, ...rest } = o;
+    const { commissions: c, settlement: st, handover, payouts, onlinePayment, ...rest } = o;
+    const mine = payouts?.find(x => x.kind === 'vendeur');
     // Livreur de la plateforme : le vendeur ne voit jamais le numéro ni l'adresse de l'acheteur
     const open = CONTACT_STEPS.has(o.status) && !byDriver(o);
     const trip = byDriver(o) && o.delivery.tripId ? store.getMpTrip(o.delivery.tripId) : null;
@@ -1094,7 +1215,14 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         handover && !o.delivery.relay && ['acceptee', 'prete', 'retour'].includes(o.status) ? handover.pickup : null,
       driver: trip?.driverId ? publicDriver(store.getMpDriver(trip.driverId)) : null,
       // Ce que le livreur vous envoie après la livraison (articles moins la commission)
-      sellerGets: st?.sellerGets ?? (byDriver(o) ? o.subtotal - c.seller : null),
+      sellerGets: onlinePayment ? null : (st?.sellerGets ?? (byDriver(o) ? o.subtotal - c.seller : null)),
+      // Payée en ligne : la plateforme vous verse votre part après la livraison (code de la cliente)
+      paidOnline: onlinePayment ? { status: onlinePayment.status, method: onlinePayment.method } : null,
+      payoutToMe: mine
+        ? { amount: mine.amount, status: mine.status }
+        : onlinePayment?.status === 'payee'
+          ? { amount: payments.splitPreview(o).seller, status: 'apres_livraison' }
+          : null,
     };
   };
 
@@ -1104,7 +1232,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     res.json({
       orders: store
         .listMpOrders()
-        .filter(o => o.sellerId === me.seller.id)
+        .filter(
+          o => o.sellerId === me.seller.id && !['en_attente', 'expiree', 'annulee'].includes(o.onlinePayment?.status),
+        )
         .map(sellerOrderView),
       balance: balanceOf(me.seller),
     });
@@ -1113,10 +1243,20 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   app.patch('/api/mp/me/sales/:id', (req, res) => {
     const me = sellerOf(req, res);
     if (!me) return;
-    const o = store.getMpOrder(clip(req.params.id, 20));
-    if (!o || o.sellerId !== me.seller.id) return res.status(404).json({ error: 'Commande introuvable' });
+    const found = store.getMpOrder(clip(req.params.id, 20));
+    if (!found || found.sellerId !== me.seller.id || found.onlinePayment?.status === 'en_attente')
+      return res.status(404).json({ error: 'Commande introuvable' });
+    let o = found;
     const status = req.body?.status;
     const moves = byDriver(o) ? SELLER_MOVES_DRIVER : SELLER_MOVES;
+    // Payée en ligne et livrée par la vendeuse : le code de la cliente prouve la remise et libère l'argent
+    if (status === 'livree' && o.onlinePayment && o.handover) {
+      const check = checkHandover(o.handover, 'depot', req.body?.code);
+      if (!check.ok) {
+        if (check.handover) o = store.saveMpOrder({ ...o, handover: check.handover });
+        return res.status(check.status).json({ error: check.error });
+      }
+    }
     if (!(moves[o.status] ?? []).includes(status))
       return res.status(409).json({ error: 'Cette étape ne peut pas suivre la précédente' });
     if (status === 'annulee' && byDriver(o)) {
@@ -1580,6 +1720,83 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   });
 
   // Registre : vérification de toute la chaîne et dernières lignes
+  app.get('/api/admin/mp/payments', (req, res) => {
+    if (!guard(req, res)) return;
+    const orders = store.listMpOrders().filter(o => o.onlinePayment);
+    const ids = [...new Set(orders.map(o => o.onlinePayment.id))];
+    const list = ids
+      .map(id => payments.summary(id))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
+      .slice(0, 300);
+    const payouts = orders
+      .flatMap(o => (o.payouts ?? []).map(p => ({ ...p, orderId: o.id, shopName: o.shopName })))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    const paid = orders.filter(o => ['payee', 'remboursee'].includes(o.onlinePayment.status));
+    const sum = (l, f) => l.reduce((t, x) => t + f(x), 0);
+    const out = payouts.filter(p => p.status === 'versee');
+    res.json({
+      config: {
+        provider: payments.providerName(),
+        methods: payments.methods(),
+        test: payments.test,
+        automaticPayouts: payments.automaticPayouts,
+      },
+      totals: {
+        collected: sum(paid, o => o.onlinePayment.amount),
+        paidOut: sum(out, p => p.amount),
+        toPay: sum(
+          payouts.filter(p => p.status !== 'versee'),
+          p => p.amount,
+        ),
+        // Commission et frais gardés : ce qui a été encaissé moins ce qui est versé ou à verser, sur les
+        // commandes terminées (livrées ou remboursées)
+        kept: sum(
+          paid.filter(o => o.status === 'livree' || o.onlinePayment.status === 'remboursee'),
+          o => o.onlinePayment.amount - sum(o.payouts ?? [], p => p.amount),
+        ),
+        holding: sum(
+          paid.filter(o => ACTIVE.has(o.status)),
+          o => o.onlinePayment.amount,
+        ),
+      },
+      payments: list,
+      payouts,
+    });
+  });
+  // Versement fait à la main par la gérante (Wave sans versement automatique) ; ou réessayer
+  app.post('/api/admin/mp/payouts/:id/:action', async (req, res) => {
+    if (!guard(req, res)) return;
+    const id = clip(req.params.id, 20);
+    const o = store.listMpOrders().find(x => x.payouts?.some(p => p.id === id));
+    const po = o?.payouts.find(p => p.id === id);
+    if (!po) return res.status(404).json({ error: 'Versement introuvable' });
+    if (po.status === 'versee') return res.status(409).json({ error: 'Déjà versé' });
+    if (req.params.action === 'retry') return res.json({ payout: await payments.execute(o.id, id) });
+    if (req.params.action !== 'sent') return res.status(404).json({ error: 'Action inconnue' });
+    const reference = clip(req.body?.reference, 60);
+    store.saveMpOrder({
+      ...o,
+      payouts: o.payouts.map(p =>
+        p.id === id ? { ...p, status: 'versee', sentAt: now(), by: 'gerante', reference } : p,
+      ),
+    });
+    ledger.append('versement', {
+      payoutId: id,
+      orderId: o.id,
+      kind: po.kind,
+      amount: po.amount,
+      status: 'versee',
+      by: 'gerante',
+    });
+    notify(
+      po.to,
+      po.kind === 'remboursement'
+        ? `💸 Remboursement de ${po.amount.toLocaleString('fr-FR')} F envoyé (commande ${o.id}).`
+        : `💸 ${po.amount.toLocaleString('fr-FR')} F envoyés pour la commande ${o.id}.`,
+    );
+    res.json({ ok: true });
+  });
+
   app.get('/api/admin/mp/ledger', (req, res) => {
     if (!guard(req, res)) return;
     res.json({ check: ledger.verify(), entries: store.listMpLedger().slice(-200).reverse() });
@@ -1608,5 +1825,6 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     ledger,
     restock,
     onDelivered: order => onDelivered(order),
+    onReturned: order => payments.refund(order, true),
   });
 }

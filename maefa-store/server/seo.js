@@ -25,7 +25,7 @@ const clip = (s, n = 160) => {
 
 /** Pages privées : jamais dans les résultats de recherche. */
 const PRIVATE =
-  /^\/(admin|livreur\/|commande|compte|confirmation\/|mes-commandes|panier|favoris|m\/(vendre|panier|commandes|compte|livreur|discussions))/;
+  /^\/(admin|livreur\/|commande|compte|confirmation\/|mes-commandes|panier|favoris|m\/(vendre|panier|commandes|compte|livreur|discussions|paiement|live\/studio))/;
 const STATIC_PAGES = [
   { path: '/', priority: '1.0', freq: 'daily' },
   { path: '/boutique', priority: '0.9', freq: 'daily' },
@@ -256,6 +256,7 @@ export function registerSeoRoutes(app, { store, dist }) {
           'Disallow: /m/compte',
           'Disallow: /m/livreur',
           'Disallow: /m/discussions',
+          'Disallow: /m/paiement',
           'Disallow: /api/',
           '',
           `Sitemap: ${originOf(req)}/sitemap.xml`,

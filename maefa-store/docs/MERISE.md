@@ -53,6 +53,11 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG43 | Un live se programme de 5 minutes à 14 jours à l'avance (un à la fois par boutique) ; les clientes qui demandent un rappel sont prévenues 15 minutes avant et au début ; un live programmé non tenu est oublié 2 h après l'heure prévue. |
 | RG44 | Une offre flash porte sur un article du live : prix plus bas que l'article, durée de 2, 5, 10 ou 15 minutes, quantité facultative (1 à 500) ; le prix s'applique à la commande pendant le compte à rebours (et 3 minutes après) tant qu'il reste des pièces ; chaque commande décompte les pièces. |
 | RG45 | Le bandeau d'annonce d'un live fait 80 caractères au plus, sans numéro, lien ni réseau social. |
+| RG46 | Une commande payée en ligne (Wave, Orange Money) n'est montrée à la vendeuse et proposée aux livreurs qu'une fois le paiement confirmé ; sans paiement au bout de 30 minutes, elle est annulée et les articles remis en vente. Le paiement en ligne n'accepte pas les espèces. |
+| RG47 | L'argent payé en ligne est gardé par la plateforme jusqu'à la livraison confirmée par le code de remise de la cliente ; une commande payée en ligne exige toujours ce code. |
+| RG48 | À la livraison, la vendeuse reçoit le prix des articles moins sa commission (plus la livraison si elle livre elle-même), le livreur sa course moins sa commission ; la commission et les frais de service restent à la plateforme ; chaque versement est fait une seule fois. |
+| RG49 | Commande refusée ou annulée après paiement : la cliente est remboursée en entier ; colis rendu après une livraison ratée : elle récupère le prix des articles, le livreur garde sa course ; moitié-moitié moins cher que prévu : la différence lui est rendue. |
+| RG50 | Chaque paiement, partage, versement et remboursement est noté au registre ; un versement fait à la main par la gérante est coché « Versé » (référence facultative). |
 | RG30 | Un arrêt fait sans réseau est gardé sur le téléphone du livreur et envoyé au retour du réseau avec son heure réelle ; le serveur vérifie le code à la réception, comme pour un arrêt en direct. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 

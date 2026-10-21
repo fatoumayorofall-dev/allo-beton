@@ -29,3 +29,6 @@ services:
       # Site de test : place de marché remplie d'exemples au démarrage quand elle est vide (mettre 0 pour le vrai site)
       - key: MP_DEMO
         value: "1"
+      # Site de test : paiement en ligne simulé, aucun argent réel (retirer quand les clés Wave Business sont ajoutées)
+      - key: PAYMENTS_SIMULATION
+        value: "1"
