@@ -21,11 +21,15 @@ import {
   type OrderStatus,
   type PickupMode,
   type Relay,
+  uploadPhoto,
+  type ShopAccent,
 } from './api';
 import { ListingForm } from './ListingForm';
+import { ShopLinkPanel } from './ShopLink';
+import { shrinkPhoto } from './photo';
 import { MP, mpPath } from './config';
 import { recall, remember } from './offline';
-import { F, PAYMENT_LABELS, STATUS_LABELS, STATUS_STYLES, ago } from './format';
+import { ACCENTS, F, PAYMENT_LABELS, STATUS_LABELS, STATUS_STYLES, ago } from './format';
 import { useAccount } from '../context/AccountContext';
 import { DELIVERY_ZONES, SITE_CONFIG } from '../config/site';
 import type { DeliveryLocation } from '../data/types';
@@ -84,6 +88,19 @@ const ShopForm: React.FC<{
   useEffect(() => {
     fetchRelays().then(r => r.ok && setRelays(r.data.relays));
   }, []);
+  // Vitrine de la boutique en ligne : logo, bannière, couleur
+  const [logo, setLogo] = useState<string | null>(initial?.logo ?? null);
+  const [cover, setCover] = useState<string | null>(initial?.cover ?? null);
+  const [accent, setAccent] = useState<ShopAccent>(initial?.accent ?? 'prune');
+  const [uploading, setUploading] = useState('');
+  const pick = async (file: File | undefined, kind: 'logo' | 'cover') => {
+    if (!file) return;
+    setUploading(kind);
+    const r = await uploadPhoto(await shrinkPhoto(file, kind === 'logo' ? 600 : 1600));
+    setUploading('');
+    if (!r.ok) return setError(r.error);
+    (kind === 'logo' ? setLogo : setCover)(r.data.url);
+  };
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const save = async (e: React.FormEvent) => {
@@ -106,6 +123,9 @@ const ShopForm: React.FC<{
       contactPhone: contactPhone || undefined,
       pickupMode,
       ...(pickupMode === 'relais' ? { relayId } : {}),
+      logo,
+      cover,
+      accent,
     } as Partial<MySeller>);
     setBusy(false);
     if (!r.ok) return setError(r.error);
@@ -183,6 +203,56 @@ const ShopForm: React.FC<{
           className="field"
         />
       </label>
+      <fieldset className="space-y-3" data-testid="mp-shop-look">
+        <legend className="field-label">Vitrine de ma boutique en ligne</legend>
+        <div className="grid grid-cols-2 gap-3">
+          {(
+            [
+              ['logo', 'Logo', logo],
+              ['cover', 'Bannière (grande photo du haut)', cover],
+            ] as const
+          ).map(([kind, label, url]) => (
+            <label key={kind} className="block cursor-pointer">
+              <span className="text-xs text-ink/70">{label}</span>
+              <span
+                className={`mt-1 grid place-items-center overflow-hidden rounded-2xl border-2 border-dashed border-ink/15 bg-ivory text-xs text-ink/60 ${kind === 'logo' ? 'w-24 h-24' : 'w-full h-24'}`}
+              >
+                {uploading === kind ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : url ? (
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  'Ajouter'
+                )}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={e => pick(e.target.files?.[0], kind)}
+                data-testid={`mp-shop-${kind}`}
+              />
+            </label>
+          ))}
+        </div>
+        <div>
+          <span className="text-xs text-ink/70">Couleur</span>
+          <div className="mt-1 flex flex-wrap gap-2" role="radiogroup" aria-label="Couleur de la boutique">
+            {(Object.keys(ACCENTS) as ShopAccent[]).map(id => (
+              <button
+                key={id}
+                type="button"
+                role="radio"
+                aria-checked={accent === id}
+                aria-label={ACCENTS[id].name}
+                onClick={() => setAccent(id)}
+                className={`w-9 h-9 rounded-full border-4 ${accent === id ? 'border-ink/40' : 'border-white'} shadow-soft`}
+                style={{ background: ACCENTS[id].hex }}
+              />
+            ))}
+          </div>
+        </div>
+      </fieldset>
       <fieldset className="space-y-2" data-testid="mp-pickup-mode">
         <legend className="field-label">Remise des colis au livreur *</legend>
         <p className="text-xs text-ink/65">
@@ -565,6 +635,8 @@ export default function MpSell() {
           </Link>
         )}
       </section>
+
+      <ShopLinkPanel seller={seller} />
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar" role="tablist">
         {(

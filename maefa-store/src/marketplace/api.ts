@@ -42,6 +42,9 @@ export interface MpSeller {
   category: string;
   zone: string;
   logo: string | null;
+  /** Vitrine de la boutique en ligne : bannière et couleur choisies par le vendeur */
+  cover: string | null;
+  accent: ShopAccent;
   verified: boolean;
   since: string;
   sales?: number;
@@ -255,6 +258,17 @@ export const fetchListings = (params: Record<string, string>) =>
   call<{ total: number; page: number; listings: MpListing[] }>(`/api/mp/listings?${new URLSearchParams(params)}`);
 export const fetchListing = (id: string) =>
   call<{ listing: MpListing; more: MpListing[] }>(`/api/mp/listings/${encodeURIComponent(id)}`);
+export type ShopAccent = 'prune' | 'or' | 'emeraude' | 'indigo' | 'corail' | 'terracotta' | 'noir';
+/** Une boutique dans l'annuaire : jamais de prix (on ne met pas les vendeurs en concurrence) */
+export interface ShopSummary extends MpSeller {
+  pro: boolean;
+  sales: number;
+  rating: { average: number | null; count: number };
+  articles: number;
+  photos: string[];
+}
+export const fetchShops = (params: Record<string, string>) =>
+  call<{ shops: ShopSummary[] }>(`/api/mp/shops?${new URLSearchParams(params)}`);
 export const fetchShop = (slug: string) =>
   call<{ seller: MpSeller; listings: MpListing[]; reviews: PublicReview[] }>(
     `/api/mp/sellers/${encodeURIComponent(slug)}`,
@@ -656,3 +670,25 @@ export const sendOffer = (id: string, amount: number) =>
   post<{ chat: Chat }>(`/api/mp/me/chats/${id}/offers`, { amount });
 export const answerOffer = (id: string, msg: string, accept: boolean) =>
   post<{ chat: Chat }>(`/api/mp/me/chats/${id}/offers/${msg}`, { accept });
+
+/* ---------- Appels par internet (voix, WebRTC) ---------- */
+export interface CallInfo {
+  id: string;
+  chatId: string;
+  status: 'sonne' | 'en_cours' | 'termine' | 'refuse' | 'manque';
+  /** true : c'est moi qu'on appelle */
+  incoming: boolean;
+  with: string;
+  listing: string;
+  /** Offre (pour l'appelé) ou réponse (pour l'appelant) du téléphone d'en face */
+  sdp: string | null;
+  answeredAt: number | null;
+}
+export const fetchCallConfig = () => call<{ iceServers: RTCIceServer[]; ringSeconds: number }>('/api/mp/call-config');
+export const placeCall = (chatId: string, sdp: string) =>
+  post<{ call: CallInfo }>(`/api/mp/me/chats/${chatId}/call`, { sdp });
+export const fetchIncomingCalls = () => call<{ calls: CallInfo[] }>('/api/mp/me/calls/incoming');
+export const fetchCall = (id: string) => call<{ call: CallInfo }>(`/api/mp/me/calls/${id}`);
+export const answerCall = (id: string, sdp: string) =>
+  post<{ call: CallInfo }>(`/api/mp/me/calls/${id}/answer`, { sdp });
+export const endCall = (id: string) => post<{ call: CallInfo }>(`/api/mp/me/calls/${id}/end`, {});

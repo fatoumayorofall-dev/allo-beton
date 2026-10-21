@@ -128,6 +128,8 @@ const fold = s => (s ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '
 const now = () => new Date().toISOString();
 
 /* ---------- Vues publiques : jamais le téléphone du vendeur ni de l'acheteur ---------- */
+/** Couleurs de vitrine proposées aux boutiques (la valeur affichée est choisie côté site) */
+export const SHOP_ACCENTS = ['prune', 'or', 'emeraude', 'indigo', 'corail', 'terracotta', 'noir'];
 export const publicSeller = v => ({
   id: v.id,
   shopName: v.shopName,
@@ -136,6 +138,9 @@ export const publicSeller = v => ({
   category: v.category,
   zone: v.zone,
   logo: v.logo ?? null,
+  /** Bannière et couleur de la vitrine (boutique en ligne de l'abonné) */
+  cover: v.cover ?? null,
+  accent: v.accent ?? 'prune',
   verified: v.status === 'active',
   since: v.createdAt,
 });
@@ -339,6 +344,61 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     });
   });
 
+  /**
+   * Annuaire des boutiques en ligne des abonnés : on choisit une boutique, pas un prix. Aucun prix ici
+   * (on ne met pas les vendeurs en concurrence) ; la recherche porte sur le nom, le quartier et les articles.
+   */
+  app.get('/api/mp/shops', (req, res) => {
+    const q = fold(clip(req.query.q, 60));
+    const cat = clip(req.query.rayon, 20);
+    const orders = store.listMpOrders();
+    const listings = store.listMpListings().filter(l => l.status === 'publiee');
+    const shops = store
+      .listMpSellers()
+      .filter(v => v.status === 'active')
+      .map(v => {
+        const mine = listings
+          .filter(l => l.sellerId === v.id)
+          .sort((a, b) => ((a.publishedAt ?? a.createdAt) < (b.publishedAt ?? b.createdAt) ? 1 : -1));
+        const delivered = orders.filter(o => o.sellerId === v.id && o.status === 'livree');
+        return { v, mine, delivered };
+      })
+      .filter(({ mine }) => mine.length)
+      .filter(({ v, mine }) => !cat || v.category === cat || mine.some(l => l.category === cat))
+      .filter(
+        ({ v, mine }) =>
+          !q ||
+          q
+            .split(/\s+/)
+            .every(w =>
+              fold(`${v.shopName} ${v.description} ${v.zone} ${mine.map(l => l.title).join(' ')}`).includes(w),
+            ),
+      )
+      .map(({ v, mine, delivered }) => ({
+        ...publicSeller(v),
+        pro: sellerPlan(v) === 'pro',
+        sales: delivered.length,
+        rating: ratingOf(delivered, 'seller'),
+        articles: mine.length,
+        photos: mine.slice(0, 3).map(l => l.photos[0]),
+      }))
+      // Formule Pro mise en avant, puis les mieux notées, puis les plus actives
+      .sort(
+        (a, b) =>
+          Number(b.pro) - Number(a.pro) ||
+          (b.rating.average ?? 0) - (a.rating.average ?? 0) ||
+          b.sales - a.sales ||
+          b.articles - a.articles,
+      );
+    res.json({ shops });
+  });
+
+  // Lien court à partager (WhatsApp, Instagram, flyers) : /b/nom-de-la-boutique
+  app.get('/b/:slug', (req, res) => {
+    const v = store.findMpSellerBySlug(clip(req.params.slug, 60));
+    res.redirect(302, v ? `/m/boutique/${encodeURIComponent(v.slug)}` : '/m');
+  });
+
   app.get('/api/mp/listings', (req, res) => {
     const q = fold(clip(req.query.q, 60));
     const cat = clip(req.query.cat, 20);
@@ -356,13 +416,9 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         q.split(/\s+/).every(w => fold(`${l.title} ${l.description} ${s.shopName}`).includes(w)),
       );
     const date = ({ l }) => l.publishedAt ?? l.createdAt;
-    list.sort(
-      sort === 'prix_asc'
-        ? (a, b) => a.l.price - b.l.price
-        : sort === 'prix_desc'
-          ? (a, b) => b.l.price - a.l.price
-          : (a, b) => (date(a) < date(b) ? 1 : -1),
-    );
+    // Pas de tri par prix entre boutiques : chaque vendeur fixe ses prix, on ne les met pas en concurrence
+    void sort;
+    list.sort((a, b) => (date(a) < date(b) ? 1 : -1));
     const per = 24;
     res.json({
       total: list.length,
@@ -737,6 +793,10 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
       });
     if (b.logo !== undefined && b.logo !== null && !PHOTO_URL.test(b.logo))
       return res.status(400).json({ error: 'Logo invalide' });
+    if (b.cover !== undefined && b.cover !== null && !PHOTO_URL.test(b.cover))
+      return res.status(400).json({ error: 'Bannière invalide' });
+    if (b.accent !== undefined && !SHOP_ACCENTS.includes(b.accent))
+      return res.status(400).json({ error: 'Couleur invalide' });
     const contact = b.contactPhone ? wa.toE164(b.contactPhone) : null;
     if (b.contactPhone && !/^\+221(7[05678])\d{7}$/.test(contact ?? ''))
       return res.status(400).json({ error: 'Numéro de contact invalide' });
@@ -766,6 +826,8 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         landmark: clip(loc.landmark, 160),
       },
       logo: b.logo !== undefined ? b.logo : (existing?.logo ?? null),
+      cover: b.cover !== undefined ? b.cover : (existing?.cover ?? null),
+      accent: b.accent ?? existing?.accent ?? 'prune',
       contactPhone: contact ?? existing?.contactPhone ?? null,
       pickupMode,
       relayId: relay?.id ?? null,

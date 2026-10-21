@@ -90,7 +90,7 @@ async function run({ base, store, openSession, adminPin }) {
   const upload = async (who, file) => {
     const r = await fetch(`${base}/api/mp/me/photos`, {
       method: 'POST',
-      headers: { ...H[who], 'content-type': 'image/jpeg' },
+      headers: { ...H[who], 'content-type': file.endsWith('.png') ? 'image/png' : 'image/jpeg' },
       body: fs.readFileSync(file),
     });
     return (await r.json()).url;
@@ -187,6 +187,15 @@ async function run({ base, store, openSession, adminPin }) {
       { shopName, category, zone, description: description + DEMO, ...extra },
       H[who],
     );
+  // Vitrines : couleur et bannière de chaque boutique en ligne
+  for (const [who, accent, img] of [
+    ['awa', 'corail', 'robe-wax'],
+    ['bineta', 'emeraude', 'karite'],
+    ['thies', 'terracotta', 'bissap'],
+    ['ndeye', 'or', 'sandales-cuir'],
+    ['tech', 'indigo', 'telephone'],
+  ])
+    await call('POST', '/api/mp/me/seller', { accent, cover: await photo(who, img) }, H[who]);
 
   // ── Articles (images d'exemple)
   const L = {};
@@ -293,6 +302,20 @@ async function run({ base, store, openSession, adminPin }) {
       H.maefa,
     );
     await call('PATCH', `/api/admin/mp/sellers/${sellerOf('maefa').id}`, { status: 'active', trusted: true }, A);
+    // Vitrine Maefa : son logo et l'image de la marque en bannière
+    const site = path.dirname(PRODUITS);
+    const logoFile = path.join(site, 'icons', 'icon-512.png');
+    const coverFile = path.join(site, 'og-image.jpg');
+    await call(
+      'POST',
+      '/api/mp/me/seller',
+      {
+        accent: 'prune',
+        ...(fs.existsSync(logoFile) ? { logo: await upload('maefa', logoFile) } : {}),
+        ...(fs.existsSync(coverFile) ? { cover: await upload('maefa', coverFile) } : {}),
+      },
+      H.maefa,
+    );
     for (const a of JSON.parse(fs.readFileSync(path.join(PHOTOS, 'maefa.json'), 'utf8'))) {
       const photos = [];
       for (const f of a.photos) photos.push(await upload('maefa', path.join(PRODUITS, f)));

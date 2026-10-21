@@ -149,6 +149,18 @@ export function registerSeoRoutes(app, { store, dist }) {
           }
         : base;
     }
+    // Boutique en ligne d'un abonné : son nom, sa présentation et sa bannière dans l'aperçu du lien
+    if ((m = /^\/m\/boutique\/([^/]+)$/.exec(pathname))) {
+      const v = store.findMpSellerBySlug?.(decodeURIComponent(m[1]));
+      if (v?.status === 'active')
+        return {
+          ...base,
+          title: `${v.shopName} — boutique en ligne`,
+          description: clip(v.description || `${v.shopName} : commandez en ligne, paiement à la livraison.`),
+          image: v.cover || v.logo || null,
+          canonical: `/m/boutique/${v.slug}`,
+        };
+    }
     if (pathname === '/journal')
       return titled(
         'Le journal',

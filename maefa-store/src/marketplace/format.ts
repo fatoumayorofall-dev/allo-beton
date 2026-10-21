@@ -26,6 +26,18 @@ export const STATUS_STYLES: Record<OrderStatus, string> = {
   refusee: 'bg-red-100 text-red-900',
   annulee: 'bg-ink/10 text-ink/70',
 };
+/** Couleurs de vitrine (boutique en ligne) : identifiant enregistré → couleur affichée */
+export const ACCENTS: Record<import('./api').ShopAccent, { name: string; hex: string }> = {
+  prune: { name: 'Prune', hex: '#3b1f2b' },
+  or: { name: 'Or', hex: '#a87b25' },
+  emeraude: { name: 'Émeraude', hex: '#11694f' },
+  indigo: { name: 'Indigo', hex: '#2b3a8c' },
+  corail: { name: 'Corail', hex: '#d0533f' },
+  terracotta: { name: 'Terracotta', hex: '#a4492a' },
+  noir: { name: 'Noir', hex: '#151515' },
+};
+/** Lien court de la boutique, à partager */
+export const shopLink = (slug: string) => `${location.origin}/b/${slug}`;
 export const PAYMENT_LABELS = { especes: 'Espèces', wave: 'Wave', orange_money: 'Orange Money' } as const;
 export const ago = (iso: string) => {
   const m = Math.round((Date.now() - Date.parse(iso)) / 60000);

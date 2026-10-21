@@ -7,7 +7,10 @@
 //  - un article « à négocier » ne montre au public qu'une classe de prix : on ne peut le commander
 //    qu'après un accord ;
 //  - anti-contournement : pas de numéro, de lien, d'e-mail ni de réseau social dans les messages ;
-//    l'acheteur ne voit que le nom de la boutique, le vendeur que le prénom de l'acheteur.
+//    l'acheteur ne voit que le nom de la boutique, le vendeur que le prénom de l'acheteur ;
+//  - appels par internet (WebRTC, voix seulement) depuis la discussion : le serveur ne fait que mettre
+//    les deux téléphones en relation (offre et réponse) ; aucun numéro n'est échangé, la voix est chiffrée
+//    de bout en bout ; l'appel est noté dans la discussion (durée, manqué, refusé).
 // ============================================================
 import crypto from 'node:crypto';
 import { CONTACT_REFUSED, findContact } from './contact.js';
@@ -20,6 +23,12 @@ const F = n => `${Math.round(n).toLocaleString('fr-FR')} F`;
 export const DEAL_MS = 48 * 3600e3;
 /** Un message de notification au plus toutes les 10 minutes par discussion (pas de pluie de messages) */
 const NOTIFY_EVERY_MS = 10 * 60e3;
+/** Sonnerie d'un appel avant « manqué » (secondes) */
+const RING_MS = () => (Number(process.env.CALL_RING_SECONDS) || 45) * 1000;
+const duration = ms => {
+  const s = Math.max(1, Math.round(ms / 1000));
+  return s < 60 ? `${s} s` : `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`;
+};
 
 /** Prix convenu encore valable pour cet acheteur et cet article (ou null). */
 export function dealFor(chats, listingId, buyerPhone, now = Date.now()) {
@@ -208,6 +217,163 @@ export function registerChatRoutes(app, { limit, store, currentUser, notify, pub
       system: true,
     });
     res.json({ chat: view(saved, me.role) });
+  });
+
+  /* ---------- Appels par internet ---------- */
+  // Les appels ne vivent que le temps de la conversation : gardés en mémoire, pas dans la base
+  const calls = new Map();
+  const ICE = () => [
+    { urls: 'stun:stun.l.google.com:19302' },
+    // Relais TURN (facultatif) : nécessaire sur certains réseaux mobiles qui bloquent les appels directs
+    ...(process.env.TURN_URLS
+      ? [
+          {
+            urls: process.env.TURN_URLS.split(',').map(u => u.trim()),
+            username: process.env.TURN_USERNAME,
+            credential: process.env.TURN_CREDENTIAL,
+          },
+        ]
+      : []),
+  ];
+  const sdpOk = v => typeof v === 'string' && v.length > 20 && v.length < 20000 && v.startsWith('v=0');
+  /** Fin d'un appel : notée dans la discussion. */
+  function finish(call, status) {
+    if (call.status === 'termine' || call.status === 'refuse' || call.status === 'manque') return call;
+    call.status = status;
+    call.endedAt = Date.now();
+    const c = store.getMpChat(call.chatId);
+    if (c) {
+      const text =
+        status === 'manque'
+          ? '📞 Appel manqué'
+          : status === 'refuse'
+            ? '📞 Appel refusé'
+            : call.answeredAt
+              ? `📞 Appel · ${duration(call.endedAt - call.answeredAt)}`
+              : '📞 Appel annulé';
+      post(c, call.from, { text, system: true });
+      if (status === 'manque') {
+        const l = store.getMpListing(c.listingId);
+        const to = call.to === 'acheteur' ? c.buyerPhone : sellerPhone(store.getMpSeller(c.sellerId));
+        notify(
+          to,
+          `📞 Appel manqué au sujet de « ${l?.title ?? 'un article'} ». Rappelez dans l'application, rubrique Messages.`,
+        );
+      }
+    }
+    return call;
+  }
+  /** Un appel qui sonne trop longtemps devient « manqué ». */
+  const fresh = call => {
+    if (call.status === 'sonne' && Date.now() - call.createdAt > RING_MS()) finish(call, 'manque');
+    return call;
+  };
+  const callView = (call, role) => {
+    const c = store.getMpChat(call.chatId);
+    return {
+      id: call.id,
+      chatId: call.chatId,
+      status: call.status,
+      incoming: call.to === role,
+      with: c ? view(c, role, false).with : '',
+      listing: c ? (store.getMpListing(c.listingId)?.title ?? '') : '',
+      // L'appelé reçoit l'offre ; l'appelant reçoit la réponse
+      sdp: call.to === role ? call.offer : call.answer,
+      answeredAt: call.answeredAt,
+    };
+  };
+  const callOf = (req, res) => {
+    const user = currentUser(req);
+    if (!user) return void res.status(401).json({ error: 'Non connecté' });
+    const call = calls.get(clip(req.params.id, 20));
+    const c = call && store.getMpChat(call.chatId);
+    const role = c && roleIn(c, user);
+    if (!role) return void res.status(404).json({ error: 'Appel introuvable' });
+    return { call: fresh(call), role };
+  };
+  setInterval(() => {
+    for (const [id, call] of calls) {
+      fresh(call);
+      if (Date.now() - (call.endedAt ?? call.createdAt) > 3600e3) calls.delete(id);
+    }
+  }, 15e3).unref?.();
+
+  app.get('/api/mp/call-config', (req, res) => {
+    if (!currentUser(req)) return res.status(401).json({ error: 'Non connecté' });
+    res.json({ iceServers: ICE(), ringSeconds: RING_MS() / 1000 });
+  });
+
+  // Appeler depuis une discussion (offre WebRTC du téléphone de l'appelant)
+  app.post('/api/mp/me/chats/:id/call', (req, res) => {
+    const me = mine(req, res);
+    if (!me) return;
+    if (tooMany(res, `mp-call:${me.user.phone}`, 30, 3600e3)) return;
+    if (!sdpOk(req.body?.sdp)) return res.status(400).json({ error: 'Appel impossible depuis ce téléphone' });
+    const busy = [...calls.values()]
+      .map(fresh)
+      .find(x => x.chatId === me.c.id && ['sonne', 'en_cours'].includes(x.status));
+    if (busy) return res.status(409).json({ error: 'Un appel est déjà en cours' });
+    const call = {
+      id: code(10),
+      chatId: me.c.id,
+      from: me.role,
+      to: me.role === 'acheteur' ? 'vendeur' : 'acheteur',
+      status: 'sonne',
+      offer: req.body.sdp,
+      answer: null,
+      createdAt: Date.now(),
+      answeredAt: null,
+      endedAt: null,
+    };
+    calls.set(call.id, call);
+    // Si l'autre personne n'a pas l'application ouverte : un message pour la faire venir
+    const l = store.getMpListing(me.c.listingId);
+    const to = call.to === 'acheteur' ? me.c.buyerPhone : sellerPhone(store.getMpSeller(me.c.sellerId));
+    notify(
+      to,
+      `📞 ${call.from === 'acheteur' ? me.c.buyerName : (store.getMpSeller(me.c.sellerId)?.shopName ?? 'Une boutique')} vous appelle au sujet de « ${l?.title ?? 'un article'} » : ouvrez l'application pour répondre.`,
+    );
+    res.status(201).json({ call: callView(call, me.role) });
+  });
+
+  // Appels qui sonnent pour moi (le téléphone vérifie toutes les quelques secondes)
+  app.get('/api/mp/me/calls/incoming', (req, res) => {
+    const user = currentUser(req);
+    if (!user) return res.status(401).json({ error: 'Non connecté' });
+    res.set('Cache-Control', 'no-store');
+    const mineRinging = [...calls.values()]
+      .map(fresh)
+      .filter(x => x.status === 'sonne')
+      .map(x => ({ x, c: store.getMpChat(x.chatId) }))
+      .filter(({ x, c }) => c && roleIn(c, user) === x.to)
+      .map(({ x }) => callView(x, x.to));
+    res.json({ calls: mineRinging });
+  });
+
+  app.get('/api/mp/me/calls/:id', (req, res) => {
+    const me = callOf(req, res);
+    if (!me) return;
+    res.set('Cache-Control', 'no-store');
+    res.json({ call: callView(me.call, me.role) });
+  });
+
+  // Décrocher (réponse WebRTC du téléphone de l'appelé)
+  app.post('/api/mp/me/calls/:id/answer', (req, res) => {
+    const me = callOf(req, res);
+    if (!me) return;
+    if (me.call.to !== me.role) return res.status(409).json({ error: "C'est votre propre appel" });
+    if (me.call.status !== 'sonne') return res.status(409).json({ error: 'Appel terminé' });
+    if (!sdpOk(req.body?.sdp)) return res.status(400).json({ error: 'Réponse invalide' });
+    Object.assign(me.call, { answer: req.body.sdp, status: 'en_cours', answeredAt: Date.now() });
+    res.json({ call: callView(me.call, me.role) });
+  });
+
+  // Raccrocher, refuser ou annuler
+  app.post('/api/mp/me/calls/:id/end', (req, res) => {
+    const me = callOf(req, res);
+    if (!me) return;
+    const refused = me.call.status === 'sonne' && me.call.to === me.role;
+    res.json({ call: callView(finish(me.call, refused ? 'refuse' : 'termine'), me.role) });
   });
 
   return {

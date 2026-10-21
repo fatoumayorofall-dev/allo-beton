@@ -700,6 +700,57 @@ paths:
           '200': { description: Modifié },
           '400': { description: 'Nom ou emplacement manquant' },
         }
+  /api/mp/shops:
+    get:
+      tags: [Place de marché]
+      summary: 'Annuaire des boutiques en ligne (q, rayon) : vitrine, note, nombre d’articles ; aucun prix'
+      responses: { '200': { description: OK } }
+  /b/{slug}:
+    get:
+      tags: [Place de marché]
+      summary: 'Lien court d’une boutique (redirection vers sa vitrine)'
+      parameters: [{ name: slug, in: path, required: true, schema: { type: string } }]
+      responses: { '302': { description: Redirection } }
+  /api/mp/call-config:
+    get:
+      tags: [Place de marché]
+      summary: 'Serveurs STUN/TURN pour les appels par internet'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/chats/{id}/call:
+    post:
+      tags: [Place de marché]
+      summary: 'Appeler l’autre personne de la discussion (offre WebRTC, sdp) ; elle est prévenue sur WhatsApp'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '201': { description: Ça sonne }, '409': { description: Appel déjà en cours } }
+  /api/mp/me/calls/incoming:
+    get:
+      tags: [Place de marché]
+      summary: 'Appels qui sonnent pour moi'
+      security: [{ session: [] }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/calls/{id}:
+    get:
+      tags: [Place de marché]
+      summary: 'État d’un appel (sonne, en_cours, termine, refuse, manque) et description de l’autre téléphone'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/calls/{id}/answer:
+    post:
+      tags: [Place de marché]
+      summary: 'Décrocher (réponse WebRTC, sdp)'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
+  /api/mp/me/calls/{id}/end:
+    post:
+      tags: [Place de marché]
+      summary: 'Raccrocher, refuser ou annuler ; noté dans la discussion'
+      security: [{ session: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
+      responses: { '200': { description: OK } }
   /api/mp/listings/{id}/chat:
     post:
       tags: [Place de marché]
@@ -784,7 +835,7 @@ paths:
   /api/mp/listings:
     get:
       tags: [Place de marché]
-      summary: 'Articles publiés (recherche q, rayon cat, vendeur, tri, page)'
+      summary: 'Articles publiés (recherche q, rayon cat, vendeur, page) ; pas de tri par prix'
       responses: { '200': { description: '24 articles par page, sans téléphone' } }
   /api/mp/listings/{id}:
     get:

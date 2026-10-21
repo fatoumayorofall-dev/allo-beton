@@ -40,6 +40,9 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG29 | Chaque mouvement d'argent est ajouté au registre (jamais modifié) avec l'empreinte scellée de la ligne précédente. |
 | RG31 | Le vendeur choisit pour chaque article : prix affiché, ou prix caché « à négocier » (le public voit une classe de prix). Un article à négocier ne se commande qu'au prix convenu. |
 | RG32 | Une discussion relie un acheteur et un vendeur au sujet d'un article. Une offre acceptée devient le prix convenu : 48 h, une commande d'un article. Pas de numéro, lien ni e-mail dans les messages. |
+| RG33 | L'annuaire des boutiques et le fil de découverte ne montrent aucun prix et aucun tri par prix : les vendeurs ne sont pas mis en concurrence ; les prix se voient dans chaque boutique. |
+| RG34 | Chaque boutique d'abonné a sa vitrine (logo, bannière, couleur), un lien court et un QR code. |
+| RG35 | Un appel par internet relie les deux personnes d'une discussion, sans échange de numéro ; sa durée, ou le fait qu'il soit manqué ou refusé, est noté dans la discussion. |
 | RG30 | Un arrêt fait sans réseau est gardé sur le téléphone du livreur et envoyé au retour du réseau avec son heure réelle ; le serveur vérifie le code à la réception, comme pour un arrêt en direct. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
@@ -68,6 +71,7 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | nom_zone, frais_zone | Zone de livraison et frais | A / N | 60 / 6 | ZONE |
 | id_tournee, rang | Tournée et ordre de passage | AN / N | 20 / 3 | TOURNEE, DESSERVIR |
 | mode_remise | fixe, variable, relais | A | 10 | VENDEUR, COMMANDE_MARCHE |
+| logo, banniere, couleur | Vitrine de la boutique en ligne | AN | 60 / 60 / 12 | VENDEUR |
 | id_relais | Référence R-XXXXX | AN | 7 | POINT_RELAIS |
 | horaires | « 9 h – 20 h » | AN | 80 | POINT_RELAIS |
 | code_enlevement, code_depot | Codes de remise à 4 chiffres | N | 4 | COMMANDE_MARCHE |
@@ -92,7 +96,7 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 - **TOURNEE** (<u>id_tournee</u>, jeton, date, distance)
 - **AVIS** (<u>id_avis</u>, note, commentaire, date)
 - **SESSION** (<u>empreinte_jeton</u>, date)
-- **VENDEUR** (<u>id_vendeur</u>, nom_boutique, slug, rayon, quartier, latitude, longitude, mode_remise, statut, de_confiance, date_creation)
+- **VENDEUR** (<u>id_vendeur</u>, nom_boutique, slug, rayon, quartier, latitude, longitude, mode_remise, logo, banniere, couleur, statut, de_confiance, date_creation)
 - **ANNONCE** (<u>id_annonce</u>, titre, description, prix, mode_prix, rayon, etat, photos, stock, choix, statut, raison_refus, vues, date)
 - **COMMANDE_MARCHE** (<u>id_commande_marche</u>, statut, sous_total, frais_livraison, distance_km, frais_service, commission_vendeur, total, mode_paiement, latitude, longitude, repere, mode_remise, latitude_remise, longitude_remise, repere_remise, code_enlevement, code_depot, essais_code, motif_echec, date)
 - **REGLEMENT** (<u>id_reglement</u>, montant, note, date)

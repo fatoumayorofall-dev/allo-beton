@@ -412,7 +412,30 @@ problème est le téléphone sans réseau :
   l'acheteur voit le nom de la boutique, le vendeur le prénom de l'acheteur ; alerte WhatsApp au plus
   toutes les 10 minutes par discussion. Table `mp_chats` (migration 0005).
 
-### 4.11 Données d'exemple (`server/marketplace/demo.js`)
+### 4.11 Boutiques en ligne des abonnés (vitrines)
+
+Chaque vendeur a sa boutique en ligne au lieu de payer un site : vitrine personnalisée (logo, bannière,
+couleur parmi `SHOP_ACCENTS`), recherche dans la boutique, avis, lien court `/b/<nom>` (redirection vers
+`/m/boutique/<nom>`), QR code à imprimer (bibliothèque `qrcode`, côté téléphone) et aperçu du lien
+(WhatsApp, Facebook) avec le nom et la bannière de la boutique (`server/seo.js`).
+
+**Pas de concurrence par les prix entre vendeurs** : l'accueil est un annuaire de boutiques
+(`GET /api/mp/shops`, aucun prix ; recherche sur le nom, le quartier et les articles ; formule Pro mise en
+avant, puis note et ventes) ; le fil « Pour vous » et la rangée de l'accueil montrent les articles sans prix ;
+le tri par prix est supprimé. Les prix se voient dans la boutique et sur la fiche.
+
+### 4.12 Appels par internet (voix, WebRTC)
+
+Depuis une discussion, « Appeler » : voix seulement, sans échanger les numéros. Le serveur (`chat.js`) ne
+fait que la mise en relation : offre de l'appelant (`POST …/call`), sonnerie chez l'appelé (le téléphone
+vérifie toutes les 3 s, plus un message WhatsApp s'il n'a pas l'application ouverte), réponse
+(`…/answer`), fin (`…/end`). Collecte ICE complète avant l'envoi (pas d'échange de candidats au fil de
+l'eau). STUN public ; relais TURN facultatif (`TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL`), utile
+sur les réseaux mobiles qui bloquent les appels directs. Sonnerie de 45 s (`CALL_RING_SECONDS`), puis
+« manqué » (message WhatsApp). La durée, l'appel manqué ou refusé sont notés dans la discussion. Les appels
+ne sont gardés qu'en mémoire. Testé avec le micro simulé de Chromium (scénario `appel`).
+
+### 4.13 Données d'exemple (`server/marketplace/demo.js`)
 
 Sur le site de test (`MP_DEMO=1`, ou `NOINDEX=1` par défaut), une place de marché vide se remplit au
 démarrage : 6 boutiques (adresse fixe, sans adresse fixe, point relais, formule Pro, une à valider),

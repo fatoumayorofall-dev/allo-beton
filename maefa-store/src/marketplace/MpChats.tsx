@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, HandCoins, Loader2, MessageCircle, Send, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, HandCoins, Loader2, MessageCircle, Phone, Send, ShieldCheck } from 'lucide-react';
+import { useCall } from './call';
 import { answerOffer, fetchChat, fetchChats, sendChat, sendOffer, type Chat, type ChatMessage } from './api';
 import { MP, mpPath } from './config';
 import { F, ago, priceText } from './format';
@@ -92,6 +93,7 @@ function ChatThread({ id }: { id: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const bottom = useRef<HTMLDivElement>(null);
+  const call = useCall();
   const load = useCallback(() => fetchChat(id).then(r => setChat(c => (r.ok ? r.data.chat : c ? c : 'absent'))), [id]);
   useEffect(() => {
     load();
@@ -127,12 +129,23 @@ function ChatThread({ id }: { id: string }) {
   const l = chat.listing;
   return (
     <div className="max-w-2xl mx-auto px-4 pt-4 flex flex-col min-h-[calc(100vh-10rem)]" data-testid="mp-chat">
-      <button
-        onClick={() => navigate(mpPath('/discussions'))}
-        className="inline-flex items-center gap-1 text-sm text-ink/70"
-      >
-        <ChevronLeft className="w-4 h-4" /> Messages
-      </button>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => navigate(mpPath('/discussions'))}
+          className="inline-flex items-center gap-1 text-sm text-ink/70"
+        >
+          <ChevronLeft className="w-4 h-4" /> Messages
+        </button>
+        {/* Appel par internet : pour marchander de vive voix, sans donner son numéro */}
+        <button
+          disabled={call.busy}
+          onClick={() => call.start(chat.id, chat.with)}
+          className="h-10 px-4 rounded-full bg-emerald-700 text-white font-semibold text-sm inline-flex items-center gap-2"
+          data-testid="mp-chat-call"
+        >
+          <Phone className="w-4 h-4" /> Appeler
+        </button>
+      </div>
       {l && (
         <Link
           to={mpPath(`/annonce/${l.id}`)}

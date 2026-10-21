@@ -101,9 +101,11 @@ const login = async phone => {
   });
   const c = await mk({ latitude: 14.765, longitude: -17.44 }, buyerToken);
   await c.goto(B + '/m');
-  await c.waitForSelector('[data-testid="mp-card"]', { timeout: 15000 });
+  await c.waitForSelector('[data-testid="mp-shop-card"]', { timeout: 15000 });
+  await c.getByTestId('mp-shop-card').first().click();
+  await c.waitForSelector('[data-testid="mp-shop-grid"]', { timeout: 10000 });
   check(
-    'carte : « 20 000 – 30 000 F » et « Prix à négocier »',
+    'vitrine : « 20 000 – 30 000 F » et « Prix à négocier »',
     /20\s000 – 30\s000 F[\s\S]*Prix à négocier/.test(await c.getByTestId('mp-card').first().innerText()),
   );
   await c.getByTestId('mp-card').first().click();

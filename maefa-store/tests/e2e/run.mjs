@@ -34,6 +34,9 @@ const EXTRA_ENV = {
   fraude: { OTP_DEV_MODE: '1' },
   horsligne: { OTP_DEV_MODE: '1' },
   discussion: { OTP_DEV_MODE: '1' },
+  vitrine: { OTP_DEV_MODE: '1' },
+  // Appels : sonnerie raccourcie pour tester l'appel manqué
+  appel: { OTP_DEV_MODE: '1', CALL_RING_SECONDS: '6' },
   // Données d'exemple créées au démarrage ; connexion par code secret (sans code par message)
   demo: { MP_DEMO: '1' },
 };

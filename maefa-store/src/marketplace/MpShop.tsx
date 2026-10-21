@@ -1,23 +1,43 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { BadgeCheck, Loader2, MapPin } from 'lucide-react';
+import { BadgeCheck, Check, Link2, Loader2, MapPin, Search, Share2 } from 'lucide-react';
 import { fetchShop, type MpListing, type MpSeller, type PublicReview } from './api';
 import { Stars } from '../components/Stars';
 import { ListingCard } from './ListingCard';
 import { MP, mpPath } from './config';
+import { ACCENTS, shopLink } from './format';
 import { usePageTitle } from '../utils/usePageTitle';
 
+/**
+ * La boutique en ligne d'un abonné : sa vitrine (bannière, logo, couleur), ses articles avec leurs prix,
+ * sa recherche, ses avis, et son lien court à partager (WhatsApp, Instagram, flyers).
+ */
 export default function MpShop() {
   const { slug = '' } = useParams();
   const [data, setData] = useState<
     { seller: MpSeller; listings: MpListing[]; reviews: PublicReview[] } | null | 'absent'
   >(null);
+  const [q, setQ] = useState('');
+  const [cat, setCat] = useState('');
+  const [copied, setCopied] = useState(false);
   const s = data && data !== 'absent' ? data.seller : null;
   usePageTitle(s ? `${s.shopName} · ${MP.name}` : MP.name, s?.description.slice(0, 150));
   useEffect(() => {
     setData(null);
+    setQ('');
+    setCat('');
     fetchShop(slug).then(r => setData(r.ok ? r.data : 'absent'));
   }, [slug]);
+  const listings = useMemo(() => (data && data !== 'absent' ? data.listings : []), [data]);
+  const cats = useMemo(() => [...new Set(listings.map(l => l.category))], [listings]);
+  const shown = useMemo(() => {
+    const words = q.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').split(/\s+/).filter(Boolean);
+    return listings.filter(
+      l =>
+        (!cat || l.category === cat) &&
+        words.every(w => `${l.title} ${l.description}`.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(w)),
+    );
+  }, [listings, q, cat]);
 
   if (data === null)
     return (
@@ -30,20 +50,48 @@ export default function MpShop() {
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <p className="font-display text-3xl">Boutique introuvable</p>
         <Link to={mpPath()} className="btn-dark mt-6 inline-flex !h-12 !px-6">
-          Retour au marché
+          Voir les boutiques
         </Link>
       </div>
     );
+  const color = ACCENTS[s.accent]?.hex ?? ACCENTS.prune.hex;
+  const link = shopLink(s.slug);
+  const share = async () => {
+    if (navigator.share) await navigator.share({ title: s.shopName, url: link }).catch(() => {});
+    else
+      window.open(
+        `https://wa.me/?text=${encodeURIComponent(`${s.shopName} : ma boutique en ligne\n${link}`)}`,
+        '_blank',
+        'noopener',
+      );
+  };
+  const CATEGORY_NAMES: Record<string, string> = {
+    mode: 'Mode & chaussures',
+    sacs: 'Sacs & accessoires',
+    beaute: 'Beauté',
+    electronique: 'Électronique',
+    maison: 'Maison',
+    enfants: 'Enfants',
+    epicerie: 'Épicerie',
+    autres: 'Autres',
+  };
+
   return (
-    <div className="max-w-6xl mx-auto px-4 pt-5" data-testid="mp-shop">
-      <section className="bg-white rounded-3xl border border-ink/[0.06] p-5 sm:p-7 flex flex-col sm:flex-row gap-5">
-        <span className="w-20 h-20 rounded-2xl bg-ivory overflow-hidden grid place-items-center font-display text-4xl shrink-0">
-          {s.logo ? <img src={s.logo} alt="" className="w-full h-full object-cover" /> : s.shopName[0]}
-        </span>
-        <div className="min-w-0">
-          <h1 className="font-display text-3xl sm:text-4xl flex items-center gap-2">
+    <div className="max-w-6xl mx-auto sm:px-4 sm:pt-5" data-testid="mp-shop">
+      <section className="bg-white sm:rounded-3xl border-b sm:border border-ink/[0.06] overflow-hidden">
+        <div className="relative h-36 sm:h-56" style={{ background: color }} data-testid="mp-shop-cover">
+          {s.cover && <img src={s.cover} alt="" className="w-full h-full object-cover" />}
+        </div>
+        <div className="px-4 sm:px-7 pb-5 -mt-10 relative">
+          <span
+            className="w-20 h-20 rounded-2xl border-4 border-white overflow-hidden grid place-items-center font-display text-4xl text-white shadow-soft"
+            style={{ background: color }}
+          >
+            {s.logo ? <img src={s.logo} alt="" className="w-full h-full object-cover bg-white" /> : s.shopName[0]}
+          </span>
+          <h1 className="mt-3 font-display text-3xl sm:text-4xl flex items-center gap-2">
             {s.shopName}
-            {s.verified && <BadgeCheck className="w-6 h-6 text-emerald-700" aria-label="Vendeur vérifié" />}
+            {s.verified && <BadgeCheck className="w-6 h-6 text-emerald-700" aria-label="Boutique vérifiée" />}
           </h1>
           <p className="mt-1 text-sm text-ink/65 flex flex-wrap items-center gap-x-3 gap-y-1">
             {s.zone && (
@@ -52,7 +100,8 @@ export default function MpShop() {
               </span>
             )}
             <span>
-              Sur {MP.name} depuis {new Date(s.since).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+              Boutique en ligne depuis{' '}
+              {new Date(s.since).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
             </span>
             {!!s.sales && (
               <span>
@@ -67,36 +116,100 @@ export default function MpShop() {
             )}
           </p>
           {s.description && <p className="mt-3 text-[15px] text-ink/85 whitespace-pre-line">{s.description}</p>}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={share}
+              className="h-11 px-5 rounded-full text-white font-semibold text-sm inline-flex items-center gap-2"
+              style={{ background: color }}
+              data-testid="mp-shop-share"
+            >
+              <Share2 className="w-4 h-4" /> Partager la boutique
+            </button>
+            <button
+              onClick={async () => {
+                await navigator.clipboard?.writeText(link).catch(() => {});
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="h-11 px-4 rounded-full border border-ink/15 font-semibold text-sm inline-flex items-center gap-2"
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+              {copied ? 'Lien copié' : link.replace(/^https?:\/\//, '')}
+            </button>
+          </div>
         </div>
       </section>
-      <h2 className="mt-8 font-display text-2xl">
-        {data.listings.length} article{data.listings.length > 1 ? 's' : ''}
-      </h2>
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-        {data.listings.map(l => (
-          <ListingCard key={l.id} listing={{ ...l, seller: s }} showSeller={false} />
-        ))}
-      </div>
-      {data.reviews.length > 0 && (
-        <section className="mt-10" data-testid="mp-shop-reviews">
-          <h2 className="font-display text-2xl">Avis des clientes</h2>
-          <p className="text-xs text-ink/60 mt-1">
-            Avis vérifiés : seules les clientes qui ont reçu leur commande sur {MP.name} peuvent noter.
-          </p>
-          <ul className="mt-3 space-y-3">
-            {data.reviews.map((r, i) => (
-              <li key={i} className="bg-white rounded-2xl border border-ink/[0.06] p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <strong className="text-sm">{r.name}</strong>
-                  <Stars rating={r.stars} size={12} />
-                </div>
-                {r.text && <p className="mt-1 text-[15px]">{r.text}</p>}
-                <p className="text-[11px] text-ink/55 mt-1">{new Date(r.at).toLocaleDateString('fr-FR')}</p>
-              </li>
+
+      <div className="px-4 sm:px-0">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <label className="flex-1 min-w-[12rem] flex items-center gap-2 h-11 px-4 rounded-full bg-white border border-ink/10 focus-within:border-ink">
+            <Search className="w-4 h-4 text-ink/50" />
+            <input
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder={`Chercher chez ${s.shopName}…`}
+              aria-label="Chercher dans la boutique"
+              className="flex-1 bg-transparent outline-none text-[15px]"
+              data-testid="mp-shop-search"
+            />
+          </label>
+        </div>
+        {cats.length > 1 && (
+          <div
+            className="mt-3 flex gap-2 overflow-x-auto no-scrollbar"
+            role="tablist"
+            aria-label="Rayons de la boutique"
+          >
+            {['', ...cats].map(c => (
+              <button
+                key={c}
+                role="tab"
+                aria-selected={cat === c}
+                onClick={() => setCat(c)}
+                className="shrink-0 h-9 px-4 rounded-full text-sm border"
+                style={cat === c ? { background: color, color: '#fff', borderColor: color } : undefined}
+              >
+                {c ? (CATEGORY_NAMES[c] ?? c) : 'Tout'}
+              </button>
             ))}
-          </ul>
-        </section>
-      )}
+          </div>
+        )}
+        <h2 className="mt-6 font-display text-2xl">
+          {shown.length} article{shown.length > 1 ? 's' : ''}
+        </h2>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4" data-testid="mp-shop-grid">
+          {shown.map(l => (
+            <ListingCard key={l.id} listing={{ ...l, seller: s }} showSeller={false} />
+          ))}
+        </div>
+        {data.reviews.length > 0 && (
+          <section className="mt-10" data-testid="mp-shop-reviews">
+            <h2 className="font-display text-2xl">Avis des clientes</h2>
+            <p className="text-xs text-ink/60 mt-1">
+              Avis vérifiés : seules les clientes qui ont reçu leur commande peuvent noter.
+            </p>
+            <ul className="mt-3 space-y-3">
+              {data.reviews.map((r, i) => (
+                <li key={i} className="bg-white rounded-2xl border border-ink/[0.06] p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="text-sm">{r.name}</strong>
+                    <Stars rating={r.stars} size={12} />
+                  </div>
+                  {r.text && <p className="mt-1 text-[15px]">{r.text}</p>}
+                  <p className="text-[11px] text-ink/55 mt-1">{new Date(r.at).toLocaleDateString('fr-FR')}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+        <p className="mt-10 text-center text-xs text-ink/50">
+          Boutique en ligne hébergée par{' '}
+          <Link to={mpPath()} className="underline">
+            {MP.name}
+          </Link>{' '}
+          · paiement à la livraison
+        </p>
+      </div>
     </div>
   );
 }

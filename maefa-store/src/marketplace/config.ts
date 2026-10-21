@@ -4,7 +4,7 @@
  */
 export const MP = {
   name: 'Sama Marché',
-  tagline: 'Achetez et vendez près de chez vous',
+  tagline: 'Les boutiques en ligne du Sénégal, au même endroit',
   /** Adresse de base des pages */
   base: '/m',
 };

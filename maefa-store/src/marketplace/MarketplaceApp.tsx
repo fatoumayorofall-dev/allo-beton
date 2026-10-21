@@ -5,6 +5,7 @@ import { MpCartProvider, useMpCart } from './cart';
 import { MP, mpPath } from './config';
 import { useOnline } from './offline';
 import { fetchChats } from './api';
+import { CallProvider } from './call';
 import { useAccount } from '../context/AccountContext';
 
 const MpHome = lazy(() => import('./MpHome'));
@@ -158,32 +159,34 @@ const OfflineBanner: React.FC = () => {
 export default function MarketplaceApp() {
   return (
     <MpCartProvider>
-      <div className="min-h-screen bg-[#faf7f5] flex flex-col" data-testid="marketplace">
-        <Header />
-        <OfflineBanner />
-        <main className="flex-1 pb-24 sm:pb-10">
-          <Suspense fallback={<Wait />}>
-            <Routes>
-              <Route index element={<MpHome />} />
-              <Route path="pour-vous" element={<MpFeed />} />
-              <Route path="annonce/:id" element={<MpListingPage />} />
-              <Route path="boutique/:slug" element={<MpShop />} />
-              <Route path="panier" element={<MpCart />} />
-              <Route path="commandes" element={<MpOrders />} />
-              <Route path="vendre" element={<MpSell />} />
-              <Route path="compte" element={<MpAccount />} />
-              <Route path="livreur" element={<MpDriver />} />
-              <Route path="discussions" element={<MpChats />} />
-              <Route path="discussions/:id" element={<MpChats />} />
-              <Route path="*" element={<MpHome />} />
-            </Routes>
-          </Suspense>
-        </main>
-        <footer className="hidden sm:block border-t border-ink/[0.07] py-6 text-center text-xs text-ink/60">
-          {MP.name} · {MP.tagline} · Paiement à la livraison
-        </footer>
-        <TabBar />
-      </div>
+      <CallProvider>
+        <div className="min-h-screen bg-[#faf7f5] flex flex-col" data-testid="marketplace">
+          <Header />
+          <OfflineBanner />
+          <main className="flex-1 pb-24 sm:pb-10">
+            <Suspense fallback={<Wait />}>
+              <Routes>
+                <Route index element={<MpHome />} />
+                <Route path="pour-vous" element={<MpFeed />} />
+                <Route path="annonce/:id" element={<MpListingPage />} />
+                <Route path="boutique/:slug" element={<MpShop />} />
+                <Route path="panier" element={<MpCart />} />
+                <Route path="commandes" element={<MpOrders />} />
+                <Route path="vendre" element={<MpSell />} />
+                <Route path="compte" element={<MpAccount />} />
+                <Route path="livreur" element={<MpDriver />} />
+                <Route path="discussions" element={<MpChats />} />
+                <Route path="discussions/:id" element={<MpChats />} />
+                <Route path="*" element={<MpHome />} />
+              </Routes>
+            </Suspense>
+          </main>
+          <footer className="hidden sm:block border-t border-ink/[0.07] py-6 text-center text-xs text-ink/60">
+            {MP.name} · {MP.tagline} · Paiement à la livraison
+          </footer>
+          <TabBar />
+        </div>
+      </CallProvider>
     </MpCartProvider>
   );
 }

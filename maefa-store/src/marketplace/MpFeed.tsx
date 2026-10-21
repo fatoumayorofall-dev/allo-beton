@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { BadgeCheck, Heart, Loader2, Share2, ShoppingBag, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { fetchFeed, type FeedItem } from './api';
 import { MP, mpPath } from './config';
-import { priceText } from './format';
 import { getSeen, getTaste, isLiked, note } from './taste';
 import { useAccount } from '../context/AccountContext';
 import { visitorId } from '../utils/track';
@@ -73,7 +72,7 @@ const Slide: React.FC<{ item: FeedItem; muted: boolean; onToggleSound: () => voi
   const share = async () => {
     note(item, 'share');
     const url = `${location.origin}${mpPath(`/annonce/${item.id}`)}`;
-    const text = `${item.title} · ${priceText(item)} sur ${MP.name}`;
+    const text = `${item.title}${item.seller ? ` chez ${item.seller.shopName}` : ''} sur ${MP.name}`;
     if (navigator.share) await navigator.share({ title: item.title, text, url }).catch(() => {});
     else window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, '_blank', 'noopener');
   };
@@ -169,13 +168,21 @@ const Slide: React.FC<{ item: FeedItem; muted: boolean; onToggleSound: () => voi
         )}
         <h2 className="mt-1 text-lg leading-snug font-semibold line-clamp-2">{item.title}</h2>
         <div className="mt-3 flex items-center gap-3">
-          <span className="text-2xl font-bold">{priceText(item)}</span>
+          {/* Pas de prix dans le fil : on ne compare pas les vendeurs, le prix se voit dans la boutique */}
+          {item.seller && (
+            <Link
+              to={mpPath(`/boutique/${item.seller.slug}`)}
+              className="inline-flex items-center gap-2 h-12 px-5 rounded-full border border-white/50 font-semibold text-sm"
+            >
+              Voir la boutique
+            </Link>
+          )}
           <Link
             to={mpPath(`/annonce/${item.id}`)}
             className="ml-auto inline-flex items-center gap-2 h-12 px-6 rounded-full bg-white text-ink font-semibold text-sm"
             data-testid="mp-feed-buy"
           >
-            <ShoppingBag className="w-4 h-4" /> Acheter
+            <ShoppingBag className="w-4 h-4" /> Voir l'article
           </Link>
         </div>
       </div>

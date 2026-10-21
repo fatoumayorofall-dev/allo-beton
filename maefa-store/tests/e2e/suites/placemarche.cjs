@@ -119,13 +119,20 @@ const check = (n, ok, x = '') => res.push(`${ok ? 'OK  ' : 'FAIL'} ${n} ${x}`);
   const a = await mk({ latitude: 14.765, longitude: -17.44 });
   await a.goto(B + '/m');
   await a.waitForTimeout(1200);
-  check('accueil : article affiché', (await a.getByTestId('mp-grid').getByTestId('mp-card').count()) === 1);
+  check('accueil : la boutique affichée', (await a.getByTestId('mp-shops').getByTestId('mp-shop-card').count()) === 1);
+  check(
+    'accueil : aucun prix (on ne compare pas les vendeurs)',
+    !/\d\s?\d{3} F/.test(await a.locator('[data-testid="marketplace"] main').innerText()),
+  );
   await shot(a, '4-accueil');
-  await a.getByPlaceholder(/Robe, téléphone/).fill('robe');
+  await a.getByPlaceholder(/Une boutique, un quartier/).fill('robe');
   await a.getByRole('button', { name: 'Chercher' }).click();
   await a.waitForTimeout(800);
-  check('recherche « robe »', (await a.getByTestId('mp-card').count()) === 1);
-  await a.getByTestId('mp-card').first().click();
+  check('recherche « robe » : la boutique qui en vend', (await a.getByTestId('mp-shop-card').count()) === 1);
+  await a.getByTestId('mp-shop-card').first().click();
+  await a.waitForSelector('[data-testid="mp-shop-grid"]', { timeout: 10000 });
+  check('vitrine : prix visibles dans la boutique', /12\s000 F/.test(await a.getByTestId('mp-shop-grid').innerText()));
+  await a.getByTestId('mp-shop-grid').getByTestId('mp-card').first().click();
   await a.waitForTimeout(1000);
   await a.getByTestId('mp-buy').click();
   check('choix de la taille exigé', await a.getByText('Choisissez : Taille').isVisible());
