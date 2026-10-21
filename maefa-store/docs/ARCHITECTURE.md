@@ -381,6 +381,23 @@ est vrai, et les fraudes d'une place de marché ont lieu dans la vraie vie (faux
 L'onglet « Sécurité » de la gérante montre l'état du registre, les acheteurs aux livraisons ratées, l'argent
 gardé par chaque livreur, les vendeurs pas payés et les colis bloqués.
 
+### 4.9 Sans réseau ni courant (`src/marketplace/offline.ts`)
+
+Le serveur est hébergé hors du Sénégal (Render) : une coupure de courant ou de réseau à Dakar ne l'arrête
+pas, et ses écritures sont atomiques (fichier temporaire puis renommage, ou transaction PostgreSQL). Le
+problème est le téléphone sans réseau :
+
+- **Codes de remise par SMS** (`wa.sendSms`, `TWILIO_SMS_FROM`) en plus de WhatsApp : la cliente reçoit le sien
+  à la commande, le vendeur (ou le relais) quand le livreur part ; un SMS arrive sans internet.
+- **Application rouverte hors ligne** : le service worker sert la page et les fichiers ; le compte reste
+  connecté (dernier profil gardé, lié au jeton) ; commandes, codes, boutique et course du livreur
+  sont gardés sur le téléphone (`remember` / `recall`, liés à la connexion, effacés à la déconnexion).
+- **Livreur sans réseau** : l'arrêt (code saisi, ou livraison ratée) est mis en file sur le téléphone
+  (`enqueue`) après que la personne a confirmé le code affiché ; il part tout seul au retour du réseau
+  (`online`, puis toutes les 20 s) avec l'heure réelle (`offlineAt`). Le serveur revérifie tout : le
+  téléphone ne valide rien seul, et le code n'y est jamais stocké d'avance (sinon le livreur pourrait le lire).
+- **Bandeau « Pas de réseau »** dans toute la place de marché.
+
 ## 5. Algorithmes notables
 
 | Problème | Solution | Fichier |

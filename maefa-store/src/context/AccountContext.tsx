@@ -23,6 +23,7 @@ import { createPasskey, signWithPasskey } from '../utils/passkey';
 import { useStore } from './StoreContext';
 
 const TOKEN_KEY = 'maefa_token';
+const OFFLINE_KEY = 'maefa_account_off';
 export const readToken = () => {
   try {
     return localStorage.getItem(TOKEN_KEY);
@@ -33,9 +34,35 @@ export const readToken = () => {
 const writeToken = (t: string | null) => {
   try {
     if (t) localStorage.setItem(TOKEN_KEY, t);
-    else localStorage.removeItem(TOKEN_KEY);
+    else {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(OFFLINE_KEY);
+      // Déconnexion : plus de commandes ni de codes de remise gardés sur ce téléphone (sauf les arrêts
+      // du livreur pas encore envoyés, qui partiront au retour du réseau)
+      for (const k of Object.keys(localStorage))
+        if (k.startsWith('mp_off_') && k !== 'mp_off_file') localStorage.removeItem(k);
+    }
   } catch {
     /* ignore */
+  }
+};
+/**
+ * Dernier profil reçu, lié à la connexion : rouvrir l'application sans réseau (coupure, délestage)
+ * ne déconnecte pas ; le serveur revérifie la connexion dès que le réseau revient.
+ */
+const rememberAccount = (t: string, u: Account) => {
+  try {
+    localStorage.setItem(OFFLINE_KEY, JSON.stringify({ tail: t.slice(-16), user: u }));
+  } catch {
+    /* ignore */
+  }
+};
+const recallAccount = (t: string): Account | null => {
+  try {
+    const v = JSON.parse(localStorage.getItem(OFFLINE_KEY) ?? 'null');
+    return v?.tail === t.slice(-16) ? (v.user as Account) : null;
+  } catch {
+    return null;
   }
 };
 
@@ -102,8 +129,11 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
     (async () => {
       const server = await getServerStatus();
       if (!alive) return;
+      // Serveur injoignable (pas de réseau) : le profil enregistré sur ce téléphone, si la personne était connectée
+      const offline = token ? recallAccount(token) : null;
       if (!server.accounts) {
-        setStatus('off');
+        if (offline) adopt(offline, []);
+        else setStatus('off');
         return;
       }
       if (!token) {
@@ -112,7 +142,10 @@ export const AccountProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       const r = await fetchMe(token);
       if (!alive) return;
-      if (r.ok) adopt(r.data.user, r.data.orders);
+      if (r.ok) {
+        rememberAccount(token, r.data.user);
+        adopt(r.data.user, r.data.orders);
+      } else if (r.status === 0 && offline) adopt(offline, []);
       else if (r.status === 401) {
         writeToken(null);
         setToken(null);

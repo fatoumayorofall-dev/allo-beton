@@ -3,6 +3,7 @@ import { NavLink, Link, Route, Routes } from 'react-router-dom';
 import { Clapperboard, Home, Loader2, ShoppingBag, Store, UserRound } from 'lucide-react';
 import { MpCartProvider, useMpCart } from './cart';
 import { MP, mpPath } from './config';
+import { useOnline } from './offline';
 
 const MpHome = lazy(() => import('./MpHome'));
 const MpFeed = lazy(() => import('./MpFeed'));
@@ -107,6 +108,18 @@ const TabBar: React.FC = () => {
   );
 };
 
+/** Coupure de réseau ou de courant chez l'opérateur : on le dit clairement, sans messages d'erreur partout. */
+const OfflineBanner: React.FC = () => {
+  const online = useOnline();
+  if (online) return null;
+  return (
+    <div className="bg-amber-100 text-amber-950 text-sm text-center px-4 py-2" role="status" data-testid="mp-offline">
+      Pas de réseau. Ce qui est enregistré sur votre téléphone reste visible ; les arrêts des livreurs partiront dès que
+      le réseau revient.
+    </div>
+  );
+};
+
 /**
  * Place de marché : application à part entière sous /m (son propre en-tête, son panier),
  * qui partage avec la boutique les comptes (numéro, Face ID), la carte et le serveur.
@@ -116,6 +129,7 @@ export default function MarketplaceApp() {
     <MpCartProvider>
       <div className="min-h-screen bg-[#faf7f5] flex flex-col" data-testid="marketplace">
         <Header />
+        <OfflineBanner />
         <main className="flex-1 pb-24 sm:pb-10">
           <Suspense fallback={<Wait />}>
             <Routes>

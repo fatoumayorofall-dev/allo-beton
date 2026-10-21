@@ -24,6 +24,7 @@ import {
 } from './api';
 import { ListingForm } from './ListingForm';
 import { MP, mpPath } from './config';
+import { recall, remember } from './offline';
 import { F, PAYMENT_LABELS, STATUS_LABELS, STATUS_STYLES, ago } from './format';
 import { useAccount } from '../context/AccountContext';
 import { DELIVERY_ZONES, SITE_CONFIG } from '../config/site';
@@ -442,6 +443,15 @@ export default function MpSell() {
 
   const load = useCallback(async () => {
     const r = await fetchMySeller();
+    if (!r.ok && r.status === 0) {
+      // Pas de réseau : la boutique et les commandes (avec les codes de remise) gardées sur ce téléphone
+      const saved = recall<{ seller: MySeller; sales: MpOrder[]; listings: MyListing[] }>('vendeur');
+      if (!saved) return setMessage('Pas de réseau : votre espace s’affichera dès que la connexion revient.');
+      setSeller(saved.data.seller);
+      setSales(saved.data.sales);
+      setListings(saved.data.listings);
+      return setMessage('Pas de réseau : vous voyez les informations enregistrées sur ce téléphone.');
+    }
     if (!r.ok) return setSeller(null);
     setSeller(r.data.seller);
     setBalance(r.data.balance ?? null);
@@ -453,6 +463,7 @@ export default function MpSell() {
       setSales(s.data.orders);
       setBalance(s.data.balance);
     }
+    if (l.ok && s.ok) remember('vendeur', { seller: r.data.seller, sales: s.data.orders, listings: l.data.listings });
   }, []);
   useEffect(() => {
     fetchConfig().then(r => {
@@ -483,7 +494,9 @@ export default function MpSell() {
       </div>
     );
   if (seller === undefined)
-    return (
+    return message ? (
+      <p className="max-w-md mx-auto px-4 py-16 text-center text-ink/70">{message}</p>
+    ) : (
       <div className="py-24 grid place-items-center">
         <Loader2 className="w-6 h-6 animate-spin text-ink/40" />
       </div>

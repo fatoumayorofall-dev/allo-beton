@@ -7,6 +7,7 @@ import { F, STATUS_LABELS, STATUS_STYLES, ago } from './format';
 import { useAccount } from '../context/AccountContext';
 import { usePageTitle } from '../utils/usePageTitle';
 import { AfterSale, DriverTracking } from './AfterSale';
+import { recall, remember } from './offline';
 
 const STEPS: MpOrder['status'][] = ['nouvelle', 'acceptee', 'prete', 'en_livraison', 'livree'];
 
@@ -14,7 +15,19 @@ export default function MpOrders() {
   usePageTitle(`Mes commandes · ${MP.name}`);
   const { status } = useAccount();
   const [orders, setOrders] = useState<MpOrder[] | null>(null);
-  const load = () => fetchMyOrders().then(r => setOrders(r.ok ? r.data.orders : []));
+  const [offlineAt, setOfflineAt] = useState<number | null>(null);
+  // Sans réseau : les commandes (et les codes de remise) enregistrées sur ce téléphone restent visibles
+  const load = () =>
+    fetchMyOrders().then(r => {
+      if (r.ok) {
+        remember('commandes', r.data.orders);
+        setOfflineAt(null);
+        return setOrders(r.data.orders);
+      }
+      const saved = r.status === 0 ? recall<MpOrder[]>('commandes') : null;
+      setOfflineAt(saved?.at ?? null);
+      setOrders(saved?.data ?? []);
+    });
   useEffect(() => {
     if (status === 'user') load();
   }, [status]);
@@ -42,6 +55,12 @@ export default function MpOrders() {
   return (
     <div className="max-w-3xl mx-auto px-4 pt-5 space-y-4" data-testid="mp-orders">
       <h1 className="font-display text-3xl">Mes commandes</h1>
+      {offlineAt && (
+        <p className="rounded-2xl bg-amber-50 text-amber-950 p-3 text-sm" data-testid="mp-orders-offline">
+          Pas de réseau : voici vos commandes enregistrées sur ce téléphone ({ago(new Date(offlineAt).toISOString())}).
+          Votre code de remise est aussi dans vos SMS.
+        </p>
+      )}
       {!orders.length && <p className="text-ink/70">Aucune commande pour le moment.</p>}
       {orders.map(o => {
         const step = STEPS.indexOf(o.status);

@@ -27,7 +27,7 @@ export const publicDriver = d => (d ? { name: d.name, phone: d.phone, vehicle: d
 
 export function registerDriverRoutes(
   app,
-  { limit, isAdmin, store, currentUser, trips, settings, notify, ledger, restock },
+  { limit, isAdmin, store, currentUser, trips, settings, notify, notifyCode, ledger, restock },
 ) {
   const now = () => new Date().toISOString();
   const tooMany = (req, res, key, max, ms) => {
@@ -240,7 +240,13 @@ export function registerDriverRoutes(
     });
     for (const o of trips.live(saved)) {
       const seller = store.getMpSeller(o.sellerId);
-      notify(seller?.contactPhone ?? seller?.ownerPhone, `🛵 ${d.name} vient chercher la commande ${o.id}.`);
+      // Le code part aussi par SMS : le vendeur l'a même sans internet au moment de remettre le colis
+      if (o.handover && !o.delivery.relay)
+        notifyCode(
+          seller?.contactPhone ?? seller?.ownerPhone,
+          `🛵 ${d.name} vient chercher la commande ${o.id}. Donnez-lui le colis et ce code de remise : ${o.handover.pickup}.`,
+        );
+      else notify(seller?.contactPhone ?? seller?.ownerPhone, `🛵 ${d.name} vient chercher la commande ${o.id}.`);
       notify(o.buyerPhone, `🛵 ${d.name} livrera votre commande ${o.id}. Il vous appellera en arrivant.`);
     }
     res.json({ trip: tripView(saved) });
@@ -323,7 +329,11 @@ export function registerDriverRoutes(
       );
       notify(o.buyerPhone, `✅ Commande ${o.id} livrée. Merci et à bientôt !`);
     }
-    const stops = t.stops.map(s => (s === stop ? { ...s, done: true, at: now() } : s));
+    // Arrêt fait sans réseau : l'heure réelle donnée par le téléphone est gardée (pour un éventuel litige)
+    const offlineAt = Date.parse(req.body?.offlineAt) ? new Date(req.body.offlineAt).toISOString() : null;
+    const stops = t.stops.map(s =>
+      s === stop ? { ...s, done: true, at: now(), ...(offlineAt ? { offlineAt } : {}) } : s,
+    );
     const left = trips.live({ ...t }).filter(x => x.status !== 'livree');
     const saved = store.saveMpTrip({
       ...t,
@@ -352,7 +362,12 @@ export function registerDriverRoutes(
     store.saveMpOrder({
       ...o,
       status: 'retour',
-      failedDelivery: { reason, at, driverId: d.id },
+      failedDelivery: {
+        reason,
+        at,
+        driverId: d.id,
+        ...(Date.parse(req.body?.offlineAt) ? { offlineAt: new Date(req.body.offlineAt).toISOString() } : {}),
+      },
       history: [...(o.history ?? []), { status: 'retour', at, by: 'livreur', reason: FAIL_REASONS[reason] }],
     });
     const saved = store.saveMpTrip({
@@ -374,7 +389,7 @@ export function registerDriverRoutes(
     );
     if (o.delivery.relay) {
       const relay = store.getMpRelay(o.delivery.relay.id);
-      notify(
+      notifyCode(
         relay?.phone,
         `↩️ Colis ${o.id} : le livreur le ramène. Gardez-le pour le vendeur et donnez au livreur le code ${o.handover?.pickup}.`,
       );

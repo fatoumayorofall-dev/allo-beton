@@ -573,7 +573,7 @@ paths:
   /api/mp/driver/trips/{id}/stop:
     post:
       tags: [Livreurs]
-      summary: 'Arrêt fait : colis enlevé, déposé et encaissé, ou rendu au vendeur. Exige le code de remise à 4 chiffres (vendeur ou relais pour enlèvement et retour, acheteur pour le dépôt) ; 5 codes faux bloquent le colis'
+      summary: 'Arrêt fait : colis enlevé, déposé et encaissé, ou rendu au vendeur. Exige le code de remise à 4 chiffres (vendeur ou relais pour enlèvement et retour, acheteur pour le dépôt) ; 5 codes faux bloquent le colis. offlineAt : heure réelle d’un arrêt fait sans réseau et envoyé plus tard'
       security: [{ session: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: string } }]
       responses:

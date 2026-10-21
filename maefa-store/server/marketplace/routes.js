@@ -191,6 +191,12 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
   const notify = (phone, text) => {
     if (phone) wa.sendWhatsApp(phone, text).catch(() => {});
   };
+  // Codes de remise : WhatsApp et SMS (le SMS arrive même sans internet, il reste dans le téléphone)
+  const notifyCode = (phone, text) => {
+    if (!phone) return;
+    wa.sendWhatsApp(phone, text).catch(() => {});
+    wa.sendSms(phone, text).catch(() => {});
+  };
   const site = req => `${req.protocol}://${req.get('host')}`;
   const trips = createTripService({ store, settings, notify });
   // Registre infalsifiable des mouvements d'argent (scellé avec la clé du serveur, gardée hors de la base)
@@ -535,6 +541,11 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
         history: [{ status: 'nouvelle', at: now(), by: 'acheteur' }],
         createdAt: now(),
       });
+      if (order.handover)
+        notifyCode(
+          user.phone,
+          `Commande ${order.id} (${o.seller.shopName}) : votre code de remise est ${order.handover.dropoff}. Donnez-le au livreur seulement quand vous avez votre colis en main.`,
+        );
       for (const line of o.lines) {
         const l = store.getMpListing(line.listingId);
         if (l.stock !== null && l.stock !== undefined) store.saveMpListing({ ...l, stock: l.stock - line.qty });
@@ -941,7 +952,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     // Point relais : il reçoit le code à donner au livreur (il ne sait pas de quel vendeur vient le colis)
     if (status === 'prete' && o.delivery.relay && o.handover) {
       const relay = store.getMpRelay(o.delivery.relay.id);
-      notify(
+      notifyCode(
         relay?.phone,
         `📦 Colis ${o.id} déposé chez vous. Remettez-le au livreur qui vient le chercher et donnez-lui le code ${o.handover.pickup}.`,
       );
@@ -1308,6 +1319,7 @@ export function registerMarketplaceRoutes(app, { limit, isAdmin, store, currentU
     trips,
     settings,
     notify,
+    notifyCode,
     ledger,
     restock,
   });

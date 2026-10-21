@@ -391,14 +391,15 @@ export interface DriverTrip {
   km: number;
   stops: TripStop[];
 }
-export const fetchMyDriver = () =>
-  call<{
-    driver: Driver | null;
-    balance?: DriverBalance;
-    cash?: DriverCash;
-    trip?: DriverTrip | null;
-    driverRate?: number;
-  }>('/api/mp/me/driver');
+/** Espace livreur : inscription, argent, course en cours */
+export interface DriverHome {
+  driver: Driver | null;
+  balance?: DriverBalance;
+  cash?: DriverCash;
+  trip?: DriverTrip | null;
+  driverRate?: number;
+}
+export const fetchMyDriver = () => call<DriverHome>('/api/mp/me/driver');
 export const saveMyDriver = (body: { name: string; vehicle: string; zone: string }) =>
   post<{ driver: Driver; balance: DriverBalance }>('/api/mp/me/driver', body);
 export const setPresence = (online: boolean, location?: { lat: number; lng: number }) =>
@@ -406,14 +407,16 @@ export const setPresence = (online: boolean, location?: { lat: number; lng: numb
 export const fetchTripOffers = () =>
   call<{ trips: TripOffer[]; current: DriverTrip | null; cash: DriverCash }>('/api/mp/driver/trips');
 export const acceptTrip = (id: string) => post<{ trip: DriverTrip }>(`/api/mp/driver/trips/${id}/accept`, {});
-export const stopDone = (id: string, orderId: string, kind: TripStop['kind'], code?: string) =>
+/** offlineAt : heure réelle d'un arrêt fait sans réseau et envoyé plus tard */
+export const stopDone = (id: string, orderId: string, kind: TripStop['kind'], code?: string, offlineAt?: string) =>
   post<{ trip: DriverTrip; balance: DriverBalance; cash: DriverCash }>(`/api/mp/driver/trips/${id}/stop`, {
     orderId,
     kind,
     code,
+    offlineAt,
   });
-export const deliveryFailed = (id: string, orderId: string, reason: 'absent' | 'refus') =>
-  post<{ trip: DriverTrip }>(`/api/mp/driver/trips/${id}/fail`, { orderId, reason });
+export const deliveryFailed = (id: string, orderId: string, reason: 'absent' | 'refus', offlineAt?: string) =>
+  post<{ trip: DriverTrip }>(`/api/mp/driver/trips/${id}/fail`, { orderId, reason, offlineAt });
 export const payoutSent = (orderId: string) =>
   post<{ balance: DriverBalance; cash: DriverCash }>(`/api/mp/driver/orders/${orderId}/payout`, {});
 

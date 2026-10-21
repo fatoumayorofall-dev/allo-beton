@@ -38,6 +38,7 @@ et MySQL, `docs/base-de-donnees/maefa-mysql.sql`).
 | RG27 | Une livraison ratée (absent, refus) renvoie le colis au vendeur ; à 2 livraisons ratées non pardonnées, l'acheteur ne peut plus commander ; 5 commandes en cours au plus tant qu'il n'a jamais été livré, 15 ensuite. |
 | RG28 | Tant qu'une boutique (non « de confiance ») a moins de 3 ventes livrées, une commande ne dépasse pas le montant fixé par la gérante ; nul ne commande dans sa propre boutique. |
 | RG29 | Chaque mouvement d'argent est ajouté au registre (jamais modifié) avec l'empreinte scellée de la ligne précédente. |
+| RG30 | Un arrêt fait sans réseau est gardé sur le téléphone du livreur et envoyé au retour du réseau avec son heure réelle ; le serveur vérifie le code à la réception, comme pour un arrêt en direct. |
 | RG17 | Sur chaque commande livrée, la plateforme perçoit une commission vendeur (% de la vente) et des frais de service acheteur ; le vendeur les règle, ses paiements sont enregistrés par la gérante. |
 
 ## 2. Dictionnaire des données (extrait)

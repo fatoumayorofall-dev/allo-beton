@@ -13,11 +13,13 @@ import {
   type Driver,
   type DriverBalance,
   type DriverCash,
+  type DriverHome,
   type DriverTrip,
   type TripOffer,
   type TripStop,
 } from './api';
 import { MP, mpPath } from './config';
+import { enqueue, flushQueue, queued, recall, remember, withPending } from './offline';
 import { F, PAYMENT_LABELS } from './format';
 import { useAccount } from '../context/AccountContext';
 import { usePageTitle } from '../utils/usePageTitle';
@@ -111,6 +113,7 @@ const StopCard: React.FC<{
   onFail: (reason: 'absent' | 'refus') => void;
   busy: boolean;
 }> = ({ stop: s, index, onDone, onFail, busy }) => {
+  const pending = (s as TripStop & { pending?: boolean }).pending;
   const [code, setCode] = useState('');
   const title = { enlevement: 'Récupérer', depot: 'Livrer', retour: 'Rapporter au vendeur' }[s.kind];
   const ready = !s.needsCode || code.length === 4;
@@ -229,7 +232,13 @@ const StopCard: React.FC<{
           )}
         </>
       )}
+      {pending && (
+        <p className="mt-2 text-sm text-amber-900 font-semibold" data-testid="mp-stop-pending">
+          ⏳ Enregistré sur le téléphone : envoi automatique dès le retour du réseau
+        </p>
+      )}
       {s.done &&
+        !pending &&
         (s.failed ? (
           <p className="mt-2 text-sm text-wine font-semibold">
             ✗ Non livré ({s.failed === 'absent' ? 'client absent' : 'refus'}) : colis à rapporter
@@ -256,8 +265,20 @@ export default function MpDriver() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
 
+  const [offlineAt, setOfflineAt] = useState<number | null>(null);
+  const [, setQueueVersion] = useState(0);
   const load = useCallback(async () => {
-    const r = await fetchMyDriver();
+    let r = await fetchMyDriver();
+    if (!r.ok && r.status === 0) {
+      // Pas de réseau : la dernière course connue reste affichée (adresses, numéros, montants)
+      const saved = recall<DriverHome>('livreur');
+      if (!saved) return setOfflineAt(-1);
+      setOfflineAt(saved.at);
+      r = { ok: true, data: saved.data };
+    } else if (r.ok) {
+      remember('livreur', r.data);
+      setOfflineAt(null);
+    }
     if (!r.ok) return setDriver(null);
     setDriver(r.data.driver);
     setBalance(r.data.balance ?? null);
@@ -268,6 +289,25 @@ export default function MpDriver() {
       if (o.ok) setOffers(o.data.trips);
     }
   }, []);
+  // Actions faites sans réseau : envoyées dès qu'il revient (et toutes les 20 s tant qu'il en reste)
+  const flush = useCallback(async () => {
+    if (!queued().length) return;
+    const problems = await flushQueue(q =>
+      q.fail ? deliveryFailed(q.tripId, q.orderId, q.fail, q.at) : stopDone(q.tripId, q.orderId, q.kind, q.code, q.at),
+    );
+    setQueueVersion(v => v + 1);
+    if (problems.length) setMessage(problems.join(' · '));
+    if (!queued().length) load();
+  }, [load]);
+  useEffect(() => {
+    flush();
+    window.addEventListener('online', flush);
+    const t = setInterval(flush, 20000);
+    return () => {
+      window.removeEventListener('online', flush);
+      clearInterval(t);
+    };
+  }, [flush]);
   useEffect(() => {
     if (status === 'user') load();
   }, [status, load]);
@@ -308,6 +348,12 @@ export default function MpDriver() {
         </Link>
       </div>
     );
+  if (driver === undefined && offlineAt === -1)
+    return (
+      <p className="max-w-md mx-auto px-4 py-16 text-center text-ink/70" data-testid="mp-driver-offline">
+        Pas de réseau. Votre espace livreur s'affichera dès que la connexion revient.
+      </p>
+    );
   if (driver === undefined)
     return (
       <div className="py-24 grid place-items-center">
@@ -343,6 +389,37 @@ export default function MpDriver() {
       load();
     }
   };
+  /**
+   * Arrêt de la course : envoyé tout de suite, ou gardé sur le téléphone s'il n'y a pas de réseau.
+   * Sans réseau, le livreur montre le code saisi à la personne pour qu'elle confirme (le serveur le vérifiera).
+   */
+  const offlineOr = async (
+    attempt: Promise<{ ok: boolean; error?: string; status?: number }>,
+    s: TripStop,
+    extra: { code?: string; fail?: 'absent' | 'refus' },
+  ) => {
+    if (!trip) return;
+    setBusy(true);
+    setMessage('');
+    const r = await attempt;
+    setBusy(false);
+    if (!r.ok && r.status === 0) {
+      if (
+        extra.code &&
+        !window.confirm(
+          `Pas de réseau. Montrez l'écran à la personne : le code ${extra.code} est-il bien le sien ? (il sera vérifié au retour du réseau)`,
+        )
+      )
+        return;
+      enqueue({ tripId: trip.id, orderId: s.orderId, kind: s.kind, ...extra });
+      setQueueVersion(v => v + 1);
+      return setMessage(
+        "Pas de réseau : c'est enregistré sur le téléphone et partira tout seul dès que le réseau revient.",
+      );
+    }
+    if (!r.ok) setMessage(r.error ?? 'Erreur');
+    load();
+  };
   const act = async (fn: () => Promise<{ ok: boolean; error?: string }>) => {
     setBusy(true);
     setMessage('');
@@ -375,6 +452,12 @@ export default function MpDriver() {
         </p>
       )}
 
+      {offlineAt !== null && (
+        <p className="rounded-2xl bg-amber-50 text-amber-950 p-3 text-sm" data-testid="mp-driver-offline">
+          Pas de réseau : vous voyez la course enregistrée sur ce téléphone. Continuez les arrêts, ils seront envoyés
+          dès le retour du réseau.
+        </p>
+      )}
       {trip ? (
         <section className="space-y-3" data-testid="mp-driver-trip">
           <h2 className="font-display text-2xl">
@@ -382,14 +465,14 @@ export default function MpDriver() {
             {trip.km.toLocaleString('fr-FR')} km
           </h2>
           <ol className="space-y-3">
-            {trip.stops.map((s, i) => (
+            {withPending(trip).stops.map((s, i) => (
               <StopCard
                 key={`${s.orderId}-${s.kind}`}
                 stop={s}
                 index={i}
                 busy={busy}
-                onDone={code => act(() => stopDone(trip.id, s.orderId, s.kind, code))}
-                onFail={reason => act(() => deliveryFailed(trip.id, s.orderId, reason))}
+                onDone={code => offlineOr(stopDone(trip.id, s.orderId, s.kind, code), s, { code })}
+                onFail={reason => offlineOr(deliveryFailed(trip.id, s.orderId, reason), s, { fail: reason })}
               />
             ))}
           </ol>

@@ -9,6 +9,7 @@ const {
   TWILIO_ACCOUNT_SID = '',
   TWILIO_AUTH_TOKEN = '',
   TWILIO_WHATSAPP_FROM = '', // ex : whatsapp:+14155238886 (bac à sable) ou votre numéro WhatsApp Business
+  TWILIO_SMS_FROM = '', // numéro (ou nom d'expéditeur) SMS : les SMS arrivent même sans internet
   OWNER_WHATSAPP = '+221773093819', // numéro de la gérante : reçoit chaque nouvelle commande
   SITE_URL = 'http://localhost:5174',
   // Modèles de messages approuvés par Meta (obligatoires hors fenêtre de 24 h en production)
@@ -20,6 +21,7 @@ const {
 const client = TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : null;
 
 export const whatsappEnabled = () => !!(client && TWILIO_WHATSAPP_FROM);
+export const smsEnabled = () => !!(client && TWILIO_SMS_FROM);
 export const ownerConfigured = () => !!OWNER_WHATSAPP;
 
 /** Numéro sénégalais « 77 123 45 67 » → « +221771234567 ». */
@@ -128,6 +130,23 @@ export async function sendWhatsApp(to, body, template) {
     return { ok: true, sid: msg.sid };
   } catch (err) {
     console.error("WhatsApp : échec de l'envoi", err.message);
+    return { ok: false, error: err.message };
+  }
+}
+
+/** SMS simple : arrive sans connexion internet (réseau téléphonique seul), pour les codes de remise. */
+export async function sendSms(to, body) {
+  const dest = toE164(to);
+  if (!dest) return { ok: false, error: 'numéro invalide' };
+  if (!smsEnabled()) {
+    console.log(`✉️ [SMS SIMULÉ] → ${dest}\n${body}\n`);
+    return { ok: false, simulated: true };
+  }
+  try {
+    const msg = await client.messages.create({ from: TWILIO_SMS_FROM, to: dest, body });
+    return { ok: true, sid: msg.sid };
+  } catch (err) {
+    console.error("SMS : échec de l'envoi", err.message);
     return { ok: false, error: err.message };
   }
 }
